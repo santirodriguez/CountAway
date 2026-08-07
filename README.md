@@ -18,9 +18,9 @@ CountAway is under active development. The current codebase contains the Android
 
 The app uses the device locale for its visible name:
 
-- English (`en`): **CountAway**
-- Spanish (`es-AR`): **Ya Estamos**
-- Catalan (`ca`): **Ja Queda Poc**
+- English: **CountAway**
+- Spanish: **Ya Estamos**
+- Catalan: **Ja Queda Poc**
 
 ## Requirements
 
