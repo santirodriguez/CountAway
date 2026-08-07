@@ -3,4 +3,8 @@
     <string name="app_name">Ja Queda Poc</string>
     <string name="foundation_message">Base preparada</string>
     <string name="foundation_description">Una app lleugera de comptes enrere per als moments que estàs esperant.</string>
+    <string name="app_logo_content_description">Logotip de Ja Queda Poc</string>
+    <string name="language_english">Anglès</string>
+    <string name="language_spanish">Espanyol</string>
+    <string name="language_catalan">Català</string>
 </resources>

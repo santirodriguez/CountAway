@@ -3,4 +3,8 @@
     <string name="app_name">Ya Estamos</string>
     <string name="foundation_message">Base lista</string>
     <string name="foundation_description">Una app liviana de cuentas regresivas para esos momentos que estás esperando.</string>
+    <string name="app_logo_content_description">Logo de Ya Estamos</string>
+    <string name="language_english">Inglés</string>
+    <string name="language_spanish">Español</string>
+    <string name="language_catalan">Catalán</string>
 </resources>
