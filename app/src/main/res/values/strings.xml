@@ -54,11 +54,13 @@
     <string name="widget_event_option">%1$s · %2$s</string>
 
     <string name="about_version">Version %1$s</string>
+    <string name="about_how_title">Make it useful</string>
+    <string name="about_how_body">Create a date, add the CountAway widget to your home screen, and choose that countdown. Without the widget, this is mostly a very tasteful list of dates. The widget is where the fun starts.</string>
+    <string name="about_how_steps">1. Create a countdown\n2. Add the widget\n3. Stop checking the calendar every five minutes</string>
     <string name="about_privacy">Everything stays on this device. No accounts, ads, analytics, or network access.</string>
     <string name="about_author">Created by Santiago Rodriguez.</string>
     <string name="about_website">santiagorodriguez.com</string>
-    <string name="about_languages">Languages</string>
-    <string name="about_language_english">English — CountAway</string>
-    <string name="about_language_spanish">Spanish (Argentina) — Ya Estamos</string>
-    <string name="about_language_catalan">Catalan — Ja Queda Poc</string>
+    <string name="about_site_note">More things that probably started with “this should be simple” live there too.</string>
+    <string name="about_donate">Donate</string>
+    <string name="about_donate_note">If this saved you from checking the calendar twelve times a day, you can support the noble cause of keeping simple things simple.</string>
 </resources>
