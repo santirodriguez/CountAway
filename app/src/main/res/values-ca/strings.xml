@@ -1,10 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Ja Queda Poc</string>
-    <string name="foundation_message">Base preparada</string>
-    <string name="foundation_description">Una app lleugera de comptes enrere per als moments que estàs esperant.</string>
     <string name="app_logo_content_description">Logotip de Ja Queda Poc</string>
     <string name="language_english">Anglès</string>
     <string name="language_spanish">Espanyol</string>
     <string name="language_catalan">Català</string>
+
+    <string name="action_add_countdown">Afegeix compte enrere</string>
+    <string name="action_about">Sobre l’app</string>
+    <string name="action_save">Desa</string>
+    <string name="action_delete">Elimina</string>
+    <string name="action_cancel">Cancel·la</string>
+
+    <string name="empty_title">Encara no hi ha cap compte enrere</string>
+    <string name="empty_description">Afegeix un viatge, un examen, un aniversari o qualsevol cosa que valgui la pena esperar.</string>
+    <string name="event_meta">%1$s · %2$s</string>
+    <string name="status_days">%1$d dies</string>
+    <string name="status_tomorrow">Demà</string>
+    <string name="status_today">Avui</string>
+    <string name="status_done">Ja ha passat</string>
+
+    <string name="editor_new_title">Nou compte enrere</string>
+    <string name="editor_edit_title">Edita el compte enrere</string>
+    <string name="field_type">Tipus</string>
+    <string name="field_title">Títol</string>
+    <string name="field_date">Data</string>
+    <string name="title_required">Posa un títol a aquest compte enrere.</string>
+    <string name="delete_title">Vols eliminar el compte enrere?</string>
+    <string name="delete_message">Vols eliminar &quot;%1$s&quot;?</string>
+
+    <string name="event_type_trip">Viatge</string>
+    <string name="event_type_first_flight">Primer vol</string>
+    <string name="event_type_exam">Examen</string>
+    <string name="event_type_party">Festa</string>
+    <string name="event_type_birthday">Aniversari</string>
+    <string name="event_type_event">Esdeveniment</string>
+    <string name="event_type_custom">Personalitzat</string>
+
+    <string name="about_version">Versió %1$s</string>
+    <string name="about_privacy">Tot queda desat en aquest dispositiu. Sense comptes, publicitat, seguiment ni accés a internet.</string>
+    <string name="about_author">Creada per Santiago Rodriguez.</string>
+    <string name="about_website">santiagorodriguez.com</string>
+    <string name="about_languages">Idiomes</string>
+    <string name="about_language_english">Anglès — CountAway</string>
+    <string name="about_language_spanish">Espanyol (Argentina) — Ya Estamos</string>
+    <string name="about_language_catalan">Català — Ja Queda Poc</string>
 </resources>

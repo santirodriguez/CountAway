@@ -1,10 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Ya Estamos</string>
-    <string name="foundation_message">Base lista</string>
-    <string name="foundation_description">Una app liviana de cuentas regresivas para esos momentos que estás esperando.</string>
     <string name="app_logo_content_description">Logo de Ya Estamos</string>
     <string name="language_english">Inglés</string>
     <string name="language_spanish">Español</string>
     <string name="language_catalan">Catalán</string>
+
+    <string name="action_add_countdown">Agregar cuenta regresiva</string>
+    <string name="action_about">Acerca de</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_cancel">Cancelar</string>
+
+    <string name="empty_title">Todavía no hay nada en cuenta regresiva</string>
+    <string name="empty_description">Agregá un viaje, examen, cumpleaños o cualquier cosa que valga la espera.</string>
+    <string name="event_meta">%1$s · %2$s</string>
+    <string name="status_days">%1$d días</string>
+    <string name="status_tomorrow">Mañana</string>
+    <string name="status_today">Hoy</string>
+    <string name="status_done">Ya pasó</string>
+
+    <string name="editor_new_title">Nueva cuenta regresiva</string>
+    <string name="editor_edit_title">Editar cuenta regresiva</string>
+    <string name="field_type">Tipo</string>
+    <string name="field_title">Título</string>
+    <string name="field_date">Fecha</string>
+    <string name="title_required">Poné un título para esta cuenta regresiva.</string>
+    <string name="delete_title">¿Eliminar cuenta regresiva?</string>
+    <string name="delete_message">¿Eliminar &quot;%1$s&quot;?</string>
+
+    <string name="event_type_trip">Viaje</string>
+    <string name="event_type_first_flight">Primer vuelo</string>
+    <string name="event_type_exam">Examen</string>
+    <string name="event_type_party">Fiesta</string>
+    <string name="event_type_birthday">Cumpleaños</string>
+    <string name="event_type_event">Evento</string>
+    <string name="event_type_custom">Personalizado</string>
+
+    <string name="about_version">Versión %1$s</string>
+    <string name="about_privacy">Todo queda guardado en este dispositivo. Sin cuentas, publicidad, seguimiento ni acceso a internet.</string>
+    <string name="about_author">Creada por Santiago Rodriguez.</string>
+    <string name="about_website">santiagorodriguez.com</string>
+    <string name="about_languages">Idiomas</string>
+    <string name="about_language_english">Inglés — CountAway</string>
+    <string name="about_language_spanish">Español (Argentina) — Ya Estamos</string>
+    <string name="about_language_catalan">Catalán — Ja Queda Poc</string>
 </resources>
