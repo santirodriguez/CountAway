@@ -20,9 +20,9 @@ So CountAway does the obvious thing: pick a date, show the number, and move on w
 
 ## Status
 
-CountAway is under active development. The core app can create, edit, delete, sort, and display local countdowns using simple presets for trips, first flights, exams, parties, birthdays, events, and custom dates.
+The 1.0.0 feature set is complete. CountAway can create, edit, delete, sort, and display local countdowns using simple presets for trips, first flights, exams, parties, birthdays, events, and custom dates.
 
-The home-screen widget supports multiple independent instances, compact/standard/large layouts, System/Light/Dark appearance, and battery-minded daily refreshes. Release hardening is the next development phase.
+The home-screen widget supports multiple independent instances, compact/standard/large layouts, System/Light/Dark appearance, and battery-minded daily refreshes. The project is currently in release hardening before the first public release.
 
 ## Names and languages
 
@@ -47,7 +47,9 @@ Debug APKs are written under `app/build/outputs/apk/debug/`.
 
 ## Distribution
 
-Public releases will be published through GitHub Releases. Once releases begin, the repository can also be followed with Obtainium for update discovery and installation.
+Public releases will be published through GitHub Releases as a signed universal APK. Once releases begin, the repository can also be followed with Obtainium for update discovery and installation.
+
+Maintainer release and signing steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md).
 
 ## Privacy
 
