@@ -9,13 +9,14 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.ArrivalMood
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
-import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.EventIconPresentation
 import com.santiagorodriguez.countaway.ui.LanguageManager
@@ -86,7 +87,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             if (event == null) {
                 renderUnconfigured(displayContext, views, appWidgetId)
             } else {
-                renderEvent(displayContext, views, appWidgetId, event, size)
+                renderEvent(displayContext, views, appWidgetId, event)
             }
             manager.updateAppWidget(appWidgetId, views)
         }
@@ -96,17 +97,16 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views: RemoteViews,
             appWidgetId: Int,
             event: CountdownEvent,
-            size: WidgetSize,
         ) {
             val value = CountdownCalculator.value(LocalDate.now(), event.date)
-            val compact = size == WidgetSize.COMPACT
             val countText = when (value.status) {
-                CountdownStatus.FUTURE -> value.days.toString()
-                CountdownStatus.THREE_DAYS -> if (compact) "✦3" else "✦ 3"
-                CountdownStatus.TWO_DAYS -> if (compact) "✦2✦" else "✦ 2 ✦"
-                CountdownStatus.TOMORROW -> if (compact) "✦1✦" else "✦ 1 ✦"
-                CountdownStatus.TODAY -> "0"
-                CountdownStatus.DONE -> if (compact) "✓" else context.getString(R.string.status_done)
+                CountdownStatus.FUTURE,
+                CountdownStatus.THREE_DAYS,
+                CountdownStatus.TWO_DAYS,
+                CountdownStatus.TOMORROW,
+                CountdownStatus.TODAY,
+                -> value.days.coerceAtLeast(0).toString()
+                CountdownStatus.DONE -> "✓"
             }
             val unitText = when (value.status) {
                 CountdownStatus.FUTURE,
@@ -117,15 +117,17 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                 CountdownStatus.TODAY -> context.getString(R.string.status_today)
                 CountdownStatus.DONE -> ""
             }
-            val displayedIcon = if (value.status == CountdownStatus.TODAY) EventIcon.CONFETTI else event.icon
+            val mood = ArrivalMood.marker(value.status)
             val locale = context.resources.configuration.locales[0]
             val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
-            views.setImageViewResource(R.id.widgetIcon, EventIconPresentation.drawableRes(displayedIcon))
+            views.setImageViewResource(R.id.widgetIcon, EventIconPresentation.drawableRes(event.icon))
             views.setTextViewText(R.id.widgetTitle, event.title)
             views.setTextViewText(R.id.widgetCount, countText)
             views.setTextViewText(R.id.widgetUnit, unitText)
             views.setTextViewText(R.id.widgetDate, event.date.format(dateFormatter))
+            views.setTextViewText(R.id.widgetMilestone, mood ?: "")
+            views.setViewVisibility(R.id.widgetMilestone, if (mood == null) View.GONE else View.VISIBLE)
             views.setOnClickPendingIntent(R.id.widgetRoot, editPendingIntent(context, appWidgetId, event.id))
         }
 
@@ -135,6 +137,8 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widgetCount, "—")
             views.setTextViewText(R.id.widgetUnit, context.getString(R.string.widget_tap_to_configure))
             views.setTextViewText(R.id.widgetDate, "")
+            views.setTextViewText(R.id.widgetMilestone, "")
+            views.setViewVisibility(R.id.widgetMilestone, View.GONE)
             views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
         }
 
@@ -143,6 +147,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views.setInt(R.id.widgetIcon, "setColorFilter", theme.accentTextColor)
             views.setTextColor(R.id.widgetTitle, theme.primaryTextColor)
             views.setTextColor(R.id.widgetCount, theme.accentTextColor)
+            views.setTextColor(R.id.widgetMilestone, theme.secondaryTextColor)
             views.setTextColor(R.id.widgetUnit, theme.secondaryTextColor)
             views.setTextColor(R.id.widgetDate, theme.secondaryTextColor)
         }
