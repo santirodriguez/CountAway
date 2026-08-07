@@ -38,15 +38,19 @@ object LanguageManager {
 
     fun setLanguage(activity: Activity, languageTag: String) {
         val canonical = canonicalTag(Locale.forLanguageTag(languageTag))
-        activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_LANGUAGE, canonical)
-            .apply()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .remove(KEY_LANGUAGE)
+                .apply()
             activity.getSystemService(LocaleManager::class.java).applicationLocales =
                 LocaleList.forLanguageTags(canonical)
         } else {
+            activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_LANGUAGE, canonical)
+                .apply()
             activity.recreate()
         }
     }
@@ -54,11 +58,15 @@ object LanguageManager {
     fun syncPlatformLocale(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
-        val localeManager = context.getSystemService(LocaleManager::class.java)
-        if (!localeManager.applicationLocales.isEmpty) return
-
         val stored = storedLanguageTag(context) ?: return
-        localeManager.applicationLocales = LocaleList.forLanguageTags(stored)
+        val localeManager = context.getSystemService(LocaleManager::class.java)
+        if (localeManager.applicationLocales.isEmpty) {
+            localeManager.applicationLocales = LocaleList.forLanguageTags(stored)
+        }
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .remove(KEY_LANGUAGE)
+            .apply()
     }
 
     private fun explicitLanguageTag(context: Context): String? {
