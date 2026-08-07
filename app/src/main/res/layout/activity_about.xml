@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/aboutRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
+    android:clipToPadding="false"
     android:fillViewport="true">
 
     <LinearLayout
@@ -13,8 +15,8 @@
         android:padding="24dp">
 
         <ImageView
-            android:layout_width="156dp"
-            android:layout_height="156dp"
+            android:layout_width="168dp"
+            android:layout_height="112dp"
             android:adjustViewBounds="true"
             android:contentDescription="@string/app_logo_content_description"
             android:scaleType="fitCenter"
@@ -24,30 +26,66 @@
             android:id="@+id/versionText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="6dp"
             android:textColor="@color/secondary_text"
-            android:textSize="14sp" />
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:background="@drawable/surface_card"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="@string/about_how_title"
+                android:textColor="@color/foreground"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/about_how_body"
+                android:textColor="@color/foreground"
+                android:textSize="15sp"
+                android:lineSpacingExtra="2dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/about_how_steps"
+                android:textColor="@color/secondary_text"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="20dp"
             android:gravity="center"
             android:text="@string/about_privacy"
-            android:textColor="@color/foreground"
-            android:textSize="15sp" />
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="22dp"
             android:gravity="center"
             android:text="@string/about_author"
             android:textColor="@color/foreground"
-            android:textSize="15sp" />
+            android:textSize="14sp" />
 
         <Button
             android:id="@+id/websiteButton"
+            style="@style/Widget.CountAway.SmallAction"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
@@ -56,75 +94,36 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="@string/about_languages"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="@string/about_site_note"
             android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
+            android:textSize="12sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="26dp"
+            android:background="@drawable/surface_card"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="16dp"
-                android:contentDescription="@string/language_english"
-                android:src="@drawable/flag_us" />
+            android:orientation="horizontal"
+            android:padding="14dp">
 
             <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingEnd="12dp"
+                android:text="@string/about_donate_note"
+                android:textColor="@color/secondary_text"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/donateButton"
+                style="@style/Widget.CountAway.SmallAction"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="@string/about_language_english"
-                android:textColor="@color/foreground"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="16dp"
-                android:contentDescription="@string/language_spanish"
-                android:src="@drawable/flag_ar" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="@string/about_language_spanish"
-                android:textColor="@color/foreground"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="16dp"
-                android:contentDescription="@string/language_catalan"
-                android:src="@drawable/flag_catalonia" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="@string/about_language_catalan"
-                android:textColor="@color/foreground"
-                android:textSize="14sp" />
+                android:text="@string/about_donate" />
         </LinearLayout>
 
     </LinearLayout>
