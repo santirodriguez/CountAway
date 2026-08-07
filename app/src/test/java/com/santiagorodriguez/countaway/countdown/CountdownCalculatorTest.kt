@@ -22,6 +22,22 @@ class CountdownCalculatorTest {
     }
 
     @Test
+    fun twoDaysReturnsTwoDayMilestone() {
+        val today = LocalDate.of(2026, 8, 7)
+        val value = CountdownCalculator.value(today, today.plusDays(2))
+        assertEquals(2, value.days)
+        assertEquals(CountdownStatus.TWO_DAYS, value.status)
+    }
+
+    @Test
+    fun threeDaysReturnsThreeDayMilestone() {
+        val today = LocalDate.of(2026, 8, 7)
+        val value = CountdownCalculator.value(today, today.plusDays(3))
+        assertEquals(3, value.days)
+        assertEquals(CountdownStatus.THREE_DAYS, value.status)
+    }
+
+    @Test
     fun futureDateUsesFutureStatus() {
         val today = LocalDate.of(2026, 8, 7)
         val value = CountdownCalculator.value(today, today.plusDays(17))
