@@ -6,21 +6,35 @@ import java.time.LocalDate
 
 class CountdownCalculatorTest {
     @Test
-    fun sameDayReturnsZero() {
+    fun sameDayReturnsZeroAndToday() {
         val date = LocalDate.of(2026, 8, 7)
-        assertEquals(0, CountdownCalculator.daysUntil(date, date))
+        val value = CountdownCalculator.value(date, date)
+        assertEquals(0, value.days)
+        assertEquals(CountdownStatus.TODAY, value.status)
     }
 
     @Test
-    fun tomorrowReturnsOne() {
+    fun tomorrowReturnsOneAndTomorrow() {
         val today = LocalDate.of(2026, 8, 7)
-        assertEquals(1, CountdownCalculator.daysUntil(today, today.plusDays(1)))
+        val value = CountdownCalculator.value(today, today.plusDays(1))
+        assertEquals(1, value.days)
+        assertEquals(CountdownStatus.TOMORROW, value.status)
     }
 
     @Test
-    fun yesterdayReturnsMinusOne() {
+    fun futureDateUsesFutureStatus() {
         val today = LocalDate.of(2026, 8, 7)
-        assertEquals(-1, CountdownCalculator.daysUntil(today, today.minusDays(1)))
+        val value = CountdownCalculator.value(today, today.plusDays(17))
+        assertEquals(17, value.days)
+        assertEquals(CountdownStatus.FUTURE, value.status)
+    }
+
+    @Test
+    fun yesterdayReturnsMinusOneAndDone() {
+        val today = LocalDate.of(2026, 8, 7)
+        val value = CountdownCalculator.value(today, today.minusDays(1))
+        assertEquals(-1, value.days)
+        assertEquals(CountdownStatus.DONE, value.status)
     }
 
     @Test
