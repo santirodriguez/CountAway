@@ -44,9 +44,15 @@ The first public version will be distributed as a signed universal APK through G
 
 ### Obtainium
 
-Obtainium can follow this repository directly and install future CountAway releases from GitHub. Once `v1.0.0` is public, this section will include a one-tap **Add to Obtainium** button pointing at the final release source.
+<p align="center">
+  <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522com.santiagorodriguez.countaway%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fsantirodriguez%252FCountAway%2522%252C%2522author%2522%253A%2522santiagorodriguez.com%2522%252C%2522name%2522%253A%2522CountAway%2522%257D">
+    <img alt="Add to Obtainium" src="https://img.shields.io/badge/Add_to-Obtainium-6C3FC5?style=for-the-badge" />
+  </a>
+</p>
 
-Until then, the source URL is:
+The button uses Obtainium's one-click app link format and points directly at this GitHub repository. It becomes useful as soon as the first public release is available.
+
+Manual source URL:
 
 ```text
 https://github.com/santirodriguez/CountAway
