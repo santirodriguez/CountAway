@@ -6,17 +6,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
+import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.EventIcon
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
     private val inflater = LayoutInflater.from(context)
+    private val animatedMilestones = mutableSetOf<String>()
     private var items: List<CountdownEvent> = emptyList()
     private var today: LocalDate = LocalDate.now()
 
@@ -39,7 +42,11 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
         val locale = context.resources.configuration.locales[0]
         val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
-        view.findViewById<TextView>(R.id.eventIcon).text = EventTypePresentation.icon(event.type)
+        val displayedIcon = if (countdown.status == CountdownStatus.TODAY) EventIcon.CONFETTI else event.icon
+        view.findViewById<ImageView>(R.id.eventIcon).apply {
+            setImageResource(EventIconPresentation.drawableRes(displayedIcon))
+            contentDescription = context.getString(EventIconPresentation.labelRes(displayedIcon))
+        }
         view.findViewById<TextView>(R.id.eventTitle).text = event.title
         view.findViewById<TextView>(R.id.eventMeta).text = context.getString(
             R.string.event_meta,
@@ -50,13 +57,43 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
         view.findViewById<TextView>(R.id.eventStatus).apply {
             text = when (countdown.status) {
                 CountdownStatus.FUTURE -> context.getString(R.string.status_days, countdown.days)
-                CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
-                CountdownStatus.TODAY -> context.getString(R.string.status_today)
+                CountdownStatus.THREE_DAYS -> "✦ 3"
+                CountdownStatus.TWO_DAYS -> "✦ 2 ✦"
+                CountdownStatus.TOMORROW -> "✦ 1 ✦"
+                CountdownStatus.TODAY -> context.getString(R.string.status_today_zero)
                 CountdownStatus.DONE -> context.getString(R.string.status_done)
             }
             setTypeface(typeface, Typeface.BOLD)
+            scaleX = 1f
+            scaleY = 1f
+            alpha = 1f
+
+            if (countdown.status in MILESTONE_STATUSES) {
+                val animationKey = "${event.id}:${event.date}:${countdown.status}"
+                if (animatedMilestones.add(animationKey)) {
+                    scaleX = 0.94f
+                    scaleY = 0.94f
+                    animate()
+                        .scaleX(1.07f)
+                        .scaleY(1.07f)
+                        .setDuration(160)
+                        .withEndAction {
+                            animate().scaleX(1f).scaleY(1f).setDuration(160).start()
+                        }
+                        .start()
+                }
+            }
         }
 
         return view
+    }
+
+    private companion object {
+        val MILESTONE_STATUSES = setOf(
+            CountdownStatus.THREE_DAYS,
+            CountdownStatus.TWO_DAYS,
+            CountdownStatus.TOMORROW,
+            CountdownStatus.TODAY,
+        )
     }
 }
