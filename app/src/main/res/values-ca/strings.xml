@@ -11,6 +11,8 @@
     <string name="action_save">Desa</string>
     <string name="action_delete">Elimina</string>
     <string name="action_cancel">Cancel·la</string>
+    <string name="theme_switch_to_light">Canvia al mode clar</string>
+    <string name="theme_switch_to_dark">Canvia al mode fosc</string>
 
     <string name="empty_title">Encara no hi ha cap compte enrere</string>
     <string name="empty_description">Afegeix un viatge, un examen, un aniversari o qualsevol cosa que valgui la pena esperar.</string>
