@@ -37,6 +37,22 @@
     <string name="event_type_event">Esdeveniment</string>
     <string name="event_type_custom">Personalitzat</string>
 
+    <string name="widget_name">Compte enrere de Ja Queda Poc</string>
+    <string name="widget_description">Un compte enrere lleuger i redimensionable per a la pantalla d’inici.</string>
+    <string name="widget_days_left">dies que falten</string>
+    <string name="widget_select_countdown">Tria un compte enrere</string>
+    <string name="widget_tap_to_configure">Toca per configurar</string>
+    <string name="widget_config_title">Tria un compte enrere</string>
+    <string name="widget_config_description">Tria què vols tenir a la vista en aquest widget.</string>
+    <string name="widget_config_empty">Encara no hi ha comptes enrere. Crea’n un i després torna aquí.</string>
+    <string name="widget_create_countdown">Crea un compte enrere</string>
+    <string name="widget_appearance_label">Aparença</string>
+    <string name="widget_appearance_system">Sistema</string>
+    <string name="widget_appearance_light">Clar</string>
+    <string name="widget_appearance_dark">Fosc</string>
+    <string name="widget_add_to_home">Desa el widget</string>
+    <string name="widget_event_option">%1$s · %2$s</string>
+
     <string name="about_version">Versió %1$s</string>
     <string name="about_privacy">Tot queda desat en aquest dispositiu. Sense comptes, publicitat, seguiment ni accés a internet.</string>
     <string name="about_author">Creada per Santiago Rodriguez.</string>
