@@ -1,0 +1,123 @@
+name: Release Candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version name to build
+        required: true
+        default: "1.0.0"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-signed-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      COUNTAWAY_RELEASE_KEYSTORE_B64: ${{ secrets.COUNTAWAY_RELEASE_KEYSTORE_B64 }}
+      COUNTAWAY_RELEASE_STORE_PASSWORD: ${{ secrets.COUNTAWAY_RELEASE_STORE_PASSWORD }}
+      COUNTAWAY_RELEASE_KEY_ALIAS: ${{ secrets.COUNTAWAY_RELEASE_KEY_ALIAS }}
+      COUNTAWAY_RELEASE_KEY_PASSWORD: ${{ secrets.COUNTAWAY_RELEASE_KEY_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Validate requested version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          grep -Fq "versionName = \"${VERSION}\"" app/build.gradle.kts
+
+      - name: Build optimized release
+        run: ./gradlew clean test lint assembleRelease --stacktrace
+
+      - name: Validate signing secrets
+        run: |
+          set -euo pipefail
+          test -n "${COUNTAWAY_RELEASE_KEYSTORE_B64}"
+          test -n "${COUNTAWAY_RELEASE_STORE_PASSWORD}"
+          test -n "${COUNTAWAY_RELEASE_KEY_ALIAS}"
+          test -n "${COUNTAWAY_RELEASE_KEY_PASSWORD}"
+
+      - name: Sign and verify APK
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          BUILD_TOOLS_VERSION="$(ls -1 "${ANDROID_HOME}/build-tools" | sort -V | tail -n 1)"
+          BUILD_TOOLS_DIR="${ANDROID_HOME}/build-tools/${BUILD_TOOLS_VERSION}"
+          ZIPALIGN="${BUILD_TOOLS_DIR}/zipalign"
+          APKSIGNER="${BUILD_TOOLS_DIR}/apksigner"
+          AAPT="${BUILD_TOOLS_DIR}/aapt"
+
+          UNSIGNED_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -f "${UNSIGNED_APK}"
+
+          SIGNING_DIR="${RUNNER_TEMP}/countaway-signing"
+          DIST_DIR="${GITHUB_WORKSPACE}/dist"
+          mkdir -p "${SIGNING_DIR}" "${DIST_DIR}"
+
+          KEYSTORE="${SIGNING_DIR}/countaway-release.jks"
+          printf '%s' "${COUNTAWAY_RELEASE_KEYSTORE_B64}" | base64 --decode > "${KEYSTORE}"
+          chmod 600 "${KEYSTORE}"
+
+          ALIGNED_APK="${SIGNING_DIR}/CountAway-v${VERSION}-aligned.apk"
+          APK_NAME="CountAway-v${VERSION}.apk"
+          FINAL_APK="${DIST_DIR}/${APK_NAME}"
+
+          "${ZIPALIGN}" -P 16 -f -v 4 "${UNSIGNED_APK}" "${ALIGNED_APK}"
+          "${APKSIGNER}" sign \
+            --ks "${KEYSTORE}" \
+            --ks-key-alias "${COUNTAWAY_RELEASE_KEY_ALIAS}" \
+            --ks-pass env:COUNTAWAY_RELEASE_STORE_PASSWORD \
+            --key-pass env:COUNTAWAY_RELEASE_KEY_PASSWORD \
+            --out "${FINAL_APK}" \
+            "${ALIGNED_APK}"
+
+          "${ZIPALIGN}" -P 16 -c -v 4 "${FINAL_APK}"
+          "${APKSIGNER}" verify --verbose --print-certs "${FINAL_APK}" \
+            | tee "${DIST_DIR}/CountAway-v${VERSION}-signing.txt"
+
+          "${AAPT}" dump badging "${FINAL_APK}" \
+            | tee "${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
+          grep -Fq "package: name='com.santiagorodriguez.countaway'" \
+            "${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
+          grep -Fq "versionCode='1' versionName='${VERSION}'" \
+            "${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
+
+          (
+            cd "${DIST_DIR}"
+            sha256sum "${APK_NAME}" > "${APK_NAME}.sha256"
+          )
+
+      - name: Upload release candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: CountAway-v${{ inputs.version }}-release-candidate
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload R8 mapping
+        uses: actions/upload-artifact@v7
+        with:
+          name: CountAway-v${{ inputs.version }}-r8-mapping
+          path: app/build/outputs/mapping/release/
+          if-no-files-found: error
+          retention-days: 90
