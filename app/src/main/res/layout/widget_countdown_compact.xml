@@ -37,14 +37,11 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <TextView
+            <ImageView
                 android:id="@+id/widgetIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textSize="15sp" />
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:scaleType="centerInside" />
 
             <TextView
                 android:id="@+id/widgetCount"
