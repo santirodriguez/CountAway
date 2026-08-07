@@ -27,9 +27,9 @@ So CountAway does the obvious thing: pick a date, put it on your home screen, an
 ## What it does
 
 - Multiple local countdowns
-- Resizable home-screen widgets
-- Compact, standard, and large layouts
-- System, light, and dark appearance
+- Resizable home-screen widgets, including a true compact 1×1 layout
+- System, light, and dark widget appearance
+- One-tap light/dark app appearance
 - English, Spanish (Argentina), and Catalan
 - Battery-minded daily refreshes
 - No account or cloud dependency
@@ -45,12 +45,12 @@ The first public version will be distributed as a signed universal APK through G
 ### Obtainium
 
 <p align="center">
-  <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522com.santiagorodriguez.countaway%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fgithub.com%252Fsantirodriguez%252FCountAway%2522%252C%2522author%2522%253A%2522santiagorodriguez.com%2522%252C%2522name%2522%253A%2522CountAway%2522%257D">
-    <img alt="Add to Obtainium" src="https://img.shields.io/badge/Add_to-Obtainium-6C3FC5?style=for-the-badge" />
+  <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/santirodriguez/CountAway">
+    <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54" />
   </a>
 </p>
 
-The button points Obtainium at this GitHub repository and becomes useful as soon as the first public release is available.
+Tap the badge to add this GitHub repository directly to Obtainium. It becomes installable there as soon as the first public release is available.
 
 Manual source URL:
 
