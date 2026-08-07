@@ -11,6 +11,8 @@
     <string name="action_save">Save</string>
     <string name="action_delete">Delete</string>
     <string name="action_cancel">Cancel</string>
+    <string name="theme_switch_to_light">Switch to light mode</string>
+    <string name="theme_switch_to_dark">Switch to dark mode</string>
 
     <string name="empty_title">Nothing to count down yet</string>
     <string name="empty_description">Add a trip, exam, birthday, or anything else worth waiting for.</string>
