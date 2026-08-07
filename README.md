@@ -20,9 +20,9 @@ So CountAway does the obvious thing: pick a date, show the number, and move on w
 
 ## Status
 
-CountAway is under active development. The current codebase contains the Android foundation, local data model, persistence layer, countdown calculation, localization scaffolding, and CI.
+CountAway is under active development. The core app can create, edit, delete, sort, and display local countdowns using simple presets for trips, first flights, exams, parties, birthdays, events, and custom dates.
 
-User-facing countdown management and the home-screen widget will follow in later development phases.
+The home-screen widget is the next development phase.
 
 ## Names and languages
 
