@@ -6,7 +6,7 @@ import android.os.Bundle
 
 abstract class BaseActivity : Activity() {
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(LanguageManager.wrap(newBase))
+        super.attachBaseContext(ThemeManager.wrap(LanguageManager.wrap(newBase)))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
