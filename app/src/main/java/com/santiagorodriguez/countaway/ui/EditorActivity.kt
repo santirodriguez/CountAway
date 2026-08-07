@@ -14,6 +14,8 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
+import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -118,6 +120,7 @@ class EditorActivity : Activity() {
             events.add(event)
         }
         repository.save(events)
+        refreshWidgets()
         finish()
     }
 
@@ -130,9 +133,15 @@ class EditorActivity : Activity() {
             .setPositiveButton(R.string.action_delete) { _, _ ->
                 val events = repository.load().filterNot { it.id == event.id }
                 repository.save(events)
+                refreshWidgets()
                 finish()
             }
             .show()
+    }
+
+    private fun refreshWidgets() {
+        CountdownWidgetProvider.updateAllWidgets(this)
+        WidgetUpdateScheduler.ensureScheduled(this)
     }
 
     companion object {
