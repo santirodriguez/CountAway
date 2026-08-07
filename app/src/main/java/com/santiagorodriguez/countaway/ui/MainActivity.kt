@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ListView
+import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.data.CountdownRepository
@@ -38,6 +39,9 @@ class MainActivity : BaseActivity() {
         findViewById<Button>(R.id.addCountdownButton).setOnClickListener {
             startActivity(Intent(this, EditorActivity::class.java))
         }
+        findViewById<View>(R.id.themeButton).setOnClickListener {
+            ThemeManager.toggle(this)
+        }
         findViewById<View>(R.id.aboutButton).setOnClickListener {
             startActivity(Intent(this, AboutActivity::class.java))
         }
@@ -59,6 +63,7 @@ class MainActivity : BaseActivity() {
         val events = CountdownEventOrder.sortedForDisplay(repository.load(), today)
         adapter.submit(events, today)
         renderLanguageSelection()
+        renderThemeToggle()
         CountdownWidgetProvider.updateAllWidgets(this)
         WidgetUpdateScheduler.ensureScheduled(this)
     }
@@ -72,6 +77,20 @@ class MainActivity : BaseActivity() {
         setLanguageButtonState(R.id.languageEnglishButton, current == LanguageManager.ENGLISH)
         setLanguageButtonState(R.id.languageSpanishButton, current == LanguageManager.SPANISH)
         setLanguageButtonState(R.id.languageCatalanButton, current == LanguageManager.CATALAN)
+    }
+
+    private fun renderThemeToggle() {
+        val button = findViewById<TextView>(R.id.themeButton)
+        when (ThemeManager.currentTheme(this)) {
+            ThemeManager.AppTheme.DARK -> {
+                button.text = "☀"
+                button.contentDescription = getString(R.string.theme_switch_to_light)
+            }
+            ThemeManager.AppTheme.LIGHT -> {
+                button.text = "☾"
+                button.contentDescription = getString(R.string.theme_switch_to_dark)
+            }
+        }
     }
 
     private fun setLanguageButtonState(viewId: Int, selected: Boolean) {
