@@ -1,9 +1,7 @@
 # CountAway
 
 <p align="center">
-  <img src="docs/assets/branding/countaway.webp" alt="CountAway" width="160" />
-  <img src="docs/assets/branding/ya-estamos.webp" alt="Ya Estamos" width="160" />
-  <img src="docs/assets/branding/ja-queda-poc.webp" alt="Ja Queda Poc" width="160" />
+  <img src="docs/assets/branding/countaway.webp" alt="CountAway" width="190" />
 </p>
 
 <p align="center">
@@ -42,6 +40,16 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 
 _Final 1.0.0 screenshots will be added from the release candidate._
 
+## Author
+
+[Santiago Rodriguez](https://santiagorodriguez.com)
+
+[![Donate](https://img.shields.io/badge/Donate-13BEB9?style=flat-square&labelColor=031331)](https://santiagorodriguez.com/donate)
+
+## Privacy
+
+CountAway stores everything on your device and has no Internet permission. It does not need your location, contacts, camera, microphone, or a suspiciously creative excuse to collect any of them. If you enable arrival alerts, Android may ask for notification permission. That's it.
+
 ## Build
 
 Requires JDK 17 and Android SDK 36.
@@ -51,14 +59,6 @@ Requires JDK 17 and Android SDK 36.
 ```
 
 Maintainer signing and release steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md).
-
-## Privacy
-
-CountAway stores its data locally on the device. It does not declare Internet access.
-
-## Author
-
-[santiagorodriguez.com](https://santiagorodriguez.com)
 
 ## License
 
