@@ -11,6 +11,14 @@
         android:usesCleartextTraffic="false">
 
         <activity
+            android:name=".ui.AboutActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.EditorActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
