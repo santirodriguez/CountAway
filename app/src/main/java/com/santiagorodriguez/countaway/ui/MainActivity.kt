@@ -64,7 +64,6 @@ class MainActivity : BaseActivity() {
     }
 
     private fun selectLanguage(languageTag: String) {
-        if (LanguageManager.currentLanguageTag(this) == languageTag) return
         LanguageManager.setLanguage(this, languageTag)
     }
 
