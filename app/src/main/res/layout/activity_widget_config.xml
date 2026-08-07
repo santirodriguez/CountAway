@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widgetConfigRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
+    android:clipToPadding="false"
     android:orientation="vertical"
     android:padding="24dp">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
         android:text="@string/widget_config_title"
         android:textColor="@color/foreground"
-        android:textSize="26sp"
-        android:textStyle="bold" />
+        android:textSize="28sp" />
 
     <TextView
         android:layout_width="match_parent"
@@ -26,9 +28,11 @@
         android:id="@+id/widgetEmptyState"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="18dp"
         android:layout_weight="1"
+        android:background="@drawable/surface_card"
         android:gravity="center"
+        android:padding="24dp"
         android:text="@string/widget_config_empty"
         android:textColor="@color/secondary_text"
         android:textSize="15sp"
@@ -38,14 +42,17 @@
         android:id="@+id/widgetEventList"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         android:layout_weight="1"
         android:choiceMode="singleChoice"
+        android:clipToPadding="false"
         android:divider="@android:color/transparent"
-        android:dividerHeight="6dp" />
+        android:dividerHeight="8dp"
+        android:scrollbars="none" />
 
     <Button
         android:id="@+id/widgetCreateButton"
+        style="@style/Widget.CountAway.Button.Secondary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
@@ -54,22 +61,31 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="18dp"
         android:text="@string/widget_appearance_label"
         android:textColor="@color/secondary_text"
         android:textSize="13sp" />
 
-    <Spinner
-        android:id="@+id/widgetAppearanceSpinner"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp" />
+        android:layout_marginTop="6dp"
+        android:background="@drawable/control_surface">
+
+        <Spinner
+            android:id="@+id/widgetAppearanceSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="@android:color/transparent"
+            android:spinnerMode="dropdown" />
+    </FrameLayout>
 
     <Button
         android:id="@+id/widgetSaveButton"
+        style="@style/Widget.CountAway.Button.Primary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="18dp"
         android:enabled="false"
         android:text="@string/widget_add_to_home" />
 
