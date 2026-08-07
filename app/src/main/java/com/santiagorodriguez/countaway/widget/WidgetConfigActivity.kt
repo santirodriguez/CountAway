@@ -51,6 +51,7 @@ class WidgetConfigActivity : BaseActivity() {
         emptyState = findViewById(R.id.widgetEmptyState)
         appearanceSpinner = findViewById(R.id.widgetAppearanceSpinner)
         saveButton = findViewById(R.id.widgetSaveButton)
+        setSaveEnabled(false)
 
         val appearanceValues = WidgetAppearance.entries
         appearanceSpinner.adapter = ArrayAdapter(
@@ -72,7 +73,7 @@ class WidgetConfigActivity : BaseActivity() {
         eventList.choiceMode = ListView.CHOICE_MODE_SINGLE
         eventList.setOnItemClickListener { _, _, position, _ ->
             selectedEventId = events[position].id
-            saveButton.isEnabled = true
+            setSaveEnabled(true)
         }
 
         findViewById<Button>(R.id.widgetCreateButton).setOnClickListener {
@@ -100,11 +101,16 @@ class WidgetConfigActivity : BaseActivity() {
         val selectedIndex = events.indexOfFirst { it.id == selectedEventId }
         if (selectedIndex >= 0) {
             eventList.setItemChecked(selectedIndex, true)
-            saveButton.isEnabled = true
+            setSaveEnabled(true)
         } else {
             selectedEventId = null
-            saveButton.isEnabled = false
+            setSaveEnabled(false)
         }
+    }
+
+    private fun setSaveEnabled(enabled: Boolean) {
+        saveButton.isEnabled = enabled
+        saveButton.alpha = if (enabled) 1f else 0.45f
     }
 
     private fun saveConfiguration() {
