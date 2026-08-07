@@ -50,7 +50,7 @@ The first public version will be distributed as a signed universal APK through G
   </a>
 </p>
 
-The button uses Obtainium's one-click app link format and points directly at this GitHub repository. It becomes useful as soon as the first public release is available.
+The button points Obtainium at this GitHub repository and becomes useful as soon as the first public release is available.
 
 Manual source URL:
 
