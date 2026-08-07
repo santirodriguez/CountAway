@@ -9,6 +9,7 @@ import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
@@ -66,6 +67,7 @@ class MainActivity : BaseActivity() {
         renderThemeToggle()
         CountdownWidgetProvider.updateAllWidgets(this)
         WidgetUpdateScheduler.ensureScheduled(this)
+        ArrivalNotificationScheduler.ensureScheduled(this)
     }
 
     private fun selectLanguage(languageTag: String) {
