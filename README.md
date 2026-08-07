@@ -44,7 +44,7 @@ _Final 1.0.0 screenshots will be added from the release candidate._
 
 [Santiago Rodriguez](https://santiagorodriguez.com)
 
-[![Donate](https://img.shields.io/badge/Donate-13BEB9?style=flat-square&labelColor=031331)](https://santiagorodriguez.com/donate)
+<a href="https://santiagorodriguez.com/donate"><img src="docs/assets/badges/donate.svg" alt="Donate" height="52" /></a>
 
 ## Privacy
 
