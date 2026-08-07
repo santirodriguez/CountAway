@@ -23,10 +23,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
             android:gravity="center"
+            android:letterSpacing="0.02"
             android:maxLines="1"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="14sp" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -48,8 +49,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
                 android:ellipsize="end"
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="-0.02"
                 android:maxLines="1"
-                android:textSize="44sp"
+                android:textSize="46sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -57,6 +60,7 @@
             android:id="@+id/widgetUnit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:gravity="center"
             android:maxLines="1"
             android:textSize="13sp" />
