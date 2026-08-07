@@ -1,0 +1,214 @@
+package com.santiagorodriguez.countaway.widget
+
+import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.res.Configuration
+import android.net.Uri
+import android.os.Bundle
+import android.widget.RemoteViews
+import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.CountdownCalculator
+import com.santiagorodriguez.countaway.countdown.CountdownStatus
+import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.ui.EditorActivity
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+
+class CountdownWidgetProvider : AppWidgetProvider() {
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        WidgetUpdateScheduler.ensureScheduled(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        WidgetUpdateScheduler.cancel(context)
+        super.onDisabled(context)
+    }
+
+    override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
+        appWidgetIds.forEach { updateWidget(context, manager, it) }
+        WidgetUpdateScheduler.ensureScheduled(context)
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        val preferences = WidgetPreferences(context)
+        appWidgetIds.forEach(preferences::remove)
+        WidgetUpdateScheduler.ensureScheduled(context)
+        super.onDeleted(context, appWidgetIds)
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        manager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle,
+    ) {
+        updateWidget(context, manager, appWidgetId)
+        super.onAppWidgetOptionsChanged(context, manager, appWidgetId, newOptions)
+    }
+
+    companion object {
+        fun updateAllWidgets(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            val component = ComponentName(context, CountdownWidgetProvider::class.java)
+            manager.getAppWidgetIds(component).forEach { updateWidget(context, manager, it) }
+        }
+
+        fun updateWidget(context: Context, manager: AppWidgetManager, appWidgetId: Int) {
+            val options = manager.getAppWidgetOptions(appWidgetId)
+            val size = WidgetSize.fromDimensions(
+                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 110),
+                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 70),
+            )
+            val layoutId = when (size) {
+                WidgetSize.COMPACT -> R.layout.widget_countdown_compact
+                WidgetSize.STANDARD -> R.layout.widget_countdown_standard
+                WidgetSize.LARGE -> R.layout.widget_countdown_large
+            }
+            val views = RemoteViews(context.packageName, layoutId)
+            val configuration = WidgetPreferences(context).get(appWidgetId)
+            val event = configuration?.let { configured ->
+                CountdownRepository(context).load().firstOrNull { it.id == configured.eventId }
+            }
+            val theme = resolveTheme(context, configuration?.appearance ?: WidgetAppearance.SYSTEM)
+
+            applyTheme(views, theme)
+            if (event == null) {
+                renderUnconfigured(context, views, appWidgetId)
+            } else {
+                renderEvent(context, views, appWidgetId, event, size)
+            }
+            manager.updateAppWidget(appWidgetId, views)
+        }
+
+        private fun renderEvent(
+            context: Context,
+            views: RemoteViews,
+            appWidgetId: Int,
+            event: CountdownEvent,
+            size: WidgetSize,
+        ) {
+            val value = CountdownCalculator.value(LocalDate.now(), event.date)
+            val countText = if (size == WidgetSize.COMPACT) {
+                when (value.status) {
+                    CountdownStatus.FUTURE, CountdownStatus.TOMORROW -> value.days.toString()
+                    CountdownStatus.TODAY -> "0"
+                    CountdownStatus.DONE -> "✓"
+                }
+            } else {
+                when (value.status) {
+                    CountdownStatus.FUTURE -> value.days.toString()
+                    CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
+                    CountdownStatus.TODAY -> context.getString(R.string.status_today)
+                    CountdownStatus.DONE -> context.getString(R.string.status_done)
+                }
+            }
+            val unitText = if (value.status == CountdownStatus.FUTURE) {
+                context.getString(R.string.widget_days_left)
+            } else {
+                ""
+            }
+            val locale = context.resources.configuration.locales[0]
+            val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+
+            views.setTextViewText(R.id.widgetIcon, eventIcon(event.type))
+            views.setTextViewText(R.id.widgetTitle, event.title)
+            views.setTextViewText(R.id.widgetCount, countText)
+            views.setTextViewText(R.id.widgetUnit, unitText)
+            views.setTextViewText(R.id.widgetDate, event.date.format(dateFormatter))
+            views.setOnClickPendingIntent(R.id.widgetRoot, editPendingIntent(context, appWidgetId, event.id))
+        }
+
+        private fun renderUnconfigured(context: Context, views: RemoteViews, appWidgetId: Int) {
+            views.setTextViewText(R.id.widgetIcon, "•")
+            views.setTextViewText(R.id.widgetTitle, context.getString(R.string.widget_select_countdown))
+            views.setTextViewText(R.id.widgetCount, "—")
+            views.setTextViewText(R.id.widgetUnit, context.getString(R.string.widget_tap_to_configure))
+            views.setTextViewText(R.id.widgetDate, "")
+            views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
+        }
+
+        private fun applyTheme(views: RemoteViews, theme: WidgetTheme) {
+            views.setImageViewResource(R.id.widgetBackground, theme.backgroundRes)
+            views.setTextColor(R.id.widgetIcon, theme.secondaryTextColor)
+            views.setTextColor(R.id.widgetTitle, theme.primaryTextColor)
+            views.setTextColor(R.id.widgetCount, theme.accentTextColor)
+            views.setTextColor(R.id.widgetUnit, theme.secondaryTextColor)
+            views.setTextColor(R.id.widgetDate, theme.secondaryTextColor)
+        }
+
+        private fun resolveTheme(context: Context, appearance: WidgetAppearance): WidgetTheme {
+            val systemDark = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+                Configuration.UI_MODE_NIGHT_YES
+            val dark = when (appearance) {
+                WidgetAppearance.SYSTEM -> systemDark
+                WidgetAppearance.LIGHT -> false
+                WidgetAppearance.DARK -> true
+            }
+            return if (dark) {
+                WidgetTheme(
+                    backgroundRes = R.drawable.widget_background_dark,
+                    primaryTextColor = context.getColor(R.color.widget_dark_text),
+                    secondaryTextColor = context.getColor(R.color.widget_dark_secondary_text),
+                    accentTextColor = context.getColor(R.color.widget_dark_accent),
+                )
+            } else {
+                WidgetTheme(
+                    backgroundRes = R.drawable.widget_background_light,
+                    primaryTextColor = context.getColor(R.color.widget_light_text),
+                    secondaryTextColor = context.getColor(R.color.widget_light_secondary_text),
+                    accentTextColor = context.getColor(R.color.widget_light_accent),
+                )
+            }
+        }
+
+        private fun editPendingIntent(context: Context, appWidgetId: Int, eventId: String): PendingIntent {
+            val intent = Intent(context, EditorActivity::class.java)
+                .putExtra(EditorActivity.EXTRA_EVENT_ID, eventId)
+                .setData(Uri.parse("countaway://widget/$appWidgetId/event/$eventId"))
+            return PendingIntent.getActivity(
+                context,
+                appWidgetId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
+
+        private fun configurePendingIntent(context: Context, appWidgetId: Int): PendingIntent {
+            val intent = Intent(context, WidgetConfigActivity::class.java)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                .setData(Uri.parse("countaway://widget/$appWidgetId/configure"))
+            return PendingIntent.getActivity(
+                context,
+                CONFIG_REQUEST_CODE_OFFSET + appWidgetId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
+
+        private fun eventIcon(type: EventType): String = when (type) {
+            EventType.TRIP, EventType.FIRST_FLIGHT -> "✈"
+            EventType.EXAM -> "✎"
+            EventType.PARTY -> "★"
+            EventType.BIRTHDAY -> "◇"
+            EventType.EVENT -> "◆"
+            EventType.CUSTOM -> "•"
+        }
+
+        private const val CONFIG_REQUEST_CODE_OFFSET = 100_000
+    }
+
+    private data class WidgetTheme(
+        val backgroundRes: Int,
+        val primaryTextColor: Int,
+        val secondaryTextColor: Int,
+        val accentTextColor: Int,
+    )
+}
