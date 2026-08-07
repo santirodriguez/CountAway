@@ -5,7 +5,8 @@ import org.junit.Test
 
 class WidgetSizeTest {
     @Test
-    fun smallDimensionsUseCompactLayout() {
+    fun oneCellAndSmallDimensionsUseCompactLayout() {
+        assertEquals(WidgetSize.COMPACT, WidgetSize.fromDimensions(40, 40))
         assertEquals(WidgetSize.COMPACT, WidgetSize.fromDimensions(90, 100))
         assertEquals(WidgetSize.COMPACT, WidgetSize.fromDimensions(160, 60))
     }
