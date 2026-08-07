@@ -54,11 +54,13 @@
     <string name="widget_event_option">%1$s · %2$s</string>
 
     <string name="about_version">Versió %1$s</string>
+    <string name="about_how_title">Perquè sigui útil de debò</string>
+    <string name="about_how_body">Crea una data, afegeix el widget de Ja Queda Poc a la pantalla d’inici i tria aquest compte enrere. Sense el widget, això és bàsicament una llista força maca de dates. Amb el widget comença la gràcia.</string>
+    <string name="about_how_steps">1. Crea un compte enrere\n2. Afegeix el widget\n3. Deixa de mirar el calendari cada cinc minuts</string>
     <string name="about_privacy">Tot queda desat en aquest dispositiu. Sense comptes, publicitat, seguiment ni accés a internet.</string>
     <string name="about_author">Creada per Santiago Rodriguez.</string>
     <string name="about_website">santiagorodriguez.com</string>
-    <string name="about_languages">Idiomes</string>
-    <string name="about_language_english">Anglès — CountAway</string>
-    <string name="about_language_spanish">Espanyol (Argentina) — Ya Estamos</string>
-    <string name="about_language_catalan">Català — Ja Queda Poc</string>
+    <string name="about_site_note">Hi ha més coses que probablement van començar amb “això hauria de ser simple” per allà també.</string>
+    <string name="about_donate">Dona</string>
+    <string name="about_donate_note">Si això t’ha estalviat mirar el calendari dotze vegades al dia, pots col·laborar amb la noble causa de continuar simplificant coses que no haurien de ser complicades.</string>
 </resources>
