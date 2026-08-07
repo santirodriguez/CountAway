@@ -3,12 +3,14 @@ package com.santiagorodriguez.countaway.ui
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.ListView
-import android.view.View
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
+import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
 
 class MainActivity : Activity() {
@@ -46,5 +48,7 @@ class MainActivity : Activity() {
         val today = LocalDate.now()
         val events = CountdownEventOrder.sortedForDisplay(repository.load(), today)
         adapter.submit(events, today)
+        CountdownWidgetProvider.updateAllWidgets(this)
+        WidgetUpdateScheduler.ensureScheduled(this)
     }
 }

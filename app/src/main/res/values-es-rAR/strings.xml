@@ -37,6 +37,22 @@
     <string name="event_type_event">Evento</string>
     <string name="event_type_custom">Personalizado</string>
 
+    <string name="widget_name">Cuenta regresiva de Ya Estamos</string>
+    <string name="widget_description">Una cuenta regresiva liviana y adaptable para la pantalla de inicio.</string>
+    <string name="widget_days_left">días restantes</string>
+    <string name="widget_select_countdown">Elegí una cuenta regresiva</string>
+    <string name="widget_tap_to_configure">Tocá para configurar</string>
+    <string name="widget_config_title">Elegí una cuenta regresiva</string>
+    <string name="widget_config_description">Elegí qué querés tener a la vista en este widget.</string>
+    <string name="widget_config_empty">Todavía no hay cuentas regresivas. Creá una y después volvé acá.</string>
+    <string name="widget_create_countdown">Crear cuenta regresiva</string>
+    <string name="widget_appearance_label">Apariencia</string>
+    <string name="widget_appearance_system">Sistema</string>
+    <string name="widget_appearance_light">Claro</string>
+    <string name="widget_appearance_dark">Oscuro</string>
+    <string name="widget_add_to_home">Guardar widget</string>
+    <string name="widget_event_option">%1$s · %2$s</string>
+
     <string name="about_version">Versión %1$s</string>
     <string name="about_privacy">Todo queda guardado en este dispositivo. Sin cuentas, publicidad, seguimiento ni acceso a internet.</string>
     <string name="about_author">Creada por Santiago Rodriguez.</string>

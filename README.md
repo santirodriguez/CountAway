@@ -22,7 +22,7 @@ So CountAway does the obvious thing: pick a date, show the number, and move on w
 
 CountAway is under active development. The core app can create, edit, delete, sort, and display local countdowns using simple presets for trips, first flights, exams, parties, birthdays, events, and custom dates.
 
-The home-screen widget is the next development phase.
+The home-screen widget supports multiple independent instances, compact/standard/large layouts, System/Light/Dark appearance, and battery-minded daily refreshes. Release hardening is the next development phase.
 
 ## Names and languages
 
