@@ -30,13 +30,13 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 
 ## What it does
 
-- Multiple local countdowns
-- Resizable home-screen widgets, including a compact 1×1 layout
-- System, light, and dark widget appearance
-- One-tap light/dark app appearance
+- Multiple local countdowns with presets and custom icons
+- Compact 1×1 and resizable home-screen widgets
+- Subtle 3 · 2 · 1 · 0 arrival states
+- Optional one-time local notification when the day arrives
+- System, light, and dark widget appearance plus one-tap app light/dark mode
 - English, Spanish (Argentina), and Catalan
-- Battery-minded daily refreshes
-- No account or cloud dependency
+- Battery-minded local refreshes
 
 ## Screenshots
 
