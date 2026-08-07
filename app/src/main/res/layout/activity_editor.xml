@@ -40,6 +40,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:background="@android:color/transparent"
+                android:paddingStart="14dp"
+                android:paddingEnd="8dp"
                 android:spinnerMode="dropdown" />
         </FrameLayout>
 
@@ -57,6 +59,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:background="@drawable/control_surface"
+            android:gravity="center_vertical"
             android:inputType="textCapSentences"
             android:maxLines="1"
             android:minHeight="54dp"
