@@ -17,12 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
-    env:
-      COUNTAWAY_RELEASE_KEYSTORE_B64: ${{ secrets.COUNTAWAY_RELEASE_KEYSTORE_B64 }}
-      COUNTAWAY_RELEASE_STORE_PASSWORD: ${{ secrets.COUNTAWAY_RELEASE_STORE_PASSWORD }}
-      COUNTAWAY_RELEASE_KEY_ALIAS: ${{ secrets.COUNTAWAY_RELEASE_KEY_ALIAS }}
-      COUNTAWAY_RELEASE_KEY_PASSWORD: ${{ secrets.COUNTAWAY_RELEASE_KEY_PASSWORD }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -46,19 +40,20 @@ jobs:
       - name: Build optimized release
         run: ./gradlew clean test lint assembleRelease --stacktrace
 
-      - name: Validate signing secrets
+      - name: Sign and verify APK
+        env:
+          VERSION: ${{ inputs.version }}
+          COUNTAWAY_RELEASE_KEYSTORE_B64: ${{ secrets.COUNTAWAY_RELEASE_KEYSTORE_B64 }}
+          COUNTAWAY_RELEASE_STORE_PASSWORD: ${{ secrets.COUNTAWAY_RELEASE_STORE_PASSWORD }}
+          COUNTAWAY_RELEASE_KEY_ALIAS: ${{ secrets.COUNTAWAY_RELEASE_KEY_ALIAS }}
+          COUNTAWAY_RELEASE_KEY_PASSWORD: ${{ secrets.COUNTAWAY_RELEASE_KEY_PASSWORD }}
         run: |
           set -euo pipefail
+
           test -n "${COUNTAWAY_RELEASE_KEYSTORE_B64}"
           test -n "${COUNTAWAY_RELEASE_STORE_PASSWORD}"
           test -n "${COUNTAWAY_RELEASE_KEY_ALIAS}"
           test -n "${COUNTAWAY_RELEASE_KEY_PASSWORD}"
-
-      - name: Sign and verify APK
-        env:
-          VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
 
           BUILD_TOOLS_VERSION="$(ls -1 "${ANDROID_HOME}/build-tools" | sort -V | tail -n 1)"
           BUILD_TOOLS_DIR="${ANDROID_HOME}/build-tools/${BUILD_TOOLS_VERSION}"
