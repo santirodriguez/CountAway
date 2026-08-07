@@ -1,6 +1,5 @@
 package com.santiagorodriguez.countaway.ui
 
-import android.app.Activity
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.os.Bundle
@@ -22,7 +21,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.UUID
 
-class EditorActivity : Activity() {
+class EditorActivity : BaseActivity() {
     private val eventTypes = EventType.values().toList()
     private lateinit var repository: CountdownRepository
     private lateinit var titleInput: EditText
@@ -35,6 +34,7 @@ class EditorActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_editor)
+        InsetUtils.applySystemBarPadding(findViewById(R.id.editorRoot))
 
         repository = CountdownRepository(this)
         titleInput = findViewById(R.id.titleInput)

@@ -1,6 +1,5 @@
 package com.santiagorodriguez.countaway.widget
 
-import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
@@ -14,12 +13,14 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.ui.BaseActivity
 import com.santiagorodriguez.countaway.ui.EditorActivity
+import com.santiagorodriguez.countaway.ui.InsetUtils
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-class WidgetConfigActivity : Activity() {
+class WidgetConfigActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
     private lateinit var eventList: ListView
     private lateinit var emptyState: TextView
@@ -43,11 +44,14 @@ class WidgetConfigActivity : Activity() {
         }
 
         setContentView(R.layout.activity_widget_config)
+        InsetUtils.applySystemBarPadding(findViewById(R.id.widgetConfigRoot))
+
         repository = CountdownRepository(this)
         eventList = findViewById(R.id.widgetEventList)
         emptyState = findViewById(R.id.widgetEmptyState)
         appearanceSpinner = findViewById(R.id.widgetAppearanceSpinner)
         saveButton = findViewById(R.id.widgetSaveButton)
+        setSaveEnabled(false)
 
         val appearanceValues = WidgetAppearance.entries
         appearanceSpinner.adapter = ArrayAdapter(
@@ -69,7 +73,7 @@ class WidgetConfigActivity : Activity() {
         eventList.choiceMode = ListView.CHOICE_MODE_SINGLE
         eventList.setOnItemClickListener { _, _, position, _ ->
             selectedEventId = events[position].id
-            saveButton.isEnabled = true
+            setSaveEnabled(true)
         }
 
         findViewById<Button>(R.id.widgetCreateButton).setOnClickListener {
@@ -90,18 +94,23 @@ class WidgetConfigActivity : Activity() {
         val labels = events.map { event ->
             getString(R.string.widget_event_option, event.title, event.date.format(formatter))
         }
-        eventList.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_single_choice, labels)
+        eventList.adapter = ArrayAdapter(this, R.layout.item_widget_event, android.R.id.text1, labels)
         emptyState.visibility = if (events.isEmpty()) View.VISIBLE else View.GONE
         eventList.visibility = if (events.isEmpty()) View.GONE else View.VISIBLE
 
         val selectedIndex = events.indexOfFirst { it.id == selectedEventId }
         if (selectedIndex >= 0) {
             eventList.setItemChecked(selectedIndex, true)
-            saveButton.isEnabled = true
+            setSaveEnabled(true)
         } else {
             selectedEventId = null
-            saveButton.isEnabled = false
+            setSaveEnabled(false)
         }
+    }
+
+    private fun setSaveEnabled(enabled: Boolean) {
+        saveButton.isEnabled = enabled
+        saveButton.alpha = if (enabled) 1f else 0.45f
     }
 
     private fun saveConfiguration() {

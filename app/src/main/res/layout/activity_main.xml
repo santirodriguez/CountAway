@@ -1,41 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mainRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
+    android:clipToPadding="false"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:paddingStart="20dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="14dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <ImageView
-            android:layout_width="88dp"
-            android:layout_height="88dp"
-            android:adjustViewBounds="true"
-            android:contentDescription="@string/app_logo_content_description"
-            android:scaleType="fitCenter"
-            android:src="@drawable/brand_logo" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/languageEnglishButton"
+                android:layout_width="42dp"
+                android:layout_height="34dp"
+                android:background="@drawable/language_chip_inactive"
+                android:contentDescription="@string/language_english"
+                android:padding="9dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/flag_us" />
+
+            <ImageButton
+                android:id="@+id/languageSpanishButton"
+                android:layout_width="42dp"
+                android:layout_height="34dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/language_chip_inactive"
+                android:contentDescription="@string/language_spanish"
+                android:padding="9dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/flag_ar" />
+
+            <ImageButton
+                android:id="@+id/languageCatalanButton"
+                android:layout_width="42dp"
+                android:layout_height="34dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/language_chip_inactive"
+                android:contentDescription="@string/language_catalan"
+                android:padding="9dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/flag_catalonia" />
+        </LinearLayout>
 
         <Space
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_weight="1" />
 
-        <Button
+        <TextView
+            android:id="@+id/themeButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/icon_button"
+            android:contentDescription="@string/theme_switch_to_light"
+            android:fontFamily="sans-serif"
+            android:gravity="center"
+            android:text="☀"
+            android:textColor="@color/foreground"
+            android:textSize="18sp" />
+
+        <TextView
             android:id="@+id/aboutButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/action_about" />
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/icon_button"
+            android:contentDescription="@string/action_about"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:text="i"
+            android:textColor="@color/foreground"
+            android:textSize="20sp" />
     </LinearLayout>
+
+    <ImageView
+        android:layout_width="190dp"
+        android:layout_height="118dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="4dp"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/app_logo_content_description"
+        android:scaleType="fitCenter"
+        android:src="@drawable/brand_logo" />
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="8dp"
         android:layout_weight="1">
 
         <ListView
@@ -44,16 +109,20 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:divider="@android:color/transparent"
-            android:dividerHeight="8dp"
-            android:paddingBottom="8dp" />
+            android:dividerHeight="10dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="8dp"
+            android:scrollbars="none" />
 
         <LinearLayout
             android:id="@+id/emptyState"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:background="@drawable/surface_card"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="32dp">
+            android:padding="28dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -61,7 +130,7 @@
                 android:gravity="center"
                 android:text="@string/empty_title"
                 android:textColor="@color/foreground"
-                android:textSize="22sp"
+                android:textSize="21sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -77,6 +146,7 @@
 
     <Button
         android:id="@+id/addCountdownButton"
+        style="@style/Widget.CountAway.Button.Primary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"

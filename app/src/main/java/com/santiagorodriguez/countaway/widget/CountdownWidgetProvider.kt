@@ -17,6 +17,7 @@ import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.ui.EditorActivity
+import com.santiagorodriguez.countaway.ui.LanguageManager
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -62,10 +63,11 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         }
 
         fun updateWidget(context: Context, manager: AppWidgetManager, appWidgetId: Int) {
+            val displayContext = LanguageManager.localizedContext(context)
             val options = manager.getAppWidgetOptions(appWidgetId)
             val size = WidgetSize.fromDimensions(
-                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 110),
-                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 70),
+                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 40),
+                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40),
             )
             val layoutId = when (size) {
                 WidgetSize.COMPACT -> R.layout.widget_countdown_compact
@@ -77,13 +79,13 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val event = configuration?.let { configured ->
                 CountdownRepository(context).load().firstOrNull { it.id == configured.eventId }
             }
-            val theme = resolveTheme(context, configuration?.appearance ?: WidgetAppearance.SYSTEM)
+            val theme = resolveTheme(displayContext, configuration?.appearance ?: WidgetAppearance.SYSTEM)
 
             applyTheme(views, theme)
             if (event == null) {
-                renderUnconfigured(context, views, appWidgetId)
+                renderUnconfigured(displayContext, views, appWidgetId)
             } else {
-                renderEvent(context, views, appWidgetId, event, size)
+                renderEvent(displayContext, views, appWidgetId, event, size)
             }
             manager.updateAppWidget(appWidgetId, views)
         }
