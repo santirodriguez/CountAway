@@ -28,12 +28,12 @@
             android:includeFontPadding="false"
             android:letterSpacing="0.02"
             android:maxLines="1"
-            android:textSize="9sp" />
+            android:textSize="10sp" />
 
         <ImageView
             android:id="@+id/widgetIcon"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
+            android:layout_width="17dp"
+            android:layout_height="17dp"
             android:layout_marginTop="1dp"
             android:scaleType="centerInside" />
 
@@ -45,7 +45,7 @@
             android:gravity="center"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:textSize="9sp"
+            android:textSize="10sp"
             android:visibility="gone" />
 
         <TextView
