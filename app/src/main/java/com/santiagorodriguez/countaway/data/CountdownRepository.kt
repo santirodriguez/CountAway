@@ -3,6 +3,7 @@ package com.santiagorodriguez.countaway.data
 import android.content.Context
 import android.util.AtomicFile
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
 import org.json.JSONArray
 import org.json.JSONObject
@@ -54,15 +55,27 @@ class CountdownRepository(context: Context) {
         val rawType = json.getString(KEY_TYPE)
         val type = when (schemaVersion) {
             CountdownStorageSchema.LEGACY_VERSION -> EventType.fromLegacyName(rawType)
-            CountdownStorageSchema.CURRENT_VERSION -> EventType.fromStorageKey(rawType)
+            CountdownStorageSchema.PREVIOUS_VERSION,
+            CountdownStorageSchema.CURRENT_VERSION,
+            -> EventType.fromStorageKey(rawType)
             else -> null
         } ?: return null
+
+        val icon = if (schemaVersion == CountdownStorageSchema.CURRENT_VERSION) {
+            EventIcon.fromStorageKey(json.optString(KEY_ICON)) ?: EventIcon.defaultFor(type)
+        } else {
+            EventIcon.defaultFor(type)
+        }
+        val notifyOnArrival = schemaVersion == CountdownStorageSchema.CURRENT_VERSION &&
+            json.optBoolean(KEY_NOTIFY_ON_ARRIVAL, false)
 
         CountdownEvent(
             id = json.getString(KEY_ID),
             title = json.getString(KEY_TITLE),
             date = LocalDate.parse(json.getString(KEY_DATE)),
             type = type,
+            icon = icon,
+            notifyOnArrival = notifyOnArrival,
             createdAt = Instant.parse(json.getString(KEY_CREATED_AT)),
         )
     }.getOrNull()
@@ -72,6 +85,8 @@ class CountdownRepository(context: Context) {
         .put(KEY_TITLE, event.title)
         .put(KEY_DATE, event.date.toString())
         .put(KEY_TYPE, event.type.storageKey)
+        .put(KEY_ICON, event.icon.storageKey)
+        .put(KEY_NOTIFY_ON_ARRIVAL, event.notifyOnArrival)
         .put(KEY_CREATED_AT, event.createdAt.toString())
 
     private companion object {
@@ -83,13 +98,16 @@ class CountdownRepository(context: Context) {
         const val KEY_TITLE = "title"
         const val KEY_DATE = "date"
         const val KEY_TYPE = "type"
+        const val KEY_ICON = "iconKey"
+        const val KEY_NOTIFY_ON_ARRIVAL = "notifyOnArrival"
         const val KEY_CREATED_AT = "createdAt"
     }
 }
 
 object CountdownStorageSchema {
     const val LEGACY_VERSION = 1
-    const val CURRENT_VERSION = 2
+    const val PREVIOUS_VERSION = 2
+    const val CURRENT_VERSION = 3
 
-    fun isSupported(version: Int): Boolean = version == LEGACY_VERSION || version == CURRENT_VERSION
+    fun isSupported(version: Int): Boolean = version in LEGACY_VERSION..CURRENT_VERSION
 }
