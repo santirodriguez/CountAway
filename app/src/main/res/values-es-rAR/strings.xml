@@ -58,9 +58,7 @@
     <string name="about_how_body">Creá una fecha, agregá el widget de Ya Estamos a la pantalla de inicio y elegí esa cuenta regresiva. Sin el widget, esto es básicamente una lista bastante linda de fechas. Con el widget empieza la gracia.</string>
     <string name="about_how_steps">1. Creá una cuenta regresiva\n2. Agregá el widget\n3. Dejá de mirar el calendario cada cinco minutos</string>
     <string name="about_privacy">Todo queda guardado en este dispositivo. Sin cuentas, publicidad, seguimiento ni acceso a internet.</string>
-    <string name="about_author">Creada por Santiago Rodriguez.</string>
-    <string name="about_website">santiagorodriguez.com</string>
-    <string name="about_site_note">Hay más cosas que probablemente empezaron con “esto debería ser simple” por ahí también.</string>
+    <string name="about_author">Creada por santiagorodriguez.com</string>
     <string name="about_donate">Donar</string>
     <string name="about_donate_note">Si esto te ahorró mirar el calendario doce veces por día, podés colaborar con la noble causa de seguir simplificando cosas que no deberían ser complicadas.</string>
 </resources>
