@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ya Estamos</string>
+    <string name="foundation_message">Base lista</string>
+    <string name="foundation_description">Una app liviana de cuentas regresivas para esos momentos que estás esperando.</string>
+</resources>

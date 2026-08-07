@@ -1,0 +1,33 @@
+name: Bootstrap Gradle Wrapper
+
+on:
+  push:
+    branches:
+      - agent/phase-1-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  wrapper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/phase-1-foundation
+
+      - name: Add verified Gradle wrapper JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f gradle/wrapper/gradle-wrapper.jar ]]; then
+            exit 0
+          fi
+          git clone --depth 1 --branch v9.5.0 https://github.com/gradle/gradle.git /tmp/gradle-source
+          cp /tmp/gradle-source/gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.jar
+          echo "497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7  gradle/wrapper/gradle-wrapper.jar" | sha256sum --check --strict
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gradle/wrapper/gradle-wrapper.jar
+          git commit -m "Add verified Gradle wrapper JAR"
+          git push origin HEAD:agent/phase-1-foundation
