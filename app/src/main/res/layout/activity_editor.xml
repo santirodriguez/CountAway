@@ -29,21 +29,37 @@
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
 
-        <FrameLayout
+        <GridLayout
+            android:id="@+id/typeGrid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/control_surface">
+            android:layout_marginTop="4dp"
+            android:columnCount="3"
+            android:orientation="horizontal" />
 
-            <Spinner
-                android:id="@+id/typeSpinner"
+        <LinearLayout
+            android:id="@+id/customIconSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="@android:color/transparent"
-                android:paddingStart="14dp"
-                android:paddingEnd="8dp"
-                android:spinnerMode="dropdown" />
-        </FrameLayout>
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/field_icon"
+                android:textColor="@color/secondary_text"
+                android:textSize="13sp" />
+
+            <GridLayout
+                android:id="@+id/iconGrid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:columnCount="4"
+                android:orientation="horizontal" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -84,12 +100,40 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/control_surface"
+            android:gravity="center_vertical"
+            android:minHeight="58dp"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-medium"
+                android:paddingEnd="12dp"
+                android:text="@string/notification_arrival_toggle"
+                android:textColor="@color/foreground"
+                android:textSize="14sp" />
+
+            <Switch
+                android:id="@+id/notifySwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:showText="false" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/saveButton"
             style="@style/Widget.CountAway.Button.Primary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="26dp"
             android:text="@string/action_save" />
 
         <Button
