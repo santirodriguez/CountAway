@@ -5,4 +5,11 @@
     <color name="secondary_text">#5F6368</color>
     <color name="accent">#4A6572</color>
     <color name="launcher_background">#031331</color>
+
+    <color name="widget_light_text">#171717</color>
+    <color name="widget_light_secondary_text">#5F6368</color>
+    <color name="widget_light_accent">#315F70</color>
+    <color name="widget_dark_text">#F7FAFF</color>
+    <color name="widget_dark_secondary_text">#C5D0DF</color>
+    <color name="widget_dark_accent">#72E6E2</color>
 </resources>
