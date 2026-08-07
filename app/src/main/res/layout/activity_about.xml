@@ -74,53 +74,37 @@
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:gravity="center"
-            android:text="@string/about_author"
-            android:textColor="@color/foreground"
-            android:textSize="14sp" />
-
         <Button
             android:id="@+id/websiteButton"
             style="@style/Widget.CountAway.SmallAction"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="@string/about_website" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:text="@string/about_site_note"
-            android:textColor="@color/secondary_text"
-            android:textSize="12sp" />
+            android:layout_marginTop="18dp"
+            android:text="@string/about_author" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
 
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:paddingEnd="12dp"
+                android:breakStrategy="balanced"
+                android:gravity="center"
+                android:lineSpacingExtra="2dp"
                 android:text="@string/about_donate_note"
                 android:textColor="@color/secondary_text"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
             <Button
                 android:id="@+id/donateButton"
                 style="@style/Widget.CountAway.SmallAction"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
                 android:text="@string/about_donate" />
         </LinearLayout>
 
