@@ -77,6 +77,8 @@
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:background="@android:color/transparent"
+            android:paddingStart="14dp"
+            android:paddingEnd="8dp"
             android:spinnerMode="dropdown" />
     </FrameLayout>
 
