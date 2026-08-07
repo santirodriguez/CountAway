@@ -1,43 +1,60 @@
 # CountAway
 
 <p align="center">
-  <img src="docs/assets/branding/countaway.webp" alt="CountAway" width="160" />
-  <img src="docs/assets/branding/ya-estamos.webp" alt="Ya Estamos" width="160" />
-  <img src="docs/assets/branding/ja-queda-poc.webp" alt="Ja Queda Poc" width="160" />
+  <img src="docs/assets/branding/countaway.webp" alt="CountAway" width="180" />
 </p>
 
-CountAway is a lightweight Android countdown app for the moments you are waiting for.
+<p align="center">
+  <strong>A lightweight Android countdown for the things worth waiting for.</strong>
+</p>
 
-The project is intentionally small and local-first. It does not include ads, analytics, accounts, cloud synchronization, or network access.
+<p align="center">
+  🇺🇸 <strong>CountAway</strong> &nbsp;·&nbsp; 🇦🇷 <strong>Ya Estamos</strong> &nbsp;·&nbsp; <img src="docs/assets/flags/flag-catalonia.svg" alt="Catalonia flag" width="18" /> <strong>Ja Queda Poc</strong>
+</p>
+
+CountAway keeps countdowns local, simple, and visible where they are actually useful: on your home screen.
+
+No accounts. No ads. No analytics. No cloud. No unnecessary network access.
 
 ## Why
 
-CountAway started with a very small problem: I wanted a home-screen widget that simply showed how many days were left until something important.
+I wanted a home-screen widget that simply showed how many days were left until something important.
 
 A surprising number of alternatives either glitched out or decided that “count the days” needed a full executive career path and fourteen unnecessary features.
 
-So CountAway does the obvious thing: pick a date, show the number, and move on with your life.
+So CountAway does the obvious thing: pick a date, put it on your home screen, and move on with your life.
 
-## Status
+## What it does
 
-The 1.0.0 feature set is complete. CountAway can create, edit, delete, sort, and display local countdowns using simple presets for trips, first flights, exams, parties, birthdays, events, and custom dates.
+- Multiple local countdowns
+- Resizable home-screen widgets
+- Compact, standard, and large layouts
+- System, light, and dark appearance
+- English, Spanish (Argentina), and Catalan
+- Battery-minded daily refreshes
+- No account or cloud dependency
 
-The home-screen widget supports multiple independent instances, compact/standard/large layouts, System/Light/Dark appearance, and battery-minded daily refreshes. The project is currently in release hardening before the first public release.
+## Preview
 
-## Names and languages
+A real app screenshot will be added from the final 1.0.0 release candidate so the README shows the shipped UI rather than a mockup.
 
-The app uses the device locale for its visible name:
+## Install
 
-- 🇺🇸 English: **CountAway**
-- 🇦🇷 Spanish: **Ya Estamos**
-- <img src="docs/assets/flags/flag-catalonia.svg" alt="Catalonia flag" width="20" /> Catalan: **Ja Queda Poc**
+The first public version will be distributed as a signed universal APK through GitHub Releases.
 
-## Requirements
+### Obtainium
 
-- JDK 17 or newer
-- Android SDK 36
+Obtainium can follow this repository directly and install future CountAway releases from GitHub. Once `v1.0.0` is public, this section will include a one-tap **Add to Obtainium** button pointing at the final release source.
+
+Until then, the source URL is:
+
+```text
+https://github.com/santirodriguez/CountAway
+```
 
 ## Build
+
+Requires JDK 17 and Android SDK 36.
 
 ```bash
 ./gradlew test lint assembleDebug assembleRelease
@@ -45,21 +62,15 @@ The app uses the device locale for its visible name:
 
 Debug APKs are written under `app/build/outputs/apk/debug/`.
 
-## Distribution
-
-Public releases will be published through GitHub Releases as a signed universal APK. Once releases begin, the repository can also be followed with Obtainium for update discovery and installation.
-
-Maintainer release and signing steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md).
+Maintainer signing and release steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md).
 
 ## Privacy
 
-CountAway stores its data locally on the device. The application currently declares no network permission.
+CountAway stores its data locally on the device. It does not declare Internet access.
 
 ## Author
 
-Created by [Santiago Rodriguez](https://santiagorodriguez.com).
-
-More things that probably started with “this should be simple” live there too.
+[santiagorodriguez.com](https://santiagorodriguez.com)
 
 ## License
 
