@@ -5,6 +5,8 @@ import java.time.temporal.ChronoUnit
 
 enum class CountdownStatus {
     FUTURE,
+    THREE_DAYS,
+    TWO_DAYS,
     TOMORROW,
     TODAY,
     DONE,
@@ -22,7 +24,9 @@ object CountdownCalculator {
     fun value(today: LocalDate, target: LocalDate): CountdownValue {
         val days = daysUntil(today, target)
         val status = when {
-            days > 1 -> CountdownStatus.FUTURE
+            days > 3 -> CountdownStatus.FUTURE
+            days == 3L -> CountdownStatus.THREE_DAYS
+            days == 2L -> CountdownStatus.TWO_DAYS
             days == 1L -> CountdownStatus.TOMORROW
             days == 0L -> CountdownStatus.TODAY
             else -> CountdownStatus.DONE
