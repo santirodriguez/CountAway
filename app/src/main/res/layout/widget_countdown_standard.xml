@@ -36,18 +36,17 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <TextView
+            <ImageView
                 android:id="@+id/widgetIcon"
-                android:layout_width="34dp"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:textSize="26sp" />
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:scaleType="centerInside" />
 
             <TextView
                 android:id="@+id/widgetCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_marginStart="7dp"
                 android:ellipsize="end"
                 android:fontFamily="sans-serif-condensed"
                 android:letterSpacing="-0.02"
