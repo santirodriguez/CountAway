@@ -11,6 +11,8 @@
     <string name="action_save">Guardar</string>
     <string name="action_delete">Eliminar</string>
     <string name="action_cancel">Cancelar</string>
+    <string name="theme_switch_to_light">Cambiar a modo claro</string>
+    <string name="theme_switch_to_dark">Cambiar a modo oscuro</string>
 
     <string name="empty_title">Todavía no hay nada en cuenta regresiva</string>
     <string name="empty_description">Agregá un viaje, examen, cumpleaños o cualquier cosa que valga la espera.</string>
