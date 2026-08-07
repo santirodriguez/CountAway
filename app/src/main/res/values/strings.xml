@@ -1,13 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">CountAway</string>
-    <string name="foundation_message">Foundation ready</string>
-    <string name="foundation_description">A lightweight countdown app for the moments you are waiting for.</string>
     <string name="app_logo_content_description">CountAway logo</string>
     <string name="language_english">English</string>
     <string name="language_spanish">Spanish</string>
     <string name="language_catalan">Catalan</string>
-    <string name="localized_name_en" translatable="false">CountAway</string>
-    <string name="localized_name_es" translatable="false">Ya Estamos</string>
-    <string name="localized_name_ca" translatable="false">Ja Queda Poc</string>
+
+    <string name="action_add_countdown">Add countdown</string>
+    <string name="action_about">About</string>
+    <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+
+    <string name="empty_title">Nothing to count down yet</string>
+    <string name="empty_description">Add a trip, exam, birthday, or anything else worth waiting for.</string>
+    <string name="event_meta">%1$s · %2$s</string>
+    <string name="status_days">%1$d days</string>
+    <string name="status_tomorrow">Tomorrow</string>
+    <string name="status_today">Today</string>
+    <string name="status_done">Done</string>
+
+    <string name="editor_new_title">New countdown</string>
+    <string name="editor_edit_title">Edit countdown</string>
+    <string name="field_type">Type</string>
+    <string name="field_title">Title</string>
+    <string name="field_date">Date</string>
+    <string name="title_required">Give this countdown a title.</string>
+    <string name="delete_title">Delete countdown?</string>
+    <string name="delete_message">Delete &quot;%1$s&quot;?</string>
+
+    <string name="event_type_trip">Trip</string>
+    <string name="event_type_first_flight">First flight</string>
+    <string name="event_type_exam">Exam</string>
+    <string name="event_type_party">Party</string>
+    <string name="event_type_birthday">Birthday</string>
+    <string name="event_type_event">Event</string>
+    <string name="event_type_custom">Custom</string>
+
+    <string name="about_version">Version %1$s</string>
+    <string name="about_privacy">Everything stays on this device. No accounts, ads, analytics, or network access.</string>
+    <string name="about_author">Created by Santiago Rodriguez.</string>
+    <string name="about_website">santiagorodriguez.com</string>
+    <string name="about_languages">Languages</string>
+    <string name="about_language_english">English — CountAway</string>
+    <string name="about_language_spanish">Spanish (Argentina) — Ya Estamos</string>
+    <string name="about_language_catalan">Catalan — Ja Queda Poc</string>
 </resources>
