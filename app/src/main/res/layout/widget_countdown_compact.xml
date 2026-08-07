@@ -28,7 +28,7 @@
             android:includeFontPadding="false"
             android:letterSpacing="0.02"
             android:maxLines="1"
-            android:textSize="10sp" />
+            android:textSize="11sp" />
 
         <ImageView
             android:id="@+id/widgetIcon"
