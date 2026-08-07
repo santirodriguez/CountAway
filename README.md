@@ -1,26 +1,36 @@
 # CountAway
 
+<p align="center">
+  <img src="docs/assets/branding/countaway.webp" alt="CountAway" width="160" />
+  <img src="docs/assets/branding/ya-estamos.webp" alt="Ya Estamos" width="160" />
+  <img src="docs/assets/branding/ja-queda-poc.webp" alt="Ja Queda Poc" width="160" />
+</p>
+
 CountAway is a lightweight Android countdown app for the moments you are waiting for.
 
 The project is intentionally small and local-first. It does not include ads, analytics, accounts, cloud synchronization, or network access.
 
 ## Why
 
-CountAway started with a very small problem: I wanted a home-screen widget that simply showed how many days were left until something I was looking forward to. The options I tried either broke or had somehow turned "count the days" into a surprisingly ambitious product category.
+CountAway started with a very small problem: I wanted a home-screen widget that simply showed how many days were left until something important.
 
-So CountAway exists to keep that job simple: choose a date, see the number, and get on with your life.
+A surprising number of alternatives either glitched out or decided that “count the days” needed a full executive career path and fourteen unnecessary features.
+
+So CountAway does the obvious thing: pick a date, show the number, and move on with your life.
 
 ## Status
 
-CountAway is under active development. The current codebase contains the Android foundation, local data model, persistence layer, countdown calculation, localization scaffolding, and CI. User-facing countdown management and the home-screen widget will follow in later development phases.
+CountAway is under active development. The current codebase contains the Android foundation, local data model, persistence layer, countdown calculation, localization scaffolding, and CI.
+
+User-facing countdown management and the home-screen widget will follow in later development phases.
 
 ## Names and languages
 
 The app uses the device locale for its visible name:
 
-- English: **CountAway**
-- Spanish: **Ya Estamos**
-- Catalan: **Ja Queda Poc**
+- 🇺🇸 English: **CountAway**
+- 🇦🇷 Spanish: **Ya Estamos**
+- <img src="docs/assets/flags/flag-catalonia.svg" alt="Catalonia flag" width="20" /> Catalan: **Ja Queda Poc**
 
 ## Requirements
 
@@ -45,7 +55,9 @@ CountAway stores its data locally on the device. The application currently decla
 
 ## Author
 
-Created by [Santiago Rodriguez](https://santiagorodriguez.com). More things that probably started with "this should be simple" live there too.
+Created by [Santiago Rodriguez](https://santiagorodriguez.com).
+
+More things that probably started with “this should be simple” live there too.
 
 ## License
 
