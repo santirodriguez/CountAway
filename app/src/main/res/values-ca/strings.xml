@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ja Queda Poc</string>
+    <string name="foundation_message">Base preparada</string>
+    <string name="foundation_description">Una app lleugera de comptes enrere per als moments que estàs esperant.</string>
+</resources>

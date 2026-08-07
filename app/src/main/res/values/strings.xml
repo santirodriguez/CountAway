@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CountAway</string>
+    <string name="foundation_message">Foundation ready</string>
+    <string name="foundation_description">A lightweight countdown app for the moments you are waiting for.</string>
+</resources>
