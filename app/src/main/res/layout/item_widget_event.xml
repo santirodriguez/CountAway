@@ -3,7 +3,7 @@
     android:id="@android:id/text1"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/surface_card"
+    android:background="@drawable/surface_card_clickable"
     android:checkMark="?android:attr/listChoiceIndicatorSingle"
     android:gravity="center_vertical"
     android:minHeight="58dp"
