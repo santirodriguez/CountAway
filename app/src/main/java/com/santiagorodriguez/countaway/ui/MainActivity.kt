@@ -1,6 +1,5 @@
 package com.santiagorodriguez.countaway.ui
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -13,7 +12,7 @@ import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
 
-class MainActivity : Activity() {
+class MainActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
     private lateinit var adapter: CountdownEventAdapter
     private lateinit var countdownList: ListView
@@ -22,6 +21,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        InsetUtils.applySystemBarPadding(findViewById(R.id.mainRoot))
 
         repository = CountdownRepository(this)
         adapter = CountdownEventAdapter(this)
@@ -38,8 +38,18 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.addCountdownButton).setOnClickListener {
             startActivity(Intent(this, EditorActivity::class.java))
         }
-        findViewById<Button>(R.id.aboutButton).setOnClickListener {
+        findViewById<View>(R.id.aboutButton).setOnClickListener {
             startActivity(Intent(this, AboutActivity::class.java))
+        }
+
+        findViewById<View>(R.id.languageEnglishButton).setOnClickListener {
+            selectLanguage(LanguageManager.ENGLISH)
+        }
+        findViewById<View>(R.id.languageSpanishButton).setOnClickListener {
+            selectLanguage(LanguageManager.SPANISH)
+        }
+        findViewById<View>(R.id.languageCatalanButton).setOnClickListener {
+            selectLanguage(LanguageManager.CATALAN)
         }
     }
 
@@ -48,7 +58,26 @@ class MainActivity : Activity() {
         val today = LocalDate.now()
         val events = CountdownEventOrder.sortedForDisplay(repository.load(), today)
         adapter.submit(events, today)
+        renderLanguageSelection()
         CountdownWidgetProvider.updateAllWidgets(this)
         WidgetUpdateScheduler.ensureScheduled(this)
+    }
+
+    private fun selectLanguage(languageTag: String) {
+        if (LanguageManager.currentLanguageTag(this) == languageTag) return
+        LanguageManager.setLanguage(this, languageTag)
+    }
+
+    private fun renderLanguageSelection() {
+        val current = LanguageManager.currentLanguageTag(this)
+        setLanguageButtonState(R.id.languageEnglishButton, current == LanguageManager.ENGLISH)
+        setLanguageButtonState(R.id.languageSpanishButton, current == LanguageManager.SPANISH)
+        setLanguageButtonState(R.id.languageCatalanButton, current == LanguageManager.CATALAN)
+    }
+
+    private fun setLanguageButtonState(viewId: Int, selected: Boolean) {
+        findViewById<View>(viewId).setBackgroundResource(
+            if (selected) R.drawable.language_chip_active else R.drawable.language_chip_inactive,
+        )
     }
 }
