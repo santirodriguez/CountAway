@@ -5,22 +5,24 @@ import org.junit.Test
 
 class WidgetSizeTest {
     @Test
-    fun oneCellAndShortDimensionsUseCompactLayout() {
+    fun oneCellAndSingleRowDimensionsStayCompact() {
         assertEquals(WidgetSize.COMPACT, WidgetSize.fromDimensions(40, 40))
-        assertEquals(WidgetSize.COMPACT, WidgetSize.fromDimensions(119, 200))
-        assertEquals(WidgetSize.COMPACT, WidgetSize.fromDimensions(160, 109))
+        assertEquals(WidgetSize.COMPACT, WidgetSize.fromDimensions(57, 102))
+        assertEquals(WidgetSize.COMPACT, WidgetSize.fromDimensions(127, 51))
+        assertEquals(WidgetSize.COMPACT, WidgetSize.fromDimensions(130, 102))
     }
 
     @Test
-    fun dimensionsWithRoomForThePrimaryCountUseStandardLayout() {
-        assertEquals(WidgetSize.STANDARD, WidgetSize.fromDimensions(120, 110))
-        assertEquals(WidgetSize.STANDARD, WidgetSize.fromDimensions(179, 169))
-        assertEquals(WidgetSize.STANDARD, WidgetSize.fromDimensions(180, 169))
+    fun twoDimensionalRoomUsesStandardLayout() {
+        assertEquals(WidgetSize.STANDARD, WidgetSize.fromDimensions(110, 165))
+        assertEquals(WidgetSize.STANDARD, WidgetSize.fromDimensions(130, 220))
+        assertEquals(WidgetSize.STANDARD, WidgetSize.fromDimensions(203, 229))
     }
 
     @Test
-    fun roomyDimensionsUseLargeLayout() {
-        assertEquals(WidgetSize.LARGE, WidgetSize.fromDimensions(180, 170))
-        assertEquals(WidgetSize.LARGE, WidgetSize.fromDimensions(260, 180))
+    fun genuinelyRoomyDimensionsUseLargeLayout() {
+        assertEquals(WidgetSize.LARGE, WidgetSize.fromDimensions(180, 230))
+        assertEquals(WidgetSize.LARGE, WidgetSize.fromDimensions(203, 337))
+        assertEquals(WidgetSize.LARGE, WidgetSize.fromDimensions(260, 337))
     }
 }
