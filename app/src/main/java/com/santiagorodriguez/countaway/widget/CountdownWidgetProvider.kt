@@ -1,5 +1,6 @@
 package com.santiagorodriguez.countaway.widget
 
+import android.annotation.TargetApi
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -90,6 +91,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             manager.updateAppWidget(appWidgetId, views)
         }
 
+        @TargetApi(Build.VERSION_CODES.S)
         private fun responsiveViews(
             deviceContext: Context,
             displayContext: Context,
