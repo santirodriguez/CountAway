@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="widget_background_system" type="drawable">@drawable/widget_background_dark</item>
+    <color name="widget_system_text">@color/widget_dark_text</color>
+    <color name="widget_system_secondary_text">@color/widget_dark_secondary_text</color>
+    <color name="widget_system_accent">@color/widget_dark_accent</color>
+</resources>
