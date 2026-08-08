@@ -81,7 +81,10 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val event = configuration?.let { configured ->
                 CountdownRepository(context).load().firstOrNull { it.id == configured.eventId }
             }
-            val theme = resolveTheme(displayContext, configuration?.appearance ?: WidgetAppearance.SYSTEM)
+            val theme = resolveTheme(
+                context.applicationContext,
+                configuration?.appearance ?: WidgetAppearance.SYSTEM,
+            )
 
             applyTheme(views, theme)
             if (event == null) {
