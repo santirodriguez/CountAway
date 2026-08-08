@@ -38,7 +38,10 @@ base64 < countaway-release.jks | tr -d '\n'
 
 ## Build a release candidate
 
-Run the **Release Candidate** workflow manually and enter the version from `app/build.gradle.kts`.
+Run the **CountAway Release** workflow manually with:
+
+- the version from `app/build.gradle.kts`;
+- mode `release-candidate`.
 
 The workflow:
 
@@ -59,14 +62,35 @@ CountAway-v1.0.0.apk.sha256
 
 The signing report and R8 mapping are verification/debug artifacts and do not need to be attached to the public release.
 
+## Prepare a draft release
+
+After the release candidate is approved, run the **CountAway Release** workflow again from `main` with:
+
+- the approved version;
+- mode `prepare-draft-release`.
+
+The workflow rebuilds and verifies the final APK from the exact selected `main` commit. Only after those checks succeed, it creates or reuses tag `v<version>` at that exact commit and creates or updates a GitHub Release as a draft using `docs/releases/<version>.md`.
+
+The draft release receives only the public release assets:
+
+```text
+CountAway-v<version>.apk
+CountAway-v<version>.apk.sha256
+```
+
+The draft must remain unpublished until its tag target, release notes, APK, and checksum have been reviewed.
+
+A push of an already-created `v*` tag also follows the verified build and draft-release path.
+
 ## Publish
 
-Publishing is intentionally separate from building. Before creating a tag or GitHub Release:
+Publishing is intentionally separate from preparation. Before publishing the GitHub Release:
 
 - verify CI on the exact release commit;
 - install and smoke-test the signed APK on a real Android device or emulator;
 - verify the SHA-256 checksum;
 - record the signing certificate SHA-256 fingerprint somewhere durable;
-- confirm the final release notes and assets.
+- confirm the final release notes and public assets;
+- confirm the release is still a draft.
 
-Only then create tag `v1.0.0` and publish the GitHub Release.
+Only then publish the prepared GitHub Release.
