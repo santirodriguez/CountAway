@@ -2,21 +2,22 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widgetRoot"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:theme="@android:style/Theme.DeviceDefault.DayNight">
 
     <ImageView
         android:id="@+id/widgetBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitXY"
-        android:src="@drawable/widget_background_light" />
+        android:src="@drawable/widget_background_system" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="12dp">
 
         <TextView
             android:id="@+id/widgetTitle"
@@ -27,39 +28,51 @@
             android:gravity="center"
             android:letterSpacing="0.02"
             android:maxLines="1"
+            android:textColor="@color/widget_system_text"
             android:textSize="18sp" />
 
-        <ImageView
-            android:id="@+id/widgetIcon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginTop="7dp"
-            android:scaleType="centerInside" />
-
-        <TextView
-            android:id="@+id/widgetMilestone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:textSize="14sp"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/widgetCount"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:ellipsize="end"
-            android:fontFamily="sans-serif-condensed"
             android:gravity="center"
-            android:includeFontPadding="false"
-            android:letterSpacing="-0.02"
-            android:maxLines="1"
-            android:textSize="66sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/widgetIcon"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:scaleType="centerInside"
+                android:tint="@color/widget_system_accent" />
+
+            <TextView
+                android:id="@+id/widgetMilestone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="7dp"
+                android:fontFamily="sans-serif"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/widget_system_secondary_text"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/widgetCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="7dp"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-condensed"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:letterSpacing="-0.02"
+                android:maxLines="1"
+                android:textColor="@color/widget_system_accent"
+                android:textSize="66sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/widgetUnit"
@@ -68,16 +81,18 @@
             android:fontFamily="sans-serif-medium"
             android:gravity="center"
             android:maxLines="1"
+            android:textColor="@color/widget_system_secondary_text"
             android:textSize="16sp" />
 
         <TextView
             android:id="@+id/widgetDate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:fontFamily="sans-serif"
             android:gravity="center"
             android:maxLines="1"
+            android:textColor="@color/widget_system_secondary_text"
             android:textSize="14sp" />
     </LinearLayout>
 
