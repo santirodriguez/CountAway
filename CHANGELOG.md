@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 — Unreleased
+## 1.0.0
 
 - Add local countdown creation, editing, deletion, sorting, presets, and custom event icons.
 - Add localized names and UI for English, Spanish, and Catalan.
