@@ -1,4 +1,4 @@
-name: Release Candidate
+name: CountAway Release
 
 on:
   workflow_dispatch:
@@ -8,18 +8,44 @@ on:
         required: true
         default: "1.0.0"
         type: string
-
-permissions:
-  contents: read
+  push:
+    tags:
+      - "v*"
 
 jobs:
   build-signed-apk:
+    name: Build signed APK
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Resolve release version
+        id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="${REQUESTED_VERSION}"
+          fi
+
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected a semantic version such as 1.0.0, got: ${VERSION}" >&2
+            exit 1
+          fi
+
+          printf 'version=%s\n' "${VERSION}" >> "${GITHUB_OUTPUT}"
+          printf 'VERSION=%s\n' "${VERSION}" >> "${GITHUB_ENV}"
 
       - name: Set up JDK
         uses: actions/setup-java@v5
@@ -30,19 +56,27 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Validate requested version
-        env:
-          VERSION: ${{ inputs.version }}
+      - name: Validate release metadata
+        id: metadata
         run: |
           set -euo pipefail
+
           grep -Fq "versionName = \"${VERSION}\"" app/build.gradle.kts
+
+          VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' app/build.gradle.kts | head -n 1)"
+          test -n "${VERSION_CODE}"
+          printf 'version_code=%s\n' "${VERSION_CODE}" >> "${GITHUB_OUTPUT}"
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            test -f "docs/releases/${VERSION}.md"
+          fi
 
       - name: Build optimized release
         run: ./gradlew clean test lint assembleRelease --stacktrace
 
       - name: Sign and verify APK
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
           COUNTAWAY_RELEASE_KEYSTORE_B64: ${{ secrets.COUNTAWAY_RELEASE_KEYSTORE_B64 }}
           COUNTAWAY_RELEASE_STORE_PASSWORD: ${{ secrets.COUNTAWAY_RELEASE_STORE_PASSWORD }}
           COUNTAWAY_RELEASE_KEY_ALIAS: ${{ secrets.COUNTAWAY_RELEASE_KEY_ALIAS }}
@@ -93,7 +127,7 @@ jobs:
             | tee "${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
           grep -Fq "package: name='com.santiagorodriguez.countaway'" \
             "${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
-          grep -Fq "versionCode='1' versionName='${VERSION}'" \
+          grep -Fq "versionCode='${VERSION_CODE}' versionName='${VERSION}'" \
             "${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
 
           (
@@ -102,17 +136,60 @@ jobs:
           )
 
       - name: Upload release candidate
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v7
         with:
-          name: CountAway-v${{ inputs.version }}-release-candidate
+          name: CountAway-v${{ steps.version.outputs.version }}-release-candidate
           path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload tagged release bundle
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v7
+        with:
+          name: CountAway-v${{ steps.version.outputs.version }}-release-bundle
+          path: |
+            dist/CountAway-v${{ steps.version.outputs.version }}.apk
+            dist/CountAway-v${{ steps.version.outputs.version }}.apk.sha256
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload R8 mapping
         uses: actions/upload-artifact@v7
         with:
-          name: CountAway-v${{ inputs.version }}-r8-mapping
+          name: CountAway-v${{ steps.version.outputs.version }}-r8-mapping
           path: app/build/outputs/mapping/release/
           if-no-files-found: error
           retention-days: 90
+
+  draft-release:
+    name: Create draft GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-signed-apk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download release bundle
+        uses: actions/download-artifact@v7
+        with:
+          name: CountAway-v${{ needs.build-signed-apk.outputs.version }}-release-bundle
+          path: release-assets
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CountAway v${{ needs.build-signed-apk.outputs.version }}
+          draft: true
+          prerelease: false
+          fail_on_unmatched_files: true
+          body_path: docs/releases/${{ needs.build-signed-apk.outputs.version }}.md
+          files: |
+            release-assets/CountAway-v${{ needs.build-signed-apk.outputs.version }}.apk
+            release-assets/CountAway-v${{ needs.build-signed-apk.outputs.version }}.apk.sha256
