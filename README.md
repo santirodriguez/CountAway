@@ -1,9 +1,7 @@
 # CountAway
 
 <p align="center">
-  <img src="docs/assets/branding/countaway.webp" alt="CountAway" width="160" />
-  <img src="docs/assets/branding/ya-estamos.webp" alt="Ya Estamos" width="160" />
-  <img src="docs/assets/branding/ja-queda-poc.webp" alt="Ja Queda Poc" width="160" />
+  <img src="docs/assets/branding/countaway.webp" alt="CountAway" width="190" />
 </p>
 
 <p align="center">
@@ -30,17 +28,27 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 
 ## What it does
 
-- Multiple local countdowns
-- Resizable home-screen widgets, including a compact 1×1 layout
-- System, light, and dark widget appearance
-- One-tap light/dark app appearance
+- Multiple local countdowns with presets and custom icons
+- Compact 1×1 and resizable home-screen widgets
+- Subtle 3 · 2 · 1 · 0 arrival states
+- Optional one-time local notification when the day arrives
+- System, light, and dark widget appearance plus one-tap app light/dark mode
 - English, Spanish (Argentina), and Catalan
-- Battery-minded daily refreshes
-- No account or cloud dependency
+- Battery-minded local refreshes
 
 ## Screenshots
 
 _Final 1.0.0 screenshots will be added from the release candidate._
+
+## Author
+
+[Santiago Rodriguez](https://santiagorodriguez.com)
+
+<a href="https://santiagorodriguez.com/donate"><img src="docs/assets/badges/donate.svg" alt="Donate" height="52" /></a>
+
+## Privacy
+
+CountAway stores everything on your device and has no Internet permission. It does not need your location, contacts, camera, microphone, or a suspiciously creative excuse to collect any of them. If you enable arrival alerts, Android may ask for notification permission. That's it.
 
 ## Build
 
@@ -51,14 +59,6 @@ Requires JDK 17 and Android SDK 36.
 ```
 
 Maintainer signing and release steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md).
-
-## Privacy
-
-CountAway stores its data locally on the device. It does not declare Internet access.
-
-## Author
-
-[santiagorodriguez.com](https://santiagorodriguez.com)
 
 ## License
 

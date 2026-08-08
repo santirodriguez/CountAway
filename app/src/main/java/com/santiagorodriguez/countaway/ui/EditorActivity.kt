@@ -1,18 +1,29 @@
 package com.santiagorodriguez.countaway.ui
 
+import android.Manifest
 import android.app.AlertDialog
 import android.app.DatePickerDialog
+import android.content.pm.PackageManager
+import android.content.res.ColorStateList
+import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
-import android.widget.Spinner
+import android.widget.GridLayout
+import android.widget.ImageButton
+import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
+import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.Instant
@@ -22,14 +33,19 @@ import java.time.format.FormatStyle
 import java.util.UUID
 
 class EditorActivity : BaseActivity() {
-    private val eventTypes = EventType.values().toList()
+    private val eventTypes = EventType.entries.toList()
     private lateinit var repository: CountdownRepository
     private lateinit var titleInput: EditText
-    private lateinit var typeSpinner: Spinner
+    private lateinit var typeGrid: GridLayout
+    private lateinit var customIconSection: View
+    private lateinit var iconGrid: GridLayout
     private lateinit var dateButton: Button
     private lateinit var deleteButton: Button
+    private lateinit var notifySwitch: Switch
     private var existingEvent: CountdownEvent? = null
     private var selectedDate: LocalDate = LocalDate.now().plusDays(1)
+    private var selectedType: EventType = EventType.TRIP
+    private var selectedIcon: EventIcon = EventIcon.defaultFor(EventType.TRIP)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,9 +54,12 @@ class EditorActivity : BaseActivity() {
 
         repository = CountdownRepository(this)
         titleInput = findViewById(R.id.titleInput)
-        typeSpinner = findViewById(R.id.typeSpinner)
+        typeGrid = findViewById(R.id.typeGrid)
+        customIconSection = findViewById(R.id.customIconSection)
+        iconGrid = findViewById(R.id.iconGrid)
         dateButton = findViewById(R.id.dateButton)
         deleteButton = findViewById(R.id.deleteButton)
+        notifySwitch = findViewById(R.id.notifySwitch)
 
         val requestedEventId = intent.getStringExtra(EXTRA_EVENT_ID)
         existingEvent = requestedEventId?.let { id -> repository.load().firstOrNull { it.id == id } }
@@ -53,28 +72,109 @@ class EditorActivity : BaseActivity() {
             if (existingEvent == null) R.string.editor_new_title else R.string.editor_edit_title,
         )
 
-        val labels = eventTypes.map { getString(EventTypePresentation.labelRes(it)) }
-        typeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, labels).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-
         existingEvent?.let { event ->
             titleInput.setText(event.title)
             selectedDate = event.date
-            typeSpinner.setSelection(eventTypes.indexOf(event.type))
+            selectedType = event.type
+            selectedIcon = event.icon
+            notifySwitch.isChecked = event.notifyOnArrival
         }
 
-        typeSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
-            val type = eventTypes[position]
-            titleInput.hint = getString(EventTypePresentation.labelRes(type))
-        }
-
+        renderTypeGrid()
+        renderCustomIconGrid()
+        renderTitleHint()
         renderDate()
+
         dateButton.setOnClickListener { showDatePicker() }
         findViewById<Button>(R.id.saveButton).setOnClickListener { save() }
+        notifySwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && !ArrivalNotificationScheduler.canPostNotifications(this)) {
+                requestNotificationPermission()
+            }
+        }
 
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != REQUEST_NOTIFICATIONS) return
+
+        val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            notifySwitch.isChecked = false
+            Toast.makeText(this, R.string.notification_permission_denied, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun renderTypeGrid() {
+        typeGrid.removeAllViews()
+        eventTypes.forEach { type ->
+            val button = TextView(this).apply {
+                text = getString(EventTypePresentation.labelRes(type))
+                contentDescription = text
+                gravity = Gravity.CENTER
+                textSize = 12f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                setTextColor(getColor(R.color.foreground))
+                setPadding(dp(6), dp(9), dp(6), dp(9))
+                setCompoundDrawablesWithIntrinsicBounds(0, EventTypePresentation.iconRes(type), 0, 0)
+                compoundDrawablePadding = dp(6)
+                compoundDrawableTintList = ColorStateList.valueOf(getColor(R.color.accent))
+                setBackgroundResource(
+                    if (type == selectedType) R.drawable.language_chip_active else R.drawable.control_surface,
+                )
+                setOnClickListener { selectType(type) }
+            }
+            typeGrid.addView(button, gridParams(heightDp = 78))
+        }
+    }
+
+    private fun selectType(type: EventType) {
+        selectedType = type
+        selectedIcon = if (type == EventType.CUSTOM) {
+            selectedIcon.takeIf { it in EventIcon.customChoices } ?: EventIcon.STAR
+        } else {
+            EventIcon.defaultFor(type)
+        }
+        renderTypeGrid()
+        renderCustomIconGrid()
+        renderTitleHint()
+    }
+
+    private fun renderCustomIconGrid() {
+        customIconSection.visibility = if (selectedType == EventType.CUSTOM) View.VISIBLE else View.GONE
+        iconGrid.removeAllViews()
+        if (selectedType != EventType.CUSTOM) return
+
+        EventIcon.customChoices.forEach { icon ->
+            val button = ImageButton(this).apply {
+                setImageResource(EventIconPresentation.drawableRes(icon))
+                imageTintList = ColorStateList.valueOf(getColor(R.color.accent))
+                backgroundTintList = null
+                setBackgroundResource(
+                    if (icon == selectedIcon) R.drawable.language_chip_active else R.drawable.control_surface,
+                )
+                contentDescription = getString(EventIconPresentation.labelRes(icon))
+                tooltipText = contentDescription
+                scaleType = android.widget.ImageView.ScaleType.CENTER_INSIDE
+                setPadding(dp(15), dp(15), dp(15), dp(15))
+                setOnClickListener {
+                    selectedIcon = icon
+                    renderCustomIconGrid()
+                }
+            }
+            iconGrid.addView(button, gridParams(heightDp = 56))
+        }
+    }
+
+    private fun renderTitleHint() {
+        titleInput.hint = getString(EventTypePresentation.labelRes(selectedType))
     }
 
     private fun showDatePicker() {
@@ -96,6 +196,12 @@ class EditorActivity : BaseActivity() {
         dateButton.text = selectedDate.format(formatter)
     }
 
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFICATIONS)
+        }
+    }
+
     private fun save() {
         val title = titleInput.text.toString().trim()
         if (title.isEmpty()) {
@@ -103,12 +209,13 @@ class EditorActivity : BaseActivity() {
             return
         }
 
-        val selectedType = eventTypes[typeSpinner.selectedItemPosition]
         val event = CountdownEvent(
             id = existingEvent?.id ?: UUID.randomUUID().toString(),
             title = title,
             date = selectedDate,
             type = selectedType,
+            icon = selectedIcon,
+            notifyOnArrival = notifySwitch.isChecked,
             createdAt = existingEvent?.createdAt ?: Instant.now(),
         )
 
@@ -120,7 +227,7 @@ class EditorActivity : BaseActivity() {
             events.add(event)
         }
         repository.save(events)
-        refreshWidgets()
+        refreshBackgroundState()
         finish()
     }
 
@@ -133,18 +240,30 @@ class EditorActivity : BaseActivity() {
             .setPositiveButton(R.string.action_delete) { _, _ ->
                 val events = repository.load().filterNot { it.id == event.id }
                 repository.save(events)
-                refreshWidgets()
+                ArrivalNotificationState(this).remove(event.id)
+                refreshBackgroundState()
                 finish()
             }
             .show()
     }
 
-    private fun refreshWidgets() {
+    private fun refreshBackgroundState() {
         CountdownWidgetProvider.updateAllWidgets(this)
         WidgetUpdateScheduler.ensureScheduled(this)
+        ArrivalNotificationScheduler.ensureScheduled(this)
     }
+
+    private fun gridParams(heightDp: Int): GridLayout.LayoutParams = GridLayout.LayoutParams().apply {
+        width = 0
+        height = dp(heightDp)
+        columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+        setMargins(dp(4), dp(4), dp(4), dp(4))
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
         const val EXTRA_EVENT_ID = "event_id"
+        private const val REQUEST_NOTIFICATIONS = 2401
     }
 }

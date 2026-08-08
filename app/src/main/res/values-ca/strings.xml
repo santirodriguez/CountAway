@@ -20,24 +20,43 @@
     <string name="status_days">%1$d dies</string>
     <string name="status_tomorrow">Demà</string>
     <string name="status_today">Avui</string>
+    <string name="status_today_zero">0 · Avui</string>
     <string name="status_done">Ja ha passat</string>
 
     <string name="editor_new_title">Nou compte enrere</string>
     <string name="editor_edit_title">Edita el compte enrere</string>
     <string name="field_type">Tipus</string>
+    <string name="field_icon">Icona</string>
     <string name="field_title">Títol</string>
     <string name="field_date">Data</string>
+    <string name="notification_arrival_toggle">Avisa’m quan arribi el dia</string>
+    <string name="notification_permission_denied">No s’ha concedit el permís de notificacions.</string>
     <string name="title_required">Posa un títol a aquest compte enrere.</string>
     <string name="delete_title">Vols eliminar el compte enrere?</string>
     <string name="delete_message">Vols eliminar &quot;%1$s&quot;?</string>
 
     <string name="event_type_trip">Viatge</string>
-    <string name="event_type_first_flight">Primer vol</string>
     <string name="event_type_exam">Examen</string>
     <string name="event_type_party">Festa</string>
     <string name="event_type_birthday">Aniversari</string>
+    <string name="event_type_anniversary">Data especial</string>
+    <string name="event_type_concert">Concert</string>
+    <string name="event_type_deadline">Data límit</string>
     <string name="event_type_event">Esdeveniment</string>
     <string name="event_type_custom">Personalitzat</string>
+
+    <string name="event_icon_airplane">Avió</string>
+    <string name="event_icon_book">Llibre</string>
+    <string name="event_icon_confetti">Celebració</string>
+    <string name="event_icon_cake">Pastís</string>
+    <string name="event_icon_heart">Cor</string>
+    <string name="event_icon_music">Música</string>
+    <string name="event_icon_hourglass">Rellotge de sorra</string>
+    <string name="event_icon_calendar">Calendari</string>
+    <string name="event_icon_star">Estrella</string>
+    <string name="event_icon_gift">Regal</string>
+    <string name="event_icon_flag">Bandera</string>
+    <string name="event_icon_pin">Ubicació</string>
 
     <string name="widget_name">Compte enrere de Ja Queda Poc</string>
     <string name="widget_description">Un compte enrere lleuger i redimensionable per a la pantalla d’inici.</string>
@@ -54,6 +73,10 @@
     <string name="widget_appearance_dark">Fosc</string>
     <string name="widget_add_to_home">Desa el widget</string>
     <string name="widget_event_option">%1$s · %2$s</string>
+
+    <string name="notification_channel_name">Arribades de comptes enrere</string>
+    <string name="notification_arrival_title">Avui és el dia</string>
+    <string name="notification_arrival_body">%1$s ha arribat a 0.</string>
 
     <string name="about_version">Versió %1$s</string>
     <string name="about_how_title">Perquè sigui útil de debò</string>

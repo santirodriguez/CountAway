@@ -9,14 +9,16 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.ArrivalMood
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
-import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.ui.EditorActivity
+import com.santiagorodriguez.countaway.ui.EventIconPresentation
 import com.santiagorodriguez.countaway.ui.LanguageManager
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -85,7 +87,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             if (event == null) {
                 renderUnconfigured(displayContext, views, appWidgetId)
             } else {
-                renderEvent(displayContext, views, appWidgetId, event, size)
+                renderEvent(displayContext, views, appWidgetId, event)
             }
             manager.updateAppWidget(appWidgetId, views)
         }
@@ -95,53 +97,57 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views: RemoteViews,
             appWidgetId: Int,
             event: CountdownEvent,
-            size: WidgetSize,
         ) {
             val value = CountdownCalculator.value(LocalDate.now(), event.date)
-            val countText = if (size == WidgetSize.COMPACT) {
-                when (value.status) {
-                    CountdownStatus.FUTURE, CountdownStatus.TOMORROW -> value.days.toString()
-                    CountdownStatus.TODAY -> "0"
-                    CountdownStatus.DONE -> "✓"
-                }
-            } else {
-                when (value.status) {
-                    CountdownStatus.FUTURE -> value.days.toString()
-                    CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
-                    CountdownStatus.TODAY -> context.getString(R.string.status_today)
-                    CountdownStatus.DONE -> context.getString(R.string.status_done)
-                }
+            val countText = when (value.status) {
+                CountdownStatus.FUTURE,
+                CountdownStatus.THREE_DAYS,
+                CountdownStatus.TWO_DAYS,
+                CountdownStatus.TOMORROW,
+                CountdownStatus.TODAY,
+                -> value.days.coerceAtLeast(0).toString()
+                CountdownStatus.DONE -> "✓"
             }
-            val unitText = if (value.status == CountdownStatus.FUTURE) {
-                context.getString(R.string.widget_days_left)
-            } else {
-                ""
+            val unitText = when (value.status) {
+                CountdownStatus.FUTURE,
+                CountdownStatus.THREE_DAYS,
+                CountdownStatus.TWO_DAYS,
+                -> context.getString(R.string.widget_days_left)
+                CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
+                CountdownStatus.TODAY -> context.getString(R.string.status_today)
+                CountdownStatus.DONE -> ""
             }
+            val mood = ArrivalMood.marker(value.status)
             val locale = context.resources.configuration.locales[0]
             val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
-            views.setTextViewText(R.id.widgetIcon, eventIcon(event.type))
+            views.setImageViewResource(R.id.widgetIcon, EventIconPresentation.drawableRes(event.icon))
             views.setTextViewText(R.id.widgetTitle, event.title)
             views.setTextViewText(R.id.widgetCount, countText)
             views.setTextViewText(R.id.widgetUnit, unitText)
             views.setTextViewText(R.id.widgetDate, event.date.format(dateFormatter))
+            views.setTextViewText(R.id.widgetMilestone, mood ?: "")
+            views.setViewVisibility(R.id.widgetMilestone, if (mood == null) View.GONE else View.VISIBLE)
             views.setOnClickPendingIntent(R.id.widgetRoot, editPendingIntent(context, appWidgetId, event.id))
         }
 
         private fun renderUnconfigured(context: Context, views: RemoteViews, appWidgetId: Int) {
-            views.setTextViewText(R.id.widgetIcon, "•")
+            views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
             views.setTextViewText(R.id.widgetTitle, context.getString(R.string.widget_select_countdown))
             views.setTextViewText(R.id.widgetCount, "—")
             views.setTextViewText(R.id.widgetUnit, context.getString(R.string.widget_tap_to_configure))
             views.setTextViewText(R.id.widgetDate, "")
+            views.setTextViewText(R.id.widgetMilestone, "")
+            views.setViewVisibility(R.id.widgetMilestone, View.GONE)
             views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
         }
 
         private fun applyTheme(views: RemoteViews, theme: WidgetTheme) {
             views.setImageViewResource(R.id.widgetBackground, theme.backgroundRes)
-            views.setTextColor(R.id.widgetIcon, theme.secondaryTextColor)
+            views.setInt(R.id.widgetIcon, "setColorFilter", theme.accentTextColor)
             views.setTextColor(R.id.widgetTitle, theme.primaryTextColor)
             views.setTextColor(R.id.widgetCount, theme.accentTextColor)
+            views.setTextColor(R.id.widgetMilestone, theme.secondaryTextColor)
             views.setTextColor(R.id.widgetUnit, theme.secondaryTextColor)
             views.setTextColor(R.id.widgetDate, theme.secondaryTextColor)
         }
@@ -193,15 +199,6 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
-        }
-
-        private fun eventIcon(type: EventType): String = when (type) {
-            EventType.TRIP, EventType.FIRST_FLIGHT -> "✈"
-            EventType.EXAM -> "✎"
-            EventType.PARTY -> "★"
-            EventType.BIRTHDAY -> "◇"
-            EventType.EVENT -> "◆"
-            EventType.CUSTOM -> "•"
         }
 
         private const val CONFIG_REQUEST_CODE_OFFSET = 100_000

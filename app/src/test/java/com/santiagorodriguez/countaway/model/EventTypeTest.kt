@@ -10,28 +10,32 @@ class EventTypeTest {
     fun storageKeysAreStableAndUnique() {
         val expected = mapOf(
             EventType.TRIP to "trip",
-            EventType.FIRST_FLIGHT to "first_flight",
             EventType.EXAM to "exam",
             EventType.PARTY to "party",
             EventType.BIRTHDAY to "birthday",
+            EventType.ANNIVERSARY to "anniversary",
+            EventType.CONCERT to "concert",
+            EventType.DEADLINE to "deadline",
             EventType.EVENT to "event",
             EventType.CUSTOM to "custom",
         )
 
-        assertEquals(expected, EventType.values().associateWith { it.storageKey })
-        assertEquals(EventType.values().size, EventType.values().map { it.storageKey }.toSet().size)
+        assertEquals(expected, EventType.entries.associateWith { it.storageKey })
+        assertEquals(EventType.entries.size, EventType.entries.map { it.storageKey }.toSet().size)
     }
 
     @Test
-    fun storageKeyLookupHandlesKnownAndUnknownValues() {
-        assertEquals(EventType.FIRST_FLIGHT, EventType.fromStorageKey("first_flight"))
+    fun storageKeyLookupHandlesKnownLegacyAndUnknownValues() {
+        assertEquals(EventType.TRIP, EventType.fromStorageKey("trip"))
+        assertEquals(EventType.TRIP, EventType.fromStorageKey("first_flight"))
         assertNull(EventType.fromStorageKey("something_new"))
     }
 
     @Test
     fun legacyNamesRemainReadableForSchemaOne() {
         assertEquals(EventType.BIRTHDAY, EventType.fromLegacyName("BIRTHDAY"))
+        assertEquals(EventType.TRIP, EventType.fromLegacyName("FIRST_FLIGHT"))
         assertNull(EventType.fromLegacyName("birthday"))
-        assertTrue(EventType.values().all { EventType.fromLegacyName(it.name) == it })
+        assertTrue(EventType.entries.all { EventType.fromLegacyName(it.name) == it })
     }
 }

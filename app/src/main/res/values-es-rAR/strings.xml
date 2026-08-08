@@ -20,24 +20,43 @@
     <string name="status_days">%1$d días</string>
     <string name="status_tomorrow">Mañana</string>
     <string name="status_today">Hoy</string>
+    <string name="status_today_zero">0 · Hoy</string>
     <string name="status_done">Ya pasó</string>
 
     <string name="editor_new_title">Nueva cuenta regresiva</string>
     <string name="editor_edit_title">Editar cuenta regresiva</string>
     <string name="field_type">Tipo</string>
+    <string name="field_icon">Ícono</string>
     <string name="field_title">Título</string>
     <string name="field_date">Fecha</string>
+    <string name="notification_arrival_toggle">Avisarme cuando llegue el día</string>
+    <string name="notification_permission_denied">No se otorgó permiso para notificaciones.</string>
     <string name="title_required">Poné un título para esta cuenta regresiva.</string>
     <string name="delete_title">¿Eliminar cuenta regresiva?</string>
     <string name="delete_message">¿Eliminar &quot;%1$s&quot;?</string>
 
     <string name="event_type_trip">Viaje</string>
-    <string name="event_type_first_flight">Primer vuelo</string>
     <string name="event_type_exam">Examen</string>
     <string name="event_type_party">Fiesta</string>
     <string name="event_type_birthday">Cumpleaños</string>
+    <string name="event_type_anniversary">Aniversario</string>
+    <string name="event_type_concert">Concierto</string>
+    <string name="event_type_deadline">Fecha límite</string>
     <string name="event_type_event">Evento</string>
     <string name="event_type_custom">Personalizado</string>
+
+    <string name="event_icon_airplane">Avión</string>
+    <string name="event_icon_book">Libro</string>
+    <string name="event_icon_confetti">Celebración</string>
+    <string name="event_icon_cake">Torta</string>
+    <string name="event_icon_heart">Corazón</string>
+    <string name="event_icon_music">Música</string>
+    <string name="event_icon_hourglass">Reloj de arena</string>
+    <string name="event_icon_calendar">Calendario</string>
+    <string name="event_icon_star">Estrella</string>
+    <string name="event_icon_gift">Regalo</string>
+    <string name="event_icon_flag">Bandera</string>
+    <string name="event_icon_pin">Ubicación</string>
 
     <string name="widget_name">Cuenta regresiva de Ya Estamos</string>
     <string name="widget_description">Una cuenta regresiva liviana y adaptable para la pantalla de inicio.</string>
@@ -54,6 +73,10 @@
     <string name="widget_appearance_dark">Oscuro</string>
     <string name="widget_add_to_home">Guardar widget</string>
     <string name="widget_event_option">%1$s · %2$s</string>
+
+    <string name="notification_channel_name">Llegadas de cuentas regresivas</string>
+    <string name="notification_arrival_title">Llegó el día</string>
+    <string name="notification_arrival_body">%1$s llegó a 0.</string>
 
     <string name="about_version">Versión %1$s</string>
     <string name="about_how_title">Para que sirva de verdad</string>

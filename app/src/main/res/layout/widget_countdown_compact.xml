@@ -28,37 +28,37 @@
             android:includeFontPadding="false"
             android:letterSpacing="0.02"
             android:maxLines="1"
-            android:textSize="10sp" />
+            android:textSize="11sp" />
 
-        <LinearLayout
+        <ImageView
+            android:id="@+id/widgetIcon"
+            android:layout_width="17dp"
+            android:layout_height="17dp"
+            android:layout_marginTop="1dp"
+            android:scaleType="centerInside" />
+
+        <TextView
+            android:id="@+id/widgetMilestone"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
+            android:fontFamily="sans-serif"
             android:gravity="center"
-            android:orientation="horizontal">
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textSize="10sp"
+            android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/widgetIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textSize="15sp" />
-
-            <TextView
-                android:id="@+id/widgetCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:fontFamily="sans-serif-condensed"
-                android:gravity="center"
-                android:includeFontPadding="false"
-                android:letterSpacing="-0.02"
-                android:maxLines="1"
-                android:textSize="29sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/widgetCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-condensed"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.02"
+            android:maxLines="1"
+            android:textSize="30sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/widgetUnit"

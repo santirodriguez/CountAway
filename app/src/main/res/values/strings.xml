@@ -20,24 +20,43 @@
     <string name="status_days">%1$d days</string>
     <string name="status_tomorrow">Tomorrow</string>
     <string name="status_today">Today</string>
+    <string name="status_today_zero">0 · Today</string>
     <string name="status_done">Done</string>
 
     <string name="editor_new_title">New countdown</string>
     <string name="editor_edit_title">Edit countdown</string>
     <string name="field_type">Type</string>
+    <string name="field_icon">Icon</string>
     <string name="field_title">Title</string>
     <string name="field_date">Date</string>
+    <string name="notification_arrival_toggle">Notify me when the day arrives</string>
+    <string name="notification_permission_denied">Notification permission was not granted.</string>
     <string name="title_required">Give this countdown a title.</string>
     <string name="delete_title">Delete countdown?</string>
     <string name="delete_message">Delete &quot;%1$s&quot;?</string>
 
     <string name="event_type_trip">Trip</string>
-    <string name="event_type_first_flight">First flight</string>
     <string name="event_type_exam">Exam</string>
     <string name="event_type_party">Party</string>
     <string name="event_type_birthday">Birthday</string>
+    <string name="event_type_anniversary">Anniversary</string>
+    <string name="event_type_concert">Concert</string>
+    <string name="event_type_deadline">Deadline</string>
     <string name="event_type_event">Event</string>
     <string name="event_type_custom">Custom</string>
+
+    <string name="event_icon_airplane">Airplane</string>
+    <string name="event_icon_book">Book</string>
+    <string name="event_icon_confetti">Celebration</string>
+    <string name="event_icon_cake">Cake</string>
+    <string name="event_icon_heart">Heart</string>
+    <string name="event_icon_music">Music</string>
+    <string name="event_icon_hourglass">Hourglass</string>
+    <string name="event_icon_calendar">Calendar</string>
+    <string name="event_icon_star">Star</string>
+    <string name="event_icon_gift">Gift</string>
+    <string name="event_icon_flag">Flag</string>
+    <string name="event_icon_pin">Pin</string>
 
     <string name="widget_name">CountAway countdown</string>
     <string name="widget_description">A lightweight resizable countdown for your home screen.</string>
@@ -54,6 +73,10 @@
     <string name="widget_appearance_dark">Dark</string>
     <string name="widget_add_to_home">Save widget</string>
     <string name="widget_event_option">%1$s · %2$s</string>
+
+    <string name="notification_channel_name">Countdown arrivals</string>
+    <string name="notification_arrival_title">Today is the day</string>
+    <string name="notification_arrival_body">%1$s has reached 0.</string>
 
     <string name="about_version">Version %1$s</string>
     <string name="about_how_title">Make it useful</string>
