@@ -39,9 +39,15 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 ## Screenshots
 
 <p align="center">
-  <img src="docs/assets/screenshots/home-dark.webp" alt="CountAway home screen in dark mode" width="250" />
-  <img src="docs/assets/screenshots/new-countdown-dark.webp" alt="Create a countdown in dark mode" width="250" />
-  <img src="docs/assets/screenshots/home-light.webp" alt="CountAway home screen in light mode" width="250" />
+  <img src="docs/assets/screenshots/home-dark.webp" alt="CountAway home screen in dark mode" width="300" />
+</p>
+
+<p align="center">
+  <img src="docs/assets/screenshots/new-countdown-dark.webp" alt="Create a countdown in dark mode" width="300" />
+</p>
+
+<p align="center">
+  <img src="docs/assets/screenshots/home-light.webp" alt="CountAway home screen in light mode" width="300" />
 </p>
 
 ## Author
