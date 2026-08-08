@@ -2,14 +2,15 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widgetRoot"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:theme="@android:style/Theme.DeviceDefault.DayNight">
 
     <ImageView
         android:id="@+id/widgetBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitXY"
-        android:src="@drawable/widget_background_light" />
+        android:src="@drawable/widget_background_system" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -28,6 +29,7 @@
             android:includeFontPadding="false"
             android:letterSpacing="0.02"
             android:maxLines="1"
+            android:textColor="@color/widget_system_text"
             android:textSize="11sp" />
 
         <ImageView
@@ -35,7 +37,8 @@
             android:layout_width="17dp"
             android:layout_height="17dp"
             android:layout_marginTop="1dp"
-            android:scaleType="centerInside" />
+            android:scaleType="centerInside"
+            android:tint="@color/widget_system_accent" />
 
         <TextView
             android:id="@+id/widgetMilestone"
@@ -45,6 +48,7 @@
             android:gravity="center"
             android:includeFontPadding="false"
             android:maxLines="1"
+            android:textColor="@color/widget_system_secondary_text"
             android:textSize="10sp"
             android:visibility="gone" />
 
@@ -57,6 +61,7 @@
             android:includeFontPadding="false"
             android:letterSpacing="-0.02"
             android:maxLines="1"
+            android:textColor="@color/widget_system_accent"
             android:textSize="30sp"
             android:textStyle="bold" />
 
@@ -64,12 +69,14 @@
             android:id="@+id/widgetUnit"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:textColor="@color/widget_system_secondary_text"
             android:visibility="gone" />
 
         <TextView
             android:id="@+id/widgetDate"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:textColor="@color/widget_system_secondary_text"
             android:visibility="gone" />
     </LinearLayout>
 
