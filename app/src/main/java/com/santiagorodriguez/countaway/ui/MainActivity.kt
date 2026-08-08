@@ -1,6 +1,10 @@
 package com.santiagorodriguez.countaway.ui
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -19,6 +23,13 @@ class MainActivity : BaseActivity() {
     private lateinit var adapter: CountdownEventAdapter
     private lateinit var countdownList: ListView
     private lateinit var emptyState: View
+    private var clockReceiverRegistered = false
+
+    private val clockChangeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            refreshCountdowns()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,16 +69,49 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        registerClockChangeReceiver()
+    }
+
     override fun onResume() {
         super.onResume()
-        val today = LocalDate.now()
-        val events = CountdownEventOrder.sortedForDisplay(repository.load(), today)
-        adapter.submit(events, today)
+        refreshCountdowns()
         renderLanguageSelection()
         renderThemeToggle()
         CountdownWidgetProvider.updateAllWidgets(this)
         WidgetUpdateScheduler.ensureScheduled(this)
         ArrivalNotificationScheduler.ensureScheduled(this)
+    }
+
+    override fun onStop() {
+        if (clockReceiverRegistered) {
+            unregisterReceiver(clockChangeReceiver)
+            clockReceiverRegistered = false
+        }
+        super.onStop()
+    }
+
+    private fun refreshCountdowns() {
+        val today = LocalDate.now()
+        val events = CountdownEventOrder.sortedForDisplay(repository.load(), today)
+        adapter.submit(events, today)
+    }
+
+    private fun registerClockChangeReceiver() {
+        if (clockReceiverRegistered) return
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_DATE_CHANGED)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(clockChangeReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(clockChangeReceiver, filter)
+        }
+        clockReceiverRegistered = true
     }
 
     private fun selectLanguage(languageTag: String) {
