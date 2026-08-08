@@ -80,6 +80,19 @@ class EditorActivity : BaseActivity() {
             notifySwitch.isChecked = event.notifyOnArrival
         }
 
+        savedInstanceState?.let { state ->
+            state.getString(STATE_SELECTED_DATE)?.let { rawDate ->
+                runCatching { LocalDate.parse(rawDate) }.getOrNull()?.let { selectedDate = it }
+            }
+            selectedType = state.getString(STATE_SELECTED_TYPE)
+                ?.let(EventType::fromStorageKey)
+                ?: selectedType
+            selectedIcon = state.getString(STATE_SELECTED_ICON)
+                ?.let(EventIcon::fromStorageKey)
+                ?: EventIcon.defaultFor(selectedType)
+            notifySwitch.isChecked = state.getBoolean(STATE_NOTIFY_ON_ARRIVAL, notifySwitch.isChecked)
+        }
+
         renderTypeGrid()
         renderCustomIconGrid()
         renderTitleHint()
@@ -95,6 +108,14 @@ class EditorActivity : BaseActivity() {
 
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(STATE_SELECTED_DATE, selectedDate.toString())
+        outState.putString(STATE_SELECTED_TYPE, selectedType.storageKey)
+        outState.putString(STATE_SELECTED_ICON, selectedIcon.storageKey)
+        outState.putBoolean(STATE_NOTIFY_ON_ARRIVAL, notifySwitch.isChecked)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onRequestPermissionsResult(
@@ -265,5 +286,9 @@ class EditorActivity : BaseActivity() {
     companion object {
         const val EXTRA_EVENT_ID = "event_id"
         private const val REQUEST_NOTIFICATIONS = 2401
+        private const val STATE_SELECTED_DATE = "selected_date"
+        private const val STATE_SELECTED_TYPE = "selected_type"
+        private const val STATE_SELECTED_ICON = "selected_icon"
+        private const val STATE_NOTIFY_ON_ARRIVAL = "notify_on_arrival"
     }
 }
