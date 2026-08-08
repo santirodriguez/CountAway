@@ -6,10 +6,12 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
@@ -66,35 +68,75 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         }
 
         fun updateWidget(context: Context, manager: AppWidgetManager, appWidgetId: Int) {
+            val deviceContext = context.applicationContext
             val displayContext = LanguageManager.localizedContext(context)
-            val options = manager.getAppWidgetOptions(appWidgetId)
-            val size = WidgetSize.fromDimensions(
-                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 40),
-                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40),
-            )
+            val configuration = WidgetPreferences(deviceContext).get(appWidgetId)
+            val event = configuration?.let { configured ->
+                CountdownRepository(deviceContext).load().firstOrNull { it.id == configured.eventId }
+            }
+            val appearance = configuration?.appearance ?: WidgetAppearance.SYSTEM
+
+            val views = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                responsiveViews(deviceContext, displayContext, appWidgetId, event, appearance)
+            } else {
+                val options = manager.getAppWidgetOptions(appWidgetId)
+                val size = WidgetSize.fromDimensions(
+                    options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 40),
+                    options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40),
+                )
+                createWidgetViews(deviceContext, displayContext, appWidgetId, event, appearance, size)
+            }
+
+            manager.updateAppWidget(appWidgetId, views)
+        }
+
+        private fun responsiveViews(
+            deviceContext: Context,
+            displayContext: Context,
+            appWidgetId: Int,
+            event: CountdownEvent?,
+            appearance: WidgetAppearance,
+        ): RemoteViews {
+            val layouts = WidgetSize.entries.associate { size ->
+                SizeF(size.minWidthDp.toFloat(), size.minHeightDp.toFloat()) to createWidgetViews(
+                    deviceContext,
+                    displayContext,
+                    appWidgetId,
+                    event,
+                    appearance,
+                    size,
+                )
+            }
+            return RemoteViews(layouts)
+        }
+
+        private fun createWidgetViews(
+            deviceContext: Context,
+            displayContext: Context,
+            appWidgetId: Int,
+            event: CountdownEvent?,
+            appearance: WidgetAppearance,
+            size: WidgetSize,
+        ): RemoteViews {
             val layoutId = when (size) {
                 WidgetSize.COMPACT -> R.layout.widget_countdown_compact
                 WidgetSize.STANDARD -> R.layout.widget_countdown_standard
                 WidgetSize.LARGE -> R.layout.widget_countdown_large
             }
-            val views = RemoteViews(context.packageName, layoutId)
-            val configuration = WidgetPreferences(context).get(appWidgetId)
-            val event = configuration?.let { configured ->
-                CountdownRepository(context).load().firstOrNull { it.id == configured.eventId }
-            }
-            val appearance = configuration?.appearance ?: WidgetAppearance.SYSTEM
+            val views = RemoteViews(deviceContext.packageName, layoutId)
 
-            applyAppearance(context.applicationContext, views, appearance)
+            applyAppearance(deviceContext, views, appearance)
             if (event == null) {
-                renderUnconfigured(displayContext, views, appWidgetId)
+                renderUnconfigured(displayContext, deviceContext, views, appWidgetId)
             } else {
-                renderEvent(displayContext, views, appWidgetId, event)
+                renderEvent(displayContext, deviceContext, views, appWidgetId, event)
             }
-            manager.updateAppWidget(appWidgetId, views)
+            return views
         }
 
         private fun renderEvent(
-            context: Context,
+            displayContext: Context,
+            intentContext: Context,
             views: RemoteViews,
             appWidgetId: Int,
             event: CountdownEvent,
@@ -113,13 +155,13 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                 CountdownStatus.FUTURE,
                 CountdownStatus.THREE_DAYS,
                 CountdownStatus.TWO_DAYS,
-                -> context.getString(R.string.widget_days_left)
-                CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
-                CountdownStatus.TODAY -> context.getString(R.string.status_today)
+                -> displayContext.getString(R.string.widget_days_left)
+                CountdownStatus.TOMORROW -> displayContext.getString(R.string.status_tomorrow)
+                CountdownStatus.TODAY -> displayContext.getString(R.string.status_today)
                 CountdownStatus.DONE -> ""
             }
             val mood = ArrivalMood.marker(value.status)
-            val locale = context.resources.configuration.locales[0]
+            val locale = displayContext.resources.configuration.locales[0]
             val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
             views.setImageViewResource(R.id.widgetIcon, EventIconPresentation.drawableRes(event.icon))
@@ -129,18 +171,23 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widgetDate, event.date.format(dateFormatter))
             views.setTextViewText(R.id.widgetMilestone, mood ?: "")
             views.setViewVisibility(R.id.widgetMilestone, if (mood == null) View.GONE else View.VISIBLE)
-            views.setOnClickPendingIntent(R.id.widgetRoot, editPendingIntent(context, appWidgetId, event.id))
+            views.setOnClickPendingIntent(R.id.widgetRoot, editPendingIntent(intentContext, appWidgetId, event.id))
         }
 
-        private fun renderUnconfigured(context: Context, views: RemoteViews, appWidgetId: Int) {
+        private fun renderUnconfigured(
+            displayContext: Context,
+            intentContext: Context,
+            views: RemoteViews,
+            appWidgetId: Int,
+        ) {
             views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
-            views.setTextViewText(R.id.widgetTitle, context.getString(R.string.widget_select_countdown))
+            views.setTextViewText(R.id.widgetTitle, displayContext.getString(R.string.widget_select_countdown))
             views.setTextViewText(R.id.widgetCount, "—")
-            views.setTextViewText(R.id.widgetUnit, context.getString(R.string.widget_tap_to_configure))
+            views.setTextViewText(R.id.widgetUnit, displayContext.getString(R.string.widget_tap_to_configure))
             views.setTextViewText(R.id.widgetDate, "")
             views.setTextViewText(R.id.widgetMilestone, "")
             views.setViewVisibility(R.id.widgetMilestone, View.GONE)
-            views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
+            views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(intentContext, appWidgetId))
         }
 
         private fun applyAppearance(context: Context, views: RemoteViews, appearance: WidgetAppearance) {
@@ -152,7 +199,10 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         }
 
         private fun applySystemAppearance(context: Context, views: RemoteViews) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                applyTheme(views, widgetTheme(context, dark = isSystemDark(context)))
+                return
+            }
 
             val light = widgetTheme(context, dark = false)
             val dark = widgetTheme(context, dark = true)
@@ -174,6 +224,10 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views.setColorInt(R.id.widgetUnit, "setTextColor", light.secondaryTextColor, dark.secondaryTextColor)
             views.setColorInt(R.id.widgetDate, "setTextColor", light.secondaryTextColor, dark.secondaryTextColor)
         }
+
+        private fun isSystemDark(context: Context): Boolean =
+            context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+                Configuration.UI_MODE_NIGHT_YES
 
         private fun applyTheme(views: RemoteViews, theme: WidgetTheme) {
             views.setImageViewResource(R.id.widgetBackground, theme.backgroundRes)
