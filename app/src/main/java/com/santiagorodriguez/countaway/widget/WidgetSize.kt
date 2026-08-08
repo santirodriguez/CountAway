@@ -7,8 +7,8 @@ enum class WidgetSize {
 
     companion object {
         fun fromDimensions(minWidthDp: Int, minHeightDp: Int): WidgetSize = when {
-            minWidthDp < 110 || minHeightDp < 70 -> COMPACT
-            minWidthDp >= 180 && minHeightDp >= 120 -> LARGE
+            minWidthDp < 120 || minHeightDp < 110 -> COMPACT
+            minWidthDp >= 180 && minHeightDp >= 170 -> LARGE
             else -> STANDARD
         }
     }
