@@ -8,6 +8,14 @@ on:
         required: true
         default: "1.0.0"
         type: string
+      mode:
+        description: Release action
+        required: true
+        default: release-candidate
+        type: choice
+        options:
+          - release-candidate
+          - prepare-draft-release
   push:
     tags:
       - "v*"
@@ -21,6 +29,7 @@ jobs:
       contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
+      prepare_release: ${{ steps.version.outputs.prepare_release }}
 
     steps:
       - name: Checkout
@@ -30,13 +39,32 @@ jobs:
         id: version
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
+          REQUESTED_MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
 
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
+            PREPARE_RELEASE="true"
           else
             VERSION="${REQUESTED_VERSION}"
+
+            case "${REQUESTED_MODE}" in
+              release-candidate)
+                PREPARE_RELEASE="false"
+                ;;
+              prepare-draft-release)
+                PREPARE_RELEASE="true"
+                if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+                  echo "Draft releases must be prepared from main, got: ${GITHUB_REF}" >&2
+                  exit 1
+                fi
+                ;;
+              *)
+                echo "Unsupported release mode: ${REQUESTED_MODE}" >&2
+                exit 1
+                ;;
+            esac
           fi
 
           if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -45,7 +73,9 @@ jobs:
           fi
 
           printf 'version=%s\n' "${VERSION}" >> "${GITHUB_OUTPUT}"
+          printf 'prepare_release=%s\n' "${PREPARE_RELEASE}" >> "${GITHUB_OUTPUT}"
           printf 'VERSION=%s\n' "${VERSION}" >> "${GITHUB_ENV}"
+          printf 'PREPARE_RELEASE=%s\n' "${PREPARE_RELEASE}" >> "${GITHUB_ENV}"
 
       - name: Set up JDK
         uses: actions/setup-java@v5
@@ -67,7 +97,7 @@ jobs:
           test -n "${VERSION_CODE}"
           printf 'version_code=%s\n' "${VERSION_CODE}" >> "${GITHUB_OUTPUT}"
 
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+          if [[ "${PREPARE_RELEASE}" == "true" ]]; then
             test -f "docs/releases/${VERSION}.md"
           fi
 
@@ -136,7 +166,7 @@ jobs:
           )
 
       - name: Upload release candidate
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && steps.version.outputs.prepare_release == 'false'
         uses: actions/upload-artifact@v7
         with:
           name: CountAway-v${{ steps.version.outputs.version }}-release-candidate
@@ -144,8 +174,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload tagged release bundle
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Upload release bundle
+        if: steps.version.outputs.prepare_release == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: CountAway-v${{ steps.version.outputs.version }}-release-bundle
@@ -164,16 +194,35 @@ jobs:
           retention-days: 90
 
   draft-release:
-    name: Create draft GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Prepare draft GitHub Release
+    if: needs.build-signed-apk.outputs.prepare_release == 'true'
     needs: build-signed-apk
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Checkout
+      - name: Checkout exact release commit
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Verify existing tag target
+        env:
+          VERSION: ${{ needs.build-signed-apk.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          TAG="v${VERSION}"
+          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            TAG_SHA="$(git rev-list -n 1 "refs/tags/${TAG}")"
+            if [[ "${TAG_SHA}" != "${GITHUB_SHA}" ]]; then
+              echo "${TAG} already points to ${TAG_SHA}, expected ${GITHUB_SHA}" >&2
+              exit 1
+            fi
+          fi
 
       - name: Download release bundle
         uses: actions/download-artifact@v7
@@ -181,10 +230,11 @@ jobs:
           name: CountAway-v${{ needs.build-signed-apk.outputs.version }}-release-bundle
           path: release-assets
 
-      - name: Create draft release
-        uses: softprops/action-gh-release@v2
+      - name: Create or update draft release
+        uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: v${{ needs.build-signed-apk.outputs.version }}
+          target_commitish: ${{ github.sha }}
           name: CountAway v${{ needs.build-signed-apk.outputs.version }}
           draft: true
           prerelease: false
