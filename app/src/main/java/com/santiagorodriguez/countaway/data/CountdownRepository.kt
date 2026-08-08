@@ -14,23 +14,19 @@ import java.time.LocalDate
 class CountdownRepository(context: Context) {
     private val atomicFile = AtomicFile(File(context.filesDir, FILE_NAME))
 
-    fun load(): List<CountdownEvent> {
-        if (!atomicFile.baseFile.exists()) return emptyList()
+    fun load(): List<CountdownEvent> = runCatching {
+        val payload = atomicFile.openRead().bufferedReader(Charsets.UTF_8).use { it.readText() }
+        val root = JSONObject(payload)
+        val schemaVersion = root.optInt(KEY_SCHEMA_VERSION, INVALID_SCHEMA_VERSION)
+        if (!CountdownStorageSchema.isSupported(schemaVersion)) return emptyList()
 
-        return runCatching {
-            val payload = atomicFile.openRead().bufferedReader(Charsets.UTF_8).use { it.readText() }
-            val root = JSONObject(payload)
-            val schemaVersion = root.optInt(KEY_SCHEMA_VERSION, INVALID_SCHEMA_VERSION)
-            if (!CountdownStorageSchema.isSupported(schemaVersion)) return emptyList()
-
-            val events = root.optJSONArray(KEY_EVENTS) ?: JSONArray()
-            buildList {
-                for (index in 0 until events.length()) {
-                    parseEvent(events.optJSONObject(index), schemaVersion)?.let(::add)
-                }
+        val events = root.optJSONArray(KEY_EVENTS) ?: JSONArray()
+        buildList {
+            for (index in 0 until events.length()) {
+                parseEvent(events.optJSONObject(index), schemaVersion)?.let(::add)
             }
-        }.getOrDefault(emptyList())
-    }
+        }
+    }.getOrDefault(emptyList())
 
     fun save(events: List<CountdownEvent>) {
         val root = JSONObject()
