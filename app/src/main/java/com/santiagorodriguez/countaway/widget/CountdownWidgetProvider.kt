@@ -6,8 +6,9 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
+import android.graphics.drawable.Icon
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.RemoteViews
@@ -81,12 +82,9 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val event = configuration?.let { configured ->
                 CountdownRepository(context).load().firstOrNull { it.id == configured.eventId }
             }
-            val theme = resolveTheme(
-                context.applicationContext,
-                configuration?.appearance ?: WidgetAppearance.SYSTEM,
-            )
+            val appearance = configuration?.appearance ?: WidgetAppearance.SYSTEM
 
-            applyTheme(views, theme)
+            applyAppearance(context.applicationContext, views, appearance)
             if (event == null) {
                 renderUnconfigured(displayContext, views, appWidgetId)
             } else {
@@ -145,6 +143,38 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
         }
 
+        private fun applyAppearance(context: Context, views: RemoteViews, appearance: WidgetAppearance) {
+            when (appearance) {
+                WidgetAppearance.SYSTEM -> applySystemAppearance(context, views)
+                WidgetAppearance.LIGHT -> applyTheme(views, widgetTheme(context, dark = false))
+                WidgetAppearance.DARK -> applyTheme(views, widgetTheme(context, dark = true))
+            }
+        }
+
+        private fun applySystemAppearance(context: Context, views: RemoteViews) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+
+            val light = widgetTheme(context, dark = false)
+            val dark = widgetTheme(context, dark = true)
+            views.setIcon(
+                R.id.widgetBackground,
+                "setImageIcon",
+                Icon.createWithResource(context, light.backgroundRes),
+                Icon.createWithResource(context, dark.backgroundRes),
+            )
+            views.setColorInt(R.id.widgetIcon, "setColorFilter", light.accentTextColor, dark.accentTextColor)
+            views.setColorInt(R.id.widgetTitle, "setTextColor", light.primaryTextColor, dark.primaryTextColor)
+            views.setColorInt(R.id.widgetCount, "setTextColor", light.accentTextColor, dark.accentTextColor)
+            views.setColorInt(
+                R.id.widgetMilestone,
+                "setTextColor",
+                light.secondaryTextColor,
+                dark.secondaryTextColor,
+            )
+            views.setColorInt(R.id.widgetUnit, "setTextColor", light.secondaryTextColor, dark.secondaryTextColor)
+            views.setColorInt(R.id.widgetDate, "setTextColor", light.secondaryTextColor, dark.secondaryTextColor)
+        }
+
         private fun applyTheme(views: RemoteViews, theme: WidgetTheme) {
             views.setImageViewResource(R.id.widgetBackground, theme.backgroundRes)
             views.setInt(R.id.widgetIcon, "setColorFilter", theme.accentTextColor)
@@ -155,29 +185,20 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widgetDate, theme.secondaryTextColor)
         }
 
-        private fun resolveTheme(context: Context, appearance: WidgetAppearance): WidgetTheme {
-            val systemDark = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
-                Configuration.UI_MODE_NIGHT_YES
-            val dark = when (appearance) {
-                WidgetAppearance.SYSTEM -> systemDark
-                WidgetAppearance.LIGHT -> false
-                WidgetAppearance.DARK -> true
-            }
-            return if (dark) {
-                WidgetTheme(
-                    backgroundRes = R.drawable.widget_background_dark,
-                    primaryTextColor = context.getColor(R.color.widget_dark_text),
-                    secondaryTextColor = context.getColor(R.color.widget_dark_secondary_text),
-                    accentTextColor = context.getColor(R.color.widget_dark_accent),
-                )
-            } else {
-                WidgetTheme(
-                    backgroundRes = R.drawable.widget_background_light,
-                    primaryTextColor = context.getColor(R.color.widget_light_text),
-                    secondaryTextColor = context.getColor(R.color.widget_light_secondary_text),
-                    accentTextColor = context.getColor(R.color.widget_light_accent),
-                )
-            }
+        private fun widgetTheme(context: Context, dark: Boolean): WidgetTheme = if (dark) {
+            WidgetTheme(
+                backgroundRes = R.drawable.widget_background_dark,
+                primaryTextColor = context.getColor(R.color.widget_dark_text),
+                secondaryTextColor = context.getColor(R.color.widget_dark_secondary_text),
+                accentTextColor = context.getColor(R.color.widget_dark_accent),
+            )
+        } else {
+            WidgetTheme(
+                backgroundRes = R.drawable.widget_background_light,
+                primaryTextColor = context.getColor(R.color.widget_light_text),
+                secondaryTextColor = context.getColor(R.color.widget_light_secondary_text),
+                accentTextColor = context.getColor(R.color.widget_light_accent),
+            )
         }
 
         private fun editPendingIntent(context: Context, appWidgetId: Int, eventId: String): PendingIntent {
