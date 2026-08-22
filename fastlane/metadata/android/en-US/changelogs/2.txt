@@ -1,0 +1,1 @@
+Adds six widget backgrounds, a dynamic Next countdown widget mode, reminder presets for the event day or 1/3/7 days before, local JSON backup/restore, and safer handling of corrupt or unsupported saved data.

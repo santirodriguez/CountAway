@@ -1,0 +1,1 @@
+Cuenta regresiva local y liviana con widgets para la pantalla de inicio

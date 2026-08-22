@@ -1,0 +1,1 @@
+Agrega seis fondos para widgets, modo Próxima cuenta regresiva, recordatorios el mismo día o 1/3/7 días antes, copia local JSON y manejo más seguro de datos corruptos o incompatibles.

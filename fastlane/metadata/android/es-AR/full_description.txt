@@ -1,0 +1,7 @@
+Ya Estamos mantiene tus fechas importantes simples y visibles en la pantalla de inicio.
+
+Creá múltiples cuentas regresivas, elegí un tipo de evento o un ícono personalizado y agregá widgets compactos o redimensionables. Cada widget puede seguir un evento fijo o mostrar automáticamente la próxima cuenta regresiva, con apariencia y fondo independientes.
+
+Los recordatorios locales opcionales pueden avisarte el mismo día o 1, 3 o 7 días antes. También podés exportar y restaurar tus cuentas regresivas mediante una copia local en formato JSON.
+
+Todo queda en tu dispositivo. Sin cuentas, publicidad, analytics, sincronización en la nube ni permiso de Internet.
