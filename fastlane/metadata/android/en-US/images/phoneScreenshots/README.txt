@@ -1,1 +1,0 @@
-The screenshots in this directory are provided as PNG files for F-Droid metadata.
