@@ -6,7 +6,7 @@ on:
       version:
         description: Version name to build
         required: true
-        default: "1.1.0"
+        default: "1.1.1"
         type: string
       mode:
         description: Release action
@@ -115,7 +115,7 @@ jobs:
 
           if [[ "${PREPARE_RELEASE}" == "true" ]]; then
             test -f "docs/releases/${VERSION}.md"
-            for locale in en es ca; do
+            for locale in en-US es ca; do
               test -f "fastlane/metadata/android/${locale}/changelogs/${VERSION_CODE}.txt"
             done
           fi
