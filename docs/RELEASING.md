@@ -36,6 +36,14 @@ On macOS:
 base64 < countaway-release.jks | tr -d '\n'
 ```
 
+## Release toolchain
+
+The release workflow uses JDK 17 and explicitly installs Android Build Tools 34.0.0 for `zipalign`, `apksigner`, and `aapt`.
+
+The Gradle/AGP build already produces aligned APK output. The workflow verifies that alignment instead of rewriting the APK, then signs the exact Gradle output with the pinned `apksigner`. This is intentional: F-Droid currently documents that APKs signed with `apksigner` from Build Tools 35 or newer can fail `apksigcopier` verification used by reproducible builds.
+
+Do not replace the pinned signing toolchain with “latest” without re-validating the F-Droid reproducible-build path.
+
 ## Build a release candidate
 
 Run the **CountAway Release** workflow manually with:
@@ -48,16 +56,16 @@ The workflow:
 1. verifies the requested version;
 2. runs tests and lint;
 3. builds the R8/resource-shrunk release APK;
-4. aligns and signs the APK;
+4. verifies APK alignment and signs with the pinned Android Build Tools;
 5. verifies the Android signature, package name, version code, and version name;
 6. generates a SHA-256 checksum and signing-certificate report;
 7. uploads the release candidate and R8 mapping as workflow artifacts.
 
-For 1.0.0, the public release files are intended to be:
+Public release files use this naming convention:
 
 ```text
-CountAway-v1.0.0.apk
-CountAway-v1.0.0.apk.sha256
+CountAway-v<version>.apk
+CountAway-v<version>.apk.sha256
 ```
 
 The signing report and R8 mapping are verification/debug artifacts and do not need to be attached to the public release.
@@ -88,9 +96,12 @@ Publishing is intentionally separate from preparation. Before publishing the Git
 
 - verify CI on the exact release commit;
 - install and smoke-test the signed APK on a real Android device or emulator;
+- verify an upgrade from the previous public CountAway release preserves countdowns and existing widgets;
 - verify the SHA-256 checksum;
 - record the signing certificate SHA-256 fingerprint somewhere durable;
 - confirm the final release notes and public assets;
 - confirm the release is still a draft.
 
 Only then publish the prepared GitHub Release.
+
+For F-Droid-specific checks, continue with [`FDROID.md`](FDROID.md).
