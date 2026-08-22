@@ -8,6 +8,7 @@ import android.widget.ListView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
@@ -19,6 +20,9 @@ class MainActivity : BaseActivity() {
     private lateinit var adapter: CountdownEventAdapter
     private lateinit var countdownList: ListView
     private lateinit var emptyState: View
+    private lateinit var emptyTitle: TextView
+    private lateinit var emptyDescription: TextView
+    private lateinit var addCountdownButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +33,9 @@ class MainActivity : BaseActivity() {
         adapter = CountdownEventAdapter(this)
         countdownList = findViewById(R.id.countdownList)
         emptyState = findViewById(R.id.emptyState)
+        emptyTitle = findViewById(R.id.emptyTitle)
+        emptyDescription = findViewById(R.id.emptyDescription)
+        addCountdownButton = findViewById(R.id.addCountdownButton)
 
         countdownList.adapter = adapter
         countdownList.emptyView = emptyState
@@ -37,7 +44,7 @@ class MainActivity : BaseActivity() {
             startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
         }
 
-        findViewById<Button>(R.id.addCountdownButton).setOnClickListener {
+        addCountdownButton.setOnClickListener {
             startActivity(Intent(this, EditorActivity::class.java))
         }
         findViewById<View>(R.id.themeButton).setOnClickListener {
@@ -61,13 +68,34 @@ class MainActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         val today = LocalDate.now()
-        val events = CountdownEventOrder.sortedForDisplay(repository.load(), today)
-        adapter.submit(events, today)
+        renderData(repository.loadResult(), today)
         renderLanguageSelection()
         renderThemeToggle()
         CountdownWidgetProvider.updateAllWidgets(this)
         WidgetUpdateScheduler.ensureScheduled(this)
         ArrivalNotificationScheduler.ensureScheduled(this)
+    }
+
+    private fun renderData(result: CountdownLoadResult, today: LocalDate) {
+        when (result) {
+            is CountdownLoadResult.Success -> {
+                adapter.submit(CountdownEventOrder.sortedForDisplay(result.events, today), today)
+                emptyTitle.setText(R.string.empty_title)
+                emptyDescription.setText(R.string.empty_description)
+                setAddEnabled(true)
+            }
+            is CountdownLoadResult.Failure -> {
+                adapter.submit(emptyList(), today)
+                emptyTitle.setText(R.string.data_error_title)
+                emptyDescription.setText(R.string.data_error_description)
+                setAddEnabled(false)
+            }
+        }
+    }
+
+    private fun setAddEnabled(enabled: Boolean) {
+        addCountdownButton.isEnabled = enabled
+        addCountdownButton.alpha = if (enabled) 1f else 0.45f
     }
 
     private fun selectLanguage(languageTag: String) {

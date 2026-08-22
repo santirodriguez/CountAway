@@ -16,6 +16,8 @@
 
     <string name="empty_title">Todavía no hay nada en cuenta regresiva</string>
     <string name="empty_description">Agregá un viaje, examen, cumpleaños o cualquier cosa que valga la espera.</string>
+    <string name="data_error_title">Hay un problema con los datos guardados</string>
+    <string name="data_error_description">Ya Estamos detuvo la edición para proteger el archivo existente. Restaurá una copia válida desde Acerca de antes de hacer cambios.</string>
     <string name="event_meta">%1$s · %2$s</string>
     <string name="status_days">%1$d días</string>
     <string name="status_tomorrow">Mañana</string>

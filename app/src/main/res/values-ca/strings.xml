@@ -16,6 +16,8 @@
 
     <string name="empty_title">Encara no hi ha cap compte enrere</string>
     <string name="empty_description">Afegeix un viatge, un examen, un aniversari o qualsevol cosa que valgui la pena esperar.</string>
+    <string name="data_error_title">Les dades desades necessiten atenció</string>
+    <string name="data_error_description">Ja Queda Poc ha aturat l’edició per protegir el fitxer existent. Restaura una còpia vàlida des de Sobre l’app abans de fer canvis.</string>
     <string name="event_meta">%1$s · %2$s</string>
     <string name="status_days">%1$d dies</string>
     <string name="status_tomorrow">Demà</string>

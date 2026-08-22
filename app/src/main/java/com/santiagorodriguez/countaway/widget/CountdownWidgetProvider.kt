@@ -88,7 +88,12 @@ class CountdownWidgetProvider : AppWidgetProvider() {
 
             applyTheme(views, theme, background)
             if (event == null) {
-                renderUnconfigured(displayContext, views, appWidgetId, configuration != null)
+                renderUnconfigured(
+                    displayContext,
+                    views,
+                    appWidgetId,
+                    noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
+                )
             } else {
                 renderEvent(displayContext, views, appWidgetId, event)
             }
@@ -148,12 +153,12 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             context: Context,
             views: RemoteViews,
             appWidgetId: Int,
-            configured: Boolean,
+            noUpcoming: Boolean,
         ) {
             views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
             views.setTextViewText(
                 R.id.widgetTitle,
-                context.getString(if (configured) R.string.widget_no_upcoming else R.string.widget_select_countdown),
+                context.getString(if (noUpcoming) R.string.widget_no_upcoming else R.string.widget_select_countdown),
             )
             views.setTextViewText(R.id.widgetCount, "—")
             views.setTextViewText(R.id.widgetUnit, context.getString(R.string.widget_tap_to_configure))

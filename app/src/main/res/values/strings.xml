@@ -16,6 +16,8 @@
 
     <string name="empty_title">Nothing to count down yet</string>
     <string name="empty_description">Add a trip, exam, birthday, or anything else worth waiting for.</string>
+    <string name="data_error_title">Saved data needs attention</string>
+    <string name="data_error_description">CountAway stopped editing to protect the existing file. Restore a valid backup from About before making changes.</string>
     <string name="event_meta">%1$s · %2$s</string>
     <string name="status_days">%1$d days</string>
     <string name="status_tomorrow">Tomorrow</string>
