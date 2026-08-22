@@ -36,7 +36,7 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 - Local JSON backup and restore through Android's document picker
 - Subtle 3 · 2 · 1 · 0 arrival states
 - One-tap app light/dark mode
-- English, Spanish (Argentina), and Catalan
+- English, Spanish, and Catalan
 - Battery-minded local refreshes
 
 ## Screenshots
