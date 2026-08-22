@@ -1,0 +1,1 @@
+Adds the F-Droid store icon and refreshes public branding metadata. No functional changes.

@@ -1,0 +1,1 @@
+Agrega el ícono de F-Droid y actualiza los recursos públicos de marca. Sin cambios funcionales.
