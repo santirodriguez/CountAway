@@ -100,33 +100,29 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp" />
 
-        <LinearLayout
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:background="@drawable/control_surface"
-            android:gravity="center_vertical"
-            android:minHeight="58dp"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="10dp">
+            android:layout_marginTop="20dp"
+            android:text="@string/field_reminder"
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:fontFamily="sans-serif-medium"
-                android:paddingEnd="12dp"
-                android:text="@string/notification_arrival_toggle"
-                android:textColor="@color/foreground"
-                android:textSize="14sp" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/control_surface">
 
-            <Switch
-                android:id="@+id/notifySwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:showText="false" />
-        </LinearLayout>
+            <Spinner
+                android:id="@+id/reminderSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:background="@android:color/transparent"
+                android:paddingStart="14dp"
+                android:paddingEnd="8dp"
+                android:spinnerMode="dropdown" />
+        </FrameLayout>
 
         <Button
             android:id="@+id/saveButton"

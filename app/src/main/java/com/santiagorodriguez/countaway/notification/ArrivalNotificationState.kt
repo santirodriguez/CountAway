@@ -10,10 +10,11 @@ class ArrivalNotificationState(context: Context) {
     fun deliveredDate(eventId: String): LocalDate? = preferences.getString(key(eventId), null)
         ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
 
-    fun wasDelivered(event: CountdownEvent): Boolean = deliveredDate(event.id) == event.date
+    fun wasDelivered(event: CountdownEvent, scheduledDate: LocalDate): Boolean =
+        deliveredDate(event.id) == scheduledDate
 
-    fun markDelivered(event: CountdownEvent) {
-        preferences.edit().putString(key(event.id), event.date.toString()).apply()
+    fun markDelivered(event: CountdownEvent, scheduledDate: LocalDate) {
+        preferences.edit().putString(key(event.id), scheduledDate.toString()).apply()
     }
 
     fun remove(eventId: String) {

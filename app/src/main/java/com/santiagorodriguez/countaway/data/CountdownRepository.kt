@@ -3,45 +3,52 @@ package com.santiagorodriguez.countaway.data
 import android.content.Context
 import android.util.AtomicFile
 import com.santiagorodriguez.countaway.model.CountdownEvent
-import com.santiagorodriguez.countaway.model.EventIcon
-import com.santiagorodriguez.countaway.model.EventType
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
-import java.time.Instant
-import java.time.LocalDate
+
+sealed interface CountdownLoadResult {
+    data class Success(val events: List<CountdownEvent>) : CountdownLoadResult
+    data class Failure(val problem: CountdownDataProblem) : CountdownLoadResult
+}
 
 class CountdownRepository(context: Context) {
     private val atomicFile = AtomicFile(File(context.filesDir, FILE_NAME))
 
-    fun load(): List<CountdownEvent> {
-        if (!atomicFile.baseFile.exists()) return emptyList()
+    fun loadResult(): CountdownLoadResult {
+        if (!atomicFile.baseFile.exists()) return CountdownLoadResult.Success(emptyList())
 
-        return runCatching {
+        return try {
             val payload = atomicFile.openRead().bufferedReader(Charsets.UTF_8).use { it.readText() }
-            val root = JSONObject(payload)
-            val schemaVersion = root.optInt(KEY_SCHEMA_VERSION, INVALID_SCHEMA_VERSION)
-            if (!CountdownStorageSchema.isSupported(schemaVersion)) return emptyList()
+            CountdownLoadResult.Success(CountdownStorageCodec.decode(payload))
+        } catch (error: CountdownDataException) {
+            CountdownLoadResult.Failure(error.problem)
+        } catch (_: Exception) {
+            CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT)
+        }
+    }
 
-            val events = root.optJSONArray(KEY_EVENTS) ?: JSONArray()
-            buildList {
-                for (index in 0 until events.length()) {
-                    parseEvent(events.optJSONObject(index), schemaVersion)?.let(::add)
-                }
-            }
-        }.getOrDefault(emptyList())
+    fun load(): List<CountdownEvent> = when (val result = loadResult()) {
+        is CountdownLoadResult.Success -> result.events
+        is CountdownLoadResult.Failure -> emptyList()
+    }
+
+    fun exportPayload(): String = when (val result = loadResult()) {
+        is CountdownLoadResult.Success -> CountdownStorageCodec.encode(result.events)
+        is CountdownLoadResult.Failure -> throw CountdownDataException(result.problem)
+    }
+
+    fun previewImport(payload: String): Int = CountdownStorageCodec.decode(payload).size
+
+    fun importPayload(payload: String): Int {
+        val events = CountdownStorageCodec.decode(payload)
+        save(events)
+        return events.size
     }
 
     fun save(events: List<CountdownEvent>) {
-        val root = JSONObject()
-            .put(KEY_SCHEMA_VERSION, CountdownStorageSchema.CURRENT_VERSION)
-            .put(KEY_EVENTS, JSONArray().apply {
-                events.forEach { put(toJson(it)) }
-            })
-
+        val payload = CountdownStorageCodec.encode(events).toByteArray(Charsets.UTF_8)
         val stream = atomicFile.startWrite()
         try {
-            stream.write(root.toString().toByteArray(Charsets.UTF_8))
+            stream.write(payload)
             stream.flush()
             atomicFile.finishWrite(stream)
         } catch (error: Exception) {
@@ -50,64 +57,7 @@ class CountdownRepository(context: Context) {
         }
     }
 
-    private fun parseEvent(json: JSONObject?, schemaVersion: Int): CountdownEvent? = runCatching {
-        requireNotNull(json)
-        val rawType = json.getString(KEY_TYPE)
-        val type = when (schemaVersion) {
-            CountdownStorageSchema.LEGACY_VERSION -> EventType.fromLegacyName(rawType)
-            CountdownStorageSchema.PREVIOUS_VERSION,
-            CountdownStorageSchema.CURRENT_VERSION,
-            -> EventType.fromStorageKey(rawType)
-            else -> null
-        } ?: return null
-
-        val icon = if (schemaVersion == CountdownStorageSchema.CURRENT_VERSION) {
-            EventIcon.fromStorageKey(json.optString(KEY_ICON)) ?: EventIcon.defaultFor(type)
-        } else {
-            EventIcon.defaultFor(type)
-        }
-        val notifyOnArrival = schemaVersion == CountdownStorageSchema.CURRENT_VERSION &&
-            json.optBoolean(KEY_NOTIFY_ON_ARRIVAL, false)
-
-        CountdownEvent(
-            id = json.getString(KEY_ID),
-            title = json.getString(KEY_TITLE),
-            date = LocalDate.parse(json.getString(KEY_DATE)),
-            type = type,
-            icon = icon,
-            notifyOnArrival = notifyOnArrival,
-            createdAt = Instant.parse(json.getString(KEY_CREATED_AT)),
-        )
-    }.getOrNull()
-
-    private fun toJson(event: CountdownEvent): JSONObject = JSONObject()
-        .put(KEY_ID, event.id)
-        .put(KEY_TITLE, event.title)
-        .put(KEY_DATE, event.date.toString())
-        .put(KEY_TYPE, event.type.storageKey)
-        .put(KEY_ICON, event.icon.storageKey)
-        .put(KEY_NOTIFY_ON_ARRIVAL, event.notifyOnArrival)
-        .put(KEY_CREATED_AT, event.createdAt.toString())
-
     private companion object {
         const val FILE_NAME = "countaways.json"
-        const val INVALID_SCHEMA_VERSION = -1
-        const val KEY_SCHEMA_VERSION = "schemaVersion"
-        const val KEY_EVENTS = "events"
-        const val KEY_ID = "id"
-        const val KEY_TITLE = "title"
-        const val KEY_DATE = "date"
-        const val KEY_TYPE = "type"
-        const val KEY_ICON = "iconKey"
-        const val KEY_NOTIFY_ON_ARRIVAL = "notifyOnArrival"
-        const val KEY_CREATED_AT = "createdAt"
     }
-}
-
-object CountdownStorageSchema {
-    const val LEGACY_VERSION = 1
-    const val PREVIOUS_VERSION = 2
-    const val CURRENT_VERSION = 3
-
-    fun isSupported(version: Int): Boolean = version in LEGACY_VERSION..CURRENT_VERSION
 }

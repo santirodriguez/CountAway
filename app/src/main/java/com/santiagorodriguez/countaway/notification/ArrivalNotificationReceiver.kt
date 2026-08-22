@@ -31,8 +31,13 @@ object ArrivalNotifier {
         val manager = context.getSystemService(NotificationManager::class.java)
         val state = ArrivalNotificationState(context)
         val today = LocalDate.now()
-        val dueEvents = CountdownRepository(context).load().filter { event ->
-            ArrivalNotificationPolicy.isDue(event, today, state.deliveredDate(event.id))
+        val dueEvents = CountdownRepository(context).load().mapNotNull { event ->
+            val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event) ?: return@mapNotNull null
+            if (ArrivalNotificationPolicy.isDue(event, today, state.deliveredDate(event.id))) {
+                event to scheduledDate
+            } else {
+                null
+            }
         }
         if (dueEvents.isEmpty()) return
 
@@ -44,12 +49,27 @@ object ArrivalNotifier {
             ),
         )
 
-        dueEvents.forEach { event ->
-            val body = displayContext.getString(R.string.notification_arrival_body, event.title)
+        dueEvents.forEach { (event, scheduledDate) ->
+            val daysBefore = event.reminder.daysBefore ?: return@forEach
+            val title: String
+            val body: String
+            if (daysBefore == 0) {
+                title = displayContext.getString(R.string.notification_arrival_title)
+                body = displayContext.getString(R.string.notification_arrival_body, event.title)
+            } else {
+                title = displayContext.getString(R.string.notification_upcoming_title)
+                body = displayContext.resources.getQuantityString(
+                    R.plurals.notification_upcoming_body,
+                    daysBefore,
+                    daysBefore,
+                    event.title,
+                )
+            }
+
             val notification = Notification.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_event_star)
                 .setColor(context.getColor(R.color.accent))
-                .setContentTitle(displayContext.getString(R.string.notification_arrival_title))
+                .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(Notification.BigTextStyle().bigText(body))
                 .setCategory(Notification.CATEGORY_REMINDER)
@@ -61,7 +81,7 @@ object ArrivalNotifier {
             runCatching {
                 manager.notify(event.id.hashCode(), notification)
             }.onSuccess {
-                state.markDelivered(event)
+                state.markDelivered(event, scheduledDate)
             }
         }
     }

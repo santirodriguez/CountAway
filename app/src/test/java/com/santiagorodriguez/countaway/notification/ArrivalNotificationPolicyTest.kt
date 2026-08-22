@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.notification
 
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.model.ReminderOption
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -16,33 +17,48 @@ class ArrivalNotificationPolicyTest {
     private val today = LocalDate.of(2026, 8, 7)
 
     @Test
-    fun dueEventIsDeliveredOnlyOnceForItsDate() {
-        val event = event("one", today, notify = true)
+    fun arrivalReminderIsDeliveredOnlyOnceForItsScheduledDate() {
+        val event = event("one", today, ReminderOption.ON_DAY)
         assertTrue(ArrivalNotificationPolicy.isDue(event, today, null))
         assertFalse(ArrivalNotificationPolicy.isDue(event, today, today))
     }
 
     @Test
-    fun optOutAndOtherDatesAreNotDue() {
-        assertFalse(ArrivalNotificationPolicy.isDue(event("off", today, notify = false), today, null))
-        assertFalse(ArrivalNotificationPolicy.isDue(event("future", today.plusDays(1), notify = true), today, null))
+    fun advanceReminderUsesSelectedOffset() {
+        val event = event("advance", today.plusDays(3), ReminderOption.THREE_DAYS)
+        assertEquals(today, ArrivalNotificationPolicy.scheduledDate(event))
+        assertTrue(ArrivalNotificationPolicy.isDue(event, today, null))
     }
 
     @Test
-    fun nextPendingDateSkipsPastAndDeliveredEvents() {
-        val events = listOf(
-            event("past", today.minusDays(1), notify = true),
-            event("delivered", today, notify = true),
-            event("next", today.plusDays(2), notify = true),
+    fun disabledAndOtherDatesAreNotDue() {
+        assertFalse(ArrivalNotificationPolicy.isDue(event("off", today, ReminderOption.OFF), today, null))
+        assertFalse(
+            ArrivalNotificationPolicy.isDue(
+                event("future", today.plusDays(1), ReminderOption.ON_DAY),
+                today,
+                null,
+            ),
         )
-        val next = ArrivalNotificationPolicy.nextPendingDate(events, today) { it.id == "delivered" }
+    }
+
+    @Test
+    fun nextPendingDateSkipsPastAndDeliveredReminders() {
+        val events = listOf(
+            event("past", today, ReminderOption.ONE_DAY),
+            event("delivered", today, ReminderOption.ON_DAY),
+            event("next", today.plusDays(3), ReminderOption.ONE_DAY),
+        )
+        val next = ArrivalNotificationPolicy.nextPendingDate(events, today) { event, scheduledDate ->
+            event.id == "delivered" && scheduledDate == today
+        }
         assertEquals(today.plusDays(2), next)
     }
 
     @Test
     fun noEnabledEventsMeansNoSchedule() {
-        val events = listOf(event("off", today.plusDays(2), notify = false))
-        assertNull(ArrivalNotificationPolicy.nextPendingDate(events, today) { false })
+        val events = listOf(event("off", today.plusDays(2), ReminderOption.OFF))
+        assertNull(ArrivalNotificationPolicy.nextPendingDate(events, today) { _, _ -> false })
     }
 
     @Test
@@ -58,12 +74,12 @@ class ArrivalNotificationPolicyTest {
         assertEquals(after.plusSeconds(10), ArrivalNotificationScheduler.triggerTime(after, today))
     }
 
-    private fun event(id: String, date: LocalDate, notify: Boolean): CountdownEvent = CountdownEvent(
+    private fun event(id: String, date: LocalDate, reminder: ReminderOption): CountdownEvent = CountdownEvent(
         id = id,
         title = id,
         date = date,
         type = EventType.EVENT,
-        notifyOnArrival = notify,
+        reminder = reminder,
         createdAt = Instant.EPOCH,
     )
 }
