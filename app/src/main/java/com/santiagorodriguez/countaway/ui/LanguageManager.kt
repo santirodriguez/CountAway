@@ -10,7 +10,7 @@ import java.util.Locale
 
 object LanguageManager {
     const val ENGLISH = "en"
-    const val SPANISH = "es-AR"
+    const val SPANISH = "es"
     const val CATALAN = "ca"
 
     private const val PREFS_NAME = "countaway_ui"
@@ -58,11 +58,18 @@ object LanguageManager {
     fun syncPlatformLocale(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
-        val stored = storedLanguageTag(context) ?: return
         val localeManager = context.getSystemService(LocaleManager::class.java)
-        if (localeManager.applicationLocales.isEmpty) {
-            localeManager.applicationLocales = LocaleList.forLanguageTags(stored)
+        if (!localeManager.applicationLocales.isEmpty) {
+            val currentLocale = localeManager.applicationLocales[0]
+            val canonical = canonicalTag(currentLocale)
+            if (currentLocale.toLanguageTag() != canonical) {
+                localeManager.applicationLocales = LocaleList.forLanguageTags(canonical)
+            }
+            return
         }
+
+        val stored = storedLanguageTag(context) ?: return
+        localeManager.applicationLocales = LocaleList.forLanguageTags(stored)
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .remove(KEY_LANGUAGE)
@@ -79,10 +86,17 @@ object LanguageManager {
         return storedLanguageTag(context)
     }
 
-    private fun storedLanguageTag(context: Context): String? =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_LANGUAGE, null)
-            ?.takeIf { it in setOf(ENGLISH, SPANISH, CATALAN) }
+    private fun storedLanguageTag(context: Context): String? {
+        val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val stored = preferences.getString(KEY_LANGUAGE, null)
+        val normalized = stored
+            ?.let(Locale::forLanguageTag)
+            ?.let(::canonicalSupportedTag)
+        if (stored != null && normalized != null && stored != normalized) {
+            preferences.edit().putString(KEY_LANGUAGE, normalized).apply()
+        }
+        return normalized
+    }
 
     private fun localizedContext(context: Context, languageTag: String): Context {
         val locale = Locale.forLanguageTag(languageTag)
@@ -92,9 +106,13 @@ object LanguageManager {
         return context.createConfigurationContext(configuration)
     }
 
-    private fun canonicalTag(locale: Locale): String = when (locale.language) {
+    private fun canonicalTag(locale: Locale): String =
+        canonicalSupportedTag(locale) ?: ENGLISH
+
+    private fun canonicalSupportedTag(locale: Locale): String? = when (locale.language) {
+        "en" -> ENGLISH
         "es" -> SPANISH
         "ca" -> CATALAN
-        else -> ENGLISH
+        else -> null
     }
 }
