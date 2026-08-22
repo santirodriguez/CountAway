@@ -31,7 +31,7 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 - Multiple local countdowns with presets and custom icons
 - Compact 1×1 and resizable home-screen widgets
 - Fixed-event widgets or an automatic **Next countdown** mode
-- Six widget backgrounds with system, light, and dark appearance
+- Nine widget backgrounds with a live preview and system, light, and dark appearance
 - Optional local reminders on the event day or 1, 3, or 7 days before
 - Local JSON backup and restore through Android's document picker
 - Subtle 3 · 2 · 1 · 0 arrival states
