@@ -2,7 +2,7 @@
 
 ## 1.1.1
 
-- Improve distribution metadata and localized app naming.
+- Improve distribution metadata and screenshot compatibility.
 - No functional changes.
 
 ## 1.1.0
