@@ -1,0 +1,1 @@
+Millora les metadades de distribució i els noms localitzats de l’app. Sense canvis funcionals.
