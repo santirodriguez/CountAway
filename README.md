@@ -1,7 +1,7 @@
 # CountAway
 
 <p align="center">
-  <img src="docs/assets/branding/countaway.webp" alt="CountAway" width="190" />
+  <img src="docs/assets/branding/countaway.png" alt="CountAway" width="190" />
 </p>
 
 <p align="center">

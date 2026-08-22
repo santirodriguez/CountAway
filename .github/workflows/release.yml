@@ -6,7 +6,7 @@ on:
       version:
         description: Version name to build
         required: true
-        default: "1.1.1"
+        default: "1.1.2"
         type: string
       mode:
         description: Release action

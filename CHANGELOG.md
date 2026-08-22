@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2
+
+- Add a complete 512×512 Fastlane/F-Droid store icon.
+- Refresh the public CountAway branding asset used by the README.
+- No functional changes.
+
 ## 1.1.1
 
 - Improve distribution metadata and screenshot compatibility.
