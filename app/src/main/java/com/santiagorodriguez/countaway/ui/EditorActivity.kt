@@ -25,6 +25,7 @@ import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
+import com.santiagorodriguez.countaway.notification.ArrivalNotificationPolicy
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
@@ -254,7 +255,9 @@ class EditorActivity : BaseActivity() {
             events.add(event)
         }
         repository.save(events)
-        ArrivalNotificationState(this).remove(event.id)
+        if (ArrivalNotificationPolicy.shouldResetDeliveryState(existingEvent, event)) {
+            ArrivalNotificationState(this).remove(event.id)
+        }
         refreshBackgroundState()
         finish()
     }

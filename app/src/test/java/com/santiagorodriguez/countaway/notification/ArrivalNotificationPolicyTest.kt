@@ -62,6 +62,33 @@ class ArrivalNotificationPolicyTest {
     }
 
     @Test
+    fun cosmeticEditsKeepDeliveredState() {
+        val previous = event("same", today.plusDays(2), ReminderOption.ONE_DAY)
+        val updated = previous.copy(title = "Updated title", type = EventType.CUSTOM)
+
+        assertFalse(ArrivalNotificationPolicy.shouldResetDeliveryState(previous, updated))
+    }
+
+    @Test
+    fun newDateOrReminderResetsDeliveredState() {
+        val previous = event("changed", today.plusDays(2), ReminderOption.ONE_DAY)
+
+        assertTrue(
+            ArrivalNotificationPolicy.shouldResetDeliveryState(
+                previous,
+                previous.copy(date = previous.date.plusDays(1)),
+            ),
+        )
+        assertTrue(
+            ArrivalNotificationPolicy.shouldResetDeliveryState(
+                previous,
+                previous.copy(reminder = ReminderOption.THREE_DAYS),
+            ),
+        )
+        assertTrue(ArrivalNotificationPolicy.shouldResetDeliveryState(null, previous))
+    }
+
+    @Test
     fun triggerUsesNineAmOrNearNowWhenNineHasPassed() {
         val zone = ZoneId.of("America/Argentina/Buenos_Aires")
         val before = ZonedDateTime.of(2026, 8, 7, 8, 0, 0, 0, zone)

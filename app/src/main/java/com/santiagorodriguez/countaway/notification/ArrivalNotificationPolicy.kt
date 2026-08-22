@@ -22,4 +22,7 @@ object ArrivalNotificationPolicy {
         .filterNot { (event, date) -> wasDelivered(event, date) }
         .map { (_, date) -> date }
         .minOrNull()
+
+    fun shouldResetDeliveryState(previous: CountdownEvent?, updated: CountdownEvent): Boolean =
+        previous == null || previous.date != updated.date || previous.reminder != updated.reminder
 }

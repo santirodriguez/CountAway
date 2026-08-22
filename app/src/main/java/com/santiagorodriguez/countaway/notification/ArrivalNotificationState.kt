@@ -21,6 +21,10 @@ class ArrivalNotificationState(context: Context) {
         preferences.edit().remove(key(eventId)).apply()
     }
 
+    fun clear() {
+        preferences.edit().clear().apply()
+    }
+
     private fun key(eventId: String): String = "$KEY_PREFIX$eventId"
 
     private companion object {

@@ -12,6 +12,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownDataException
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
+import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 
@@ -102,6 +103,7 @@ class AboutActivity : BaseActivity() {
         pendingImportPayload = null
         try {
             repository.importPayload(payload)
+            ArrivalNotificationState(this).clear()
             CountdownWidgetProvider.updateAllWidgets(this)
             WidgetUpdateScheduler.ensureScheduled(this)
             ArrivalNotificationScheduler.ensureScheduled(this)
