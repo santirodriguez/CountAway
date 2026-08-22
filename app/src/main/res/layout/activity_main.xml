@@ -25,33 +25,33 @@
 
             <ImageButton
                 android:id="@+id/languageEnglishButton"
-                android:layout_width="42dp"
-                android:layout_height="34dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="@drawable/language_chip_inactive"
                 android:contentDescription="@string/language_english"
-                android:padding="9dp"
+                android:padding="12dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/flag_us" />
 
             <ImageButton
                 android:id="@+id/languageSpanishButton"
-                android:layout_width="42dp"
-                android:layout_height="34dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_marginStart="6dp"
                 android:background="@drawable/language_chip_inactive"
                 android:contentDescription="@string/language_spanish"
-                android:padding="9dp"
+                android:padding="12dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/flag_ar" />
 
             <ImageButton
                 android:id="@+id/languageCatalanButton"
-                android:layout_width="42dp"
-                android:layout_height="34dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_marginStart="6dp"
                 android:background="@drawable/language_chip_inactive"
                 android:contentDescription="@string/language_catalan"
-                android:padding="9dp"
+                android:padding="12dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/flag_catalonia" />
         </LinearLayout>
@@ -63,8 +63,8 @@
 
         <TextView
             android:id="@+id/themeButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:layout_marginEnd="8dp"
             android:background="@drawable/icon_button"
             android:contentDescription="@string/theme_switch_to_light"
@@ -76,8 +76,8 @@
 
         <TextView
             android:id="@+id/aboutButton"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="@drawable/icon_button"
             android:contentDescription="@string/action_about"
             android:fontFamily="sans-serif-medium"
