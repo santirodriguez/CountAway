@@ -1,0 +1,1 @@
+Mejora los metadatos de distribución y los nombres localizados de la app. Sin cambios funcionales.
