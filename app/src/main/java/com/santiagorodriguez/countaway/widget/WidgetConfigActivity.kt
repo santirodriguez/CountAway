@@ -166,8 +166,8 @@ class WidgetConfigActivity : BaseActivity() {
         val background = WidgetBackground.entries.getOrElse(backgroundSpinner.selectedItemPosition) {
             WidgetBackground.CLASSIC
         }
-        val systemDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
-            Configuration.UI_MODE_NIGHT_YES
+        val systemDark = applicationContext.resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         val dark = appearance.resolveDark(systemDark)
 
         previewBackground.setImageBitmap(
