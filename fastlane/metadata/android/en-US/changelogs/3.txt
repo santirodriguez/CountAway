@@ -1,0 +1,1 @@
+Improves distribution metadata and localized app naming. No functional changes.
