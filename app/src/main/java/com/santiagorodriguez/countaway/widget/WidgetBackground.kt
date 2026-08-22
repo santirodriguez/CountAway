@@ -8,6 +8,9 @@ enum class WidgetBackground(val storageKey: String) {
     HORIZON("horizon"),
     FOREST("forest"),
     SUNSET("sunset"),
+    PULSE("pulse"),
+    BREEZE("breeze"),
+    EMBER("ember"),
     MONOGRAM("monogram");
 
     fun drawableRes(dark: Boolean): Int = when (this) {
@@ -16,6 +19,9 @@ enum class WidgetBackground(val storageKey: String) {
         HORIZON -> if (dark) R.drawable.widget_background_horizon_dark else R.drawable.widget_background_horizon_light
         FOREST -> if (dark) R.drawable.widget_background_forest_dark else R.drawable.widget_background_forest_light
         SUNSET -> if (dark) R.drawable.widget_background_sunset_dark else R.drawable.widget_background_sunset_light
+        PULSE -> if (dark) R.drawable.widget_background_pulse_dark else R.drawable.widget_background_pulse_light
+        BREEZE -> if (dark) R.drawable.widget_background_breeze_dark else R.drawable.widget_background_breeze_light
+        EMBER -> if (dark) R.drawable.widget_background_ember_dark else R.drawable.widget_background_ember_light
         MONOGRAM -> if (dark) R.drawable.widget_background_monogram_dark else R.drawable.widget_background_monogram_light
     }
 

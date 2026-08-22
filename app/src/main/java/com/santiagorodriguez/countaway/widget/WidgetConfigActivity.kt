@@ -2,10 +2,12 @@ package com.santiagorodriguez.countaway.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.ListView
 import android.widget.Spinner
 import android.widget.TextView
@@ -16,6 +18,7 @@ import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.BaseActivity
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.InsetUtils
+import com.santiagorodriguez.countaway.ui.SimpleItemSelectedListener
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -26,6 +29,11 @@ class WidgetConfigActivity : BaseActivity() {
     private lateinit var emptyState: TextView
     private lateinit var appearanceSpinner: Spinner
     private lateinit var backgroundSpinner: Spinner
+    private lateinit var previewBackground: ImageView
+    private lateinit var previewIcon: ImageView
+    private lateinit var previewTitle: TextView
+    private lateinit var previewCount: TextView
+    private lateinit var previewUnit: TextView
     private lateinit var saveButton: Button
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
     private var events: List<CountdownEvent> = emptyList()
@@ -53,6 +61,11 @@ class WidgetConfigActivity : BaseActivity() {
         emptyState = findViewById(R.id.widgetEmptyState)
         appearanceSpinner = findViewById(R.id.widgetAppearanceSpinner)
         backgroundSpinner = findViewById(R.id.widgetBackgroundSpinner)
+        previewBackground = findViewById(R.id.widgetPreviewBackground)
+        previewIcon = findViewById(R.id.widgetPreviewIcon)
+        previewTitle = findViewById(R.id.widgetPreviewTitle)
+        previewCount = findViewById(R.id.widgetPreviewCount)
+        previewUnit = findViewById(R.id.widgetPreviewUnit)
         saveButton = findViewById(R.id.widgetSaveButton)
         setSaveEnabled(false)
 
@@ -75,6 +88,9 @@ class WidgetConfigActivity : BaseActivity() {
                 getString(R.string.widget_background_horizon),
                 getString(R.string.widget_background_forest),
                 getString(R.string.widget_background_sunset),
+                getString(R.string.widget_background_pulse),
+                getString(R.string.widget_background_breeze),
+                getString(R.string.widget_background_ember),
                 getString(R.string.widget_background_six),
             ),
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
@@ -84,6 +100,11 @@ class WidgetConfigActivity : BaseActivity() {
         selectedMode = existing?.eventSelection ?: WidgetEventSelection.FIXED
         appearanceSpinner.setSelection(WidgetAppearance.entries.indexOf(existing?.appearance ?: WidgetAppearance.SYSTEM))
         backgroundSpinner.setSelection(WidgetBackground.entries.indexOf(existing?.background ?: WidgetBackground.CLASSIC))
+
+        val styleListener = SimpleItemSelectedListener { updateStylePreview() }
+        appearanceSpinner.onItemSelectedListener = styleListener
+        backgroundSpinner.onItemSelectedListener = SimpleItemSelectedListener { updateStylePreview() }
+        updateStylePreview()
 
         eventList.choiceMode = ListView.CHOICE_MODE_SINGLE
         eventList.setOnItemClickListener { _, _, position, _ ->
@@ -137,6 +158,38 @@ class WidgetConfigActivity : BaseActivity() {
         }
     }
 
+    private fun updateStylePreview() {
+        if (!::previewBackground.isInitialized) return
+        val appearance = WidgetAppearance.entries.getOrElse(appearanceSpinner.selectedItemPosition) {
+            WidgetAppearance.SYSTEM
+        }
+        val background = WidgetBackground.entries.getOrElse(backgroundSpinner.selectedItemPosition) {
+            WidgetBackground.CLASSIC
+        }
+        val systemDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
+            Configuration.UI_MODE_NIGHT_YES
+        val dark = appearance.resolveDark(systemDark)
+
+        previewBackground.setImageBitmap(
+            WidgetBackgroundRenderer.render(
+                context = this,
+                background = background,
+                dark = dark,
+                widthDp = PREVIEW_WIDTH_DP,
+                heightDp = PREVIEW_HEIGHT_DP,
+            ),
+        )
+        val primaryColor = getColor(if (dark) R.color.widget_dark_text else R.color.widget_light_text)
+        val secondaryColor = getColor(
+            if (dark) R.color.widget_dark_secondary_text else R.color.widget_light_secondary_text,
+        )
+        val accentColor = getColor(if (dark) R.color.widget_dark_accent else R.color.widget_light_accent)
+        previewIcon.setColorFilter(accentColor)
+        previewTitle.setTextColor(primaryColor)
+        previewCount.setTextColor(accentColor)
+        previewUnit.setTextColor(secondaryColor)
+    }
+
     private fun setSaveEnabled(enabled: Boolean) {
         saveButton.isEnabled = enabled
         saveButton.alpha = if (enabled) 1f else 0.45f
@@ -163,5 +216,10 @@ class WidgetConfigActivity : BaseActivity() {
             Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId),
         )
         finish()
+    }
+
+    private companion object {
+        const val PREVIEW_WIDTH_DP = 320
+        const val PREVIEW_HEIGHT_DP = 132
     }
 }

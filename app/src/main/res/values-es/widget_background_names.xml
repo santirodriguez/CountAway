@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_preview_label">Vista previa</string>
+    <string name="widget_background_pulse">Pulso</string>
+    <string name="widget_background_breeze">Brisa</string>
+    <string name="widget_background_ember">Brasa</string>
+</resources>

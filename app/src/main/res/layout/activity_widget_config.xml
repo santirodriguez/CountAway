@@ -108,6 +108,77 @@
                 android:spinnerMode="dropdown" />
         </FrameLayout>
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/widget_preview_label"
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="132dp"
+            android:layout_marginTop="6dp"
+            android:importantForAccessibility="no">
+
+            <ImageView
+                android:id="@+id/widgetPreviewBackground"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="fitXY" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/widgetPreviewTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:text="@string/event_type_trip"
+                    android:textSize="13sp" />
+
+                <ImageView
+                    android:id="@+id/widgetPreviewIcon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginTop="4dp"
+                    android:contentDescription="@null"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_event_airplane" />
+
+                <TextView
+                    android:id="@+id/widgetPreviewCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-condensed"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="@string/widget_preview_value"
+                    android:textSize="32sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widgetPreviewUnit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:text="@string/widget_days_left"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </FrameLayout>
+
         <Button
             android:id="@+id/widgetSaveButton"
             style="@style/Widget.CountAway.Button.Primary"

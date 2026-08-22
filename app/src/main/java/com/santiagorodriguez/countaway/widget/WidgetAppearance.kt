@@ -5,6 +5,12 @@ enum class WidgetAppearance(val storageKey: String) {
     LIGHT("light"),
     DARK("dark");
 
+    fun resolveDark(systemDark: Boolean): Boolean = when (this) {
+        SYSTEM -> systemDark
+        LIGHT -> false
+        DARK -> true
+    }
+
     companion object {
         fun fromStorageKey(value: String?): WidgetAppearance =
             entries.firstOrNull { it.storageKey == value } ?: SYSTEM
