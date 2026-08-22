@@ -16,6 +16,8 @@
 
     <string name="empty_title">Encara no hi ha cap compte enrere</string>
     <string name="empty_description">Afegeix un viatge, un examen, un aniversari o qualsevol cosa que valgui la pena esperar.</string>
+    <string name="data_error_title">Les dades desades necessiten atenció</string>
+    <string name="data_error_description">Ja Queda Poc ha aturat l’edició per protegir el fitxer existent. Restaura una còpia vàlida des de Sobre l’app abans de fer canvis.</string>
     <string name="event_meta">%1$s · %2$s</string>
     <string name="status_days">%1$d dies</string>
     <string name="status_tomorrow">Demà</string>
@@ -29,11 +31,17 @@
     <string name="field_icon">Icona</string>
     <string name="field_title">Títol</string>
     <string name="field_date">Data</string>
-    <string name="notification_arrival_toggle">Avisa’m quan arribi el dia</string>
+    <string name="field_reminder">Recordatori</string>
+    <string name="reminder_off">Desactivat</string>
+    <string name="reminder_on_day">El mateix dia</string>
+    <string name="reminder_one_day">1 dia abans</string>
+    <string name="reminder_three_days">3 dies abans</string>
+    <string name="reminder_seven_days">7 dies abans</string>
     <string name="notification_permission_denied">No s’ha concedit el permís de notificacions.</string>
     <string name="title_required">Posa un títol a aquest compte enrere.</string>
     <string name="delete_title">Vols eliminar el compte enrere?</string>
     <string name="delete_message">Vols eliminar &quot;%1$s&quot;?</string>
+    <string name="data_error_edit_blocked">Ja Queda Poc no ha pogut llegir de manera segura les dades desades. L’edició està desactivada per evitar sobreescriure-les.</string>
 
     <string name="event_type_trip">Viatge</string>
     <string name="event_type_exam">Examen</string>
@@ -62,27 +70,56 @@
     <string name="widget_description">Un compte enrere lleuger i redimensionable per a la pantalla d’inici.</string>
     <string name="widget_days_left">dies que falten</string>
     <string name="widget_select_countdown">Tria un compte enrere</string>
+    <string name="widget_no_upcoming">No hi ha cap compte enrere proper</string>
     <string name="widget_tap_to_configure">Toca per configurar</string>
     <string name="widget_config_title">Tria un compte enrere</string>
     <string name="widget_config_description">Tria què vols tenir a la vista en aquest widget.</string>
     <string name="widget_config_empty">Encara no hi ha comptes enrere. Crea’n un i després torna aquí.</string>
     <string name="widget_create_countdown">Crea un compte enrere</string>
+    <string name="widget_next_countdown">Proper compte enrere</string>
     <string name="widget_appearance_label">Aparença</string>
     <string name="widget_appearance_system">Sistema</string>
     <string name="widget_appearance_light">Clar</string>
     <string name="widget_appearance_dark">Fosc</string>
+    <string name="widget_background_label">Fons</string>
+    <string name="widget_background_classic">Clàssic</string>
+    <string name="widget_background_mist">Boira</string>
+    <string name="widget_background_horizon">Horitzó</string>
+    <string name="widget_background_forest">Bosc</string>
+    <string name="widget_background_sunset">Capvespre</string>
+    <string name="widget_background_six">Carena</string>
     <string name="widget_add_to_home">Desa el widget</string>
     <string name="widget_event_option">%1$s · %2$s</string>
 
-    <string name="notification_channel_name">Arribades de comptes enrere</string>
+    <string name="notification_channel_name">Recordatoris de comptes enrere</string>
     <string name="notification_arrival_title">Avui és el dia</string>
     <string name="notification_arrival_body">%1$s ha arribat a 0.</string>
+    <string name="notification_upcoming_title">Recordatori de compte enrere</string>
+    <plurals name="notification_upcoming_body">
+        <item quantity="one">%2$s és demà.</item>
+        <item quantity="other">Falten %1$d dies per a %2$s.</item>
+    </plurals>
 
     <string name="about_version">Versió %1$s</string>
     <string name="about_how_title">Perquè sigui útil de debò</string>
     <string name="about_how_body">Crea una data, afegeix el widget de Ja Queda Poc a la pantalla d’inici i tria aquest compte enrere. Sense el widget, això és bàsicament una llista força maca de dates. Amb el widget comença la gràcia.</string>
     <string name="about_how_steps">1. Crea un compte enrere\n2. Afegeix el widget\n3. Deixa de mirar el calendari cada cinc minuts</string>
     <string name="about_privacy">Tot queda desat en aquest dispositiu. Sense comptes, publicitat, seguiment ni accés a internet.</string>
+    <string name="backup_title">Còpia local</string>
+    <string name="backup_description">Exporta o restaura els teus comptes enrere amb un fitxer JSON que controles tu.</string>
+    <string name="backup_export">Exporta la còpia</string>
+    <string name="backup_import">Importa la còpia</string>
+    <string name="backup_export_success">Còpia exportada.</string>
+    <string name="backup_export_failed">No s’ha pogut exportar la còpia.</string>
+    <string name="backup_import_action">Substitueix els comptes enrere</string>
+    <string name="backup_import_invalid">Aquest fitxer no és una còpia vàlida de Ja Queda Poc.</string>
+    <string name="backup_import_failed">No s’ha pogut importar la còpia.</string>
+    <string name="backup_import_success">Còpia importada.</string>
+    <string name="backup_import_confirm_title">Vols importar la còpia?</string>
+    <plurals name="backup_import_confirm_message">
+        <item quantity="one">Això substituirà els comptes enrere actuals per %1$d compte enrere de la còpia.</item>
+        <item quantity="other">Això substituirà els comptes enrere actuals per %1$d comptes enrere de la còpia.</item>
+    </plurals>
     <string name="about_author">Creada per santiagorodriguez.com</string>
     <string name="about_donate">Dona</string>
     <string name="about_donate_note">Si això t’ha estalviat mirar el calendari dotze vegades al dia, pots col·laborar amb la noble causa de continuar simplificant coses que no haurien de ser complicades.</string>

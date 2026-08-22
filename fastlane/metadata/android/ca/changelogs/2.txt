@@ -1,0 +1,1 @@
+Afegeix nou fons de giny amb previsualització, mode Proper compte enrere, recordatoris el mateix dia o 1/3/7 dies abans, còpia local JSON i gestió més segura de dades corruptes o incompatibles.

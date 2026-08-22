@@ -10,18 +10,22 @@ import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.ImageButton
-import android.widget.Switch
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.model.ReminderOption
+import com.santiagorodriguez.countaway.notification.ArrivalNotificationPolicy
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
@@ -34,6 +38,7 @@ import java.util.UUID
 
 class EditorActivity : BaseActivity() {
     private val eventTypes = EventType.entries.toList()
+    private val reminderOptions = ReminderOption.entries.toList()
     private lateinit var repository: CountdownRepository
     private lateinit var titleInput: EditText
     private lateinit var typeGrid: GridLayout
@@ -41,11 +46,12 @@ class EditorActivity : BaseActivity() {
     private lateinit var iconGrid: GridLayout
     private lateinit var dateButton: Button
     private lateinit var deleteButton: Button
-    private lateinit var notifySwitch: Switch
+    private lateinit var reminderSpinner: Spinner
     private var existingEvent: CountdownEvent? = null
     private var selectedDate: LocalDate = LocalDate.now().plusDays(1)
     private var selectedType: EventType = EventType.TRIP
     private var selectedIcon: EventIcon = EventIcon.defaultFor(EventType.TRIP)
+    private var selectedReminder: ReminderOption = ReminderOption.OFF
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,10 +65,11 @@ class EditorActivity : BaseActivity() {
         iconGrid = findViewById(R.id.iconGrid)
         dateButton = findViewById(R.id.dateButton)
         deleteButton = findViewById(R.id.deleteButton)
-        notifySwitch = findViewById(R.id.notifySwitch)
+        reminderSpinner = findViewById(R.id.reminderSpinner)
 
+        val loadedEvents = loadEventsOrFinish() ?: return
         val requestedEventId = intent.getStringExtra(EXTRA_EVENT_ID)
-        existingEvent = requestedEventId?.let { id -> repository.load().firstOrNull { it.id == id } }
+        existingEvent = requestedEventId?.let { id -> loadedEvents.firstOrNull { it.id == id } }
         if (requestedEventId != null && existingEvent == null) {
             finish()
             return
@@ -77,21 +84,17 @@ class EditorActivity : BaseActivity() {
             selectedDate = event.date
             selectedType = event.type
             selectedIcon = event.icon
-            notifySwitch.isChecked = event.notifyOnArrival
+            selectedReminder = event.reminder
         }
 
         renderTypeGrid()
         renderCustomIconGrid()
         renderTitleHint()
         renderDate()
+        configureReminderSpinner()
 
         dateButton.setOnClickListener { showDatePicker() }
         findViewById<Button>(R.id.saveButton).setOnClickListener { save() }
-        notifySwitch.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked && !ArrivalNotificationScheduler.canPostNotifications(this)) {
-                requestNotificationPermission()
-            }
-        }
 
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
@@ -107,8 +110,33 @@ class EditorActivity : BaseActivity() {
 
         val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
         if (!granted) {
-            notifySwitch.isChecked = false
+            selectedReminder = ReminderOption.OFF
+            reminderSpinner.setSelection(reminderOptions.indexOf(ReminderOption.OFF))
             Toast.makeText(this, R.string.notification_permission_denied, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun configureReminderSpinner() {
+        reminderSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            listOf(
+                getString(R.string.reminder_off),
+                getString(R.string.reminder_on_day),
+                getString(R.string.reminder_one_day),
+                getString(R.string.reminder_three_days),
+                getString(R.string.reminder_seven_days),
+            ),
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        reminderSpinner.setSelection(reminderOptions.indexOf(selectedReminder))
+        reminderSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
+            val next = reminderOptions[position]
+            selectedReminder = next
+            if (next != ReminderOption.OFF && !ArrivalNotificationScheduler.canPostNotifications(this)) {
+                requestNotificationPermission()
+            }
         }
     }
 
@@ -209,17 +237,17 @@ class EditorActivity : BaseActivity() {
             return
         }
 
+        val events = loadEventsOrFinish()?.toMutableList() ?: return
         val event = CountdownEvent(
             id = existingEvent?.id ?: UUID.randomUUID().toString(),
             title = title,
             date = selectedDate,
             type = selectedType,
             icon = selectedIcon,
-            notifyOnArrival = notifySwitch.isChecked,
+            reminder = selectedReminder,
             createdAt = existingEvent?.createdAt ?: Instant.now(),
         )
 
-        val events = repository.load().toMutableList()
         val existingIndex = events.indexOfFirst { it.id == event.id }
         if (existingIndex >= 0) {
             events[existingIndex] = event
@@ -227,6 +255,9 @@ class EditorActivity : BaseActivity() {
             events.add(event)
         }
         repository.save(events)
+        if (ArrivalNotificationPolicy.shouldResetDeliveryState(existingEvent, event)) {
+            ArrivalNotificationState(this).remove(event.id)
+        }
         refreshBackgroundState()
         finish()
     }
@@ -238,13 +269,23 @@ class EditorActivity : BaseActivity() {
             .setMessage(getString(R.string.delete_message, event.title))
             .setNegativeButton(R.string.action_cancel, null)
             .setPositiveButton(R.string.action_delete) { _, _ ->
-                val events = repository.load().filterNot { it.id == event.id }
+                val events = loadEventsOrFinish()?.filterNot { it.id == event.id }
+                    ?: return@setPositiveButton
                 repository.save(events)
                 ArrivalNotificationState(this).remove(event.id)
                 refreshBackgroundState()
                 finish()
             }
             .show()
+    }
+
+    private fun loadEventsOrFinish(): List<CountdownEvent>? = when (val result = repository.loadResult()) {
+        is CountdownLoadResult.Success -> result.events
+        is CountdownLoadResult.Failure -> {
+            Toast.makeText(this, R.string.data_error_edit_blocked, Toast.LENGTH_LONG).show()
+            finish()
+            null
+        }
     }
 
     private fun refreshBackgroundState() {

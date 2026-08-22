@@ -1,0 +1,7 @@
+Ja Queda Poc manté les dates importants simples i visibles a la pantalla d’inici.
+
+Crea diversos comptes enrere, tria un tipus d’esdeveniment o una icona personalitzada i afegeix ginys compactes o redimensionables. Cada giny pot seguir un esdeveniment fix o mostrar automàticament el proper compte enrere, amb aparença i fons independents.
+
+Els recordatoris locals opcionals poden avisar-te el mateix dia o 1, 3 o 7 dies abans. També pots exportar i restaurar els comptes enrere mitjançant una còpia local en format JSON.
+
+Tot queda al dispositiu. Sense comptes, publicitat, analítica, sincronització al núvol ni permís d’Internet.

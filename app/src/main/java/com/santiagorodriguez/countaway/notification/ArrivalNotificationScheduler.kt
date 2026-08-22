@@ -48,7 +48,7 @@ object ArrivalNotificationScheduler {
             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
     internal fun triggerTime(now: ZonedDateTime, eventDate: LocalDate): ZonedDateTime {
-        val scheduled = eventDate.atTime(ARRIVAL_TIME).atZone(now.zone)
+        val scheduled = eventDate.atTime(REMINDER_TIME).atZone(now.zone)
         return if (!scheduled.isAfter(now) && eventDate == now.toLocalDate()) {
             now.plusSeconds(10)
         } else {
@@ -63,6 +63,6 @@ object ArrivalNotificationScheduler {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
-    private val ARRIVAL_TIME: LocalTime = LocalTime.of(9, 0)
+    private val REMINDER_TIME: LocalTime = LocalTime.of(9, 0)
     private const val REQUEST_CODE = 41_900
 }

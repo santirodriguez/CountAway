@@ -9,6 +9,6 @@ data class CountdownEvent(
     val date: LocalDate,
     val type: EventType,
     val icon: EventIcon = EventIcon.defaultFor(type),
-    val notifyOnArrival: Boolean = false,
+    val reminder: ReminderOption = ReminderOption.OFF,
     val createdAt: Instant,
 )

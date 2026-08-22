@@ -6,8 +6,10 @@ import org.junit.Test
 
 class CountdownStorageSchemaTest {
     @Test
-    fun legacyAndCurrentSchemasAreSupported() {
+    fun allReleasedSchemasRemainSupported() {
         assertTrue(CountdownStorageSchema.isSupported(CountdownStorageSchema.LEGACY_VERSION))
+        assertTrue(CountdownStorageSchema.isSupported(CountdownStorageSchema.PREVIOUS_VERSION))
+        assertTrue(CountdownStorageSchema.isSupported(CountdownStorageSchema.NOTIFICATION_VERSION))
         assertTrue(CountdownStorageSchema.isSupported(CountdownStorageSchema.CURRENT_VERSION))
     }
 

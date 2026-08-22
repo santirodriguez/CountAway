@@ -30,10 +30,13 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 
 - Multiple local countdowns with presets and custom icons
 - Compact 1×1 and resizable home-screen widgets
+- Fixed-event widgets or an automatic **Next countdown** mode
+- Nine widget backgrounds with a live preview and system, light, and dark appearance
+- Optional local reminders on the event day or 1, 3, or 7 days before
+- Local JSON backup and restore through Android's document picker
 - Subtle 3 · 2 · 1 · 0 arrival states
-- Optional one-time local notification when the day arrives
-- System, light, and dark widget appearance plus one-tap app light/dark mode
-- English, Spanish (Argentina), and Catalan
+- One-tap app light/dark mode
+- English, Spanish, and Catalan
 - Battery-minded local refreshes
 
 ## Screenshots
@@ -52,7 +55,7 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 
 ## Privacy
 
-CountAway stores everything on your device and has no Internet permission. It does not need your location, contacts, camera, microphone, or a suspiciously creative excuse to collect any of them. If you enable arrival alerts, Android may ask for notification permission. That's it.
+CountAway stores everything on your device and has no Internet permission. It does not need your location, contacts, camera, microphone, or a suspiciously creative excuse to collect any of them. If you enable reminders, Android may ask for notification permission. Backup and restore use Android's system document picker and do not require broad storage access.
 
 ## Build
 
@@ -62,7 +65,7 @@ Requires JDK 17 and Android SDK 36.
 ./gradlew test lint assembleDebug assembleRelease
 ```
 
-Maintainer signing and release steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md).
+Maintainer signing and release steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md). F-Droid preparation and submission notes are in [`docs/FDROID.md`](docs/FDROID.md).
 
 ## License
 

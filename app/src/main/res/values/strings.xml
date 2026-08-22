@@ -16,6 +16,8 @@
 
     <string name="empty_title">Nothing to count down yet</string>
     <string name="empty_description">Add a trip, exam, birthday, or anything else worth waiting for.</string>
+    <string name="data_error_title">Saved data needs attention</string>
+    <string name="data_error_description">CountAway stopped editing to protect the existing file. Restore a valid backup from About before making changes.</string>
     <string name="event_meta">%1$s · %2$s</string>
     <string name="status_days">%1$d days</string>
     <string name="status_tomorrow">Tomorrow</string>
@@ -29,11 +31,17 @@
     <string name="field_icon">Icon</string>
     <string name="field_title">Title</string>
     <string name="field_date">Date</string>
-    <string name="notification_arrival_toggle">Notify me when the day arrives</string>
+    <string name="field_reminder">Reminder</string>
+    <string name="reminder_off">Off</string>
+    <string name="reminder_on_day">On the day</string>
+    <string name="reminder_one_day">1 day before</string>
+    <string name="reminder_three_days">3 days before</string>
+    <string name="reminder_seven_days">7 days before</string>
     <string name="notification_permission_denied">Notification permission was not granted.</string>
     <string name="title_required">Give this countdown a title.</string>
     <string name="delete_title">Delete countdown?</string>
     <string name="delete_message">Delete &quot;%1$s&quot;?</string>
+    <string name="data_error_edit_blocked">CountAway could not safely read its saved data. Editing is disabled to avoid overwriting it.</string>
 
     <string name="event_type_trip">Trip</string>
     <string name="event_type_exam">Exam</string>
@@ -62,27 +70,56 @@
     <string name="widget_description">A lightweight resizable countdown for your home screen.</string>
     <string name="widget_days_left">days left</string>
     <string name="widget_select_countdown">Select countdown</string>
+    <string name="widget_no_upcoming">No upcoming countdown</string>
     <string name="widget_tap_to_configure">Tap to configure</string>
     <string name="widget_config_title">Choose countdown</string>
     <string name="widget_config_description">Choose what this widget should keep an eye on.</string>
     <string name="widget_config_empty">No countdowns yet. Create one first, then come back here.</string>
     <string name="widget_create_countdown">Create countdown</string>
+    <string name="widget_next_countdown">Next countdown</string>
     <string name="widget_appearance_label">Appearance</string>
     <string name="widget_appearance_system">System</string>
     <string name="widget_appearance_light">Light</string>
     <string name="widget_appearance_dark">Dark</string>
+    <string name="widget_background_label">Background</string>
+    <string name="widget_background_classic">Classic</string>
+    <string name="widget_background_mist">Mist</string>
+    <string name="widget_background_horizon">Horizon</string>
+    <string name="widget_background_forest">Forest</string>
+    <string name="widget_background_sunset">Sunset</string>
+    <string name="widget_background_six">Ridge</string>
     <string name="widget_add_to_home">Save widget</string>
     <string name="widget_event_option">%1$s · %2$s</string>
 
-    <string name="notification_channel_name">Countdown arrivals</string>
+    <string name="notification_channel_name">Countdown reminders</string>
     <string name="notification_arrival_title">Today is the day</string>
     <string name="notification_arrival_body">%1$s has reached 0.</string>
+    <string name="notification_upcoming_title">Countdown reminder</string>
+    <plurals name="notification_upcoming_body">
+        <item quantity="one">%2$s is tomorrow.</item>
+        <item quantity="other">%2$s is in %1$d days.</item>
+    </plurals>
 
     <string name="about_version">Version %1$s</string>
     <string name="about_how_title">Make it useful</string>
     <string name="about_how_body">Create a date, add the CountAway widget to your home screen, and choose that countdown. Without the widget, this is mostly a very tasteful list of dates. The widget is where the fun starts.</string>
     <string name="about_how_steps">1. Create a countdown\n2. Add the widget\n3. Stop checking the calendar every five minutes</string>
     <string name="about_privacy">Everything stays on this device. No accounts, ads, analytics, or network access.</string>
+    <string name="backup_title">Local backup</string>
+    <string name="backup_description">Export or restore your countdowns using a JSON file you control.</string>
+    <string name="backup_export">Export backup</string>
+    <string name="backup_import">Import backup</string>
+    <string name="backup_export_success">Backup exported.</string>
+    <string name="backup_export_failed">Could not export the backup.</string>
+    <string name="backup_import_action">Replace countdowns</string>
+    <string name="backup_import_invalid">This is not a valid CountAway backup.</string>
+    <string name="backup_import_failed">Could not import the backup.</string>
+    <string name="backup_import_success">Backup imported.</string>
+    <string name="backup_import_confirm_title">Import backup?</string>
+    <plurals name="backup_import_confirm_message">
+        <item quantity="one">This will replace your current countdowns with %1$d countdown from the backup.</item>
+        <item quantity="other">This will replace your current countdowns with %1$d countdowns from the backup.</item>
+    </plurals>
     <string name="about_author">Created by santiagorodriguez.com</string>
     <string name="about_donate">Donate</string>
     <string name="about_donate_note">If this saved you from checking the calendar twelve times a day, you can support the noble cause of keeping simple things simple.</string>

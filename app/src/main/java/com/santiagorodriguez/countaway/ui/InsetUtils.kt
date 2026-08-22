@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.ui
 
 import android.os.Build
 import android.view.View
+import android.view.WindowInsets
 import kotlin.math.max
 
 object InsetUtils {
@@ -12,28 +13,49 @@ object InsetUtils {
         val baseBottom = view.paddingBottom
 
         view.setOnApplyWindowInsetsListener { target, insets ->
-            var left = insets.systemWindowInsetLeft
-            var top = insets.systemWindowInsetTop
-            var right = insets.systemWindowInsetRight
-            var bottom = insets.systemWindowInsetBottom
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                insets.displayCutout?.let { cutout ->
-                    left = max(left, cutout.safeInsetLeft)
-                    top = max(top, cutout.safeInsetTop)
-                    right = max(right, cutout.safeInsetRight)
-                    bottom = max(bottom, cutout.safeInsetBottom)
-                }
+            val safeInsets = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val modern = insets.getInsets(
+                    WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout(),
+                )
+                SafeInsets(modern.left, modern.top, modern.right, modern.bottom)
+            } else {
+                legacySafeInsets(insets)
             }
 
             target.setPadding(
-                baseLeft + left,
-                baseTop + top,
-                baseRight + right,
-                baseBottom + bottom,
+                baseLeft + safeInsets.left,
+                baseTop + safeInsets.top,
+                baseRight + safeInsets.right,
+                baseBottom + safeInsets.bottom,
             )
             insets
         }
         view.requestApplyInsets()
     }
+
+    @Suppress("DEPRECATION")
+    private fun legacySafeInsets(insets: WindowInsets): SafeInsets {
+        var left = insets.systemWindowInsetLeft
+        var top = insets.systemWindowInsetTop
+        var right = insets.systemWindowInsetRight
+        var bottom = insets.systemWindowInsetBottom
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            insets.displayCutout?.let { cutout ->
+                left = max(left, cutout.safeInsetLeft)
+                top = max(top, cutout.safeInsetTop)
+                right = max(right, cutout.safeInsetRight)
+                bottom = max(bottom, cutout.safeInsetBottom)
+            }
+        }
+
+        return SafeInsets(left, top, right, bottom)
+    }
+
+    private data class SafeInsets(
+        val left: Int,
+        val top: Int,
+        val right: Int,
+        val bottom: Int,
+    )
 }

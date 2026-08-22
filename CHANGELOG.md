@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+- Add configurable local reminders for the event day or 1, 3, or 7 days before.
+- Add nine selectable widget backgrounds with automatic light and dark variants and a live configuration preview.
+- Keep explicit Light and Dark widget appearances independent of the phone's system theme.
+- Add a dynamic Next countdown widget mode that automatically follows the nearest upcoming event.
+- Add local JSON backup export and validated restore without storage or network permissions.
+- Harden local storage handling so corrupt or unsupported data is not silently overwritten.
+- Keep existing 1×1 and resizable widgets, local-only storage, battery-minded refreshes, themes, and translations.
+
 ## 1.0.0
 
 - Add local countdown creation, editing, deletion, sorting, presets, and custom event icons.
