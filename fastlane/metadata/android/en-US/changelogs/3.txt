@@ -1,0 +1,1 @@
+Improves distribution metadata and screenshot compatibility. No functional changes.

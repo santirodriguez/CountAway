@@ -1,0 +1,1 @@
+Mejora los metadatos de distribución y la compatibilidad de las capturas. Sin cambios funcionales.

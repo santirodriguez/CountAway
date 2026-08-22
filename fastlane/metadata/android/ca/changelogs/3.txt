@@ -1,0 +1,1 @@
+Millora les metadades de distribució i la compatibilitat de les captures de pantalla. Sense canvis funcionals.

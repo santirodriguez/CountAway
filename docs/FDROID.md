@@ -1,12 +1,13 @@
 # F-Droid inclusion
 
-This document tracks the upstream work required to submit CountAway to the official F-Droid repository.
+This document tracks CountAway's upstream requirements for the official F-Droid repository.
 
 F-Droid documentation:
 
 - https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/
 - https://f-droid.org/docs/Build_Metadata_Reference/
 - https://f-droid.org/docs/Reproducible_Builds/
+- https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/
 
 ## Upstream readiness
 
@@ -17,91 +18,66 @@ CountAway is intentionally straightforward for F-Droid:
 - the Android project uses the Gradle wrapper and standard Maven repositories;
 - runtime code has no proprietary SDK dependency;
 - the manifest has no Internet permission;
-- Fastlane-style descriptions and changelogs live under `fastlane/metadata/android/`;
+- Fastlane metadata lives under `fastlane/metadata/android/`;
+- English metadata uses F-Droid's `en-US` fallback locale, alongside `es` and `ca`;
+- phone screenshots are stored as PNG files under the `en-US` Fastlane metadata;
 - official releases use semantic `v<version>` tags;
 - release APKs are signed with the same long-lived upstream key.
 
+The F-Droid category is `Timer`.
+
 Do not add an F-Droid badge to the README until CountAway is actually published in the official repository.
 
-## Before the first submission
+## Current submission
 
-For v1.1.0:
+The official inclusion merge request is `fdroid/fdroiddata!46416`.
 
-1. Get Android CI green on the exact proposed release commit.
-2. Build a signed `1.1.0` release candidate with the **CountAway Release** workflow.
-3. Install the candidate on a real device or emulator and smoke-test the app, widgets, reminders, backup/restore, and an upgrade from 1.0.0.
-4. Merge the release PR only after review and explicit approval.
-5. Build the final draft release from the exact `main` commit that will be tagged.
-6. Record the full release commit SHA.
-7. Record the lowercase SHA-256 fingerprint of the APK signing certificate from the workflow signing report.
-8. Verify the APK checksum and publish the GitHub release/tag only after explicit approval.
-
-The full commit SHA and signing fingerprint must be real values from the final release. Never pre-fill or guess them.
-
-## fdroiddata merge request
-
-The official submission belongs in F-Droid's `fdroiddata` repository, not in this repository. Create:
+The first reproducible build remains CountAway 1.1.0 (`versionCode 2`) and must stay pinned to its original release source commit:
 
 ```text
-metadata/com.santiagorodriguez.countaway.yml
+d729772bef136372e43e8b1ac7824987784093f7
 ```
 
-A minimal starting point for the first build is:
+F-Droid CI has successfully rebuilt that source and verified it against the upstream signed 1.1.0 APK.
 
-```yaml
-Categories:
-  - Time
-License: Apache-2.0
-SourceCode: https://github.com/santirodriguez/CountAway
-IssueTracker: https://github.com/santirodriguez/CountAway/issues
-RepoType: git
-Repo: https://github.com/santirodriguez/CountAway.git
+Do not move the 1.1.0 build block to a later source commit. Android Gradle Plugin release output includes source revision information, so changing the source commit causes the rebuilt APK to differ from the already-published 1.1.0 binary even when the code change is metadata-only.
 
-Builds:
-  - versionName: 1.1.0
-    versionCode: 2
-    commit: <FULL_V1.1.0_RELEASE_COMMIT_SHA>
-    subdir: app
-    gradle:
-      - yes
+## CountAway 1.1.1
 
-AutoUpdateMode: Version
-UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$
-CurrentVersion: 1.1.0
-CurrentVersionCode: 2
-```
+Version 1.1.1 (`versionCode 3`) is a maintenance release for the corrected F-Droid metadata:
 
-Add upstream website/donation metadata only when the submitted URLs are the actual public URLs intended for the F-Droid listing.
+- English Fastlane metadata uses `en-US` instead of `en`;
+- localized Fastlane titles are present for English, Spanish, and Catalan;
+- phone screenshots use PNG files supported by F-Droid;
+- no functional app behavior changes are included.
 
-The first build block should use the **full commit hash**, not a branch name and not a guessed tag target.
+After the 1.1.1 release is published, add a separate 1.1.1 build block to the fdroiddata merge request using the exact final release commit. Keep the existing 1.1.0 build block unchanged.
 
 ## Reproducible upstream APKs
 
-The preferred result is for F-Droid to reproduce the upstream GitHub APK and publish that developer-signed binary. That lets users move between the GitHub/Obtainium and F-Droid distributions without reinstalling because Android sees the same signing identity.
-
-After the final release exists, extend the fdroiddata metadata with the real upstream binary and certificate fingerprint:
+The fdroiddata metadata uses the upstream GitHub release binary and the CountAway signing certificate so F-Droid can verify reproducible builds:
 
 ```yaml
-Binaries: https://github.com/santirodriguez/CountAway/releases/download/v%v/CountAway-v%v.apk
-AllowedAPKSigningKeys: <LOWERCASE_SHA256_SIGNING_CERT_FINGERPRINT>
+Binaries: 
+  https://github.com/santirodriguez/CountAway/releases/download/v%v/CountAway-v%v.apk
+AllowedAPKSigningKeys: dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a
 ```
 
-F-Droid will only use the upstream binary when its source rebuild verifies successfully. The release workflow pins `apksigner` to Android Build Tools 34.0.0 because F-Droid currently documents verification problems with `apksigner` 35 and newer.
+This lets users move between compatible upstream and F-Droid builds without changing Android signing identity.
 
-If the reproducibility check fails, do not weaken verification or add scanner exceptions just to make the submission pass. Compare the F-Droid rebuild and upstream artifact, identify the actual source of nondeterminism, fix the upstream build, and retry.
+The release workflow pins `apksigner` to Android Build Tools 34.0.0. Do not weaken verification or add scanner exceptions merely to make a build pass; investigate any reproducibility failure at its source.
 
-If reproducible upstream APKs cannot be achieved for the first inclusion, the fallback is to omit `Binaries`/`AllowedAPKSigningKeys` and let F-Droid sign its own build. That can still be accepted, but users switching between the upstream APK and F-Droid APK would need to uninstall/reinstall because the signatures differ.
+## Release checklist
 
-## Submission checks
+For 1.1.1 and later releases:
 
-Before opening the fdroiddata merge request:
+1. Keep `versionName`, `versionCode`, Fastlane changelog files, and `docs/releases/<version>.md` synchronized.
+2. Get Android CI green on the exact proposed release commit.
+3. Merge the release PR only after review and explicit approval.
+4. Prepare the release from the exact final `main` commit and keep the semantic tag on that commit.
+5. Preserve signing-key continuity and verify the release workflow output before publication.
+6. Update fdroiddata with a new build block that points to the exact release commit; never rewrite an older reproducible build to a newer commit.
+7. Keep automatic update detection restricted to stable semantic version tags.
+8. Wait for fdroiddata CI and maintainer review before considering the F-Droid update complete.
 
-- confirm v1.1.0 is public and the tag points to the exact submitted commit;
-- confirm versionName `1.1.0` and versionCode `2` match the APK;
-- confirm the Fastlane metadata is present upstream;
-- confirm there are no proprietary dependencies or downloaded build-time binaries that violate inclusion rules;
-- run or rely on fdroiddata CI for `fdroid lint`, scanner checks, and the source build;
-- fix build or metadata issues at the source rather than adding broad exceptions;
-- keep automatic update detection restricted to stable semantic version tags.
-
-Once the fdroiddata merge request is accepted and the first app build is actually published, add the official F-Droid badge/link to the README.
+Once the fdroiddata merge request is accepted and CountAway is actually published, the README can be updated separately with the official F-Droid badge/link.
