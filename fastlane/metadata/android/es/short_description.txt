@@ -1,1 +1,1 @@
-Cuenta regresiva local y liviana con widgets para la pantalla de inicio
+Cuenta regresiva local y ligera con widgets para la pantalla de inicio
