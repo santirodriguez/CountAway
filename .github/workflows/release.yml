@@ -115,7 +115,9 @@ jobs:
 
           if [[ "${PREPARE_RELEASE}" == "true" ]]; then
             test -f "docs/releases/${VERSION}.md"
-            test -f "fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt"
+            for locale in en es ca; do
+              test -f "fastlane/metadata/android/${locale}/changelogs/${VERSION_CODE}.txt"
+            done
           fi
 
       - name: Build optimized release
