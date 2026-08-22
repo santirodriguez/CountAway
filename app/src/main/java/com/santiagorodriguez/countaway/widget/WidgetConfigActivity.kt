@@ -25,10 +25,12 @@ class WidgetConfigActivity : BaseActivity() {
     private lateinit var eventList: ListView
     private lateinit var emptyState: TextView
     private lateinit var appearanceSpinner: Spinner
+    private lateinit var backgroundSpinner: Spinner
     private lateinit var saveButton: Button
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
     private var events: List<CountdownEvent> = emptyList()
     private var selectedEventId: String? = null
+    private var selectedMode: WidgetEventSelection = WidgetEventSelection.FIXED
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,10 +52,10 @@ class WidgetConfigActivity : BaseActivity() {
         eventList = findViewById(R.id.widgetEventList)
         emptyState = findViewById(R.id.widgetEmptyState)
         appearanceSpinner = findViewById(R.id.widgetAppearanceSpinner)
+        backgroundSpinner = findViewById(R.id.widgetBackgroundSpinner)
         saveButton = findViewById(R.id.widgetSaveButton)
         setSaveEnabled(false)
 
-        val appearanceValues = WidgetAppearance.entries
         appearanceSpinner.adapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
@@ -62,17 +64,36 @@ class WidgetConfigActivity : BaseActivity() {
                 getString(R.string.widget_appearance_light),
                 getString(R.string.widget_appearance_dark),
             ),
-        ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
+        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+
+        backgroundSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            listOf(
+                getString(R.string.widget_background_classic),
+                getString(R.string.widget_background_mist),
+                getString(R.string.widget_background_horizon),
+                getString(R.string.widget_background_forest),
+                getString(R.string.widget_background_sunset),
+                getString(R.string.widget_background_six),
+            ),
+        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         val existing = WidgetPreferences(this).get(appWidgetId)
         selectedEventId = existing?.eventId
-        appearanceSpinner.setSelection(appearanceValues.indexOf(existing?.appearance ?: WidgetAppearance.SYSTEM))
+        selectedMode = existing?.eventSelection ?: WidgetEventSelection.FIXED
+        appearanceSpinner.setSelection(WidgetAppearance.entries.indexOf(existing?.appearance ?: WidgetAppearance.SYSTEM))
+        backgroundSpinner.setSelection(WidgetBackground.entries.indexOf(existing?.background ?: WidgetBackground.CLASSIC))
 
         eventList.choiceMode = ListView.CHOICE_MODE_SINGLE
         eventList.setOnItemClickListener { _, _, position, _ ->
-            selectedEventId = events[position].id
+            if (position == 0) {
+                selectedMode = WidgetEventSelection.NEXT
+                selectedEventId = null
+            } else {
+                selectedMode = WidgetEventSelection.FIXED
+                selectedEventId = events[position - 1].id
+            }
             setSaveEnabled(true)
         }
 
@@ -91,14 +112,22 @@ class WidgetConfigActivity : BaseActivity() {
         events = CountdownEventOrder.sortedForDisplay(repository.load(), LocalDate.now())
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
-        val labels = events.map { event ->
-            getString(R.string.widget_event_option, event.title, event.date.format(formatter))
+        val labels = buildList {
+            add(getString(R.string.widget_next_countdown))
+            addAll(events.map { event ->
+                getString(R.string.widget_event_option, event.title, event.date.format(formatter))
+            })
         }
         eventList.adapter = ArrayAdapter(this, R.layout.item_widget_event, android.R.id.text1, labels)
-        emptyState.visibility = if (events.isEmpty()) View.VISIBLE else View.GONE
-        eventList.visibility = if (events.isEmpty()) View.GONE else View.VISIBLE
+        emptyState.visibility = View.GONE
+        eventList.visibility = View.VISIBLE
 
-        val selectedIndex = events.indexOfFirst { it.id == selectedEventId }
+        val selectedIndex = when (selectedMode) {
+            WidgetEventSelection.NEXT -> 0
+            WidgetEventSelection.FIXED -> events.indexOfFirst { it.id == selectedEventId }.let { index ->
+                if (index >= 0) index + 1 else -1
+            }
+        }
         if (selectedIndex >= 0) {
             eventList.setItemChecked(selectedIndex, true)
             setSaveEnabled(true)
@@ -114,9 +143,16 @@ class WidgetConfigActivity : BaseActivity() {
     }
 
     private fun saveConfiguration() {
-        val eventId = selectedEventId ?: return
+        if (selectedMode == WidgetEventSelection.FIXED && selectedEventId == null) return
         val appearance = WidgetAppearance.entries[appearanceSpinner.selectedItemPosition]
-        WidgetPreferences(this).save(appWidgetId, eventId, appearance)
+        val background = WidgetBackground.entries[backgroundSpinner.selectedItemPosition]
+        WidgetPreferences(this).save(
+            appWidgetId = appWidgetId,
+            eventId = selectedEventId,
+            appearance = appearance,
+            background = background,
+            eventSelection = selectedMode,
+        )
 
         val manager = AppWidgetManager.getInstance(this)
         CountdownWidgetProvider.updateWidget(this, manager, appWidgetId)
