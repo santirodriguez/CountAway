@@ -29,11 +29,17 @@
     <string name="field_icon">Ícono</string>
     <string name="field_title">Título</string>
     <string name="field_date">Fecha</string>
-    <string name="notification_arrival_toggle">Avisarme cuando llegue el día</string>
+    <string name="field_reminder">Recordatorio</string>
+    <string name="reminder_off">Desactivado</string>
+    <string name="reminder_on_day">Ese mismo día</string>
+    <string name="reminder_one_day">1 día antes</string>
+    <string name="reminder_three_days">3 días antes</string>
+    <string name="reminder_seven_days">7 días antes</string>
     <string name="notification_permission_denied">No se otorgó permiso para notificaciones.</string>
     <string name="title_required">Poné un título para esta cuenta regresiva.</string>
     <string name="delete_title">¿Eliminar cuenta regresiva?</string>
     <string name="delete_message">¿Eliminar &quot;%1$s&quot;?</string>
+    <string name="data_error_edit_blocked">Ya Estamos no pudo leer de forma segura los datos guardados. La edición está desactivada para evitar sobrescribirlos.</string>
 
     <string name="event_type_trip">Viaje</string>
     <string name="event_type_exam">Examen</string>
@@ -62,27 +68,56 @@
     <string name="widget_description">Una cuenta regresiva liviana y adaptable para la pantalla de inicio.</string>
     <string name="widget_days_left">días restantes</string>
     <string name="widget_select_countdown">Elegí una cuenta regresiva</string>
+    <string name="widget_no_upcoming">No hay próximas cuentas regresivas</string>
     <string name="widget_tap_to_configure">Tocá para configurar</string>
     <string name="widget_config_title">Elegí una cuenta regresiva</string>
     <string name="widget_config_description">Elegí qué querés tener a la vista en este widget.</string>
     <string name="widget_config_empty">Todavía no hay cuentas regresivas. Creá una y después volvé acá.</string>
     <string name="widget_create_countdown">Crear cuenta regresiva</string>
+    <string name="widget_next_countdown">Próxima cuenta regresiva</string>
     <string name="widget_appearance_label">Apariencia</string>
     <string name="widget_appearance_system">Sistema</string>
     <string name="widget_appearance_light">Claro</string>
     <string name="widget_appearance_dark">Oscuro</string>
+    <string name="widget_background_label">Fondo</string>
+    <string name="widget_background_classic">Clásico</string>
+    <string name="widget_background_mist">Niebla</string>
+    <string name="widget_background_horizon">Horizonte</string>
+    <string name="widget_background_forest">Bosque</string>
+    <string name="widget_background_sunset">Atardecer</string>
+    <string name="widget_background_six">Seis</string>
     <string name="widget_add_to_home">Guardar widget</string>
     <string name="widget_event_option">%1$s · %2$s</string>
 
-    <string name="notification_channel_name">Llegadas de cuentas regresivas</string>
+    <string name="notification_channel_name">Recordatorios de cuentas regresivas</string>
     <string name="notification_arrival_title">Llegó el día</string>
     <string name="notification_arrival_body">%1$s llegó a 0.</string>
+    <string name="notification_upcoming_title">Recordatorio de cuenta regresiva</string>
+    <plurals name="notification_upcoming_body">
+        <item quantity="one">%2$s es mañana.</item>
+        <item quantity="other">Faltan %1$d días para %2$s.</item>
+    </plurals>
 
     <string name="about_version">Versión %1$s</string>
     <string name="about_how_title">Para que sirva de verdad</string>
     <string name="about_how_body">Creá una fecha, agregá el widget de Ya Estamos a la pantalla de inicio y elegí esa cuenta regresiva. Sin el widget, esto es básicamente una lista bastante linda de fechas. Con el widget empieza la gracia.</string>
     <string name="about_how_steps">1. Creá una cuenta regresiva\n2. Agregá el widget\n3. Dejá de mirar el calendario cada cinco minutos</string>
     <string name="about_privacy">Todo queda guardado en este dispositivo. Sin cuentas, publicidad, seguimiento ni acceso a internet.</string>
+    <string name="backup_title">Copia local</string>
+    <string name="backup_description">Exportá o restaurá tus cuentas regresivas usando un archivo JSON que controlás vos.</string>
+    <string name="backup_export">Exportar copia</string>
+    <string name="backup_import">Importar copia</string>
+    <string name="backup_export_success">Copia exportada.</string>
+    <string name="backup_export_failed">No se pudo exportar la copia.</string>
+    <string name="backup_import_action">Reemplazar cuentas regresivas</string>
+    <string name="backup_import_invalid">El archivo no es una copia válida de Ya Estamos.</string>
+    <string name="backup_import_failed">No se pudo importar la copia.</string>
+    <string name="backup_import_success">Copia importada.</string>
+    <string name="backup_import_confirm_title">¿Importar copia?</string>
+    <plurals name="backup_import_confirm_message">
+        <item quantity="one">Esto reemplazará tus cuentas regresivas actuales por %1$d cuenta regresiva de la copia.</item>
+        <item quantity="other">Esto reemplazará tus cuentas regresivas actuales por %1$d cuentas regresivas de la copia.</item>
+    </plurals>
     <string name="about_author">Creada por santiagorodriguez.com</string>
     <string name="about_donate">Donar</string>
     <string name="about_donate_note">Si esto te ahorró mirar el calendario doce veces por día, podés colaborar con la noble causa de seguir simplificando cosas que no deberían ser complicadas.</string>

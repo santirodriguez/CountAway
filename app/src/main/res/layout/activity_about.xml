@@ -74,6 +74,47 @@
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/surface_card"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="@string/backup_title"
+                android:textColor="@color/foreground"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/backup_description"
+                android:textColor="@color/secondary_text"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/exportButton"
+                style="@style/Widget.CountAway.Button.Secondary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/backup_export" />
+
+            <Button
+                android:id="@+id/importButton"
+                style="@style/Widget.CountAway.Button.Secondary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/backup_import" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/websiteButton"
             style="@style/Widget.CountAway.SmallAction"
