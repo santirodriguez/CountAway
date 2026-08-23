@@ -58,9 +58,7 @@ object CountdownStorageCodec {
     fun decodeForImport(payload: String): List<CountdownEvent> = decodePayload(payload, enforceImportLimits = true)
 
     private fun decodePayload(payload: String, enforceImportLimits: Boolean): List<CountdownEvent> {
-        if (payload.toByteArray(Charsets.UTF_8).size > CountdownValidation.MAX_PAYLOAD_BYTES) {
-            throw CountdownDataException(CountdownDataProblem.CORRUPT)
-        }
+        CountdownValidation.validatePayloadSize(payload)
 
         try {
             val root = JSONObject(payload)
@@ -101,12 +99,14 @@ object CountdownStorageCodec {
 
     fun encode(events: List<CountdownEvent>): String {
         CountdownValidation.validateStoredEvents(events)
-        return JSONObject()
+        val payload = JSONObject()
             .put(KEY_SCHEMA_VERSION, CountdownStorageSchema.CURRENT_VERSION)
             .put(KEY_EVENTS, JSONArray().apply {
                 events.forEach { put(toJson(it)) }
             })
             .toString()
+        CountdownValidation.validatePayloadSize(payload)
+        return payload
     }
 
     private fun parseEvent(json: JSONObject, schemaVersion: Int): CountdownEvent {

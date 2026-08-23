@@ -153,15 +153,15 @@ class EditorActivity : BaseActivity() {
         reminderSpinner.setSelection(reminderOptions.indexOf(selectedReminder))
         reminderSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
             val next = reminderOptions[position]
+            val effect = ReminderEditorPolicy.selectionEffect(
+                currentReminder = selectedReminder,
+                nextReminder = next,
+                existingEvent = existingEvent,
+                selectedDate = selectedDate,
+                today = LocalDate.now(),
+            )
             selectedReminder = next
-            if (next == ReminderOption.OFF) return@SimpleItemSelectedListener
-
-            warnIfReminderScheduleImpossible()
-            if (!ArrivalNotificationScheduler.hasNotificationPermission(this)) {
-                requestNotificationPermission()
-            } else {
-                warnIfNotificationsBlocked()
-            }
+            handleReminderSelectionEffect(effect)
         }
     }
 
@@ -234,9 +234,19 @@ class EditorActivity : BaseActivity() {
         DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
+                val previousDate = selectedDate
                 selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
                 renderDate()
-                warnIfReminderScheduleImpossible()
+                if (selectedDate != previousDate) {
+                    handleReminderSelectionEffect(
+                        ReminderEditorPolicy.dateChangeEffect(
+                            existingEvent = existingEvent,
+                            selectedDate = selectedDate,
+                            selectedReminder = selectedReminder,
+                            today = LocalDate.now(),
+                        ),
+                    )
+                }
             },
             selectedDate.year,
             selectedDate.monthValue - 1,
@@ -256,21 +266,32 @@ class EditorActivity : BaseActivity() {
         }
     }
 
-    private fun warnIfReminderScheduleImpossible() {
-        if (selectedReminder == ReminderOption.OFF || isReminderSchedulePossible()) return
-        Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
+    private fun handleReminderSelectionEffect(effect: ReminderSelectionEffect) {
+        when (effect) {
+            ReminderSelectionEffect.NONE -> Unit
+            ReminderSelectionEffect.SHOW_SCHEDULE_UNAVAILABLE ->
+                Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
+            ReminderSelectionEffect.CHECK_NOTIFICATIONS -> {
+                if (!ArrivalNotificationScheduler.hasNotificationPermission(this)) {
+                    requestNotificationPermission()
+                } else {
+                    warnIfNotificationsBlocked()
+                }
+            }
+        }
     }
 
-    private fun isReminderSchedulePossible(): Boolean = ArrivalNotificationPolicy.isSchedulePossible(
-        selectedDate,
-        selectedReminder,
-        LocalDate.now(),
+    private fun canSaveSelectedReminder(): Boolean = ReminderEditorPolicy.canSave(
+        existingEvent = existingEvent,
+        selectedDate = selectedDate,
+        selectedReminder = selectedReminder,
+        today = LocalDate.now(),
     )
 
     private fun warnIfNotificationsBlocked() {
         if (
             selectedReminder == ReminderOption.OFF ||
-            !isReminderSchedulePossible() ||
+            !ArrivalNotificationPolicy.isSchedulePossible(selectedDate, selectedReminder, LocalDate.now()) ||
             !ArrivalNotificationScheduler.hasNotificationPermission(this) ||
             ArrivalNotificationScheduler.canPostNotifications(this)
         ) {
@@ -317,7 +338,7 @@ class EditorActivity : BaseActivity() {
             titleInput.error = getString(R.string.title_too_long, CountdownValidation.MAX_TITLE_LENGTH)
             return
         }
-        if (!isReminderSchedulePossible()) {
+        if (!canSaveSelectedReminder()) {
             Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
             return
         }

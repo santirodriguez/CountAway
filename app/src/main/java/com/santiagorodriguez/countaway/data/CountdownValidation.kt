@@ -28,6 +28,12 @@ object CountdownValidation {
         }
     }
 
+    fun validatePayloadSize(payload: String) {
+        if (payload.toByteArray(Charsets.UTF_8).size > MAX_PAYLOAD_BYTES) {
+            throw corruptData()
+        }
+    }
+
     fun isTitleWithinLimit(title: String): Boolean = title.length <= MAX_TITLE_LENGTH
 
     private fun corruptData(): CountdownDataException =
