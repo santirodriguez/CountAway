@@ -6,6 +6,7 @@
 - Reject newly created or changed reminder configurations whose scheduled date is already in the past, while keeping existing historical reminders editable, preserving same-day recovery, and avoiding late catch-up notifications.
 - Preserve unsaved editor and widget-configuration state across Activity recreation.
 - Make the widget configuration preview render the selected countdown's actual title, icon, and countdown state, including Next countdown and refreshed event edits.
+- Polish About with direct countdown creation and supported-launcher widget pinning, a compact local-backup section, and a cohesive support footer; add a calendar cue to the empty state.
 - Harden local storage and backup handling with bounded reads and encoded output, duplicate/blank validation, future-schema detection, compatibility-safe field limits, and safer overwrite behavior.
 - Preserve pending backup-import confirmation across Activity recreation and revalidate the selected backup before replacing local data.
 - Keep widgets and editor state available when local data cannot be read safely or writes fail, with localized recovery messages.
