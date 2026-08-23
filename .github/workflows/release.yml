@@ -274,6 +274,12 @@ jobs:
             exit 1
           fi
 
+          git rev-parse "refs/remotes/origin/main" >/dev/null
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" "refs/remotes/origin/main"; then
+            echo "${TAG} does not point to a commit in main history" >&2
+            exit 1
+          fi
+
       - name: Download release bundle
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
