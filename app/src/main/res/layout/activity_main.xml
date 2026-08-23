@@ -124,10 +124,22 @@
             android:orientation="vertical"
             android:padding="28dp">
 
+            <ImageView
+                android:id="@+id/emptyStateIcon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/icon_container"
+                android:contentDescription="@null"
+                android:padding="11dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_event_calendar"
+                android:tint="@color/accent" />
+
             <TextView
                 android:id="@+id/emptyTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
                 android:gravity="center"
                 android:text="@string/empty_title"
                 android:textColor="@color/foreground"

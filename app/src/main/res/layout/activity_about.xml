@@ -26,15 +26,23 @@
             android:id="@+id/versionText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
+            android:layout_marginTop="4dp"
+            android:background="@drawable/status_pill"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:paddingStart="10dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="4dp"
+            android:textColor="@color/accent"
+            android:textSize="12sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
+            android:layout_marginTop="20dp"
             android:background="@drawable/surface_card"
+            android:gravity="center_horizontal"
             android:orientation="vertical"
             android:padding="20dp">
 
@@ -42,6 +50,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
+                android:gravity="center"
                 android:text="@string/about_how_title"
                 android:textColor="@color/foreground"
                 android:textSize="20sp" />
@@ -50,29 +59,125 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
+                android:breakStrategy="balanced"
+                android:gravity="center"
                 android:lineSpacingExtra="2dp"
                 android:text="@string/about_how_body"
                 android:textColor="@color/foreground"
                 android:textSize="15sp" />
 
+            <LinearLayout
+                android:id="@+id/createCountdownAction"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/control_surface"
+                android:clickable="true"
+                android:clipToOutline="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/about_step_badge"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:text="@string/about_step_one"
+                    android:textColor="@color/accent"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:text="@string/about_create_countdown"
+                    android:textColor="@color/foreground"
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:contentDescription="@null"
+                    android:padding="5dp"
+                    android:src="@drawable/ic_chevron_right" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/addWidgetAction"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/control_surface"
+                android:clickable="true"
+                android:clipToOutline="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/about_step_badge"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:text="@string/about_step_two"
+                    android:textColor="@color/accent"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:text="@string/about_add_widget"
+                    android:textColor="@color/foreground"
+                    android:textSize="14sp" />
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:contentDescription="@null"
+                    android:padding="5dp"
+                    android:src="@drawable/ic_chevron_right" />
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginTop="18dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_sentiment_neutral" />
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:lineSpacingExtra="4dp"
-                android:text="@string/about_how_steps"
-                android:textColor="@color/secondary_text"
+                android:layout_marginTop="6dp"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:text="@string/about_stop_checking"
+                android:textColor="@color/foreground"
                 android:textSize="14sp" />
-        </LinearLayout>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:gravity="center"
-            android:text="@string/about_privacy"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center"
+                android:text="@string/about_stop_checking_note"
+                android:textColor="@color/secondary_text"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -94,60 +199,40 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="@string/backup_description"
+                android:text="@string/backup_description_compact"
                 android:textColor="@color/secondary_text"
                 android:textSize="13sp" />
 
-            <Button
-                android:id="@+id/exportButton"
-                style="@style/Widget.CountAway.Button.Secondary"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="@string/backup_export" />
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/importButton"
-                style="@style/Widget.CountAway.Button.Secondary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/backup_import" />
+                <Button
+                    android:id="@+id/exportButton"
+                    style="@style/Widget.CountAway.SmallAction"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/backup_export_short" />
+
+                <Button
+                    android:id="@+id/importButton"
+                    style="@style/Widget.CountAway.SmallAction"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:text="@string/backup_import_short" />
+            </LinearLayout>
         </LinearLayout>
 
-        <LinearLayout
+        <include
+            layout="@layout/view_about_support"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:breakStrategy="balanced"
-                android:gravity="center"
-                android:lineSpacingExtra="2dp"
-                android:text="@string/about_donate_note"
-                android:textColor="@color/secondary_text"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/donateButton"
-                style="@style/Widget.CountAway.SmallAction"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="@string/about_donate" />
-        </LinearLayout>
-
-        <Button
-            android:id="@+id/websiteButton"
-            style="@style/Widget.CountAway.SmallAction"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:text="@string/about_author" />
+            android:layout_marginTop="18dp" />
 
     </LinearLayout>
 </ScrollView>
