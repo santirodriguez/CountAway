@@ -13,7 +13,7 @@ class CountdownStorageCodecValidationTest {
     @Test
     fun duplicateIdsAreRejected() {
         val error = assertThrows(CountdownDataException::class.java) {
-            CountdownStorageCodec.validateEvents(
+            CountdownValidation.validateStoredEvents(
                 listOf(
                     event("same", "First"),
                     event("same", "Second"),
@@ -31,15 +31,38 @@ class CountdownStorageCodecValidationTest {
             event("valid-id", "   "),
         ).forEach { invalidEvent ->
             val error = assertThrows(CountdownDataException::class.java) {
-                CountdownStorageCodec.validateEvents(listOf(invalidEvent))
+                CountdownValidation.validateStoredEvents(listOf(invalidEvent))
             }
             assertEquals(CountdownDataProblem.CORRUPT, error.problem)
         }
     }
 
     @Test
+    fun importedIdsAndTitlesHaveReasonableLimits() {
+        listOf(
+            event("i".repeat(CountdownValidation.MAX_ID_LENGTH + 1), "Valid title"),
+            event("valid-id", "t".repeat(CountdownValidation.MAX_TITLE_LENGTH + 1)),
+        ).forEach { invalidEvent ->
+            val error = assertThrows(CountdownDataException::class.java) {
+                CountdownValidation.validateImportedEvents(listOf(invalidEvent))
+            }
+            assertEquals(CountdownDataProblem.CORRUPT, error.problem)
+        }
+    }
+
+    @Test
+    fun existingOversizedFieldsRemainReadableForBackwardCompatibility() {
+        val legacyEvent = event(
+            "i".repeat(CountdownValidation.MAX_ID_LENGTH + 1),
+            "t".repeat(CountdownValidation.MAX_TITLE_LENGTH + 1),
+        )
+
+        CountdownValidation.validateStoredEvents(listOf(legacyEvent))
+    }
+
+    @Test
     fun oversizedPayloadIsRejectedBeforeParsing() {
-        val payload = " ".repeat(5 * 1024 * 1024 + 1)
+        val payload = " ".repeat(CountdownValidation.MAX_PAYLOAD_BYTES + 1)
 
         val error = assertThrows(CountdownDataException::class.java) {
             CountdownStorageCodec.decode(payload)
@@ -50,7 +73,9 @@ class CountdownStorageCodecValidationTest {
 
     @Test
     fun oversizedStreamIsRejectedBeforeMaterializingWholePayload() {
-        val input = ByteArrayInputStream(ByteArray(5 * 1024 * 1024 + 1) { ' '.code.toByte() })
+        val input = ByteArrayInputStream(
+            ByteArray(CountdownValidation.MAX_PAYLOAD_BYTES + 1) { ' '.code.toByte() },
+        )
 
         val error = assertThrows(CountdownDataException::class.java) {
             CountdownStorageCodec.readUtf8Payload(input)
