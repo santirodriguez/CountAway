@@ -15,6 +15,7 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
+import java.io.ByteArrayOutputStream
 
 class AboutActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
@@ -80,8 +81,7 @@ class AboutActivity : BaseActivity() {
 
     private fun readBackup(uri: Uri) {
         try {
-            val payload = contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
-                ?: error("Unable to open backup")
+            val payload = readUtf8Payload(uri)
             val count = repository.previewImport(payload)
             pendingImportPayload = payload
             AlertDialog.Builder(this)
@@ -95,6 +95,25 @@ class AboutActivity : BaseActivity() {
             Toast.makeText(this, R.string.backup_import_invalid, Toast.LENGTH_LONG).show()
         } catch (_: Exception) {
             Toast.makeText(this, R.string.backup_import_failed, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun readUtf8Payload(uri: Uri): String {
+        val stream = contentResolver.openInputStream(uri) ?: error("Unable to open backup")
+        return stream.use { input ->
+            val output = ByteArrayOutputStream()
+            val buffer = ByteArray(16 * 1024)
+            var total = 0
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                total += count
+                if (total > MAX_BACKUP_BYTES) {
+                    throw CountdownDataException(com.santiagorodriguez.countaway.data.CountdownDataProblem.CORRUPT)
+                }
+                output.write(buffer, 0, count)
+            }
+            output.toString(Charsets.UTF_8.name())
         }
     }
 
@@ -122,5 +141,6 @@ class AboutActivity : BaseActivity() {
         const val DONATE_WEBSITE = "https://santiagorodriguez.com/donate"
         const val REQUEST_EXPORT = 5101
         const val REQUEST_IMPORT = 5102
+        const val MAX_BACKUP_BYTES = 5 * 1024 * 1024
     }
 }
