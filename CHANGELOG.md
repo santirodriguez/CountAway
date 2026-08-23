@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.5
+
+- Improve reminder delivery checks for notification permission, app-level blocking, and notification-channel availability without discarding the user's reminder choice.
+- Reject reminder configurations whose scheduled date is already in the past, while keeping same-day recovery and avoiding late catch-up notifications.
+- Preserve unsaved editor and widget-configuration state across Activity recreation.
+- Harden local storage and backup handling with bounded reads, duplicate/blank validation, future-schema detection, compatibility-safe field limits, and safer overwrite behavior.
+- Keep widgets and editor state available when local data cannot be read safely or writes fail, with localized recovery messages.
+- Add regression coverage for storage validation, future schemas, reminder scheduling, and data-size limits.
+
 ## 1.1.2
 
 - Add a complete 512×512 Fastlane/F-Droid store icon.
