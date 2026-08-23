@@ -4,4 +4,5 @@
     <string name="data_delete_failed">Could not delete this countdown.</string>
     <string name="widget_data_error">Saved data needs attention</string>
     <string name="widget_open_app">Open CountAway</string>
+    <string name="about_privacy_precise">CountAway has no Internet permission, accounts, ads, analytics, or cloud sync. Backups go only to the destination you explicitly choose in Android’s document picker.</string>
 </resources>
