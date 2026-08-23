@@ -16,6 +16,7 @@ import com.santiagorodriguez.countaway.countdown.ArrivalMood
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
+import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
@@ -78,23 +79,28 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             }
             val views = RemoteViews(context.packageName, layoutId)
             val configuration = WidgetPreferences(context).get(appWidgetId)
-            val events = CountdownRepository(context).load()
-            val event = configuration?.let { configured ->
-                resolveEvent(configured, events, LocalDate.now())
-            }
+            val loadResult = CountdownRepository(context).loadResult()
             val theme = resolveTheme(displayContext, configuration?.appearance ?: WidgetAppearance.SYSTEM)
             val background = configuration?.background ?: WidgetBackground.CLASSIC
 
             applyTheme(context, views, theme, background, widthDp, heightDp)
-            if (event == null) {
-                renderUnconfigured(
-                    displayContext,
-                    views,
-                    appWidgetId,
-                    noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
-                )
-            } else {
-                renderEvent(displayContext, views, appWidgetId, event)
+            when (loadResult) {
+                is CountdownLoadResult.Failure -> renderDataError(displayContext, views, appWidgetId)
+                is CountdownLoadResult.Success -> {
+                    val event = configuration?.let { configured ->
+                        resolveEvent(configured, loadResult.events, LocalDate.now())
+                    }
+                    if (event == null) {
+                        renderUnconfigured(
+                            displayContext,
+                            views,
+                            appWidgetId,
+                            noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
+                        )
+                    } else {
+                        renderEvent(displayContext, views, appWidgetId, event)
+                    }
+                }
             }
             manager.updateAppWidget(appWidgetId, views)
         }
@@ -167,6 +173,17 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
         }
 
+        private fun renderDataError(context: Context, views: RemoteViews, appWidgetId: Int) {
+            views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
+            views.setTextViewText(R.id.widgetTitle, context.getString(R.string.widget_data_error))
+            views.setTextViewText(R.id.widgetCount, "!")
+            views.setTextViewText(R.id.widgetUnit, context.getString(R.string.widget_open_app))
+            views.setTextViewText(R.id.widgetDate, "")
+            views.setTextViewText(R.id.widgetMilestone, "")
+            views.setViewVisibility(R.id.widgetMilestone, View.GONE)
+            views.setOnClickPendingIntent(R.id.widgetRoot, openAppPendingIntent(context, appWidgetId))
+        }
+
         private fun applyTheme(
             context: Context,
             views: RemoteViews,
@@ -232,7 +249,20 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             )
         }
 
+        private fun openAppPendingIntent(context: Context, appWidgetId: Int): PendingIntent {
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                ?: Intent(context, WidgetConfigActivity::class.java)
+            intent.setData(Uri.parse("countaway://widget/$appWidgetId/data-error"))
+            return PendingIntent.getActivity(
+                context,
+                DATA_ERROR_REQUEST_CODE_OFFSET + appWidgetId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
+
         private const val CONFIG_REQUEST_CODE_OFFSET = 100_000
+        private const val DATA_ERROR_REQUEST_CODE_OFFSET = 200_000
     }
 
     private data class WidgetTheme(

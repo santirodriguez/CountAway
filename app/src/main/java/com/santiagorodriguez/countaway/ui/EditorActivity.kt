@@ -134,7 +134,7 @@ class EditorActivity : BaseActivity() {
         reminderSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
             val next = reminderOptions[position]
             selectedReminder = next
-            if (next != ReminderOption.OFF && !ArrivalNotificationScheduler.canPostNotifications(this)) {
+            if (next != ReminderOption.OFF && !ArrivalNotificationScheduler.hasNotificationPermission(this)) {
                 requestNotificationPermission()
             }
         }
@@ -254,7 +254,12 @@ class EditorActivity : BaseActivity() {
         } else {
             events.add(event)
         }
-        repository.save(events)
+        try {
+            repository.save(events)
+        } catch (_: Exception) {
+            Toast.makeText(this, R.string.data_save_failed, Toast.LENGTH_LONG).show()
+            return
+        }
         if (ArrivalNotificationPolicy.shouldResetDeliveryState(existingEvent, event)) {
             ArrivalNotificationState(this).remove(event.id)
         }
@@ -271,7 +276,12 @@ class EditorActivity : BaseActivity() {
             .setPositiveButton(R.string.action_delete) { _, _ ->
                 val events = loadEventsOrFinish()?.filterNot { it.id == event.id }
                     ?: return@setPositiveButton
-                repository.save(events)
+                try {
+                    repository.save(events)
+                } catch (_: Exception) {
+                    Toast.makeText(this, R.string.data_delete_failed, Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
                 ArrivalNotificationState(this).remove(event.id)
                 refreshBackgroundState()
                 finish()

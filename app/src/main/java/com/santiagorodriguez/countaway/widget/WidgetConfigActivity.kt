@@ -13,6 +13,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.BaseActivity
@@ -130,7 +131,17 @@ class WidgetConfigActivity : BaseActivity() {
     }
 
     private fun reloadEvents() {
-        events = CountdownEventOrder.sortedForDisplay(repository.load(), LocalDate.now())
+        val result = repository.loadResult()
+        if (result is CountdownLoadResult.Failure) {
+            events = emptyList()
+            eventList.visibility = View.GONE
+            emptyState.setText(R.string.widget_data_error)
+            emptyState.visibility = View.VISIBLE
+            setSaveEnabled(false)
+            return
+        }
+
+        events = CountdownEventOrder.sortedForDisplay((result as CountdownLoadResult.Success).events, LocalDate.now())
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
         val labels = buildList {

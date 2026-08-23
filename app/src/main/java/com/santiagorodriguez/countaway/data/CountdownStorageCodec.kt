@@ -30,6 +30,10 @@ object CountdownStorageSchema {
 
 object CountdownStorageCodec {
     fun decode(payload: String): List<CountdownEvent> {
+        if (payload.toByteArray(Charsets.UTF_8).size > MAX_PAYLOAD_BYTES) {
+            throw CountdownDataException(CountdownDataProblem.CORRUPT)
+        }
+
         try {
             val root = JSONObject(payload)
             if (!root.has(KEY_SCHEMA_VERSION) || !root.has(KEY_EVENTS)) {
@@ -47,11 +51,17 @@ object CountdownStorageCodec {
             }
 
             val events = root.getJSONArray(KEY_EVENTS)
-            return buildList {
+            if (events.length() > MAX_EVENTS) {
+                throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            }
+
+            val parsed = buildList {
                 for (index in 0 until events.length()) {
                     add(parseEvent(events.getJSONObject(index), schemaVersion))
                 }
             }
+            validateEvents(parsed)
+            return parsed
         } catch (error: CountdownDataException) {
             throw error
         } catch (error: Exception) {
@@ -59,12 +69,25 @@ object CountdownStorageCodec {
         }
     }
 
-    fun encode(events: List<CountdownEvent>): String = JSONObject()
-        .put(KEY_SCHEMA_VERSION, CountdownStorageSchema.CURRENT_VERSION)
-        .put(KEY_EVENTS, JSONArray().apply {
-            events.forEach { put(toJson(it)) }
-        })
-        .toString()
+    fun encode(events: List<CountdownEvent>): String {
+        validateEvents(events)
+        return JSONObject()
+            .put(KEY_SCHEMA_VERSION, CountdownStorageSchema.CURRENT_VERSION)
+            .put(KEY_EVENTS, JSONArray().apply {
+                events.forEach { put(toJson(it)) }
+            })
+            .toString()
+    }
+
+    private fun validateEvents(events: List<CountdownEvent>) {
+        if (events.size > MAX_EVENTS) throw CountdownDataException(CountdownDataProblem.CORRUPT)
+        val ids = HashSet<String>(events.size)
+        events.forEach { event ->
+            if (event.id.isBlank() || event.title.isBlank() || !ids.add(event.id)) {
+                throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            }
+        }
+    }
 
     private fun parseEvent(json: JSONObject, schemaVersion: Int): CountdownEvent {
         val rawType = json.getString(KEY_TYPE)
@@ -135,4 +158,6 @@ object CountdownStorageCodec {
     private const val KEY_REMINDER = "reminderKey"
     private const val KEY_NOTIFY_ON_ARRIVAL = "notifyOnArrival"
     private const val KEY_CREATED_AT = "createdAt"
+    private const val MAX_EVENTS = 10_000
+    private const val MAX_PAYLOAD_BYTES = 5 * 1024 * 1024
 }
