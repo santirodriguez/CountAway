@@ -13,4 +13,5 @@
     <string name="notification_blocked_title">Les notificacions estan desactivades</string>
     <string name="notification_blocked_message">El recordatori quedarà desat, però Android no el mostrarà fins que activis les notificacions de Ja Queda Poc.</string>
     <string name="notification_open_settings">Obre la configuració de notificacions</string>
+    <string name="title_too_long">El títol pot tenir fins a %1$d caràcters.</string>
 </resources>
