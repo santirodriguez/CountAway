@@ -13,15 +13,11 @@ import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.ArrivalMood
-import com.santiagorodriguez.countaway.countdown.CountdownCalculator
-import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
-import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
-import com.santiagorodriguez.countaway.ui.EventIconPresentation
 import com.santiagorodriguez.countaway.ui.LanguageManager
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -83,6 +79,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val loadResult = CountdownRepository(context).loadResult()
             val theme = resolveTheme(displayContext, configuration?.appearance ?: WidgetAppearance.SYSTEM)
             val background = configuration?.background ?: WidgetBackground.CLASSIC
+            val today = LocalDate.now()
 
             applyTheme(context, views, theme, background, widthDp, heightDp)
             when (loadResult) {
@@ -94,7 +91,12 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                 )
                 is CountdownLoadResult.Success -> {
                     val event = configuration?.let { configured ->
-                        resolveEvent(configured, loadResult.events, LocalDate.now())
+                        WidgetEventResolver.resolve(
+                            selection = configured.eventSelection,
+                            eventId = configured.eventId,
+                            events = loadResult.events,
+                            today = today,
+                        )
                     }
                     if (event == null) {
                         renderUnconfigured(
@@ -104,21 +106,11 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                             noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
                         )
                     } else {
-                        renderEvent(displayContext, views, appWidgetId, event)
+                        renderEvent(displayContext, views, appWidgetId, event, today)
                     }
                 }
             }
             manager.updateAppWidget(appWidgetId, views)
-        }
-
-        internal fun resolveEvent(
-            configuration: WidgetConfiguration,
-            events: List<CountdownEvent>,
-            today: LocalDate,
-        ): CountdownEvent? = when (configuration.eventSelection) {
-            WidgetEventSelection.FIXED -> configuration.eventId?.let { id -> events.firstOrNull { it.id == id } }
-            WidgetEventSelection.NEXT -> CountdownEventOrder.sortedForDisplay(events, today)
-                .firstOrNull { !it.date.isBefore(today) }
         }
 
         private fun renderEvent(
@@ -126,34 +118,17 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views: RemoteViews,
             appWidgetId: Int,
             event: CountdownEvent,
+            today: LocalDate,
         ) {
-            val value = CountdownCalculator.value(LocalDate.now(), event.date)
-            val countText = when (value.status) {
-                CountdownStatus.FUTURE,
-                CountdownStatus.THREE_DAYS,
-                CountdownStatus.TWO_DAYS,
-                CountdownStatus.TOMORROW,
-                CountdownStatus.TODAY,
-                -> value.days.coerceAtLeast(0).toString()
-                CountdownStatus.DONE -> "✓"
-            }
-            val unitText = when (value.status) {
-                CountdownStatus.FUTURE,
-                CountdownStatus.THREE_DAYS,
-                CountdownStatus.TWO_DAYS,
-                -> context.getString(R.string.widget_days_left)
-                CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
-                CountdownStatus.TODAY -> context.getString(R.string.status_today)
-                CountdownStatus.DONE -> ""
-            }
-            val mood = ArrivalMood.marker(value.status)
+            val content = WidgetEventContentFactory.from(event, today)
+            val mood = ArrivalMood.marker(content.status)
             val locale = context.resources.configuration.locales[0]
             val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
-            views.setImageViewResource(R.id.widgetIcon, EventIconPresentation.drawableRes(event.icon))
-            views.setTextViewText(R.id.widgetTitle, event.title)
-            views.setTextViewText(R.id.widgetCount, countText)
-            views.setTextViewText(R.id.widgetUnit, unitText)
+            views.setImageViewResource(R.id.widgetIcon, content.iconRes)
+            views.setTextViewText(R.id.widgetTitle, content.title)
+            views.setTextViewText(R.id.widgetCount, content.countText)
+            views.setTextViewText(R.id.widgetUnit, content.unitRes?.let(context::getString).orEmpty())
             views.setTextViewText(R.id.widgetDate, event.date.format(dateFormatter))
             views.setTextViewText(R.id.widgetMilestone, mood ?: "")
             views.setViewVisibility(R.id.widgetMilestone, if (mood == null) View.GONE else View.VISIBLE)
