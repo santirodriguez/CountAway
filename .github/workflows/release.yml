@@ -73,7 +73,7 @@ jobs:
               ;;
             push)
               if [[ "${GITHUB_REF_TYPE}" != "tag" || ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                echo "Release preparation requires a stable semantic tag such as v1.1.5, got: ${GITHUB_REF}" >&2
+                echo "Release preparation requires a stable semantic tag such as v1.2.3, got: ${GITHUB_REF}" >&2
                 exit 1
               fi
               VERSION="${GITHUB_REF_NAME#v}"
