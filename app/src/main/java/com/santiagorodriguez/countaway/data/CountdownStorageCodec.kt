@@ -45,7 +45,7 @@ object CountdownStorageCodec {
             val count = input.read(buffer)
             if (count < 0) break
             total += count
-            if (total > MAX_PAYLOAD_BYTES) {
+            if (total > CountdownValidation.MAX_PAYLOAD_BYTES) {
                 throw CountdownDataException(CountdownDataProblem.CORRUPT)
             }
             output.write(buffer, 0, count)
@@ -53,8 +53,12 @@ object CountdownStorageCodec {
         return output.toString(Charsets.UTF_8.name())
     }
 
-    fun decode(payload: String): List<CountdownEvent> {
-        if (payload.toByteArray(Charsets.UTF_8).size > MAX_PAYLOAD_BYTES) {
+    fun decode(payload: String): List<CountdownEvent> = decodePayload(payload, enforceImportLimits = false)
+
+    fun decodeForImport(payload: String): List<CountdownEvent> = decodePayload(payload, enforceImportLimits = true)
+
+    private fun decodePayload(payload: String, enforceImportLimits: Boolean): List<CountdownEvent> {
+        if (payload.toByteArray(Charsets.UTF_8).size > CountdownValidation.MAX_PAYLOAD_BYTES) {
             throw CountdownDataException(CountdownDataProblem.CORRUPT)
         }
 
@@ -73,7 +77,7 @@ object CountdownStorageCodec {
             }
 
             val events = root.getJSONArray(KEY_EVENTS)
-            if (events.length() > MAX_EVENTS) {
+            if (events.length() > CountdownValidation.MAX_EVENTS) {
                 throw CountdownDataException(CountdownDataProblem.CORRUPT)
             }
 
@@ -82,7 +86,11 @@ object CountdownStorageCodec {
                     add(parseEvent(events.getJSONObject(index), schemaVersion))
                 }
             }
-            validateEvents(parsed)
+            if (enforceImportLimits) {
+                CountdownValidation.validateImportedEvents(parsed)
+            } else {
+                CountdownValidation.validateStoredEvents(parsed)
+            }
             return parsed
         } catch (error: CountdownDataException) {
             throw error
@@ -92,23 +100,13 @@ object CountdownStorageCodec {
     }
 
     fun encode(events: List<CountdownEvent>): String {
-        validateEvents(events)
+        CountdownValidation.validateStoredEvents(events)
         return JSONObject()
             .put(KEY_SCHEMA_VERSION, CountdownStorageSchema.CURRENT_VERSION)
             .put(KEY_EVENTS, JSONArray().apply {
                 events.forEach { put(toJson(it)) }
             })
             .toString()
-    }
-
-    internal fun validateEvents(events: List<CountdownEvent>) {
-        if (events.size > MAX_EVENTS) throw CountdownDataException(CountdownDataProblem.CORRUPT)
-        val ids = HashSet<String>(events.size)
-        events.forEach { event ->
-            if (event.id.isBlank() || event.title.isBlank() || !ids.add(event.id)) {
-                throw CountdownDataException(CountdownDataProblem.CORRUPT)
-            }
-        }
     }
 
     private fun parseEvent(json: JSONObject, schemaVersion: Int): CountdownEvent {
@@ -180,7 +178,5 @@ object CountdownStorageCodec {
     private const val KEY_REMINDER = "reminderKey"
     private const val KEY_NOTIFY_ON_ARRIVAL = "notifyOnArrival"
     private const val KEY_CREATED_AT = "createdAt"
-    private const val MAX_EVENTS = 10_000
-    private const val MAX_PAYLOAD_BYTES = 5 * 1024 * 1024
     private const val READ_BUFFER_BYTES = 16 * 1024
 }
