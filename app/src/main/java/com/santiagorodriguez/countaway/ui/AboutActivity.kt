@@ -10,12 +10,13 @@ import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownDataException
+import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.CountdownStorageCodec
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
-import java.io.ByteArrayOutputStream
 
 class AboutActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
@@ -70,7 +71,7 @@ class AboutActivity : BaseActivity() {
     private fun writeBackup(uri: Uri) {
         try {
             val payload = repository.exportPayload()
-            contentResolver.openOutputStream(uri, "w")?.bufferedWriter(Charsets.UTF_8)?.use { writer ->
+            contentResolver.openOutputStream(uri, "rwt")?.bufferedWriter(Charsets.UTF_8)?.use { writer ->
                 writer.write(payload)
             } ?: error("Unable to open destination")
             Toast.makeText(this, R.string.backup_export_success, Toast.LENGTH_SHORT).show()
@@ -91,8 +92,13 @@ class AboutActivity : BaseActivity() {
                 .setPositiveButton(R.string.backup_import_action) { _, _ -> confirmImport() }
                 .setOnCancelListener { pendingImportPayload = null }
                 .show()
-        } catch (_: CountdownDataException) {
-            Toast.makeText(this, R.string.backup_import_invalid, Toast.LENGTH_LONG).show()
+        } catch (error: CountdownDataException) {
+            val message = if (error.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
+                R.string.backup_import_newer_version
+            } else {
+                R.string.backup_import_invalid
+            }
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
         } catch (_: Exception) {
             Toast.makeText(this, R.string.backup_import_failed, Toast.LENGTH_LONG).show()
         }
@@ -100,21 +106,7 @@ class AboutActivity : BaseActivity() {
 
     private fun readUtf8Payload(uri: Uri): String {
         val stream = contentResolver.openInputStream(uri) ?: error("Unable to open backup")
-        return stream.use { input ->
-            val output = ByteArrayOutputStream()
-            val buffer = ByteArray(16 * 1024)
-            var total = 0
-            while (true) {
-                val count = input.read(buffer)
-                if (count < 0) break
-                total += count
-                if (total > MAX_BACKUP_BYTES) {
-                    throw CountdownDataException(com.santiagorodriguez.countaway.data.CountdownDataProblem.CORRUPT)
-                }
-                output.write(buffer, 0, count)
-            }
-            output.toString(Charsets.UTF_8.name())
-        }
+        return stream.use(CountdownStorageCodec::readUtf8Payload)
     }
 
     private fun confirmImport() {
@@ -141,6 +133,5 @@ class AboutActivity : BaseActivity() {
         const val DONATE_WEBSITE = "https://santiagorodriguez.com/donate"
         const val REQUEST_EXPORT = 5101
         const val REQUEST_IMPORT = 5102
-        const val MAX_BACKUP_BYTES = 5 * 1024 * 1024
     }
 }
