@@ -13,6 +13,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
@@ -97,10 +98,35 @@ class WidgetConfigActivity : BaseActivity() {
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         val existing = WidgetPreferences(this).get(appWidgetId)
-        selectedEventId = existing?.eventId
-        selectedMode = existing?.eventSelection ?: WidgetEventSelection.FIXED
-        appearanceSpinner.setSelection(WidgetAppearance.entries.indexOf(existing?.appearance ?: WidgetAppearance.SYSTEM))
-        backgroundSpinner.setSelection(WidgetBackground.entries.indexOf(existing?.background ?: WidgetBackground.CLASSIC))
+        if (savedInstanceState == null) {
+            selectedEventId = existing?.eventId
+            selectedMode = existing?.eventSelection ?: WidgetEventSelection.FIXED
+            appearanceSpinner.setSelection(
+                WidgetAppearance.entries.indexOf(existing?.appearance ?: WidgetAppearance.SYSTEM),
+            )
+            backgroundSpinner.setSelection(
+                WidgetBackground.entries.indexOf(existing?.background ?: WidgetBackground.CLASSIC),
+            )
+        } else {
+            selectedEventId = savedInstanceState.getString(STATE_EVENT_ID)
+            selectedMode = enumValueOrDefault(
+                savedInstanceState.getString(STATE_SELECTION_MODE),
+                WidgetEventSelection.entries,
+                existing?.eventSelection ?: WidgetEventSelection.FIXED,
+            )
+            val appearance = enumValueOrDefault(
+                savedInstanceState.getString(STATE_APPEARANCE),
+                WidgetAppearance.entries,
+                existing?.appearance ?: WidgetAppearance.SYSTEM,
+            )
+            val background = enumValueOrDefault(
+                savedInstanceState.getString(STATE_BACKGROUND),
+                WidgetBackground.entries,
+                existing?.background ?: WidgetBackground.CLASSIC,
+            )
+            appearanceSpinner.setSelection(WidgetAppearance.entries.indexOf(appearance))
+            backgroundSpinner.setSelection(WidgetBackground.entries.indexOf(background))
+        }
 
         val styleListener = SimpleItemSelectedListener { updateStylePreview() }
         appearanceSpinner.onItemSelectedListener = styleListener
@@ -130,12 +156,30 @@ class WidgetConfigActivity : BaseActivity() {
         if (::repository.isInitialized) reloadEvents()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(STATE_EVENT_ID, selectedEventId)
+        outState.putString(STATE_SELECTION_MODE, selectedMode.name)
+        WidgetAppearance.entries.getOrNull(appearanceSpinner.selectedItemPosition)?.let {
+            outState.putString(STATE_APPEARANCE, it.name)
+        }
+        WidgetBackground.entries.getOrNull(backgroundSpinner.selectedItemPosition)?.let {
+            outState.putString(STATE_BACKGROUND, it.name)
+        }
+        super.onSaveInstanceState(outState)
+    }
+
     private fun reloadEvents() {
         val result = repository.loadResult()
         if (result is CountdownLoadResult.Failure) {
             events = emptyList()
             eventList.visibility = View.GONE
-            emptyState.setText(R.string.widget_data_error)
+            emptyState.setText(
+                if (result.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
+                    R.string.widget_data_newer_version
+                } else {
+                    R.string.widget_data_error
+                },
+            )
             emptyState.visibility = View.VISIBLE
             setSaveEnabled(false)
             return
@@ -229,8 +273,15 @@ class WidgetConfigActivity : BaseActivity() {
         finish()
     }
 
+    private fun <T : Enum<T>> enumValueOrDefault(name: String?, values: List<T>, default: T): T =
+        values.firstOrNull { it.name == name } ?: default
+
     private companion object {
         const val PREVIEW_WIDTH_DP = 320
         const val PREVIEW_HEIGHT_DP = 132
+        const val STATE_EVENT_ID = "selected_event_id"
+        const val STATE_SELECTION_MODE = "selected_mode"
+        const val STATE_APPEARANCE = "selected_appearance"
+        const val STATE_BACKGROUND = "selected_background"
     }
 }
