@@ -13,4 +13,5 @@
     <string name="notification_blocked_title">Notifications are disabled</string>
     <string name="notification_blocked_message">This reminder will stay saved, but Android will not deliver it until notifications are enabled for CountAway.</string>
     <string name="notification_open_settings">Open notification settings</string>
+    <string name="title_too_long">Countdown titles can be up to %1$d characters.</string>
 </resources>
