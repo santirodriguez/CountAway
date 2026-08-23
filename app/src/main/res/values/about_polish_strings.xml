@@ -6,7 +6,7 @@
     <string name="about_create_countdown">Create a countdown</string>
     <string name="about_add_widget">Add the widget</string>
     <string name="about_stop_checking">Stop checking the calendar</string>
-    <string name="about_stop_checking_note">That&apos;s kind of the point.</string>
+    <string name="about_stop_checking_note">That\'s kind of the point.</string>
     <string name="about_widget_pin_unavailable">Add the widget from your home screen instead.</string>
     <string name="backup_description_compact">Export. Restore. Future crisis avoided.</string>
     <string name="backup_export_short">Export</string>
