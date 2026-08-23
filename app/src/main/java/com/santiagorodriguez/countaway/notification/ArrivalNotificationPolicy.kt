@@ -1,11 +1,20 @@
 package com.santiagorodriguez.countaway.notification
 
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.ReminderOption
 import java.time.LocalDate
 
 object ArrivalNotificationPolicy {
     fun scheduledDate(event: CountdownEvent): LocalDate? =
-        event.reminder.daysBefore?.let { days -> event.date.minusDays(days.toLong()) }
+        scheduledDate(event.date, event.reminder)
+
+    fun scheduledDate(targetDate: LocalDate, reminder: ReminderOption): LocalDate? =
+        reminder.daysBefore?.let { days -> targetDate.minusDays(days.toLong()) }
+
+    fun isSchedulePossible(targetDate: LocalDate, reminder: ReminderOption, today: LocalDate): Boolean {
+        val scheduledDate = scheduledDate(targetDate, reminder) ?: return true
+        return !scheduledDate.isBefore(today)
+    }
 
     fun isDue(event: CountdownEvent, today: LocalDate, deliveredForDate: LocalDate?): Boolean {
         val scheduledDate = scheduledDate(event) ?: return false
