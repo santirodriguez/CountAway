@@ -2,6 +2,15 @@
 <resources>
     <string name="data_save_failed">Could not save this countdown. Your changes are still here.</string>
     <string name="data_delete_failed">Could not delete this countdown.</string>
+    <string name="data_newer_version_title">Newer CountAway data</string>
+    <string name="data_newer_version_description">These data were created by a newer CountAway version. Update CountAway before editing them.</string>
+    <string name="data_newer_version_edit_blocked">These data were created by a newer CountAway version. Update CountAway before editing.</string>
     <string name="widget_data_error">Saved data needs attention</string>
+    <string name="widget_data_newer_version">Update CountAway to use these data</string>
     <string name="widget_open_app">Open CountAway</string>
+    <string name="backup_import_newer_version">This backup was created by a newer CountAway version.</string>
+    <string name="reminder_schedule_unavailable">This reminder would have been scheduled before today. Choose a later date or a closer reminder.</string>
+    <string name="notification_blocked_title">Notifications are disabled</string>
+    <string name="notification_blocked_message">This reminder will stay saved, but Android will not deliver it until notifications are enabled for CountAway.</string>
+    <string name="notification_open_settings">Open notification settings</string>
 </resources>
