@@ -56,6 +56,15 @@ class ArrivalNotificationPolicyTest {
     }
 
     @Test
+    fun missedReminderDoesNotCatchUpAfterItsScheduledDate() {
+        val event = event("missed", today, ReminderOption.ONE_DAY)
+
+        assertEquals(today.minusDays(1), ArrivalNotificationPolicy.scheduledDate(event))
+        assertFalse(ArrivalNotificationPolicy.isDue(event, today, null))
+        assertNull(ArrivalNotificationPolicy.nextPendingDate(listOf(event), today) { _, _ -> false })
+    }
+
+    @Test
     fun disabledAndOtherDatesAreNotDue() {
         assertFalse(ArrivalNotificationPolicy.isDue(event("off", today, ReminderOption.OFF), today, null))
         assertFalse(
