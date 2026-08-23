@@ -60,13 +60,16 @@ object CountdownStorageCodec {
 
         try {
             val root = JSONObject(payload)
-            if (!root.has(KEY_SCHEMA_VERSION) || !root.has(KEY_EVENTS)) {
+            if (!root.has(KEY_SCHEMA_VERSION)) {
                 throw CountdownDataException(CountdownDataProblem.CORRUPT)
             }
 
             val schemaVersion = root.getInt(KEY_SCHEMA_VERSION)
             CountdownStorageSchema.problemFor(schemaVersion)?.let { problem ->
                 throw CountdownDataException(problem)
+            }
+            if (!root.has(KEY_EVENTS)) {
+                throw CountdownDataException(CountdownDataProblem.CORRUPT)
             }
 
             val events = root.getJSONArray(KEY_EVENTS)
