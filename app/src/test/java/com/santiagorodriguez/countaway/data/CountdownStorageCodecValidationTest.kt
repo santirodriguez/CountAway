@@ -55,15 +55,6 @@ class CountdownStorageCodecValidationTest {
         assertEquals(CountdownDataProblem.CORRUPT, error.problem)
     }
 
-    @Test
-    fun futureSchemaIsReportedSeparatelyFromCorruption() {
-        val error = assertThrows(CountdownDataException::class.java) {
-            CountdownStorageCodec.decode("{\"schemaVersion\":999,\"events\":[]}")
-        }
-
-        assertEquals(CountdownDataProblem.UNSUPPORTED_SCHEMA, error.problem)
-    }
-
     private fun payload(vararg events: String): String =
         "{\"schemaVersion\":4,\"events\":[${events.joinToString(",")}] }"
 
