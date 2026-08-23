@@ -2,6 +2,15 @@
 <resources>
     <string name="data_save_failed">No s’ha pogut desar aquest compte enrere. Els canvis continuen aquí.</string>
     <string name="data_delete_failed">No s’ha pogut eliminar aquest compte enrere.</string>
+    <string name="data_newer_version_title">Dades d’una versió més nova</string>
+    <string name="data_newer_version_description">Aquestes dades s’han creat amb una versió més nova de Ja Queda Poc. Actualitza l’app abans d’editar-les.</string>
+    <string name="data_newer_version_edit_blocked">Aquestes dades s’han creat amb una versió més nova de Ja Queda Poc. Actualitza l’app abans d’editar-les.</string>
     <string name="widget_data_error">Les dades desades necessiten atenció</string>
+    <string name="widget_data_newer_version">Actualitza Ja Queda Poc per usar aquestes dades</string>
     <string name="widget_open_app">Obre Ja Queda Poc</string>
+    <string name="backup_import_newer_version">Aquesta còpia s’ha creat amb una versió més nova de Ja Queda Poc.</string>
+    <string name="reminder_schedule_unavailable">Aquest recordatori s’hauria hagut de programar abans d’avui. Tria una data posterior o un recordatori més proper.</string>
+    <string name="notification_blocked_title">Les notificacions estan desactivades</string>
+    <string name="notification_blocked_message">El recordatori quedarà desat, però Android no el mostrarà fins que activis les notificacions de Ja Queda Poc.</string>
+    <string name="notification_open_settings">Obre la configuració de notificacions</string>
 </resources>
