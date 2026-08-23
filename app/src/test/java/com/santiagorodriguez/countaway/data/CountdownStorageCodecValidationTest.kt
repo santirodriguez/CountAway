@@ -61,6 +61,17 @@ class CountdownStorageCodecValidationTest {
     }
 
     @Test
+    fun payloadSizeValidationRejectsOutputAboveStorageLimit() {
+        CountdownValidation.validatePayloadSize("a".repeat(CountdownValidation.MAX_PAYLOAD_BYTES))
+
+        val error = assertThrows(CountdownDataException::class.java) {
+            CountdownValidation.validatePayloadSize("a".repeat(CountdownValidation.MAX_PAYLOAD_BYTES + 1))
+        }
+
+        assertEquals(CountdownDataProblem.CORRUPT, error.problem)
+    }
+
+    @Test
     fun oversizedPayloadIsRejectedBeforeParsing() {
         val payload = " ".repeat(CountdownValidation.MAX_PAYLOAD_BYTES + 1)
 
