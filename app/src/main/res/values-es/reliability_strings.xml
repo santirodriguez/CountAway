@@ -4,4 +4,5 @@
     <string name="data_delete_failed">No se pudo eliminar esta cuenta regresiva.</string>
     <string name="widget_data_error">Hay un problema con los datos guardados</string>
     <string name="widget_open_app">Abrí Ya Estamos</string>
+    <string name="about_privacy_precise">Ya Estamos no tiene permiso de Internet, cuentas, publicidad, analíticas ni sincronización en la nube. Las copias sólo van al destino que elegís explícitamente en el selector de documentos de Android.</string>
 </resources>
