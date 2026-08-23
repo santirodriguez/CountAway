@@ -1,6 +1,8 @@
 package com.santiagorodriguez.countaway.data
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -17,5 +19,18 @@ class CountdownStorageSchemaTest {
     fun missingOrFutureSchemasAreRejected() {
         assertFalse(CountdownStorageSchema.isSupported(-1))
         assertFalse(CountdownStorageSchema.isSupported(CountdownStorageSchema.CURRENT_VERSION + 1))
+    }
+
+    @Test
+    fun unsupportedSchemaProblemsAreClassifiedPrecisely() {
+        assertEquals(
+            CountdownDataProblem.UNSUPPORTED_SCHEMA,
+            CountdownStorageSchema.problemFor(CountdownStorageSchema.CURRENT_VERSION + 1),
+        )
+        assertEquals(
+            CountdownDataProblem.CORRUPT,
+            CountdownStorageSchema.problemFor(CountdownStorageSchema.LEGACY_VERSION - 1),
+        )
+        assertNull(CountdownStorageSchema.problemFor(CountdownStorageSchema.CURRENT_VERSION))
     }
 }
