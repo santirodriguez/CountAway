@@ -31,10 +31,10 @@ class CountdownRepository(context: Context) {
         is CountdownLoadResult.Failure -> throw CountdownDataException(result.problem)
     }
 
-    fun previewImport(payload: String): Int = CountdownStorageCodec.decode(payload).size
+    fun previewImport(payload: String): Int = CountdownStorageCodec.decodeForImport(payload).size
 
     fun importPayload(payload: String): Int {
-        val events = CountdownStorageCodec.decode(payload)
+        val events = CountdownStorageCodec.decodeForImport(payload)
         save(events)
         return events.size
     }
