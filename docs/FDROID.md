@@ -78,18 +78,24 @@ The release workflow verifies this fingerprint explicitly and pins `apksigner` t
 
 The fdroiddata recipe uses stable semantic tags for update detection. A normal branch commit or merge to `main` is not a new F-Droid version, but creating a new stable `v<version>` tag can be detected as one.
 
+Once CountAway is included, `AutoUpdateMode: Version` means an ordinary future update can be generated from a detected stable tag without a manual fdroiddata edit. Treat creation of a stable tag as the start of the public F-Droid update path, not as a harmless staging action.
+
 For that reason:
 
 - manual release-workflow runs produce release candidates only;
 - the workflow does not use a manual mode to create a stable tag;
 - a stable release tag must be created explicitly on the exact intended release commit;
-- do not create a new stable tag merely to test release automation or metadata.
+- do not create a stable tag merely to test release automation or metadata;
+- do not create the stable tag until the signed release candidate, release notes, Fastlane changelogs, upgrade behavior, and final source commit are already approved;
+- after creating the stable tag, review the resulting draft release promptly and publish only if all workflow verification remains green.
+
+There is intentionally no stable release tag for a release candidate.
 
 ## Public binary gate
 
-Do not update fdroiddata for a new version until the corresponding GitHub Release has actually been published and its exact `Binaries` URL resolves publicly.
+The exact upstream `Binaries` URL must resolve publicly before a new F-Droid build can rely on it.
 
-For version `<version>`, verify:
+For version `<version>`, verify after publishing the GitHub Release:
 
 ```text
 https://github.com/santirodriguez/CountAway/releases/download/v<version>/CountAway-v<version>.apk
@@ -103,7 +109,7 @@ curl --fail --location --silent --show-error --output /dev/null \
   "https://github.com/santirodriguez/CountAway/releases/download/v${VERSION}/CountAway-v${VERSION}.apk"
 ```
 
-Only after that succeeds should fdroiddata be updated to the new version and exact release commit.
+If F-Droid has already generated an automatic update from the stable tag, do not create a competing manual version update unless a maintainer or a concrete failure requires it. If a manual fdroiddata change is required, make it only after the public binary check succeeds and point it to the exact release commit.
 
 ## Release checklist
 
@@ -111,13 +117,13 @@ For a future stable release:
 
 1. Keep `versionName`, `versionCode`, `CHANGELOG.md`, `docs/releases/<version>.md`, and all three Fastlane changelogs synchronized.
 2. Get Android CI green on the exact proposed release commit.
-3. Build and smoke-test a signed release candidate before creating the stable tag.
+3. Build and smoke-test a signed release candidate, including upgrade preservation, before creating the stable tag.
 4. Merge release changes only after review and explicit approval.
-5. Create `v<version>` explicitly on the exact final release commit; never move an existing stable tag.
+5. Create `v<version>` explicitly on the exact final release commit only when the release is ready to proceed publicly; never move an existing stable tag.
 6. Verify the release workflow reports the expected signing-certificate SHA-256 and APK metadata.
-7. Review the draft GitHub Release and publish it only after the APK and checksum are approved.
+7. Review the draft GitHub Release and publish it only after the APK, checksum, and notes are approved.
 8. Verify the exact public `Binaries` URL resolves after publication.
-9. Only then update fdroiddata with the new version and exact release commit.
-10. Wait for fdroiddata CI and maintainer review before considering the F-Droid update complete.
+9. Let the configured F-Droid automatic update path handle the normal version update; make a manual fdroiddata change only when required and only after the public binary check succeeds.
+10. Wait for F-Droid CI and maintainer processing before considering the F-Droid update complete.
 
 Once the inclusion merge request is accepted and CountAway is actually published, the README can be updated separately with the official F-Droid badge/link.
