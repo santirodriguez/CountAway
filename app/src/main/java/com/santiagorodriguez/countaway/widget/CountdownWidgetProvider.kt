@@ -16,6 +16,7 @@ import com.santiagorodriguez.countaway.countdown.ArrivalMood
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
+import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
@@ -85,7 +86,12 @@ class CountdownWidgetProvider : AppWidgetProvider() {
 
             applyTheme(context, views, theme, background, widthDp, heightDp)
             when (loadResult) {
-                is CountdownLoadResult.Failure -> renderDataError(displayContext, views, appWidgetId)
+                is CountdownLoadResult.Failure -> renderDataError(
+                    displayContext,
+                    views,
+                    appWidgetId,
+                    loadResult.problem,
+                )
                 is CountdownLoadResult.Success -> {
                     val event = configuration?.let { configured ->
                         resolveEvent(configured, loadResult.events, LocalDate.now())
@@ -173,9 +179,23 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
         }
 
-        private fun renderDataError(context: Context, views: RemoteViews, appWidgetId: Int) {
+        private fun renderDataError(
+            context: Context,
+            views: RemoteViews,
+            appWidgetId: Int,
+            problem: CountdownDataProblem,
+        ) {
             views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
-            views.setTextViewText(R.id.widgetTitle, context.getString(R.string.widget_data_error))
+            views.setTextViewText(
+                R.id.widgetTitle,
+                context.getString(
+                    if (problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
+                        R.string.widget_data_newer_version
+                    } else {
+                        R.string.widget_data_error
+                    },
+                ),
+            )
             views.setTextViewText(R.id.widgetCount, "!")
             views.setTextViewText(R.id.widgetUnit, context.getString(R.string.widget_open_app))
             views.setTextViewText(R.id.widgetDate, "")
