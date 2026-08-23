@@ -6,6 +6,8 @@ import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.time.Instant
 import java.time.LocalDate
 
@@ -29,6 +31,22 @@ object CountdownStorageSchema {
 }
 
 object CountdownStorageCodec {
+    fun readUtf8Payload(input: InputStream): String {
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(READ_BUFFER_BYTES)
+        var total = 0
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            total += count
+            if (total > MAX_PAYLOAD_BYTES) {
+                throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            }
+            output.write(buffer, 0, count)
+        }
+        return output.toString(Charsets.UTF_8.name())
+    }
+
     fun decode(payload: String): List<CountdownEvent> {
         if (payload.toByteArray(Charsets.UTF_8).size > MAX_PAYLOAD_BYTES) {
             throw CountdownDataException(CountdownDataProblem.CORRUPT)
@@ -160,4 +178,5 @@ object CountdownStorageCodec {
     private const val KEY_CREATED_AT = "createdAt"
     private const val MAX_EVENTS = 10_000
     private const val MAX_PAYLOAD_BYTES = 5 * 1024 * 1024
+    private const val READ_BUFFER_BYTES = 16 * 1024
 }
