@@ -98,7 +98,7 @@ object CountdownStorageCodec {
             .toString()
     }
 
-    private fun validateEvents(events: List<CountdownEvent>) {
+    internal fun validateEvents(events: List<CountdownEvent>) {
         if (events.size > MAX_EVENTS) throw CountdownDataException(CountdownDataProblem.CORRUPT)
         val ids = HashSet<String>(events.size)
         events.forEach { event ->
