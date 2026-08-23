@@ -4,5 +4,4 @@
     <string name="data_delete_failed">No s’ha pogut eliminar aquest compte enrere.</string>
     <string name="widget_data_error">Les dades desades necessiten atenció</string>
     <string name="widget_open_app">Obre Ja Queda Poc</string>
-    <string name="about_privacy_precise">Ja Queda Poc no té permís d’Internet, comptes, publicitat, analítica ni sincronització al núvol. Les còpies només van a la destinació que tries explícitament al selector de documents d’Android.</string>
 </resources>
