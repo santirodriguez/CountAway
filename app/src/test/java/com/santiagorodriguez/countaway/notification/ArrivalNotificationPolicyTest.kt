@@ -31,6 +31,31 @@ class ArrivalNotificationPolicyTest {
     }
 
     @Test
+    fun impossiblePastReminderScheduleIsRejected() {
+        assertFalse(
+            ArrivalNotificationPolicy.isSchedulePossible(
+                today.plusDays(2),
+                ReminderOption.THREE_DAYS,
+                today,
+            ),
+        )
+        assertTrue(
+            ArrivalNotificationPolicy.isSchedulePossible(
+                today.plusDays(3),
+                ReminderOption.THREE_DAYS,
+                today,
+            ),
+        )
+        assertTrue(
+            ArrivalNotificationPolicy.isSchedulePossible(
+                today.minusDays(10),
+                ReminderOption.OFF,
+                today,
+            ),
+        )
+    }
+
+    @Test
     fun disabledAndOtherDatesAreNotDue() {
         assertFalse(ArrivalNotificationPolicy.isDue(event("off", today, ReminderOption.OFF), today, null))
         assertFalse(
