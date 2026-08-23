@@ -17,18 +17,13 @@ class CountdownRepository(context: Context) {
         if (!atomicFile.baseFile.exists()) return CountdownLoadResult.Success(emptyList())
 
         return try {
-            val payload = atomicFile.openRead().bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val payload = atomicFile.openRead().use(CountdownStorageCodec::readUtf8Payload)
             CountdownLoadResult.Success(CountdownStorageCodec.decode(payload))
         } catch (error: CountdownDataException) {
             CountdownLoadResult.Failure(error.problem)
         } catch (_: Exception) {
             CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT)
         }
-    }
-
-    fun load(): List<CountdownEvent> = when (val result = loadResult()) {
-        is CountdownLoadResult.Success -> result.events
-        is CountdownLoadResult.Failure -> emptyList()
     }
 
     fun exportPayload(): String = when (val result = loadResult()) {
