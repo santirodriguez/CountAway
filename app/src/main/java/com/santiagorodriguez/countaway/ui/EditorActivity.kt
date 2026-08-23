@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.InputFilter
 import android.view.Gravity
 import android.view.View
 import android.widget.ArrayAdapter
@@ -26,6 +27,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.CountdownValidation
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
@@ -92,6 +94,7 @@ class EditorActivity : BaseActivity() {
             selectedReminder = event.reminder
         }
         savedInstanceState?.let(::restoreEditorState)
+        titleInput.filters = titleInput.filters + InputFilter.LengthFilter(CountdownValidation.MAX_TITLE_LENGTH)
 
         renderTypeGrid()
         renderCustomIconGrid()
@@ -307,6 +310,11 @@ class EditorActivity : BaseActivity() {
         val title = titleInput.text.toString().trim()
         if (title.isEmpty()) {
             titleInput.error = getString(R.string.title_required)
+            return
+        }
+        val previousTitle = existingEvent?.title?.trim()
+        if (!CountdownValidation.isTitleWithinLimit(title) && title != previousTitle) {
+            titleInput.error = getString(R.string.title_too_long, CountdownValidation.MAX_TITLE_LENGTH)
             return
         }
         if (!isReminderSchedulePossible()) {
