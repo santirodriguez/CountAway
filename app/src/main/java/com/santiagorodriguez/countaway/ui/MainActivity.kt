@@ -8,6 +8,7 @@ import android.widget.ListView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
@@ -86,8 +87,13 @@ class MainActivity : BaseActivity() {
             }
             is CountdownLoadResult.Failure -> {
                 adapter.submit(emptyList(), today)
-                emptyTitle.setText(R.string.data_error_title)
-                emptyDescription.setText(R.string.data_error_description)
+                if (result.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
+                    emptyTitle.setText(R.string.data_newer_version_title)
+                    emptyDescription.setText(R.string.data_newer_version_description)
+                } else {
+                    emptyTitle.setText(R.string.data_error_title)
+                    emptyDescription.setText(R.string.data_error_description)
+                }
                 setAddEnabled(false)
             }
         }
