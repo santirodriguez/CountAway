@@ -144,7 +144,7 @@
                     android:gravity="center"
                     android:includeFontPadding="false"
                     android:maxLines="1"
-                    android:text="@string/event_type_trip"
+                    android:text="@string/widget_select_countdown"
                     android:textSize="13sp" />
 
                 <ImageView
@@ -154,7 +154,7 @@
                     android:layout_marginTop="4dp"
                     android:contentDescription="@null"
                     android:scaleType="centerInside"
-                    android:src="@drawable/ic_event_airplane" />
+                    android:src="@drawable/ic_event_calendar" />
 
                 <TextView
                     android:id="@+id/widgetPreviewCount"
@@ -174,7 +174,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
                     android:includeFontPadding="false"
-                    android:text="@string/widget_days_left"
+                    android:text="@string/widget_tap_to_configure"
                     android:textSize="11sp" />
             </LinearLayout>
         </FrameLayout>

@@ -142,6 +142,7 @@ class WidgetConfigActivity : BaseActivity() {
                 selectedMode = WidgetEventSelection.FIXED
                 selectedEventId = events[position - 1].id
             }
+            updateContentPreview()
             setSaveEnabled(true)
         }
 
@@ -182,6 +183,7 @@ class WidgetConfigActivity : BaseActivity() {
             )
             emptyState.visibility = View.VISIBLE
             setSaveEnabled(false)
+            updateContentPreview()
             return
         }
 
@@ -211,6 +213,7 @@ class WidgetConfigActivity : BaseActivity() {
             selectedEventId = null
             setSaveEnabled(false)
         }
+        updateContentPreview()
     }
 
     private fun updateStylePreview() {
@@ -243,6 +246,37 @@ class WidgetConfigActivity : BaseActivity() {
         previewTitle.setTextColor(primaryColor)
         previewCount.setTextColor(accentColor)
         previewUnit.setTextColor(secondaryColor)
+        updateContentPreview()
+    }
+
+    private fun updateContentPreview() {
+        if (!::previewIcon.isInitialized) return
+        val event = WidgetEventResolver.resolve(
+            selection = selectedMode,
+            eventId = selectedEventId,
+            events = events,
+            today = LocalDate.now(),
+        )
+
+        if (event != null) {
+            val content = WidgetEventContentFactory.from(event, LocalDate.now())
+            previewIcon.setImageResource(content.iconRes)
+            previewTitle.text = content.title
+            previewCount.text = content.countText
+            previewUnit.text = content.unitRes?.let(::getString).orEmpty()
+            return
+        }
+
+        previewIcon.setImageResource(R.drawable.ic_event_calendar)
+        previewTitle.setText(
+            if (selectedMode == WidgetEventSelection.NEXT) {
+                R.string.widget_no_upcoming
+            } else {
+                R.string.widget_select_countdown
+            },
+        )
+        previewCount.setText(R.string.widget_preview_value)
+        previewUnit.setText(R.string.widget_tap_to_configure)
     }
 
     private fun setSaveEnabled(enabled: Boolean) {
