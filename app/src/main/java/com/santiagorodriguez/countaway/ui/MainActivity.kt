@@ -21,6 +21,7 @@ class MainActivity : BaseActivity() {
     private lateinit var adapter: CountdownEventAdapter
     private lateinit var countdownList: ListView
     private lateinit var emptyState: View
+    private lateinit var emptyStateIcon: View
     private lateinit var emptyTitle: TextView
     private lateinit var emptyDescription: TextView
     private lateinit var addCountdownButton: Button
@@ -34,6 +35,7 @@ class MainActivity : BaseActivity() {
         adapter = CountdownEventAdapter(this)
         countdownList = findViewById(R.id.countdownList)
         emptyState = findViewById(R.id.emptyState)
+        emptyStateIcon = findViewById(R.id.emptyStateIcon)
         emptyTitle = findViewById(R.id.emptyTitle)
         emptyDescription = findViewById(R.id.emptyDescription)
         addCountdownButton = findViewById(R.id.addCountdownButton)
@@ -81,12 +83,14 @@ class MainActivity : BaseActivity() {
         when (result) {
             is CountdownLoadResult.Success -> {
                 adapter.submit(CountdownEventOrder.sortedForDisplay(result.events, today), today)
+                emptyStateIcon.visibility = View.VISIBLE
                 emptyTitle.setText(R.string.empty_title)
                 emptyDescription.setText(R.string.empty_description)
                 setAddEnabled(true)
             }
             is CountdownLoadResult.Failure -> {
                 adapter.submit(emptyList(), today)
+                emptyStateIcon.visibility = View.GONE
                 if (result.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
                     emptyTitle.setText(R.string.data_newer_version_title)
                     emptyDescription.setText(R.string.data_newer_version_description)

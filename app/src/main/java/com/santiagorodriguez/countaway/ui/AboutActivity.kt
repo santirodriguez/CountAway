@@ -2,9 +2,12 @@ package com.santiagorodriguez.countaway.ui
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -30,9 +33,13 @@ class AboutActivity : BaseActivity() {
         repository = CountdownRepository(this)
 
         val versionName = packageManager.getPackageInfo(packageName, 0).versionName ?: "—"
-        findViewById<TextView>(R.id.versionText).text = getString(R.string.about_version, versionName)
+        findViewById<TextView>(R.id.versionText).text = getString(R.string.about_version_compact, versionName)
 
-        findViewById<Button>(R.id.websiteButton).setOnClickListener {
+        findViewById<View>(R.id.createCountdownAction).setOnClickListener {
+            startActivity(Intent(this, EditorActivity::class.java))
+        }
+        findViewById<View>(R.id.addWidgetAction).setOnClickListener { requestWidgetPin() }
+        findViewById<View>(R.id.websiteButton).setOnClickListener {
             openExternal(PERSONAL_WEBSITE)
         }
         findViewById<Button>(R.id.exportButton).setOnClickListener { exportBackup() }
@@ -63,6 +70,19 @@ class AboutActivity : BaseActivity() {
         when (requestCode) {
             REQUEST_EXPORT -> writeBackup(uri)
             REQUEST_IMPORT -> readBackup(uri)
+        }
+    }
+
+    private fun requestWidgetPin() {
+        val manager = AppWidgetManager.getInstance(this)
+        if (!manager.isRequestPinAppWidgetSupported) {
+            Toast.makeText(this, R.string.about_widget_pin_unavailable, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val provider = ComponentName(this, CountdownWidgetProvider::class.java)
+        if (!manager.requestPinAppWidget(provider, null, null)) {
+            Toast.makeText(this, R.string.about_widget_pin_unavailable, Toast.LENGTH_SHORT).show()
         }
     }
 

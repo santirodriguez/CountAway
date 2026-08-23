@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/surface_card"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="18dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:breakStrategy="balanced"
+        android:gravity="center"
+        android:lineSpacingExtra="2dp"
+        android:text="@string/about_donate_note"
+        android:textColor="@color/secondary_text"
+        android:textSize="12sp" />
+
+    <Button
+        android:id="@+id/donateButton"
+        style="@style/Widget.CountAway.SmallAction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/about_donate" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="18dp"
+        android:layout_marginTop="18dp"
+        android:layout_marginEnd="18dp"
+        android:background="@color/outline" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:text="@string/about_author_name"
+        android:textColor="@color/foreground"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/websiteButton"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_marginTop="2dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:text="@string/about_website"
+        android:textColor="@color/accent"
+        android:textSize="13sp" />
+
+</LinearLayout>
