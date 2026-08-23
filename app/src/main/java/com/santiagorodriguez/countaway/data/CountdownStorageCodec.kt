@@ -28,6 +28,12 @@ object CountdownStorageSchema {
     const val CURRENT_VERSION = 4
 
     fun isSupported(version: Int): Boolean = version in LEGACY_VERSION..CURRENT_VERSION
+
+    fun problemFor(version: Int): CountdownDataProblem? = when {
+        isSupported(version) -> null
+        version > CURRENT_VERSION -> CountdownDataProblem.UNSUPPORTED_SCHEMA
+        else -> CountdownDataProblem.CORRUPT
+    }
 }
 
 object CountdownStorageCodec {
@@ -59,12 +65,7 @@ object CountdownStorageCodec {
             }
 
             val schemaVersion = root.getInt(KEY_SCHEMA_VERSION)
-            if (!CountdownStorageSchema.isSupported(schemaVersion)) {
-                val problem = if (schemaVersion > CountdownStorageSchema.CURRENT_VERSION) {
-                    CountdownDataProblem.UNSUPPORTED_SCHEMA
-                } else {
-                    CountdownDataProblem.CORRUPT
-                }
+            CountdownStorageSchema.problemFor(schemaVersion)?.let { problem ->
                 throw CountdownDataException(problem)
             }
 
