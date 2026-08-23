@@ -3,6 +3,7 @@ package com.santiagorodriguez.countaway.data
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import java.io.ByteArrayInputStream
 
 class CountdownStorageCodecValidationTest {
     @Test
@@ -41,6 +42,26 @@ class CountdownStorageCodecValidationTest {
         }
 
         assertEquals(CountdownDataProblem.CORRUPT, error.problem)
+    }
+
+    @Test
+    fun oversizedStreamIsRejectedBeforeMaterializingWholePayload() {
+        val input = ByteArrayInputStream(ByteArray(5 * 1024 * 1024 + 1) { ' '.code.toByte() })
+
+        val error = assertThrows(CountdownDataException::class.java) {
+            CountdownStorageCodec.readUtf8Payload(input)
+        }
+
+        assertEquals(CountdownDataProblem.CORRUPT, error.problem)
+    }
+
+    @Test
+    fun futureSchemaIsReportedSeparatelyFromCorruption() {
+        val error = assertThrows(CountdownDataException::class.java) {
+            CountdownStorageCodec.decode("{\"schemaVersion\":999,\"events\":[]}")
+        }
+
+        assertEquals(CountdownDataProblem.UNSUPPORTED_SCHEMA, error.problem)
     }
 
     private fun payload(vararg events: String): String =
