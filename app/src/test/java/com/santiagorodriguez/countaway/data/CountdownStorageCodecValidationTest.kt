@@ -1,20 +1,24 @@
 package com.santiagorodriguez.countaway.data
 
+import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.EventType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.ByteArrayInputStream
+import java.time.Instant
+import java.time.LocalDate
 
 class CountdownStorageCodecValidationTest {
     @Test
     fun duplicateIdsAreRejected() {
-        val payload = payload(
-            event("same", "First"),
-            event("same", "Second"),
-        )
-
         val error = assertThrows(CountdownDataException::class.java) {
-            CountdownStorageCodec.decode(payload)
+            CountdownStorageCodec.validateEvents(
+                listOf(
+                    event("same", "First"),
+                    event("same", "Second"),
+                ),
+            )
         }
 
         assertEquals(CountdownDataProblem.CORRUPT, error.problem)
@@ -23,11 +27,11 @@ class CountdownStorageCodecValidationTest {
     @Test
     fun blankIdsAndTitlesAreRejected() {
         listOf(
-            payload(event("", "Valid title")),
-            payload(event("valid-id", "   ")),
-        ).forEach { payload ->
+            event("", "Valid title"),
+            event("valid-id", "   "),
+        ).forEach { invalidEvent ->
             val error = assertThrows(CountdownDataException::class.java) {
-                CountdownStorageCodec.decode(payload)
+                CountdownStorageCodec.validateEvents(listOf(invalidEvent))
             }
             assertEquals(CountdownDataProblem.CORRUPT, error.problem)
         }
@@ -55,9 +59,11 @@ class CountdownStorageCodecValidationTest {
         assertEquals(CountdownDataProblem.CORRUPT, error.problem)
     }
 
-    private fun payload(vararg events: String): String =
-        "{\"schemaVersion\":4,\"events\":[${events.joinToString(",")}] }"
-
-    private fun event(id: String, title: String): String =
-        """{"id":"$id","title":"$title","date":"2026-12-01","type":"trip","iconKey":"airplane","reminderKey":"off","createdAt":"2026-08-23T12:00:00Z"}"""
+    private fun event(id: String, title: String): CountdownEvent = CountdownEvent(
+        id = id,
+        title = title,
+        date = LocalDate.of(2026, 12, 1),
+        type = EventType.TRIP,
+        createdAt = Instant.parse("2026-08-23T12:00:00Z"),
+    )
 }
