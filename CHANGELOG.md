@@ -5,9 +5,10 @@
 - Improve reminder delivery checks for notification permission, app-level blocking, and notification-channel availability without discarding the user's reminder choice.
 - Reject reminder configurations whose scheduled date is already in the past, while keeping same-day recovery and avoiding late catch-up notifications.
 - Preserve unsaved editor and widget-configuration state across Activity recreation.
+- Make the widget configuration preview render the selected countdown's actual title, icon, and countdown state, including Next countdown and refreshed event edits.
 - Harden local storage and backup handling with bounded reads, duplicate/blank validation, future-schema detection, compatibility-safe field limits, and safer overwrite behavior.
 - Keep widgets and editor state available when local data cannot be read safely or writes fail, with localized recovery messages.
-- Add regression coverage for storage validation, future schemas, reminder scheduling, and data-size limits.
+- Add regression coverage for storage validation, future schemas, reminder scheduling, widget preview content, and data-size limits.
 
 ## 1.1.2
 
