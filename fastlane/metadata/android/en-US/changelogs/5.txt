@@ -1,0 +1,1 @@
+Improves reminder reliability, storage and backup validation, widget error handling, and unsaved-state recovery. Adds clearer handling for blocked notifications and data created by newer CountAway versions.
