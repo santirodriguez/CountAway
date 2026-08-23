@@ -13,4 +13,5 @@
     <string name="notification_blocked_title">Las notificaciones están desactivadas</string>
     <string name="notification_blocked_message">El recordatorio va a quedar guardado, pero Android no lo va a mostrar hasta que habilites las notificaciones de Ya Estamos.</string>
     <string name="notification_open_settings">Abrir ajustes de notificaciones</string>
+    <string name="title_too_long">El título puede tener hasta %1$d caracteres.</string>
 </resources>
