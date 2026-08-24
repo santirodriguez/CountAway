@@ -62,6 +62,10 @@ CurrentVersionCode: 4
 
 Do not move the 1.1.2 tag, replace its published APK, regenerate it under the same version, or change the pinned source commit. Historical upstream changelogs and release notes for older versions remain valid project history, but they are not current build entries in the initial-inclusion recipe.
 
+While the initial-inclusion merge request remains open, a newer stable CountAway release should replace the current build entry in that same merge request rather than be added alongside it.
+
+After publishing the new GitHub release and verifying its public APK URL, update the recipe to the new `versionName`, `versionCode`, and exact release commit, keep only that build entry, rerun the fdroiddata and reproducible-build checks, and notify the reviewer once the updated pipeline is green.
+
 ## Reproducible upstream APKs
 
 F-Droid uses the upstream GitHub release binary together with the CountAway signing certificate to verify reproducible builds. This also preserves Android signing identity between compatible upstream and F-Droid builds.
@@ -109,7 +113,9 @@ curl --fail --location --silent --show-error --output /dev/null \
   "https://github.com/santirodriguez/CountAway/releases/download/v${VERSION}/CountAway-v${VERSION}.apk"
 ```
 
-If F-Droid has already generated an automatic update from the stable tag, do not create a competing manual version update unless a maintainer or a concrete failure requires it. If a manual fdroiddata change is required, make it only after the public binary check succeeds and point it to the exact release commit.
+If the initial-inclusion merge request is still open, update that merge request only after the public binary check succeeds.
+
+If CountAway has already been included, let the configured `AutoUpdateMode` handle normal future releases unless a maintainer or a concrete failure requires a manual fdroiddata update.
 
 ## Release checklist
 
@@ -123,7 +129,7 @@ For a future stable release:
 6. Verify the release workflow reports the expected signing-certificate SHA-256 and APK metadata.
 7. Review the draft GitHub Release and publish it only after the APK, checksum, and notes are approved.
 8. Verify the exact public `Binaries` URL resolves after publication.
-9. Let the configured F-Droid automatic update path handle the normal version update; make a manual fdroiddata change only when required and only after the public binary check succeeds.
+9. If the initial-inclusion merge request is still open, replace its single build entry with the new release and rerun its checks. If CountAway is already included, let `AutoUpdateMode` handle the normal update unless manual intervention is required.
 10. Wait for F-Droid CI and maintainer processing before considering the F-Droid update complete.
 
 Once the inclusion merge request is accepted and CountAway is actually published, the README can be updated separately with the official F-Droid badge/link.
