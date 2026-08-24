@@ -2,23 +2,13 @@ name: CountAway Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: Version name to build
-        required: true
-        default: "1.1.2"
-        type: string
-      mode:
-        description: Release action
-        required: true
-        default: release-candidate
-        type: choice
-        options:
-          - release-candidate
-          - prepare-draft-release
   push:
     tags:
       - "v*"
+
+concurrency:
+  group: countaway-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build-signed-apk:
@@ -29,64 +19,91 @@ jobs:
       contents: read
     env:
       ANDROID_BUILD_TOOLS_VERSION: "34.0.0"
+      EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
     outputs:
       version: ${{ steps.version.outputs.version }}
+      version_code: ${{ steps.version.outputs.version_code }}
       prepare_release: ${{ steps.version.outputs.prepare_release }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Resolve release version
         id: version
-        env:
-          REQUESTED_VERSION: ${{ inputs.version }}
-          REQUESTED_MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
 
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-            PREPARE_RELEASE="true"
-          else
-            VERSION="${REQUESTED_VERSION}"
+          mapfile -t VERSION_NAMES < <(
+            sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' app/build.gradle.kts
+          )
+          mapfile -t VERSION_CODES < <(
+            sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' app/build.gradle.kts
+          )
 
-            case "${REQUESTED_MODE}" in
-              release-candidate)
-                PREPARE_RELEASE="false"
-                ;;
-              prepare-draft-release)
-                PREPARE_RELEASE="true"
-                if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
-                  echo "Draft releases must be prepared from main, got: ${GITHUB_REF}" >&2
-                  exit 1
-                fi
-                ;;
-              *)
-                echo "Unsupported release mode: ${REQUESTED_MODE}" >&2
-                exit 1
-                ;;
-            esac
+          if [[ "${#VERSION_NAMES[@]}" -ne 1 ]]; then
+            echo "Expected exactly one versionName in app/build.gradle.kts, found ${#VERSION_NAMES[@]}" >&2
+            exit 1
           fi
-
-          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Expected a semantic version such as 1.1.0, got: ${VERSION}" >&2
+          if [[ "${#VERSION_CODES[@]}" -ne 1 ]]; then
+            echo "Expected exactly one versionCode in app/build.gradle.kts, found ${#VERSION_CODES[@]}" >&2
             exit 1
           fi
 
+          APP_VERSION="${VERSION_NAMES[0]}"
+          VERSION_CODE="${VERSION_CODES[0]}"
+
+          if [[ ! "${APP_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid app versionName: ${APP_VERSION}" >&2
+            exit 1
+          fi
+          if [[ ! "${VERSION_CODE}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid app versionCode: ${VERSION_CODE}" >&2
+            exit 1
+          fi
+
+          case "${GITHUB_EVENT_NAME}" in
+            workflow_dispatch)
+              if [[ "${GITHUB_REF_TYPE}" != "branch" ]]; then
+                echo "Manual release candidates must run from a branch, got ${GITHUB_REF_TYPE}: ${GITHUB_REF}" >&2
+                exit 1
+              fi
+              VERSION="${APP_VERSION}"
+              PREPARE_RELEASE="false"
+              ;;
+            push)
+              if [[ "${GITHUB_REF_TYPE}" != "tag" || ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo "Release preparation requires a stable semantic tag such as v1.2.3, got: ${GITHUB_REF}" >&2
+                exit 1
+              fi
+              VERSION="${GITHUB_REF_NAME#v}"
+              if [[ "${VERSION}" != "${APP_VERSION}" ]]; then
+                echo "Tag version ${VERSION} does not match app versionName ${APP_VERSION}" >&2
+                exit 1
+              fi
+              PREPARE_RELEASE="true"
+              ;;
+            *)
+              echo "Unsupported release event: ${GITHUB_EVENT_NAME}" >&2
+              exit 1
+              ;;
+          esac
+
           printf 'version=%s\n' "${VERSION}" >> "${GITHUB_OUTPUT}"
+          printf 'version_code=%s\n' "${VERSION_CODE}" >> "${GITHUB_OUTPUT}"
           printf 'prepare_release=%s\n' "${PREPARE_RELEASE}" >> "${GITHUB_OUTPUT}"
           printf 'VERSION=%s\n' "${VERSION}" >> "${GITHUB_ENV}"
+          printf 'VERSION_CODE=%s\n' "${VERSION_CODE}" >> "${GITHUB_ENV}"
           printf 'PREPARE_RELEASE=%s\n' "${PREPARE_RELEASE}" >> "${GITHUB_ENV}"
 
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 
       - name: Install pinned Android signing tools
         run: |
@@ -103,20 +120,15 @@ jobs:
           "${BUILD_TOOLS_DIR}/apksigner" version
 
       - name: Validate release metadata
-        id: metadata
         run: |
           set -euo pipefail
 
-          grep -Fq "versionName = \"${VERSION}\"" app/build.gradle.kts
-
-          VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' app/build.gradle.kts | head -n 1)"
-          test -n "${VERSION_CODE}"
-          printf 'version_code=%s\n' "${VERSION_CODE}" >> "${GITHUB_OUTPUT}"
-
           if [[ "${PREPARE_RELEASE}" == "true" ]]; then
-            test -f "docs/releases/${VERSION}.md"
+            grep -Fqx "## ${VERSION}" CHANGELOG.md
+            test -s "docs/releases/${VERSION}.md"
+            test ! -d "fastlane/metadata/android/en"
             for locale in en-US es ca; do
-              test -f "fastlane/metadata/android/${locale}/changelogs/${VERSION_CODE}.txt"
+              test -s "fastlane/metadata/android/${locale}/changelogs/${VERSION_CODE}.txt"
             done
           fi
 
@@ -125,7 +137,6 @@ jobs:
 
       - name: Sign and verify APK
         env:
-          VERSION_CODE: ${{ steps.metadata.outputs.version_code }}
           COUNTAWAY_RELEASE_KEYSTORE_B64: ${{ secrets.COUNTAWAY_RELEASE_KEYSTORE_B64 }}
           COUNTAWAY_RELEASE_STORE_PASSWORD: ${{ secrets.COUNTAWAY_RELEASE_STORE_PASSWORD }}
           COUNTAWAY_RELEASE_KEY_ALIAS: ${{ secrets.COUNTAWAY_RELEASE_KEY_ALIAS }}
@@ -156,6 +167,8 @@ jobs:
 
           APK_NAME="CountAway-v${VERSION}.apk"
           FINAL_APK="${DIST_DIR}/${APK_NAME}"
+          SIGNING_REPORT="${DIST_DIR}/CountAway-v${VERSION}-signing.txt"
+          BADGING_REPORT="${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
 
           # AGP already aligns APK output. Verify it rather than rewriting the archive.
           "${ZIPALIGN}" -c -v 4 "${UNSIGNED_APK}"
@@ -169,15 +182,25 @@ jobs:
             "${UNSIGNED_APK}"
 
           "${ZIPALIGN}" -c -v 4 "${FINAL_APK}"
-          "${APKSIGNER}" verify --verbose --print-certs "${FINAL_APK}" \
-            | tee "${DIST_DIR}/CountAway-v${VERSION}-signing.txt"
+          "${APKSIGNER}" verify --verbose --print-certs "${FINAL_APK}" | tee "${SIGNING_REPORT}"
 
-          "${AAPT}" dump badging "${FINAL_APK}" \
-            | tee "${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
-          grep -Fq "package: name='com.santiagorodriguez.countaway'" \
-            "${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
-          grep -Fq "versionCode='${VERSION_CODE}' versionName='${VERSION}'" \
-            "${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
+          ACTUAL_SIGNING_CERT_SHA256="$(
+            sed -nE 's/^Signer #1 certificate SHA-256 digest: ([[:xdigit:]]+)$/\1/p' "${SIGNING_REPORT}" \
+              | head -n 1 \
+              | tr '[:upper:]' '[:lower:]'
+          )"
+          if [[ -z "${ACTUAL_SIGNING_CERT_SHA256}" ]]; then
+            echo "Could not read signer SHA-256 fingerprint from apksigner output" >&2
+            exit 1
+          fi
+          if [[ "${ACTUAL_SIGNING_CERT_SHA256}" != "${EXPECTED_SIGNING_CERT_SHA256}" ]]; then
+            echo "Unexpected signing certificate SHA-256: ${ACTUAL_SIGNING_CERT_SHA256}" >&2
+            exit 1
+          fi
+
+          "${AAPT}" dump badging "${FINAL_APK}" | tee "${BADGING_REPORT}"
+          grep -Fq "package: name='com.santiagorodriguez.countaway'" "${BADGING_REPORT}"
+          grep -Fq "versionCode='${VERSION_CODE}' versionName='${VERSION}'" "${BADGING_REPORT}"
 
           (
             cd "${DIST_DIR}"
@@ -185,8 +208,8 @@ jobs:
           )
 
       - name: Upload release candidate
-        if: github.event_name == 'workflow_dispatch' && steps.version.outputs.prepare_release == 'false'
-        uses: actions/upload-artifact@v7
+        if: steps.version.outputs.prepare_release == 'false'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: CountAway-v${{ steps.version.outputs.version }}-release-candidate
           path: dist/
@@ -195,7 +218,7 @@ jobs:
 
       - name: Upload release bundle
         if: steps.version.outputs.prepare_release == 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: CountAway-v${{ steps.version.outputs.version }}-release-bundle
           path: |
@@ -205,7 +228,7 @@ jobs:
           retention-days: 14
 
       - name: Upload R8 mapping
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: CountAway-v${{ steps.version.outputs.version }}-r8-mapping
           path: app/build/outputs/mapping/release/
@@ -222,38 +245,63 @@ jobs:
 
     steps:
       - name: Checkout exact release commit
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Verify existing tag target
+      - name: Verify explicit tag target
         env:
           VERSION: ${{ needs.build-signed-apk.outputs.version }}
         run: |
           set -euo pipefail
 
+          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
+            echo "Draft release preparation is allowed only from an existing tag" >&2
+            exit 1
+          fi
+
           TAG="v${VERSION}"
-          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
-            TAG_SHA="$(git rev-list -n 1 "refs/tags/${TAG}")"
-            if [[ "${TAG_SHA}" != "${GITHUB_SHA}" ]]; then
-              echo "${TAG} already points to ${TAG_SHA}, expected ${GITHUB_SHA}" >&2
-              exit 1
-            fi
+          if [[ "${GITHUB_REF_NAME}" != "${TAG}" ]]; then
+            echo "Expected release tag ${TAG}, got ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+          git rev-parse "refs/tags/${TAG}" >/dev/null
+          TAG_SHA="$(git rev-list -n 1 "refs/tags/${TAG}")"
+          if [[ "${TAG_SHA}" != "${GITHUB_SHA}" ]]; then
+            echo "${TAG} points to ${TAG_SHA}, expected ${GITHUB_SHA}" >&2
+            exit 1
+          fi
+
+          git rev-parse "refs/remotes/origin/main" >/dev/null
+          if ! git merge-base --is-ancestor "${GITHUB_SHA}" "refs/remotes/origin/main"; then
+            echo "${TAG} does not point to a commit in main history" >&2
+            exit 1
           fi
 
       - name: Download release bundle
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: CountAway-v${{ needs.build-signed-apk.outputs.version }}-release-bundle
           path: release-assets
 
+      - name: Verify release bundle checksum
+        env:
+          VERSION: ${{ needs.build-signed-apk.outputs.version }}
+        run: |
+          set -euo pipefail
+          test -f "release-assets/CountAway-v${VERSION}.apk"
+          test -f "release-assets/CountAway-v${VERSION}.apk.sha256"
+          (
+            cd release-assets
+            sha256sum -c "CountAway-v${VERSION}.apk.sha256"
+          )
+
       - name: Create or update draft release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: v${{ needs.build-signed-apk.outputs.version }}
-          target_commitish: ${{ github.sha }}
           name: CountAway v${{ needs.build-signed-apk.outputs.version }}
           draft: true
           prerelease: false

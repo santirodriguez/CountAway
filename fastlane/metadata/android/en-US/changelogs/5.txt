@@ -1,0 +1,1 @@
+Improves reminder reliability, storage and backup validation, widget error handling, and unsaved-state recovery. Fixes the widget configuration preview so it follows the selected event and icon. Adds clearer handling for blocked notifications and data created by newer CountAway versions. Also makes widget setup easier from About and polishes the supporting UI.

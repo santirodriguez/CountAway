@@ -36,28 +36,41 @@ On macOS:
 base64 < countaway-release.jks | tr -d '\n'
 ```
 
+## Release invariants
+
+The release process is intentionally strict:
+
+- `versionName` and `versionCode` come from `app/build.gradle.kts`; the workflow does not maintain a second version value.
+- A manual workflow run is a release candidate only. It does not create a Git tag or GitHub Release.
+- Preparing a GitHub Release requires an explicitly created stable tag named `v<version>`.
+- The tag version must exactly match `versionName` in the tagged source.
+- A tagged release must have a matching `CHANGELOG.md` section, `docs/releases/<version>.md`, and Fastlane changelogs named after the exact `versionCode` for `en-US`, `es`, and `ca`.
+- The release APK must be signed by certificate SHA-256 `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
+- GitHub Actions dependencies are pinned to immutable commit SHAs.
+
+Creating a stable `v<version>` tag is a release gate. It must be a deliberate action because external update systems, including F-Droid, can use stable tags for version detection.
+
 ## Release toolchain
 
 The release workflow uses JDK 17 and explicitly installs Android Build Tools 34.0.0 for `zipalign`, `apksigner`, and `aapt`.
 
-The Gradle/AGP build already produces aligned APK output. The workflow verifies that alignment instead of rewriting the APK, then signs the exact Gradle output with the pinned `apksigner`. This is intentional: F-Droid currently documents that APKs signed with `apksigner` from Build Tools 35 or newer can fail `apksigcopier` verification used by reproducible builds.
+The Gradle/AGP build already produces aligned APK output. The workflow verifies that alignment instead of rewriting the APK, then signs the exact Gradle output with the pinned `apksigner`. This is intentional: F-Droid documents compatibility constraints around newer `apksigner` output and `apksigcopier` used for reproducible builds.
 
 Do not replace the pinned signing toolchain with “latest” without re-validating the F-Droid reproducible-build path.
 
 ## Build a release candidate
 
-Run the **CountAway Release** workflow manually with:
+Run the **CountAway Release** workflow manually from the branch and commit that should be tested.
 
-- the version from `app/build.gradle.kts`;
-- mode `release-candidate`.
+There is no version input. The workflow derives `versionName` and `versionCode` directly from `app/build.gradle.kts` and rejects ambiguous or invalid values.
 
-The workflow:
+A manual run:
 
-1. verifies the requested version;
+1. resolves the application version from Gradle;
 2. runs tests and lint;
 3. builds the R8/resource-shrunk release APK;
 4. verifies APK alignment and signs with the pinned Android Build Tools;
-5. verifies the Android signature, package name, version code, and version name;
+5. verifies the signing certificate SHA-256, package name, version code, and version name;
 6. generates a SHA-256 checksum and signing-certificate report;
 7. uploads the release candidate and R8 mapping as workflow artifacts.
 
@@ -72,23 +85,25 @@ The signing report and R8 mapping are verification/debug artifacts and do not ne
 
 ## Prepare a draft release
 
-After the release candidate is approved, run the **CountAway Release** workflow again from `main` with:
+After the release candidate is approved and the final release commit is on `main`:
 
-- the approved version;
-- mode `prepare-draft-release`.
+1. confirm `versionName` and `versionCode` are final;
+2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, and all three Fastlane changelogs are present and correct;
+3. confirm Android CI is green on that exact commit;
+4. explicitly create stable tag `v<version>` on that exact commit and push it.
 
-The workflow rebuilds and verifies the final APK from the exact selected `main` commit. Only after those checks succeed, it creates or reuses tag `v<version>` at that exact commit and creates or updates a GitHub Release as a draft using `docs/releases/<version>.md`.
+The tag push triggers the **CountAway Release** workflow. The workflow rebuilds the exact tagged source, verifies that the tag version matches Gradle, verifies release metadata and the signing certificate, checks the generated checksum, and then creates or updates a draft GitHub Release.
 
-The draft release receives only the public release assets:
+The workflow does not use a manual “prepare release” mode and is not responsible for creating the stable tag.
+
+The draft release receives only:
 
 ```text
 CountAway-v<version>.apk
 CountAway-v<version>.apk.sha256
 ```
 
-The draft must remain unpublished until its tag target, release notes, APK, and checksum have been reviewed.
-
-A push of an already-created `v*` tag also follows the verified build and draft-release path.
+The draft must remain unpublished until its tag target, release notes, APK, checksum, signing identity, and installation behavior have been reviewed.
 
 ## Publish
 
@@ -98,10 +113,10 @@ Publishing is intentionally separate from preparation. Before publishing the Git
 - install and smoke-test the signed APK on a real Android device or emulator;
 - verify an upgrade from the previous public CountAway release preserves countdowns and existing widgets;
 - verify the SHA-256 checksum;
-- record the signing certificate SHA-256 fingerprint somewhere durable;
+- verify the signing certificate SHA-256 matches the expected fingerprint above;
 - confirm the final release notes and public assets;
 - confirm the release is still a draft.
 
 Only then publish the prepared GitHub Release.
 
-For F-Droid-specific checks, continue with [`FDROID.md`](FDROID.md).
+For the mandatory public-asset check before updating F-Droid, continue with [`FDROID.md`](FDROID.md).
