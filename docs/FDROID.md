@@ -80,20 +80,24 @@ The release workflow verifies this fingerprint explicitly and pins `apksigner` t
 
 ## Stable tag gate
 
-The fdroiddata recipe uses stable semantic tags for update detection. A normal branch commit or merge to `main` is not a new F-Droid version, but creating a new stable `v<version>` tag can be detected as one.
+The fdroiddata recipe uses stable semantic tags for update detection. A normal branch commit or merge to `main` is not a new F-Droid version.
 
-Once CountAway is included, `AutoUpdateMode: Version` means an ordinary future update can be generated from a detected stable tag without a manual fdroiddata edit. Treat creation of a stable tag as the start of the public F-Droid update path, not as a harmless staging action.
+In the normal web release path, `prepare-draft-release` creates a draft GitHub Release configured with tag name `v<version>` and the exact validated target commit, but GitHub does not create the actual `refs/tags/v<version>` Git ref while the release remains a draft. The draft can therefore exist under an `untagged-...` URL while `v<version>` still does not resolve as a repository ref; that is expected and is not a release failure.
+
+Publishing the validated draft is the stable-tag gate in this path. GitHub materializes `v<version>` on the configured target commit when the draft is published, and only then can tag-based update detection see the new version. A direct push of a stable tag remains an alternate supported path and starts the same public update path immediately.
+
+Once CountAway is included, `AutoUpdateMode: Version` means an ordinary future update can be generated from a detected stable tag without a manual fdroiddata edit.
 
 For that reason:
 
-- manual release-workflow runs produce release candidates only;
-- the workflow does not use a manual mode to create a stable tag;
-- a stable release tag must be created explicitly on the exact intended release commit;
-- do not create a stable tag merely to test release automation or metadata;
-- do not create the stable tag until the signed release candidate, release notes, Fastlane changelogs, upgrade behavior, and final source commit are already approved;
-- after creating the stable tag, review the resulting draft release promptly and publish only if all workflow verification remains green.
+- use `release-candidate` for signed testing before the release is ready;
+- use `prepare-draft-release` from the current `main` head to validate the final source and prepare the private draft;
+- do not manually create `v<version>` merely because it is absent while the matching draft is unpublished;
+- review the draft APK, checksum, notes, signing identity, upgrade behavior, and configured target commit before publication;
+- treat publication of the draft as the deliberate creation of the stable tag and the start of the public F-Droid update path;
+- never move an existing stable tag after publication.
 
-There is intentionally no stable release tag for a release candidate.
+There is intentionally no stable release tag for a release candidate or an unpublished prepared draft.
 
 ## Public binary gate
 
@@ -123,12 +127,12 @@ For a future stable release:
 
 1. Keep `versionName`, `versionCode`, `CHANGELOG.md`, `docs/releases/<version>.md`, and all three Fastlane changelogs synchronized.
 2. Get Android CI green on the exact proposed release commit.
-3. Build and smoke-test a signed release candidate, including upgrade preservation, before creating the stable tag.
+3. Build and smoke-test a signed `release-candidate`, including upgrade preservation.
 4. Merge release changes only after review and explicit approval.
-5. Create `v<version>` explicitly on the exact final release commit only when the release is ready to proceed publicly; never move an existing stable tag.
-6. Verify the release workflow reports the expected signing-certificate SHA-256 and APK metadata.
-7. Review the draft GitHub Release and publish it only after the APK, checksum, and notes are approved.
-8. Verify the exact public `Binaries` URL resolves after publication.
+5. Run `prepare-draft-release` from the current `main` head and verify the expected signing certificate, APK metadata, checksum, and configured release target.
+6. Review the unpublished draft. The missing `v<version>` Git ref at this stage is expected and must not be recreated manually.
+7. Publish the draft only after the APK, checksum, notes, upgrade behavior, and target commit are approved. Publication creates the stable tag in the normal web path.
+8. Verify that `v<version>` resolves to the exact approved release commit and that the public `Binaries` URL resolves.
 9. If the initial-inclusion merge request is still open, replace its single build entry with the new release and rerun its checks. If CountAway is already included, let `AutoUpdateMode` handle the normal update unless manual intervention is required.
 10. Wait for F-Droid CI and maintainer processing before considering the F-Droid update complete.
 
