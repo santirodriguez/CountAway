@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="data_save_failed">No se pudo guardar esta cuenta regresiva. Tus cambios siguen acá.</string>
+    <string name="data_delete_failed">No se pudo eliminar esta cuenta regresiva.</string>
+    <string name="data_newer_version_title">Datos de una versión más nueva</string>
+    <string name="data_newer_version_description">Estos datos fueron creados por una versión más nueva de Ya Estamos. Actualizá la app antes de editarlos.</string>
+    <string name="data_newer_version_edit_blocked">Estos datos fueron creados por una versión más nueva de Ya Estamos. Actualizá la app antes de editarlos.</string>
+    <string name="widget_data_error">Hay un problema con los datos guardados</string>
+    <string name="widget_data_newer_version">Actualizá Ya Estamos para usar estos datos</string>
+    <string name="widget_open_app">Abrí Ya Estamos</string>
+    <string name="backup_import_newer_version">Esta copia fue creada por una versión más nueva de Ya Estamos.</string>
+    <string name="reminder_schedule_unavailable">Este recordatorio tendría que haberse enviado antes de hoy. Elegí una fecha posterior o un recordatorio más cercano.</string>
+    <string name="notification_blocked_title">Las notificaciones están desactivadas</string>
+    <string name="notification_blocked_message">El recordatorio va a quedar guardado, pero Android no lo va a mostrar hasta que habilites las notificaciones de Ya Estamos.</string>
+    <string name="notification_open_settings">Abrir ajustes de notificaciones</string>
+    <string name="title_too_long">El título puede tener hasta %1$d caracteres.</string>
+</resources>

@@ -17,7 +17,7 @@ class CountdownRepository(context: Context) {
         if (!atomicFile.baseFile.exists()) return CountdownLoadResult.Success(emptyList())
 
         return try {
-            val payload = atomicFile.openRead().bufferedReader(Charsets.UTF_8).use { it.readText() }
+            val payload = atomicFile.openRead().use(CountdownStorageCodec::readUtf8Payload)
             CountdownLoadResult.Success(CountdownStorageCodec.decode(payload))
         } catch (error: CountdownDataException) {
             CountdownLoadResult.Failure(error.problem)
@@ -26,20 +26,15 @@ class CountdownRepository(context: Context) {
         }
     }
 
-    fun load(): List<CountdownEvent> = when (val result = loadResult()) {
-        is CountdownLoadResult.Success -> result.events
-        is CountdownLoadResult.Failure -> emptyList()
-    }
-
     fun exportPayload(): String = when (val result = loadResult()) {
         is CountdownLoadResult.Success -> CountdownStorageCodec.encode(result.events)
         is CountdownLoadResult.Failure -> throw CountdownDataException(result.problem)
     }
 
-    fun previewImport(payload: String): Int = CountdownStorageCodec.decode(payload).size
+    fun previewImport(payload: String): Int = CountdownStorageCodec.decodeForImport(payload).size
 
     fun importPayload(payload: String): Int {
-        val events = CountdownStorageCodec.decode(payload)
+        val events = CountdownStorageCodec.decodeForImport(payload)
         save(events)
         return events.size
     }

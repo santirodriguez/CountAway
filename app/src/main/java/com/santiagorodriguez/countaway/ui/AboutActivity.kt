@@ -2,15 +2,20 @@ package com.santiagorodriguez.countaway.ui
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownDataException
+import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.CountdownStorageCodec
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
@@ -18,7 +23,8 @@ import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 
 class AboutActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
-    private var pendingImportPayload: String? = null
+    private var pendingImportUri: Uri? = null
+    private var pendingImportCount: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,9 +33,13 @@ class AboutActivity : BaseActivity() {
         repository = CountdownRepository(this)
 
         val versionName = packageManager.getPackageInfo(packageName, 0).versionName ?: "—"
-        findViewById<TextView>(R.id.versionText).text = getString(R.string.about_version, versionName)
+        findViewById<TextView>(R.id.versionText).text = getString(R.string.about_version_compact, versionName)
 
-        findViewById<Button>(R.id.websiteButton).setOnClickListener {
+        findViewById<View>(R.id.createCountdownAction).setOnClickListener {
+            startActivity(Intent(this, EditorActivity::class.java))
+        }
+        findViewById<View>(R.id.addWidgetAction).setOnClickListener { requestWidgetPin() }
+        findViewById<View>(R.id.websiteButton).setOnClickListener {
             openExternal(PERSONAL_WEBSITE)
         }
         findViewById<Button>(R.id.exportButton).setOnClickListener { exportBackup() }
@@ -37,6 +47,18 @@ class AboutActivity : BaseActivity() {
         findViewById<Button>(R.id.donateButton).setOnClickListener {
             openExternal(DONATE_WEBSITE)
         }
+
+        restorePendingImport(savedInstanceState)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        pendingImportUri?.let { uri ->
+            outState.putString(STATE_PENDING_IMPORT_URI, uri.toString())
+        }
+        pendingImportCount?.let { count ->
+            outState.putInt(STATE_PENDING_IMPORT_COUNT, count)
+        }
+        super.onSaveInstanceState(outState)
     }
 
     @Deprecated("Deprecated in Java")
@@ -48,6 +70,19 @@ class AboutActivity : BaseActivity() {
         when (requestCode) {
             REQUEST_EXPORT -> writeBackup(uri)
             REQUEST_IMPORT -> readBackup(uri)
+        }
+    }
+
+    private fun requestWidgetPin() {
+        val manager = AppWidgetManager.getInstance(this)
+        if (!manager.isRequestPinAppWidgetSupported) {
+            Toast.makeText(this, R.string.about_widget_pin_unavailable, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val provider = ComponentName(this, CountdownWidgetProvider::class.java)
+        if (!manager.requestPinAppWidget(provider, null, null)) {
+            Toast.makeText(this, R.string.about_widget_pin_unavailable, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -69,7 +104,7 @@ class AboutActivity : BaseActivity() {
     private fun writeBackup(uri: Uri) {
         try {
             val payload = repository.exportPayload()
-            contentResolver.openOutputStream(uri, "w")?.bufferedWriter(Charsets.UTF_8)?.use { writer ->
+            contentResolver.openOutputStream(uri, "rwt")?.bufferedWriter(Charsets.UTF_8)?.use { writer ->
                 writer.write(payload)
             } ?: error("Unable to open destination")
             Toast.makeText(this, R.string.backup_export_success, Toast.LENGTH_SHORT).show()
@@ -79,38 +114,78 @@ class AboutActivity : BaseActivity() {
     }
 
     private fun readBackup(uri: Uri) {
+        clearPendingImport()
         try {
-            val payload = contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
-                ?: error("Unable to open backup")
+            val payload = readUtf8Payload(uri)
             val count = repository.previewImport(payload)
-            pendingImportPayload = payload
-            AlertDialog.Builder(this)
-                .setTitle(R.string.backup_import_confirm_title)
-                .setMessage(resources.getQuantityString(R.plurals.backup_import_confirm_message, count, count))
-                .setNegativeButton(R.string.action_cancel) { _, _ -> pendingImportPayload = null }
-                .setPositiveButton(R.string.backup_import_action) { _, _ -> confirmImport() }
-                .setOnCancelListener { pendingImportPayload = null }
-                .show()
-        } catch (_: CountdownDataException) {
-            Toast.makeText(this, R.string.backup_import_invalid, Toast.LENGTH_LONG).show()
+            pendingImportUri = uri
+            pendingImportCount = count
+            showImportConfirmation(count)
+        } catch (error: CountdownDataException) {
+            showImportValidationError(error)
         } catch (_: Exception) {
             Toast.makeText(this, R.string.backup_import_failed, Toast.LENGTH_LONG).show()
         }
     }
 
+    private fun showImportConfirmation(count: Int) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.backup_import_confirm_title)
+            .setMessage(resources.getQuantityString(R.plurals.backup_import_confirm_message, count, count))
+            .setNegativeButton(R.string.action_cancel) { _, _ -> clearPendingImport() }
+            .setPositiveButton(R.string.backup_import_action) { _, _ -> confirmImport() }
+            .setOnCancelListener { clearPendingImport() }
+            .show()
+    }
+
+    private fun restorePendingImport(state: Bundle?) {
+        val rawUri = state?.getString(STATE_PENDING_IMPORT_URI) ?: return
+        if (!state.containsKey(STATE_PENDING_IMPORT_COUNT)) return
+
+        pendingImportUri = Uri.parse(rawUri)
+        pendingImportCount = state.getInt(STATE_PENDING_IMPORT_COUNT)
+        showImportConfirmation(pendingImportCount ?: return)
+    }
+
+    private fun readUtf8Payload(uri: Uri): String {
+        val stream = contentResolver.openInputStream(uri) ?: error("Unable to open backup")
+        return stream.use(CountdownStorageCodec::readUtf8Payload)
+    }
+
     private fun confirmImport() {
-        val payload = pendingImportPayload ?: return
-        pendingImportPayload = null
+        val uri = pendingImportUri ?: return
+        clearPendingImport()
+
         try {
+            val payload = readUtf8Payload(uri)
             repository.importPayload(payload)
-            ArrivalNotificationState(this).clear()
-            CountdownWidgetProvider.updateAllWidgets(this)
-            WidgetUpdateScheduler.ensureScheduled(this)
-            ArrivalNotificationScheduler.ensureScheduled(this)
-            Toast.makeText(this, R.string.backup_import_success, Toast.LENGTH_SHORT).show()
+        } catch (error: CountdownDataException) {
+            showImportValidationError(error)
+            return
         } catch (_: Exception) {
             Toast.makeText(this, R.string.backup_import_failed, Toast.LENGTH_LONG).show()
+            return
         }
+
+        ArrivalNotificationState(this).clear()
+        runCatching { CountdownWidgetProvider.updateAllWidgets(this) }
+        runCatching { WidgetUpdateScheduler.ensureScheduled(this) }
+        runCatching { ArrivalNotificationScheduler.ensureScheduled(this) }
+        Toast.makeText(this, R.string.backup_import_success, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun showImportValidationError(error: CountdownDataException) {
+        val message = if (error.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
+            R.string.backup_import_newer_version
+        } else {
+            R.string.backup_import_invalid
+        }
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
+    private fun clearPendingImport() {
+        pendingImportUri = null
+        pendingImportCount = null
     }
 
     private fun openExternal(url: String) {
@@ -122,5 +197,7 @@ class AboutActivity : BaseActivity() {
         const val DONATE_WEBSITE = "https://santiagorodriguez.com/donate"
         const val REQUEST_EXPORT = 5101
         const val REQUEST_IMPORT = 5102
+        const val STATE_PENDING_IMPORT_URI = "pending_import_uri"
+        const val STATE_PENDING_IMPORT_COUNT = "pending_import_count"
     }
 }

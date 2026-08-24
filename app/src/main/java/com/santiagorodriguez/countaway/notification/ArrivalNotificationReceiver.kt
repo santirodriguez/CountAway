@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.LanguageManager
@@ -22,16 +23,27 @@ class ArrivalNotificationReceiver : BroadcastReceiver() {
 }
 
 object ArrivalNotifier {
-    private const val CHANNEL_ID = "countdown_arrivals"
-
     fun notifyDueEvents(context: Context) {
-        if (!ArrivalNotificationScheduler.canPostNotifications(context)) return
+        if (!ArrivalNotificationScheduler.hasNotificationPermission(context)) return
 
         val displayContext = LanguageManager.localizedContext(context)
         val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(
+                ArrivalNotificationScheduler.CHANNEL_ID,
+                displayContext.getString(R.string.notification_channel_name),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ),
+        )
+        if (!ArrivalNotificationScheduler.canPostNotifications(context)) return
+
+        val events = when (val result = CountdownRepository(context).loadResult()) {
+            is CountdownLoadResult.Success -> result.events
+            is CountdownLoadResult.Failure -> return
+        }
         val state = ArrivalNotificationState(context)
         val today = LocalDate.now()
-        val dueEvents = CountdownRepository(context).load().mapNotNull { event ->
+        val dueEvents = events.mapNotNull { event ->
             val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event) ?: return@mapNotNull null
             if (ArrivalNotificationPolicy.isDue(event, today, state.deliveredDate(event.id))) {
                 event to scheduledDate
@@ -40,14 +52,6 @@ object ArrivalNotifier {
             }
         }
         if (dueEvents.isEmpty()) return
-
-        manager.createNotificationChannel(
-            NotificationChannel(
-                CHANNEL_ID,
-                displayContext.getString(R.string.notification_channel_name),
-                NotificationManager.IMPORTANCE_DEFAULT,
-            ),
-        )
 
         dueEvents.forEach { (event, scheduledDate) ->
             val daysBefore = event.reminder.daysBefore ?: return@forEach
@@ -66,7 +70,7 @@ object ArrivalNotifier {
                 )
             }
 
-            val notification = Notification.Builder(context, CHANNEL_ID)
+            val notification = Notification.Builder(context, ArrivalNotificationScheduler.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_event_star)
                 .setColor(context.getColor(R.color.accent))
                 .setContentTitle(title)
@@ -81,7 +85,9 @@ object ArrivalNotifier {
             runCatching {
                 manager.notify(event.id.hashCode(), notification)
             }.onSuccess {
-                state.markDelivered(event, scheduledDate)
+                if (ArrivalNotificationScheduler.canPostNotifications(context)) {
+                    state.markDelivered(event, scheduledDate)
+                }
             }
         }
     }

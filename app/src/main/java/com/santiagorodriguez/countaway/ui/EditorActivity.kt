@@ -3,11 +3,16 @@ package com.santiagorodriguez.countaway.ui
 import android.Manifest
 import android.app.AlertDialog
 import android.app.DatePickerDialog
+import android.app.NotificationManager
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.text.InputFilter
 import android.view.Gravity
 import android.view.View
 import android.widget.ArrayAdapter
@@ -19,8 +24,10 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.CountdownValidation
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
@@ -86,6 +93,8 @@ class EditorActivity : BaseActivity() {
             selectedIcon = event.icon
             selectedReminder = event.reminder
         }
+        savedInstanceState?.let(::restoreEditorState)
+        titleInput.filters = titleInput.filters + InputFilter.LengthFilter(CountdownValidation.MAX_TITLE_LENGTH)
 
         renderTypeGrid()
         renderCustomIconGrid()
@@ -98,6 +107,15 @@ class EditorActivity : BaseActivity() {
 
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(STATE_TITLE, titleInput.text.toString())
+        outState.putString(STATE_DATE, selectedDate.toString())
+        outState.putString(STATE_TYPE, selectedType.name)
+        outState.putString(STATE_ICON, selectedIcon.name)
+        outState.putString(STATE_REMINDER, selectedReminder.name)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onRequestPermissionsResult(
@@ -113,6 +131,8 @@ class EditorActivity : BaseActivity() {
             selectedReminder = ReminderOption.OFF
             reminderSpinner.setSelection(reminderOptions.indexOf(ReminderOption.OFF))
             Toast.makeText(this, R.string.notification_permission_denied, Toast.LENGTH_SHORT).show()
+        } else {
+            warnIfNotificationsBlocked()
         }
     }
 
@@ -133,10 +153,15 @@ class EditorActivity : BaseActivity() {
         reminderSpinner.setSelection(reminderOptions.indexOf(selectedReminder))
         reminderSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
             val next = reminderOptions[position]
+            val effect = ReminderEditorPolicy.selectionEffect(
+                currentReminder = selectedReminder,
+                nextReminder = next,
+                existingEvent = existingEvent,
+                selectedDate = selectedDate,
+                today = LocalDate.now(),
+            )
             selectedReminder = next
-            if (next != ReminderOption.OFF && !ArrivalNotificationScheduler.canPostNotifications(this)) {
-                requestNotificationPermission()
-            }
+            handleReminderSelectionEffect(effect)
         }
     }
 
@@ -209,8 +234,19 @@ class EditorActivity : BaseActivity() {
         DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
+                val previousDate = selectedDate
                 selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
                 renderDate()
+                if (selectedDate != previousDate) {
+                    handleReminderSelectionEffect(
+                        ReminderEditorPolicy.dateChangeEffect(
+                            existingEvent = existingEvent,
+                            selectedDate = selectedDate,
+                            selectedReminder = selectedReminder,
+                            today = LocalDate.now(),
+                        ),
+                    )
+                }
             },
             selectedDate.year,
             selectedDate.monthValue - 1,
@@ -230,10 +266,80 @@ class EditorActivity : BaseActivity() {
         }
     }
 
+    private fun handleReminderSelectionEffect(effect: ReminderSelectionEffect) {
+        when (effect) {
+            ReminderSelectionEffect.NONE -> Unit
+            ReminderSelectionEffect.SHOW_SCHEDULE_UNAVAILABLE ->
+                Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
+            ReminderSelectionEffect.CHECK_NOTIFICATIONS -> {
+                if (!ArrivalNotificationScheduler.hasNotificationPermission(this)) {
+                    requestNotificationPermission()
+                } else {
+                    warnIfNotificationsBlocked()
+                }
+            }
+        }
+    }
+
+    private fun canSaveSelectedReminder(): Boolean = ReminderEditorPolicy.canSave(
+        existingEvent = existingEvent,
+        selectedDate = selectedDate,
+        selectedReminder = selectedReminder,
+        today = LocalDate.now(),
+    )
+
+    private fun warnIfNotificationsBlocked() {
+        if (
+            selectedReminder == ReminderOption.OFF ||
+            !ArrivalNotificationPolicy.isSchedulePossible(selectedDate, selectedReminder, LocalDate.now()) ||
+            !ArrivalNotificationScheduler.hasNotificationPermission(this) ||
+            ArrivalNotificationScheduler.canPostNotifications(this)
+        ) {
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.notification_blocked_title)
+            .setMessage(R.string.notification_blocked_message)
+            .setNegativeButton(R.string.action_cancel, null)
+            .setPositiveButton(R.string.notification_open_settings) { _, _ -> openNotificationSettings() }
+            .show()
+    }
+
+    private fun openNotificationSettings() {
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        val channelExists = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            notificationManager.getNotificationChannel(ArrivalNotificationScheduler.CHANNEL_ID) != null
+        val intent = if (channelExists) {
+            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                .putExtra(Settings.EXTRA_CHANNEL_ID, ArrivalNotificationScheduler.CHANNEL_ID)
+        } else {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+        }
+
+        runCatching { startActivity(intent) }.onFailure {
+            startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(Uri.parse("package:$packageName")),
+            )
+        }
+    }
+
     private fun save() {
         val title = titleInput.text.toString().trim()
         if (title.isEmpty()) {
             titleInput.error = getString(R.string.title_required)
+            return
+        }
+        val previousTitle = existingEvent?.title?.trim()
+        if (!CountdownValidation.isTitleWithinLimit(title) && title != previousTitle) {
+            titleInput.error = getString(R.string.title_too_long, CountdownValidation.MAX_TITLE_LENGTH)
+            return
+        }
+        if (!canSaveSelectedReminder()) {
+            Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
             return
         }
 
@@ -254,7 +360,12 @@ class EditorActivity : BaseActivity() {
         } else {
             events.add(event)
         }
-        repository.save(events)
+        try {
+            repository.save(events)
+        } catch (_: Exception) {
+            Toast.makeText(this, R.string.data_save_failed, Toast.LENGTH_LONG).show()
+            return
+        }
         if (ArrivalNotificationPolicy.shouldResetDeliveryState(existingEvent, event)) {
             ArrivalNotificationState(this).remove(event.id)
         }
@@ -271,7 +382,12 @@ class EditorActivity : BaseActivity() {
             .setPositiveButton(R.string.action_delete) { _, _ ->
                 val events = loadEventsOrFinish()?.filterNot { it.id == event.id }
                     ?: return@setPositiveButton
-                repository.save(events)
+                try {
+                    repository.save(events)
+                } catch (_: Exception) {
+                    Toast.makeText(this, R.string.data_delete_failed, Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
                 ArrivalNotificationState(this).remove(event.id)
                 refreshBackgroundState()
                 finish()
@@ -282,9 +398,30 @@ class EditorActivity : BaseActivity() {
     private fun loadEventsOrFinish(): List<CountdownEvent>? = when (val result = repository.loadResult()) {
         is CountdownLoadResult.Success -> result.events
         is CountdownLoadResult.Failure -> {
-            Toast.makeText(this, R.string.data_error_edit_blocked, Toast.LENGTH_LONG).show()
+            val message = if (result.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
+                R.string.data_newer_version_edit_blocked
+            } else {
+                R.string.data_error_edit_blocked
+            }
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
             finish()
             null
+        }
+    }
+
+    private fun restoreEditorState(state: Bundle) {
+        state.getString(STATE_TITLE)?.let(titleInput::setText)
+        state.getString(STATE_DATE)?.let { raw ->
+            runCatching { LocalDate.parse(raw) }.getOrNull()?.let { selectedDate = it }
+        }
+        state.getString(STATE_TYPE)?.let { raw ->
+            EventType.entries.firstOrNull { it.name == raw }?.let { selectedType = it }
+        }
+        state.getString(STATE_ICON)?.let { raw ->
+            EventIcon.entries.firstOrNull { it.name == raw }?.let { selectedIcon = it }
+        }
+        state.getString(STATE_REMINDER)?.let { raw ->
+            ReminderOption.entries.firstOrNull { it.name == raw }?.let { selectedReminder = it }
         }
     }
 
@@ -306,5 +443,10 @@ class EditorActivity : BaseActivity() {
     companion object {
         const val EXTRA_EVENT_ID = "event_id"
         private const val REQUEST_NOTIFICATIONS = 2401
+        private const val STATE_TITLE = "editor_title"
+        private const val STATE_DATE = "editor_date"
+        private const val STATE_TYPE = "editor_type"
+        private const val STATE_ICON = "editor_icon"
+        private const val STATE_REMINDER = "editor_reminder"
     }
 }

@@ -6,6 +6,8 @@ import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.time.Instant
 import java.time.LocalDate
 
@@ -26,32 +28,68 @@ object CountdownStorageSchema {
     const val CURRENT_VERSION = 4
 
     fun isSupported(version: Int): Boolean = version in LEGACY_VERSION..CURRENT_VERSION
+
+    fun problemFor(version: Int): CountdownDataProblem? = when {
+        isSupported(version) -> null
+        version > CURRENT_VERSION -> CountdownDataProblem.UNSUPPORTED_SCHEMA
+        else -> CountdownDataProblem.CORRUPT
+    }
 }
 
 object CountdownStorageCodec {
-    fun decode(payload: String): List<CountdownEvent> {
+    fun readUtf8Payload(input: InputStream): String {
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(READ_BUFFER_BYTES)
+        var total = 0
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            total += count
+            if (total > CountdownValidation.MAX_PAYLOAD_BYTES) {
+                throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            }
+            output.write(buffer, 0, count)
+        }
+        return output.toString(Charsets.UTF_8.name())
+    }
+
+    fun decode(payload: String): List<CountdownEvent> = decodePayload(payload, enforceImportLimits = false)
+
+    fun decodeForImport(payload: String): List<CountdownEvent> = decodePayload(payload, enforceImportLimits = true)
+
+    private fun decodePayload(payload: String, enforceImportLimits: Boolean): List<CountdownEvent> {
+        CountdownValidation.validatePayloadSize(payload)
+
         try {
             val root = JSONObject(payload)
-            if (!root.has(KEY_SCHEMA_VERSION) || !root.has(KEY_EVENTS)) {
+            if (!root.has(KEY_SCHEMA_VERSION)) {
                 throw CountdownDataException(CountdownDataProblem.CORRUPT)
             }
 
             val schemaVersion = root.getInt(KEY_SCHEMA_VERSION)
-            if (!CountdownStorageSchema.isSupported(schemaVersion)) {
-                val problem = if (schemaVersion > CountdownStorageSchema.CURRENT_VERSION) {
-                    CountdownDataProblem.UNSUPPORTED_SCHEMA
-                } else {
-                    CountdownDataProblem.CORRUPT
-                }
+            CountdownStorageSchema.problemFor(schemaVersion)?.let { problem ->
                 throw CountdownDataException(problem)
+            }
+            if (!root.has(KEY_EVENTS)) {
+                throw CountdownDataException(CountdownDataProblem.CORRUPT)
             }
 
             val events = root.getJSONArray(KEY_EVENTS)
-            return buildList {
+            if (events.length() > CountdownValidation.MAX_EVENTS) {
+                throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            }
+
+            val parsed = buildList {
                 for (index in 0 until events.length()) {
                     add(parseEvent(events.getJSONObject(index), schemaVersion))
                 }
             }
+            if (enforceImportLimits) {
+                CountdownValidation.validateImportedEvents(parsed)
+            } else {
+                CountdownValidation.validateStoredEvents(parsed)
+            }
+            return parsed
         } catch (error: CountdownDataException) {
             throw error
         } catch (error: Exception) {
@@ -59,12 +97,17 @@ object CountdownStorageCodec {
         }
     }
 
-    fun encode(events: List<CountdownEvent>): String = JSONObject()
-        .put(KEY_SCHEMA_VERSION, CountdownStorageSchema.CURRENT_VERSION)
-        .put(KEY_EVENTS, JSONArray().apply {
-            events.forEach { put(toJson(it)) }
-        })
-        .toString()
+    fun encode(events: List<CountdownEvent>): String {
+        CountdownValidation.validateStoredEvents(events)
+        val payload = JSONObject()
+            .put(KEY_SCHEMA_VERSION, CountdownStorageSchema.CURRENT_VERSION)
+            .put(KEY_EVENTS, JSONArray().apply {
+                events.forEach { put(toJson(it)) }
+            })
+            .toString()
+        CountdownValidation.validatePayloadSize(payload)
+        return payload
+    }
 
     private fun parseEvent(json: JSONObject, schemaVersion: Int): CountdownEvent {
         val rawType = json.getString(KEY_TYPE)
@@ -135,4 +178,5 @@ object CountdownStorageCodec {
     private const val KEY_REMINDER = "reminderKey"
     private const val KEY_NOTIFY_ON_ARRIVAL = "notifyOnArrival"
     private const val KEY_CREATED_AT = "createdAt"
+    private const val READ_BUFFER_BYTES = 16 * 1024
 }
