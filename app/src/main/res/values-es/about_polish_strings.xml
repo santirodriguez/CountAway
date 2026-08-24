@@ -9,6 +9,7 @@
     <string name="backup_description_compact">Exportá. Restaurá. Crisis futura evitada.</string>
     <string name="backup_export_short">Exportar</string>
     <string name="backup_import_short">Importar</string>
+    <string name="about_support_project">Apoyá el proyecto</string>
     <string name="about_author_name">Creada por Santiago Rodriguez</string>
     <string name="about_website">santiagorodriguez.com</string>
 </resources>
