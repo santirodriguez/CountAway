@@ -2,6 +2,7 @@
 <resources>
     <string name="about_step_one" translatable="false">1</string>
     <string name="about_step_two" translatable="false">2</string>
+    <string name="about_step_three" translatable="false">3</string>
     <string name="about_version_compact">v%1$s</string>
     <string name="about_create_countdown">Create a countdown</string>
     <string name="about_add_widget">Add the widget</string>
@@ -11,6 +12,7 @@
     <string name="backup_description_compact">Export. Restore. Future crisis avoided.</string>
     <string name="backup_export_short">Export</string>
     <string name="backup_import_short">Import</string>
+    <string name="about_support_project">Support the project</string>
     <string name="about_author_name">Created by Santiago Rodriguez</string>
     <string name="about_website">santiagorodriguez.com</string>
 </resources>
