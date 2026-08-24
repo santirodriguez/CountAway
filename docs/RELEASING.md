@@ -41,10 +41,11 @@ base64 < countaway-release.jks | tr -d '\n'
 The release process is intentionally strict:
 
 - `versionName` and `versionCode` come from `app/build.gradle.kts`; the workflow does not maintain a second version value.
-- A manual workflow run is a release candidate only. It does not create a Git tag or GitHub Release.
-- Preparing a GitHub Release requires an explicitly created stable tag named `v<version>`.
-- The tag version must exactly match `versionName` in the tagged source.
-- A tagged release must have a matching `CHANGELOG.md` section, `docs/releases/<version>.md`, and Fastlane changelogs named after the exact `versionCode` for `en-US`, `es`, and `ca`.
+- A manual workflow run explicitly selects either `release-candidate` or `prepare-draft-release`.
+- `prepare-draft-release` is allowed only from `main` and only for the current `main` head.
+- Draft release preparation creates or reuses stable tag `v<version>` only after build, metadata, signing, and checksum validation succeed.
+- The tag version must exactly match `versionName` in the release source.
+- A prepared release must have a matching `CHANGELOG.md` section, `docs/releases/<version>.md`, and Fastlane changelogs named after the exact `versionCode` for `en-US`, `es`, and `ca`.
 - The release APK must be signed by certificate SHA-256 `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
 - GitHub Actions dependencies are pinned to immutable commit SHAs.
 
@@ -60,11 +61,11 @@ Do not replace the pinned signing toolchain with “latest” without re-validat
 
 ## Build a release candidate
 
-Run the **CountAway Release** workflow manually from the branch and commit that should be tested.
+Run the **CountAway Release** workflow manually from the branch and commit that should be tested, and choose `release-candidate`.
 
 There is no version input. The workflow derives `versionName` and `versionCode` directly from `app/build.gradle.kts` and rejects ambiguous or invalid values.
 
-A manual run:
+A release-candidate run:
 
 1. resolves the application version from Gradle;
 2. runs tests and lint;
@@ -90,11 +91,11 @@ After the release candidate is approved and the final release commit is on `main
 1. confirm `versionName` and `versionCode` are final;
 2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, and all three Fastlane changelogs are present and correct;
 3. confirm Android CI is green on that exact commit;
-4. explicitly create stable tag `v<version>` on that exact commit and push it.
+4. run **CountAway Release** manually from `main` and choose `prepare-draft-release`.
 
-The tag push triggers the **CountAway Release** workflow. The workflow rebuilds the exact tagged source, verifies that the tag version matches Gradle, verifies release metadata and the signing certificate, checks the generated checksum, and then creates or updates a draft GitHub Release.
+The workflow derives the version from Gradle, verifies that the selected commit is still the current `main` head, rebuilds the exact source, validates release metadata, signing identity, package/version information, and checksum, then creates or reuses `v<version>` on that exact commit and creates or updates a draft GitHub Release.
 
-The workflow does not use a manual “prepare release” mode and is not responsible for creating the stable tag.
+A direct push of an existing valid `v<version>` tag remains supported, but the normal web release path is `prepare-draft-release` from `main`.
 
 The draft release receives only:
 
