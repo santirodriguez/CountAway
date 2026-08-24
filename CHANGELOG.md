@@ -2,11 +2,11 @@
 
 ## 1.1.5
 
-- Improve reminder delivery checks for notification permission, app-level blocking, and notification-channel availability without discarding the user's reminder choice.
+- Improve reminder delivery checks for notification permission, app-level blocking, and notification-channel availability, while preserving configured reminders when Android notification settings block delivery.
 - Reject newly created or changed reminder configurations whose scheduled date is already in the past, while keeping existing historical reminders editable, preserving same-day recovery, and avoiding late catch-up notifications.
 - Preserve unsaved editor and widget-configuration state across Activity recreation.
 - Make the widget configuration preview render the selected countdown's actual title, icon, and countdown state, including Next countdown and refreshed event edits.
-- Polish About with direct countdown creation and supported-launcher widget pinning, a compact local-backup section, and a cohesive support footer; add a calendar cue to the empty state.
+- Polish About with direct countdown creation, supported-launcher widget pinning, compact backup controls, and a clearer three-step layout; add a calendar cue to the empty state.
 - Harden local storage and backup handling with bounded reads and encoded output, duplicate/blank validation, future-schema detection, compatibility-safe field limits, and safer overwrite behavior.
 - Preserve pending backup-import confirmation across Activity recreation and revalidate the selected backup before replacing local data.
 - Keep widgets and editor state available when local data cannot be read safely or writes fail, with localized recovery messages.
@@ -38,7 +38,7 @@
 - Add local countdown creation, editing, deletion, sorting, presets, and custom event icons.
 - Add localized names and UI for English, Spanish, and Catalan.
 - Add resizable home-screen widgets, including a compact 1×1 layout, with independent event selection and System, Light, or Dark appearance.
-- Add subtle 3, 2, 1, and 0 arrival states in the app and widgets.
+- Add subtle 3 · 2 · 1 · 0 arrival states in the app and widgets.
 - Add an optional one-time local notification when an event day arrives.
 - Add a one-tap Light/Dark app appearance control.
 - Keep countdown data and notifications local to the device with no accounts, ads, analytics, cloud synchronization, or Internet permission.
