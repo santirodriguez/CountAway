@@ -43,13 +43,14 @@ The release process is intentionally strict:
 - `versionName` and `versionCode` come from `app/build.gradle.kts`; the workflow does not maintain a second version value.
 - A manual workflow run explicitly selects either `release-candidate` or `prepare-draft-release`.
 - `prepare-draft-release` is allowed only from `main` and only for the current `main` head.
-- Draft release preparation creates or reuses stable tag `v<version>` only after build, metadata, signing, and checksum validation succeed.
-- The tag version must exactly match `versionName` in the release source.
+- Draft preparation creates or updates a draft GitHub Release configured with tag name `v<version>` and the exact validated target commit. GitHub does not create the actual `refs/tags/v<version>` Git ref until that draft is published.
+- A missing `v<version>` Git ref while the matching GitHub Release is still a draft is therefore expected. Do not create a duplicate tag manually or treat the missing ref as a preparation failure.
+- The release version must exactly match `versionName` in the release source.
 - A prepared release must have a matching `CHANGELOG.md` section, `docs/releases/<version>.md`, and Fastlane changelogs named after the exact `versionCode` for `en-US`, `es`, and `ca`.
 - The release APK must be signed by certificate SHA-256 `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
 - GitHub Actions dependencies are pinned to immutable commit SHAs.
 
-Creating a stable `v<version>` tag is a release gate. It must be a deliberate action because external update systems, including F-Droid, can use stable tags for version detection.
+In the normal web release path, publishing the validated draft is the stable-tag gate because that is when GitHub materializes `v<version>` on the draft's configured target commit. A direct push of an existing stable tag remains a supported alternate path and is itself a stable-tag gate.
 
 ## Release toolchain
 
@@ -93,9 +94,11 @@ After the release candidate is approved and the final release commit is on `main
 3. confirm Android CI is green on that exact commit;
 4. run **CountAway Release** manually from `main` and choose `prepare-draft-release`.
 
-The workflow derives the version from Gradle, verifies that the selected commit is still the current `main` head, rebuilds the exact source, validates release metadata, signing identity, package/version information, and checksum, then creates or reuses `v<version>` on that exact commit and creates or updates a draft GitHub Release.
+The workflow derives the version from Gradle, verifies that the selected commit is still the current `main` head, rebuilds the exact source, validates release metadata, signing identity, package/version information, and checksum, then creates or updates a draft GitHub Release with tag name `v<version>` and `target_commitish` set to that exact commit.
 
-A direct push of an existing valid `v<version>` tag remains supported, but the normal web release path is `prepare-draft-release` from `main`.
+At this stage the tag name is reserved by the draft release, but the Git ref does not yet exist. GitHub can expose the draft through an `untagged-...` URL, and resolving `v<version>` as a repository ref can return not found. Both are expected until publication.
+
+A direct push of an existing valid `v<version>` tag remains supported, but the normal web release path is `prepare-draft-release` from `main` followed by explicit draft publication.
 
 The draft release receives only:
 
@@ -104,7 +107,7 @@ CountAway-v<version>.apk
 CountAway-v<version>.apk.sha256
 ```
 
-The draft must remain unpublished until its tag target, release notes, APK, checksum, signing identity, and installation behavior have been reviewed.
+The draft must remain unpublished until its configured target commit, release notes, APK, checksum, signing identity, and installation behavior have been reviewed.
 
 ## Publish
 
@@ -116,8 +119,8 @@ Publishing is intentionally separate from preparation. Before publishing the Git
 - verify the SHA-256 checksum;
 - verify the signing certificate SHA-256 matches the expected fingerprint above;
 - confirm the final release notes and public assets;
-- confirm the release is still a draft.
+- confirm the release is still a draft and targets the intended commit.
 
-Only then publish the prepared GitHub Release.
+Only then publish the prepared GitHub Release. In the normal web path, publication creates the stable `v<version>` Git ref on the draft's configured target commit. Immediately after publication, verify that the tag resolves to that exact commit and that the public APK and checksum URLs resolve before continuing to F-Droid.
 
 For the mandatory public-asset check before updating F-Droid, continue with [`FDROID.md`](FDROID.md).
