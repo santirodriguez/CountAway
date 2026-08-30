@@ -6,8 +6,9 @@ import android.content.res.Configuration
 
 object ThemeManager {
     enum class AppTheme {
-        DARK,
+        SYSTEM,
         LIGHT,
+        DARK,
     }
 
     private const val PREFS_NAME = "countaway_ui"
@@ -16,8 +17,9 @@ object ThemeManager {
     fun wrap(context: Context): Context {
         val configuration = Configuration(context.resources.configuration)
         val nightMode = when (currentTheme(context)) {
-            AppTheme.DARK -> Configuration.UI_MODE_NIGHT_YES
+            AppTheme.SYSTEM -> configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
             AppTheme.LIGHT -> Configuration.UI_MODE_NIGHT_NO
+            AppTheme.DARK -> Configuration.UI_MODE_NIGHT_YES
         }
         configuration.uiMode =
             (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or nightMode
@@ -30,14 +32,11 @@ object ThemeManager {
         return AppTheme.entries.firstOrNull { it.name == stored } ?: AppTheme.DARK
     }
 
-    fun toggle(activity: Activity) {
-        val next = when (currentTheme(activity)) {
-            AppTheme.DARK -> AppTheme.LIGHT
-            AppTheme.LIGHT -> AppTheme.DARK
-        }
+    fun setTheme(activity: Activity, theme: AppTheme) {
+        if (currentTheme(activity) == theme) return
         activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
-            .putString(KEY_THEME, next.name)
+            .putString(KEY_THEME, theme.name)
             .apply()
         activity.recreate()
     }
