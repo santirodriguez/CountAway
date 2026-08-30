@@ -3,7 +3,9 @@
     <string name="action_share">Compartir</string>
     <string name="theme_follow_system">Seguir el tema del sistema</string>
     <string name="share_countdown_format">%1$s — %2$s · %3$s</string>
-    <string name="share_days_left">faltan %1$d días</string>
+    <plurals name="share_days_left">
+        <item quantity="other">faltan %1$d días</item>
+    </plurals>
     <string name="share_tomorrow">mañana</string>
     <string name="share_today">hoy</string>
 </resources>
