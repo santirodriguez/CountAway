@@ -1,5 +1,6 @@
 package com.santiagorodriguez.countaway.ui
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -51,7 +52,7 @@ class MainActivity : BaseActivity() {
             startActivity(Intent(this, EditorActivity::class.java))
         }
         findViewById<View>(R.id.themeButton).setOnClickListener {
-            ThemeManager.toggle(this)
+            showThemePicker()
         }
         findViewById<View>(R.id.aboutButton).setOnClickListener {
             startActivity(Intent(this, AboutActivity::class.java))
@@ -73,7 +74,7 @@ class MainActivity : BaseActivity() {
         val today = LocalDate.now()
         renderData(repository.loadResult(), today)
         renderLanguageSelection()
-        renderThemeToggle()
+        renderThemeButton()
         CountdownWidgetProvider.updateAllWidgets(this)
         WidgetUpdateScheduler.ensureScheduled(this)
         ArrivalNotificationScheduler.ensureScheduled(this)
@@ -119,23 +120,40 @@ class MainActivity : BaseActivity() {
         setLanguageButtonState(R.id.languageCatalanButton, current == LanguageManager.CATALAN)
     }
 
-    private fun renderThemeToggle() {
+    private fun showThemePicker() {
+        val themes = ThemeManager.AppTheme.entries
+        val labels = arrayOf(
+            getString(R.string.widget_appearance_system),
+            getString(R.string.widget_appearance_light),
+            getString(R.string.widget_appearance_dark),
+        )
+        val selected = themes.indexOf(ThemeManager.currentTheme(this))
+        AlertDialog.Builder(this)
+            .setTitle(R.string.widget_appearance_label)
+            .setSingleChoiceItems(labels, selected) { dialog, which ->
+                dialog.dismiss()
+                ThemeManager.setTheme(this, themes[which])
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
+    }
+
+    private fun renderThemeButton() {
         val button = findViewById<TextView>(R.id.themeButton)
-        when (ThemeManager.currentTheme(this)) {
-            ThemeManager.AppTheme.DARK -> {
-                button.text = "☀"
-                button.contentDescription = getString(R.string.theme_switch_to_light)
-            }
-            ThemeManager.AppTheme.LIGHT -> {
-                button.text = "☾"
-                button.contentDescription = getString(R.string.theme_switch_to_dark)
-            }
+        button.text = when (ThemeManager.currentTheme(this)) {
+            ThemeManager.AppTheme.SYSTEM -> "◐"
+            ThemeManager.AppTheme.LIGHT -> "☀"
+            ThemeManager.AppTheme.DARK -> "☾"
         }
+        button.contentDescription = getString(R.string.widget_appearance_label)
     }
 
     private fun setLanguageButtonState(viewId: Int, selected: Boolean) {
-        findViewById<View>(viewId).setBackgroundResource(
-            if (selected) R.drawable.language_chip_active else R.drawable.language_chip_inactive,
-        )
+        findViewById<View>(viewId).apply {
+            isSelected = selected
+            setBackgroundResource(
+                if (selected) R.drawable.language_chip_active else R.drawable.language_chip_inactive,
+            )
+        }
     }
 }
