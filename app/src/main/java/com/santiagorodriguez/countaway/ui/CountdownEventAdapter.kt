@@ -63,6 +63,15 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
                 CountdownStatus.TODAY -> context.getString(R.string.status_today_zero)
                 CountdownStatus.DONE -> context.getString(R.string.status_done)
             }
+            contentDescription = when (countdown.status) {
+                CountdownStatus.FUTURE,
+                CountdownStatus.THREE_DAYS,
+                CountdownStatus.TWO_DAYS,
+                -> context.getString(R.string.status_days, countdown.days)
+                CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
+                CountdownStatus.TODAY -> context.getString(R.string.status_today)
+                CountdownStatus.DONE -> context.getString(R.string.status_done)
+            }
             setTypeface(typeface, Typeface.BOLD)
             scaleX = 1f
             scaleY = 1f
