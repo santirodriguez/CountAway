@@ -83,7 +83,11 @@ object ArrivalNotifier {
                 .build()
 
             runCatching {
-                manager.notify(event.id, NOTIFICATION_ID, notification)
+                manager.notify(
+                    ArrivalNotificationIdentity.tag(event.id),
+                    ArrivalNotificationIdentity.ID,
+                    notification,
+                )
             }.onSuccess {
                 if (ArrivalNotificationScheduler.canPostNotifications(context)) {
                     state.markDelivered(event, scheduledDate)
@@ -103,6 +107,4 @@ object ArrivalNotifier {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
     }
-
-    private const val NOTIFICATION_ID = 1
 }
