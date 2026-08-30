@@ -27,7 +27,9 @@
     <string name="status_today_zero">0 · Today</string>
     <string name="status_done">Done</string>
     <string name="share_countdown_format">%1$s — %2$s · %3$s</string>
-    <string name="share_days_left">%1$d days left</string>
+    <plurals name="share_days_left">
+        <item quantity="other">%1$d days left</item>
+    </plurals>
     <string name="share_tomorrow">tomorrow</string>
     <string name="share_today">today</string>
 
