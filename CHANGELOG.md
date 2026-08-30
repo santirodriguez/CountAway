@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.6
+
+- Add System appearance alongside Light and Dark, matching the widget's existing theme options.
+- Add native countdown sharing without accounts, links, or new permissions.
+- Improve accessibility for selected controls and countdown milestone states.
+- Prevent different countdowns from accidentally sharing the same Android notification identity.
+- Refresh F-Droid documentation to match the current inclusion workflow instead of documenting one soon-to-be-old version forever.
+
 ## 1.1.5
 
 - Improve reminder delivery checks for notification permission, app-level blocking, and notification-channel availability, while preserving configured reminders when Android notification settings block delivery.
