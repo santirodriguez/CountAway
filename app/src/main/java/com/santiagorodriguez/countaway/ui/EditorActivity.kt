@@ -24,6 +24,8 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.CountdownCalculator
+import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
@@ -104,6 +106,7 @@ class EditorActivity : BaseActivity() {
 
         dateButton.setOnClickListener { showDatePicker() }
         findViewById<Button>(R.id.saveButton).setOnClickListener { save() }
+        findViewById<Button>(R.id.shareButton).setOnClickListener { share() }
 
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
@@ -171,6 +174,7 @@ class EditorActivity : BaseActivity() {
             val button = TextView(this).apply {
                 text = getString(EventTypePresentation.labelRes(type))
                 contentDescription = text
+                isSelected = type == selectedType
                 gravity = Gravity.CENTER
                 textSize = 12f
                 typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
@@ -180,7 +184,7 @@ class EditorActivity : BaseActivity() {
                 compoundDrawablePadding = dp(6)
                 compoundDrawableTintList = ColorStateList.valueOf(getColor(R.color.accent))
                 setBackgroundResource(
-                    if (type == selectedType) R.drawable.language_chip_active else R.drawable.control_surface,
+                    if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface,
                 )
                 setOnClickListener { selectType(type) }
             }
@@ -210,8 +214,9 @@ class EditorActivity : BaseActivity() {
                 setImageResource(EventIconPresentation.drawableRes(icon))
                 imageTintList = ColorStateList.valueOf(getColor(R.color.accent))
                 backgroundTintList = null
+                isSelected = icon == selectedIcon
                 setBackgroundResource(
-                    if (icon == selectedIcon) R.drawable.language_chip_active else R.drawable.control_surface,
+                    if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface,
                 )
                 contentDescription = getString(EventIconPresentation.labelRes(icon))
                 tooltipText = contentDescription
@@ -258,6 +263,36 @@ class EditorActivity : BaseActivity() {
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale)
         dateButton.text = selectedDate.format(formatter)
+    }
+
+    private fun share() {
+        val title = titleInput.text.toString().trim()
+        if (title.isEmpty()) {
+            titleInput.error = getString(R.string.title_required)
+            return
+        }
+
+        val countdown = CountdownCalculator.value(LocalDate.now(), selectedDate)
+        val status = when (countdown.status) {
+            CountdownStatus.FUTURE,
+            CountdownStatus.THREE_DAYS,
+            CountdownStatus.TWO_DAYS,
+            -> resources.getQuantityString(
+                R.plurals.share_days_left,
+                countdown.days.toInt(),
+                countdown.days,
+            )
+            CountdownStatus.TOMORROW -> getString(R.string.share_tomorrow)
+            CountdownStatus.TODAY -> getString(R.string.share_today)
+            CountdownStatus.DONE -> getString(R.string.status_done)
+        }
+        val locale = resources.configuration.locales[0]
+        val date = selectedDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale))
+        val text = getString(R.string.share_countdown_format, title, status, date)
+        val sendIntent = Intent(Intent.ACTION_SEND)
+            .setType("text/plain")
+            .putExtra(Intent.EXTRA_TEXT, text)
+        startActivity(Intent.createChooser(sendIntent, null))
     }
 
     private fun requestNotificationPermission() {
