@@ -32,39 +32,19 @@ Do not add an F-Droid badge to the README until CountAway is actually published 
 
 The official inclusion merge request is `fdroid/fdroiddata!46416`.
 
-The current initial-inclusion recipe intentionally contains only CountAway 1.1.2 (`versionCode 4`) and pins it to its exact release source commit:
+While the initial-inclusion merge request remains open, keep only the latest public stable CountAway release in its build recipe, pinned to that release's exact source commit.
 
-```text
-ee95dcabc5315b3f4f0c58633eccf94e1ca6621b
-```
+After publishing a newer stable GitHub release and verifying its public APK URL:
 
-The relevant fdroiddata values are:
+1. replace the existing CountAway build entry in the same merge request;
+2. update `CurrentVersion` and `CurrentVersionCode`;
+3. keep the existing `Binaries`, signing-key, auto-update, and tag-detection configuration unless a concrete F-Droid requirement changes;
+4. rerun the fdroiddata and reproducible-build checks;
+5. notify the reviewer once the updated pipeline is green.
 
-```yaml
-Builds:
-  - versionName: 1.1.2
-    versionCode: 4
-    commit: ee95dcabc5315b3f4f0c58633eccf94e1ca6621b
-    subdir: app
-    gradle:
-      - yes
+Once CountAway has been accepted into the official repository, normal releases should be left to the configured tag detection and `AutoUpdateMode` unless F-Droid requires manual intervention.
 
-Binaries:
-  https://github.com/santirodriguez/CountAway/releases/download/v%v/CountAway-v%v.apk
-
-AllowedAPKSigningKeys: dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a
-
-AutoUpdateMode: Version
-UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$
-CurrentVersion: 1.1.2
-CurrentVersionCode: 4
-```
-
-Do not move the 1.1.2 tag, replace its published APK, regenerate it under the same version, or change the pinned source commit. Historical upstream changelogs and release notes for older versions remain valid project history, but they are not current build entries in the initial-inclusion recipe.
-
-While the initial-inclusion merge request remains open, a newer stable CountAway release should replace the current build entry in that same merge request rather than be added alongside it.
-
-After publishing the new GitHub release and verifying its public APK URL, update the recipe to the new `versionName`, `versionCode`, and exact release commit, keep only that build entry, rerun the fdroiddata and reproducible-build checks, and notify the reviewer once the updated pipeline is green.
+In other words: while inclusion is pending, keep the application current. After inclusion, let the machinery earn its keep.
 
 ## Reproducible upstream APKs
 
