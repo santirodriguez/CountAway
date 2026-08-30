@@ -14,6 +14,7 @@
     <string name="action_cancel">Cancel</string>
     <string name="theme_switch_to_light">Switch to light mode</string>
     <string name="theme_switch_to_dark">Switch to dark mode</string>
+    <string name="theme_follow_system">Follow system theme</string>
 
     <string name="empty_title">Nothing to count down yet</string>
     <string name="empty_description">Add a trip, exam, birthday, or anything else worth waiting for.</string>
@@ -26,10 +27,7 @@
     <string name="status_today_zero">0 · Today</string>
     <string name="status_done">Done</string>
     <string name="share_countdown_format">%1$s — %2$s · %3$s</string>
-    <plurals name="share_days_left">
-        <item quantity="one">%1$d day left</item>
-        <item quantity="other">%1$d days left</item>
-    </plurals>
+    <string name="share_days_left">%1$d days left</string>
     <string name="share_tomorrow">tomorrow</string>
     <string name="share_today">today</string>
 
