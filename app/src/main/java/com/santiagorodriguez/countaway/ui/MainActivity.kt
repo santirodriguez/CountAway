@@ -140,12 +140,20 @@ class MainActivity : BaseActivity() {
 
     private fun renderThemeButton() {
         val button = findViewById<TextView>(R.id.themeButton)
-        button.text = when (ThemeManager.currentTheme(this)) {
-            ThemeManager.AppTheme.SYSTEM -> "◐"
-            ThemeManager.AppTheme.LIGHT -> "☀"
-            ThemeManager.AppTheme.DARK -> "☾"
+        when (ThemeManager.currentTheme(this)) {
+            ThemeManager.AppTheme.SYSTEM -> {
+                button.text = "◐"
+                button.contentDescription = getString(R.string.theme_follow_system)
+            }
+            ThemeManager.AppTheme.LIGHT -> {
+                button.text = "☀"
+                button.contentDescription = getString(R.string.widget_appearance_light)
+            }
+            ThemeManager.AppTheme.DARK -> {
+                button.text = "☾"
+                button.contentDescription = getString(R.string.widget_appearance_dark)
+            }
         }
-        button.contentDescription = getString(R.string.widget_appearance_label)
     }
 
     private fun setLanguageButtonState(viewId: Int, selected: Boolean) {
