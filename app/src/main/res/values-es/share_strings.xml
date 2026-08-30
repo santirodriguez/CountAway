@@ -4,6 +4,8 @@
     <string name="theme_follow_system">Seguir el tema del sistema</string>
     <string name="share_countdown_format">%1$s — %2$s · %3$s</string>
     <plurals name="share_days_left">
+        <item quantity="one">mañana</item>
+        <item quantity="many">faltan %1$d días</item>
         <item quantity="other">faltan %1$d días</item>
     </plurals>
     <string name="share_tomorrow">mañana</string>
