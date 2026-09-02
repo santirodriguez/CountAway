@@ -69,7 +69,7 @@ jobs:
             local expected_height="$3"
             local expected_opaque="$4"
             local format width height opaque
-            read -r format width height opaque < <(identify -quiet -format '%m %w %h %[opaque]' "$file")
+            read -r format width height opaque < <(identify -quiet -format '%m %w %h %[opaque]\n' "$file")
             opaque="$(printf '%s' "$opaque" | tr '[:upper:]' '[:lower:]')"
             echo "$file format=$format size=${width}x${height} opaque=$opaque"
             test "$format" = 'PNG'
