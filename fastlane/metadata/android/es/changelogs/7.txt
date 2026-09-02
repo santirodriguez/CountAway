@@ -1,0 +1,1 @@
+Las cuentas regresivas pasadas ahora muestran hace cuántos días ocurrieron. Los recordatorios evitan opciones cuya fecha ya pasó y conservan las configuraciones históricas existentes.
