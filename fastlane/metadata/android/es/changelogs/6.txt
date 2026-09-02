@@ -1,0 +1,1 @@
+Agrega el tema Sistema y la opción de compartir cuentas regresivas. Mejora la accesibilidad y el manejo de las notificaciones, sin nuevos permisos ni acceso a internet.

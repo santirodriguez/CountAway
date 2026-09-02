@@ -1,0 +1,1 @@
+Afegeix el tema Sistema i l’opció de compartir comptes enrere. Millora l’accessibilitat i la gestió de les notificacions, sense permisos nous ni accés a internet.

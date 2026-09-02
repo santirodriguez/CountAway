@@ -83,7 +83,11 @@ object ArrivalNotifier {
                 .build()
 
             runCatching {
-                manager.notify(event.id.hashCode(), notification)
+                manager.notify(
+                    ArrivalNotificationIdentity.tag(event.id),
+                    ArrivalNotificationIdentity.ID,
+                    notification,
+                )
             }.onSuccess {
                 if (ArrivalNotificationScheduler.canPostNotifications(context)) {
                     state.markDelivered(event, scheduledDate)
