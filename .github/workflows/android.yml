@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -29,3 +29,114 @@ jobs:
 
       - name: Validate
         run: ./gradlew test lint assembleDebug assembleRelease --stacktrace
+
+  prepare-branding:
+    if: github.event_name == 'pull_request' && github.head_ref == 'release/1.1.7'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: release/1.1.7
+
+      - name: Detect staging assets
+        id: staging
+        shell: bash
+        run: |
+          if [ -f docs/assets/1.png ] && [ -f docs/assets/7.png ]; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install image tooling
+        if: steps.staging.outputs.present == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick webp
+
+      - name: Validate uploaded masters
+        if: steps.staging.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          check_image() {
+            local file="$1"
+            local expected_size="$2"
+            local expected_opaque="$3"
+            local format size opaque
+            format="$(identify -quiet -format '%m' "$file")"
+            size="$(identify -quiet -format '%wx%h' "$file")"
+            opaque="$(identify -quiet -format '%[opaque]' "$file" | tr '[:upper:]' '[:lower:]')"
+            echo "$file format=$format size=$size opaque=$opaque"
+            test "$format" = 'PNG'
+            test "$size" = "$expected_size"
+            test "$opaque" = "$expected_opaque"
+          }
+
+          check_image docs/assets/1.png 1024x1024 false
+          check_image docs/assets/2.png 1024x1024 true
+          check_image docs/assets/3.png 1600x1000 false
+          check_image docs/assets/4.png 1600x1000 false
+          check_image docs/assets/5.png 1600x1000 false
+          check_image docs/assets/6.png 1024x500 true
+          check_image docs/assets/7.png 1280x640 true
+
+      - name: Prepare branding derivatives
+        if: steps.staging.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p docs/assets/branding
+          mkdir -p fastlane/metadata/android/en-US/images
+
+          cp docs/assets/1.png docs/assets/branding/countaway-symbol-master.png
+          cp docs/assets/2.png docs/assets/branding/countaway-app-icon-master.png
+          cp docs/assets/3.png docs/assets/branding/countaway-wordmark-en.png
+          cp docs/assets/4.png docs/assets/branding/countaway-wordmark-es.png
+          cp docs/assets/5.png docs/assets/branding/countaway-wordmark-ca.png
+          cp docs/assets/6.png docs/assets/branding/countaway-feature-graphic.png
+          cp docs/assets/7.png docs/assets/branding/countaway-github-social-preview.png
+
+          convert docs/assets/2.png -resize 512x512 -strip -define png:compression-level=9 docs/assets/branding/countaway.png
+          cp docs/assets/branding/countaway.png fastlane/metadata/android/en-US/images/icon.png
+          cp docs/assets/6.png fastlane/metadata/android/en-US/images/featureGraphic.png
+
+          cwebp -quiet -q 90 -m 6 -metadata none -resize 512 512 docs/assets/2.png -o docs/assets/branding/countaway.webp
+
+          cwebp -quiet -q 90 -m 6 -alpha_q 100 -metadata none -resize 800 500 docs/assets/3.png -o app/src/main/res/drawable-nodpi/brand_logo.webp
+          cwebp -quiet -q 90 -m 6 -alpha_q 100 -metadata none -resize 800 500 docs/assets/4.png -o app/src/main/res/drawable-es-nodpi/brand_logo.webp
+          cwebp -quiet -q 90 -m 6 -alpha_q 100 -metadata none -resize 800 500 docs/assets/5.png -o app/src/main/res/drawable-ca-nodpi/brand_logo.webp
+
+          cp app/src/main/res/drawable-es-nodpi/brand_logo.webp docs/assets/branding/ya-estamos.webp
+          cp app/src/main/res/drawable-ca-nodpi/brand_logo.webp docs/assets/branding/ja-queda-poc.webp
+
+          cwebp -quiet -q 90 -m 6 -alpha_q 100 -metadata none -resize 512 512 docs/assets/1.png -o app/src/main/res/drawable-nodpi/launcher_foreground_art.webp
+          cp app/src/main/res/drawable-nodpi/launcher_foreground_art.webp app/src/main/res/drawable-es-nodpi/launcher_foreground_art.webp
+          cp app/src/main/res/drawable-nodpi/launcher_foreground_art.webp app/src/main/res/drawable-ca-nodpi/launcher_foreground_art.webp
+
+          echo 'Runtime branding sizes:'
+          du -h \
+            app/src/main/res/drawable-nodpi/brand_logo.webp \
+            app/src/main/res/drawable-es-nodpi/brand_logo.webp \
+            app/src/main/res/drawable-ca-nodpi/brand_logo.webp \
+            app/src/main/res/drawable-nodpi/launcher_foreground_art.webp
+
+      - name: Commit prepared assets and remove staging tooling
+        if: steps.staging.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm docs/assets/1.png docs/assets/2.png docs/assets/3.png docs/assets/4.png docs/assets/5.png docs/assets/6.png docs/assets/7.png
+          rm -f .github/workflows/prepare-1.1.7-branding.yml
+          git checkout HEAD^ -- .github/workflows/android.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --stat
+          git commit -m 'Refresh CountAway branding assets'
+          git push origin HEAD:release/1.1.7
