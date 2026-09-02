@@ -14,7 +14,14 @@ internal data class WidgetEventContent(
     val countText: String,
     val unitRes: Int?,
     val status: CountdownStatus,
-)
+) {
+    fun countTextFor(size: WidgetSize): String =
+        if (size == WidgetSize.COMPACT && status == CountdownStatus.DONE) {
+            "✓ $countText"
+        } else {
+            countText
+        }
+}
 
 internal object WidgetEventResolver {
     fun resolve(

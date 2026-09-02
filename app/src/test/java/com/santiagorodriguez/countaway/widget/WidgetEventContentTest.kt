@@ -58,6 +58,17 @@ class WidgetEventContentTest {
     }
 
     @Test
+    fun compactElapsedContentKeepsCompletedMarker() {
+        val future = WidgetEventContentFactory.from(event("future", "Future", today.plusDays(6)), today)
+        val elapsed = WidgetEventContentFactory.from(event("elapsed", "Elapsed", today.minusDays(6)), today)
+
+        assertEquals("6", future.countTextFor(WidgetSize.COMPACT))
+        assertEquals("✓ 6", elapsed.countTextFor(WidgetSize.COMPACT))
+        assertEquals("6", elapsed.countTextFor(WidgetSize.STANDARD))
+        assertEquals("6", elapsed.countTextFor(WidgetSize.LARGE))
+    }
+
+    @Test
     fun fixedSelectionResolvesTheSavedEvent() {
         val first = event("first", "First", today.plusDays(5))
         val second = event("second", "Second", today.plusDays(8))
