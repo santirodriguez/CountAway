@@ -35,7 +35,7 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 - Optional local reminders on the event day or 1, 3, or 7 days before
 - Share any countdown through Android's regular share sheet
 - Local JSON backup and restore through Android's document picker
-- Subtle 3 · 2 · 1 · 0 arrival states
+- Subtle 3 · 2 · 1 · 0 arrival states, followed by elapsed days after the date passes
 - System, light, and dark app appearance
 - English, Spanish, and Catalan
 - Battery-minded local refreshes
