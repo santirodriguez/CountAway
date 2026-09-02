@@ -47,7 +47,7 @@ import java.util.UUID
 
 class EditorActivity : BaseActivity() {
     private val eventTypes = EventType.entries.toList()
-    private val reminderOptions = ReminderOption.entries.toList()
+    private var reminderOptions: List<ReminderOption> = emptyList()
     private lateinit var repository: CountdownRepository
     private lateinit var titleInput: EditText
     private lateinit var typeGrid: GridLayout
@@ -61,6 +61,7 @@ class EditorActivity : BaseActivity() {
     private var selectedType: EventType = EventType.TRIP
     private var selectedIcon: EventIcon = EventIcon.defaultFor(EventType.TRIP)
     private var selectedReminder: ReminderOption = ReminderOption.OFF
+    private var suppressReminderSelection = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -132,7 +133,7 @@ class EditorActivity : BaseActivity() {
         val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
         if (!granted) {
             selectedReminder = ReminderOption.OFF
-            reminderSpinner.setSelection(reminderOptions.indexOf(ReminderOption.OFF))
+            refreshReminderSpinner()
             Toast.makeText(this, R.string.notification_permission_denied, Toast.LENGTH_SHORT).show()
         } else {
             warnIfNotificationsBlocked()
@@ -140,32 +141,54 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun configureReminderSpinner() {
-        reminderSpinner.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            listOf(
-                getString(R.string.reminder_off),
-                getString(R.string.reminder_on_day),
-                getString(R.string.reminder_one_day),
-                getString(R.string.reminder_three_days),
-                getString(R.string.reminder_seven_days),
-            ),
-        ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-        reminderSpinner.setSelection(reminderOptions.indexOf(selectedReminder))
+        refreshReminderSpinner()
         reminderSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
-            val next = reminderOptions[position]
-            val effect = ReminderEditorPolicy.selectionEffect(
-                currentReminder = selectedReminder,
-                nextReminder = next,
-                existingEvent = existingEvent,
-                selectedDate = selectedDate,
-                today = LocalDate.now(),
-            )
-            selectedReminder = next
-            handleReminderSelectionEffect(effect)
+            if (!suppressReminderSelection) {
+                val next = reminderOptions.getOrNull(position) ?: return@SimpleItemSelectedListener
+                val effect = ReminderEditorPolicy.selectionEffect(
+                    currentReminder = selectedReminder,
+                    nextReminder = next,
+                    existingEvent = existingEvent,
+                    selectedDate = selectedDate,
+                    today = LocalDate.now(),
+                )
+                selectedReminder = next
+                refreshReminderSpinner()
+                handleReminderSelectionEffect(effect)
+            }
         }
+    }
+
+    private fun refreshReminderSpinner() {
+        val nextOptions = ReminderEditorPolicy.availableOptions(
+            existingEvent = existingEvent,
+            selectedDate = selectedDate,
+            selectedReminder = selectedReminder,
+            today = LocalDate.now(),
+        )
+        val optionsChanged = nextOptions != reminderOptions
+        reminderOptions = nextOptions
+
+        suppressReminderSelection = true
+        if (optionsChanged || reminderSpinner.adapter == null) {
+            reminderSpinner.adapter = ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                reminderOptions.map(::reminderLabel),
+            ).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        }
+        reminderSpinner.setSelection(reminderOptions.indexOf(selectedReminder).coerceAtLeast(0))
+        suppressReminderSelection = false
+    }
+
+    private fun reminderLabel(reminder: ReminderOption): String = when (reminder) {
+        ReminderOption.OFF -> getString(R.string.reminder_off)
+        ReminderOption.ON_DAY -> getString(R.string.reminder_on_day)
+        ReminderOption.ONE_DAY -> getString(R.string.reminder_one_day)
+        ReminderOption.THREE_DAYS -> getString(R.string.reminder_three_days)
+        ReminderOption.SEVEN_DAYS -> getString(R.string.reminder_seven_days)
     }
 
     private fun renderTypeGrid() {
@@ -243,6 +266,7 @@ class EditorActivity : BaseActivity() {
                 selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
                 renderDate()
                 if (selectedDate != previousDate) {
+                    refreshReminderSpinner()
                     handleReminderSelectionEffect(
                         ReminderEditorPolicy.dateChangeEffect(
                             existingEvent = existingEvent,
