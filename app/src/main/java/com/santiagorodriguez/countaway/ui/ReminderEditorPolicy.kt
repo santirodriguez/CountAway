@@ -12,6 +12,18 @@ internal enum class ReminderSelectionEffect {
 }
 
 internal object ReminderEditorPolicy {
+    fun availableOptions(
+        existingEvent: CountdownEvent?,
+        selectedDate: LocalDate,
+        selectedReminder: ReminderOption,
+        today: LocalDate,
+    ): List<ReminderOption> = ReminderOption.entries.filter { reminder ->
+        reminder == ReminderOption.OFF ||
+            reminder == selectedReminder ||
+            isUnchanged(existingEvent, selectedDate, reminder) ||
+            ArrivalNotificationPolicy.isSchedulePossible(selectedDate, reminder, today)
+    }
+
     fun canSave(
         existingEvent: CountdownEvent?,
         selectedDate: LocalDate,
