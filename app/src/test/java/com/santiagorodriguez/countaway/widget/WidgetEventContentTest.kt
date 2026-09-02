@@ -35,7 +35,7 @@ class WidgetEventContentTest {
     }
 
     @Test
-    fun eventContentMatchesTomorrowTodayAndDoneStates() {
+    fun eventContentMatchesTomorrowTodayAndElapsedStates() {
         val tomorrow = WidgetEventContentFactory.from(event("tomorrow", "Tomorrow", today.plusDays(1)), today)
         assertEquals("1", tomorrow.countText)
         assertEquals(R.string.status_tomorrow, tomorrow.unitRes)
@@ -46,10 +46,15 @@ class WidgetEventContentTest {
         assertEquals(R.string.status_today, sameDay.unitRes)
         assertEquals(CountdownStatus.TODAY, sameDay.status)
 
-        val done = WidgetEventContentFactory.from(event("done", "Done", today.minusDays(1)), today)
-        assertEquals("✓", done.countText)
-        assertNull(done.unitRes)
-        assertEquals(CountdownStatus.DONE, done.status)
+        val oneDayAgo = WidgetEventContentFactory.from(event("yesterday", "Yesterday", today.minusDays(1)), today)
+        assertEquals("1", oneDayAgo.countText)
+        assertEquals(R.string.widget_day_ago, oneDayAgo.unitRes)
+        assertEquals(CountdownStatus.DONE, oneDayAgo.status)
+
+        val severalDaysAgo = WidgetEventContentFactory.from(event("past", "Past", today.minusDays(6)), today)
+        assertEquals("6", severalDaysAgo.countText)
+        assertEquals(R.string.widget_days_ago, severalDaysAgo.unitRes)
+        assertEquals(CountdownStatus.DONE, severalDaysAgo.status)
     }
 
     @Test

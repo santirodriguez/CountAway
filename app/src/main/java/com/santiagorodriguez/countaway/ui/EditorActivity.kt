@@ -308,7 +308,7 @@ class EditorActivity : BaseActivity() {
             )
             CountdownStatus.TOMORROW -> getString(R.string.share_tomorrow)
             CountdownStatus.TODAY -> getString(R.string.share_today)
-            CountdownStatus.DONE -> getString(R.string.status_done)
+            CountdownStatus.DONE -> elapsedStatus(countdown.elapsedDays)
         }
         val locale = resources.configuration.locales[0]
         val date = selectedDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale))
@@ -317,6 +317,11 @@ class EditorActivity : BaseActivity() {
             .setType("text/plain")
             .putExtra(Intent.EXTRA_TEXT, text)
         startActivity(Intent.createChooser(sendIntent, null))
+    }
+
+    private fun elapsedStatus(elapsedDays: Long): String {
+        val quantity = elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+        return resources.getQuantityString(R.plurals.status_days_ago, quantity, elapsedDays)
     }
 
     private fun requestNotificationPermission() {
