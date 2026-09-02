@@ -1,0 +1,1 @@
+Past countdowns now show how many days ago they happened. Reminder choices avoid already-past schedules while preserving existing historical reminder settings.
