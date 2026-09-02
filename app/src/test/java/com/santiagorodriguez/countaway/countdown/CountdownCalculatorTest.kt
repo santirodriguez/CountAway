@@ -10,6 +10,7 @@ class CountdownCalculatorTest {
         val date = LocalDate.of(2026, 8, 7)
         val value = CountdownCalculator.value(date, date)
         assertEquals(0, value.days)
+        assertEquals(0, value.elapsedDays)
         assertEquals(CountdownStatus.TODAY, value.status)
     }
 
@@ -18,6 +19,7 @@ class CountdownCalculatorTest {
         val today = LocalDate.of(2026, 8, 7)
         val value = CountdownCalculator.value(today, today.plusDays(1))
         assertEquals(1, value.days)
+        assertEquals(0, value.elapsedDays)
         assertEquals(CountdownStatus.TOMORROW, value.status)
     }
 
@@ -46,10 +48,21 @@ class CountdownCalculatorTest {
     }
 
     @Test
-    fun yesterdayReturnsMinusOneAndDone() {
+    fun yesterdayReturnsElapsedDayAndDone() {
         val today = LocalDate.of(2026, 8, 7)
         val value = CountdownCalculator.value(today, today.minusDays(1))
         assertEquals(-1, value.days)
+        assertEquals(1, value.elapsedDays)
+        assertEquals(CountdownStatus.DONE, value.status)
+    }
+
+    @Test
+    fun elapsedDaysCrossYearBoundary() {
+        val today = LocalDate.of(2027, 1, 3)
+        val target = LocalDate.of(2026, 12, 30)
+        val value = CountdownCalculator.value(today, target)
+        assertEquals(-4, value.days)
+        assertEquals(4, value.elapsedDays)
         assertEquals(CountdownStatus.DONE, value.status)
     }
 
