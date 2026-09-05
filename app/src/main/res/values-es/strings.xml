@@ -24,6 +24,10 @@
     <string name="status_today">Hoy</string>
     <string name="status_today_zero">0 · Hoy</string>
     <string name="status_done">Ya pasó</string>
+    <plurals name="status_days_ago">
+        <item quantity="one">hace %1$d día</item>
+        <item quantity="other">hace %1$d días</item>
+    </plurals>
 
     <string name="editor_new_title">Nueva cuenta regresiva</string>
     <string name="editor_edit_title">Editar cuenta regresiva</string>
@@ -69,6 +73,8 @@
     <string name="widget_name">Cuenta regresiva de Ya Estamos</string>
     <string name="widget_description">Una cuenta regresiva liviana y adaptable para la pantalla de inicio.</string>
     <string name="widget_days_left">días restantes</string>
+    <string name="widget_day_ago">día atrás</string>
+    <string name="widget_days_ago">días atrás</string>
     <string name="widget_select_countdown">Elegí una cuenta regresiva</string>
     <string name="widget_no_upcoming">No hay próximas cuentas regresivas</string>
     <string name="widget_tap_to_configure">Tocá para configurar</string>

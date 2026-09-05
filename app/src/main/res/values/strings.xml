@@ -26,6 +26,10 @@
     <string name="status_today">Today</string>
     <string name="status_today_zero">0 · Today</string>
     <string name="status_done">Done</string>
+    <plurals name="status_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
     <string name="share_countdown_format">%1$s — %2$s · %3$s</string>
     <plurals name="share_days_left">
         <item quantity="other">%1$d days left</item>
@@ -77,6 +81,8 @@
     <string name="widget_name">CountAway countdown</string>
     <string name="widget_description">A lightweight resizable countdown for your home screen.</string>
     <string name="widget_days_left">days left</string>
+    <string name="widget_day_ago">day ago</string>
+    <string name="widget_days_ago">days ago</string>
     <string name="widget_select_countdown">Select countdown</string>
     <string name="widget_no_upcoming">No upcoming countdown</string>
     <string name="widget_tap_to_configure">Tap to configure</string>
