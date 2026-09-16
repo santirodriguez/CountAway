@@ -41,9 +41,13 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 ## Screenshots
 
 <p align="center">
-  <img src="docs/assets/screenshots/home-dark.webp" alt="CountAway home screen in dark mode" width="30%" />
-  <img src="docs/assets/screenshots/new-countdown-dark.webp" alt="Create a countdown in dark mode" width="30%" />
-  <img src="docs/assets/screenshots/home-light.webp" alt="CountAway home screen in light mode" width="30%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" alt="CountAway home screen" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="CountAway countdown editor" width="46%" />
+</p>
+
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="CountAway widget configuration" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway home-screen widget" width="46%" />
 </p>
 
 ## Author
