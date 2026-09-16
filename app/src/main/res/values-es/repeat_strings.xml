@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="field_repeat">Repetir</string>
+    <string name="repeat_never">Nunca</string>
+    <string name="repeat_yearly">Cada año</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="field_repeat">Repeteix</string>
+    <string name="repeat_never">Mai</string>
+    <string name="repeat_yearly">Cada any</string>
+</resources>

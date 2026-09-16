@@ -10,6 +10,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
+import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
@@ -38,7 +39,8 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: inflater.inflate(R.layout.item_countdown, parent, false)
         val event = getItem(position)
-        val countdown = CountdownCalculator.value(today, event.date)
+        val displayDate = CountdownOccurrenceResolver.displayDate(event, today)
+        val countdown = CountdownCalculator.value(today, displayDate)
         val locale = context.resources.configuration.locales[0]
         val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
@@ -51,7 +53,7 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
         view.findViewById<TextView>(R.id.eventMeta).text = context.getString(
             R.string.event_meta,
             context.getString(EventTypePresentation.labelRes(event.type)),
-            event.date.format(dateFormatter),
+            displayDate.format(dateFormatter),
         )
 
         view.findViewById<TextView>(R.id.eventStatus).apply {
@@ -78,7 +80,7 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
             alpha = 1f
 
             if (countdown.status in MILESTONE_STATUSES) {
-                val animationKey = "${event.id}:${event.date}:${countdown.status}"
+                val animationKey = "${event.id}:$displayDate:${countdown.status}"
                 if (animatedMilestones.add(animationKey)) {
                     scaleX = 0.94f
                     scaleY = 0.94f

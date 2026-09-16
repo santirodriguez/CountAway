@@ -25,6 +25,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
+import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
@@ -34,6 +35,7 @@ import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
+import com.santiagorodriguez.countaway.model.RepeatRule
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationPolicy
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
@@ -55,12 +57,15 @@ class EditorActivity : BaseActivity() {
     private lateinit var iconGrid: GridLayout
     private lateinit var dateButton: Button
     private lateinit var deleteButton: Button
+    private lateinit var repeatSpinner: Spinner
     private lateinit var reminderSpinner: Spinner
     private var existingEvent: CountdownEvent? = null
     private var selectedDate: LocalDate = LocalDate.now().plusDays(1)
     private var selectedType: EventType = EventType.TRIP
     private var selectedIcon: EventIcon = EventIcon.defaultFor(EventType.TRIP)
+    private var selectedRepeatRule: RepeatRule = RepeatRule.NONE
     private var selectedReminder: ReminderOption = ReminderOption.OFF
+    private var suppressRepeatSelection = false
     private var suppressReminderSelection = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,6 +80,7 @@ class EditorActivity : BaseActivity() {
         iconGrid = findViewById(R.id.iconGrid)
         dateButton = findViewById(R.id.dateButton)
         deleteButton = findViewById(R.id.deleteButton)
+        repeatSpinner = findViewById(R.id.repeatSpinner)
         reminderSpinner = findViewById(R.id.reminderSpinner)
 
         val loadedEvents = loadEventsOrFinish() ?: return
@@ -94,6 +100,7 @@ class EditorActivity : BaseActivity() {
             selectedDate = event.date
             selectedType = event.type
             selectedIcon = event.icon
+            selectedRepeatRule = event.repeatRule
             selectedReminder = event.reminder
         }
         savedInstanceState?.let(::restoreEditorState)
@@ -103,6 +110,7 @@ class EditorActivity : BaseActivity() {
         renderCustomIconGrid()
         renderTitleHint()
         renderDate()
+        configureRepeatSpinner()
         configureReminderSpinner()
 
         dateButton.setOnClickListener { showDatePicker() }
@@ -118,6 +126,7 @@ class EditorActivity : BaseActivity() {
         outState.putString(STATE_DATE, selectedDate.toString())
         outState.putString(STATE_TYPE, selectedType.name)
         outState.putString(STATE_ICON, selectedIcon.name)
+        outState.putString(STATE_REPEAT_RULE, selectedRepeatRule.name)
         outState.putString(STATE_REMINDER, selectedReminder.name)
         super.onSaveInstanceState(outState)
     }
@@ -140,6 +149,40 @@ class EditorActivity : BaseActivity() {
         }
     }
 
+    private fun configureRepeatSpinner() {
+        repeatSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            RepeatRule.entries.map(::repeatLabel),
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        suppressRepeatSelection = true
+        repeatSpinner.setSelection(RepeatRule.entries.indexOf(selectedRepeatRule))
+        suppressRepeatSelection = false
+        repeatSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
+            if (suppressRepeatSelection) return@SimpleItemSelectedListener
+            val next = RepeatRule.entries.getOrNull(position) ?: return@SimpleItemSelectedListener
+            if (next == selectedRepeatRule) return@SimpleItemSelectedListener
+            selectedRepeatRule = next
+            refreshReminderSpinner()
+            handleReminderSelectionEffect(
+                ReminderEditorPolicy.repeatChangeEffect(
+                    existingEvent = existingEvent,
+                    selectedDate = selectedDate,
+                    selectedReminder = selectedReminder,
+                    selectedRepeatRule = selectedRepeatRule,
+                    today = LocalDate.now(),
+                ),
+            )
+        }
+    }
+
+    private fun repeatLabel(repeatRule: RepeatRule): String = when (repeatRule) {
+        RepeatRule.NONE -> getString(R.string.repeat_never)
+        RepeatRule.YEARLY -> getString(R.string.repeat_yearly)
+    }
+
     private fun configureReminderSpinner() {
         refreshReminderSpinner()
         reminderSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
@@ -151,6 +194,7 @@ class EditorActivity : BaseActivity() {
                     existingEvent = existingEvent,
                     selectedDate = selectedDate,
                     today = LocalDate.now(),
+                    selectedRepeatRule = selectedRepeatRule,
                 )
                 selectedReminder = next
                 refreshReminderSpinner()
@@ -165,6 +209,7 @@ class EditorActivity : BaseActivity() {
             selectedDate = selectedDate,
             selectedReminder = selectedReminder,
             today = LocalDate.now(),
+            selectedRepeatRule = selectedRepeatRule,
         )
         val optionsChanged = nextOptions != reminderOptions
         reminderOptions = nextOptions
@@ -273,6 +318,7 @@ class EditorActivity : BaseActivity() {
                             selectedDate = selectedDate,
                             selectedReminder = selectedReminder,
                             today = LocalDate.now(),
+                            selectedRepeatRule = selectedRepeatRule,
                         ),
                     )
                 }
@@ -296,7 +342,9 @@ class EditorActivity : BaseActivity() {
             return
         }
 
-        val countdown = CountdownCalculator.value(LocalDate.now(), selectedDate)
+        val today = LocalDate.now()
+        val displayDate = CountdownOccurrenceResolver.displayDate(selectedDate, selectedRepeatRule, today)
+        val countdown = CountdownCalculator.value(today, displayDate)
         val status = when (countdown.status) {
             CountdownStatus.FUTURE,
             CountdownStatus.THREE_DAYS,
@@ -311,7 +359,7 @@ class EditorActivity : BaseActivity() {
             CountdownStatus.DONE -> elapsedStatus(countdown.elapsedDays)
         }
         val locale = resources.configuration.locales[0]
-        val date = selectedDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale))
+        val date = displayDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale))
         val text = getString(R.string.share_countdown_format, title, status, date)
         val sendIntent = Intent(Intent.ACTION_SEND)
             .setType("text/plain")
@@ -350,12 +398,18 @@ class EditorActivity : BaseActivity() {
         selectedDate = selectedDate,
         selectedReminder = selectedReminder,
         today = LocalDate.now(),
+        selectedRepeatRule = selectedRepeatRule,
     )
 
     private fun warnIfNotificationsBlocked() {
         if (
             selectedReminder == ReminderOption.OFF ||
-            !ArrivalNotificationPolicy.isSchedulePossible(selectedDate, selectedReminder, LocalDate.now()) ||
+            !ArrivalNotificationPolicy.isSchedulePossible(
+                selectedDate,
+                selectedReminder,
+                selectedRepeatRule,
+                LocalDate.now(),
+            ) ||
             !ArrivalNotificationScheduler.hasNotificationPermission(this) ||
             ArrivalNotificationScheduler.canPostNotifications(this)
         ) {
@@ -416,6 +470,7 @@ class EditorActivity : BaseActivity() {
             icon = selectedIcon,
             reminder = selectedReminder,
             createdAt = existingEvent?.createdAt ?: Instant.now(),
+            repeatRule = selectedRepeatRule,
         )
 
         val existingIndex = events.indexOfFirst { it.id == event.id }
@@ -484,6 +539,9 @@ class EditorActivity : BaseActivity() {
         state.getString(STATE_ICON)?.let { raw ->
             EventIcon.entries.firstOrNull { it.name == raw }?.let { selectedIcon = it }
         }
+        state.getString(STATE_REPEAT_RULE)?.let { raw ->
+            RepeatRule.entries.firstOrNull { it.name == raw }?.let { selectedRepeatRule = it }
+        }
         state.getString(STATE_REMINDER)?.let { raw ->
             ReminderOption.entries.firstOrNull { it.name == raw }?.let { selectedReminder = it }
         }
@@ -511,6 +569,7 @@ class EditorActivity : BaseActivity() {
         private const val STATE_DATE = "editor_date"
         private const val STATE_TYPE = "editor_type"
         private const val STATE_ICON = "editor_icon"
+        private const val STATE_REPEAT_RULE = "editor_repeat_rule"
         private const val STATE_REMINDER = "editor_reminder"
     }
 }

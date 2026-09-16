@@ -4,6 +4,9 @@ import android.content.Context
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 class CountdownImportSnapshot(private val file: File) {
     constructor(context: Context) : this(File(context.cacheDir, FILE_NAME))
@@ -23,11 +26,19 @@ class CountdownImportSnapshot(private val file: File) {
                 output.flush()
                 output.fd.sync()
             }
-            if (file.exists() && !file.delete()) {
-                throw IOException("Could not replace import snapshot")
-            }
-            if (!temporary.renameTo(file)) {
-                throw IOException("Could not finalize import snapshot")
+            try {
+                Files.move(
+                    temporary.toPath(),
+                    file.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(
+                    temporary.toPath(),
+                    file.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
             }
         } catch (error: Exception) {
             temporary.delete()
