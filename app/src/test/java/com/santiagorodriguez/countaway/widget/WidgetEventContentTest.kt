@@ -6,6 +6,7 @@ import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
+import com.santiagorodriguez.countaway.model.RepeatRule
 import java.time.Instant
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -29,6 +30,7 @@ class WidgetEventContentTest {
 
         assertEquals(R.drawable.ic_event_flag, content.iconRes)
         assertEquals("Visa renewal", content.title)
+        assertEquals(today.plusDays(12), content.date)
         assertEquals("12", content.countText)
         assertEquals(R.string.widget_days_left, content.unitRes)
         assertEquals(CountdownStatus.FUTURE, content.status)
@@ -55,6 +57,22 @@ class WidgetEventContentTest {
         assertEquals("6", severalDaysAgo.countText)
         assertEquals(R.string.widget_days_ago, severalDaysAgo.unitRes)
         assertEquals(CountdownStatus.DONE, severalDaysAgo.status)
+    }
+
+    @Test
+    fun yearlyContentUsesNextOccurrenceInsteadOfElapsedState() {
+        val event = event(
+            id = "birthday",
+            title = "Birthday",
+            date = LocalDate.of(2020, 8, 20),
+            repeatRule = RepeatRule.YEARLY,
+        )
+
+        val content = WidgetEventContentFactory.from(event, today)
+
+        assertEquals(LocalDate.of(2027, 8, 20), content.date)
+        assertEquals(CountdownStatus.FUTURE, content.status)
+        assertEquals("362", content.countText)
     }
 
     @Test
@@ -93,17 +111,22 @@ class WidgetEventContentTest {
     }
 
     @Test
-    fun nextSelectionSkipsPastEventsAndUsesNearestUpcomingEvent() {
+    fun nextSelectionSkipsPastOneShotButKeepsPastAnchoredYearlyEvent() {
         val past = event("past", "Past", today.minusDays(1))
         val later = event("later", "Later", today.plusDays(10))
-        val nearest = event("nearest", "Nearest", today.plusDays(2))
+        val recurring = event(
+            "yearly",
+            "Yearly",
+            LocalDate.of(2020, 8, 25),
+            repeatRule = RepeatRule.YEARLY,
+        )
 
         assertEquals(
-            nearest,
+            recurring,
             WidgetEventResolver.resolve(
                 selection = WidgetEventSelection.NEXT,
                 eventId = null,
-                events = listOf(later, past, nearest),
+                events = listOf(later, past, recurring),
                 today = today,
             ),
         )
@@ -123,6 +146,7 @@ class WidgetEventContentTest {
         date: LocalDate,
         type: EventType = EventType.EVENT,
         icon: EventIcon = EventIcon.CALENDAR,
+        repeatRule: RepeatRule = RepeatRule.NONE,
     ) = CountdownEvent(
         id = id,
         title = title,
@@ -131,5 +155,6 @@ class WidgetEventContentTest {
         icon = icon,
         reminder = ReminderOption.OFF,
         createdAt = Instant.EPOCH,
+        repeatRule = repeatRule,
     )
 }

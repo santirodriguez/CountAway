@@ -130,7 +130,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widgetTitle, content.title)
             views.setTextViewText(R.id.widgetCount, content.countTextFor(size))
             views.setTextViewText(R.id.widgetUnit, content.unitRes?.let(context::getString).orEmpty())
-            views.setTextViewText(R.id.widgetDate, event.date.format(dateFormatter))
+            views.setTextViewText(R.id.widgetDate, content.date.format(dateFormatter))
             views.setTextViewText(R.id.widgetMilestone, mood ?: "")
             views.setViewVisibility(R.id.widgetMilestone, if (mood == null) View.GONE else View.VISIBLE)
             views.setOnClickPendingIntent(R.id.widgetRoot, editPendingIntent(context, appWidgetId, event.id))

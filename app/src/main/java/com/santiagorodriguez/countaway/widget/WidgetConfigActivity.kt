@@ -13,6 +13,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
@@ -187,13 +188,15 @@ class WidgetConfigActivity : BaseActivity() {
             return
         }
 
-        events = CountdownEventOrder.sortedForDisplay((result as CountdownLoadResult.Success).events, LocalDate.now())
+        val today = LocalDate.now()
+        events = CountdownEventOrder.sortedForDisplay((result as CountdownLoadResult.Success).events, today)
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
         val labels = buildList {
             add(getString(R.string.widget_next_countdown))
             addAll(events.map { event ->
-                getString(R.string.widget_event_option, event.title, event.date.format(formatter))
+                val displayDate = CountdownOccurrenceResolver.displayDate(event, today)
+                getString(R.string.widget_event_option, event.title, displayDate.format(formatter))
             })
         }
         eventList.adapter = ArrayAdapter(this, R.layout.item_widget_event, android.R.id.text1, labels)

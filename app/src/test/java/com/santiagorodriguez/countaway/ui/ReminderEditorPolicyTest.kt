@@ -3,6 +3,7 @@ package com.santiagorodriguez.countaway.ui
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
+import com.santiagorodriguez.countaway.model.RepeatRule
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -63,14 +64,15 @@ class ReminderEditorPolicyTest {
     }
 
     @Test
-    fun allReminderChoicesRemainAvailableWhenDateIsFarEnoughAway() {
+    fun yearlyEventKeepsAllReminderChoicesAvailable() {
         assertEquals(
             ReminderOption.entries.toList(),
             ReminderEditorPolicy.availableOptions(
                 existingEvent = null,
-                selectedDate = today.plusDays(7),
+                selectedDate = today.minusDays(1),
                 selectedReminder = ReminderOption.OFF,
                 today = today,
+                selectedRepeatRule = RepeatRule.YEARLY,
             ),
         )
     }
@@ -128,6 +130,19 @@ class ReminderEditorPolicyTest {
             nextReminder = ReminderOption.THREE_DAYS,
             existingEvent = null,
             selectedDate = today.plusDays(3),
+            today = today,
+        )
+
+        assertEquals(ReminderSelectionEffect.CHECK_NOTIFICATIONS, effect)
+    }
+
+    @Test
+    fun changingToYearlyMakesHistoricalReminderSchedulable() {
+        val effect = ReminderEditorPolicy.repeatChangeEffect(
+            existingEvent = null,
+            selectedDate = today.minusDays(2),
+            selectedReminder = ReminderOption.SEVEN_DAYS,
+            selectedRepeatRule = RepeatRule.YEARLY,
             today = today,
         )
 
