@@ -44,7 +44,7 @@ object ArrivalNotifier {
         val state = ArrivalNotificationState(context)
         val today = LocalDate.now()
         val dueEvents = events.mapNotNull { event ->
-            val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event) ?: return@mapNotNull null
+            val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event, today) ?: return@mapNotNull null
             if (ArrivalNotificationPolicy.isDue(event, today, state.deliveredDate(event.id))) {
                 event to scheduledDate
             } else {

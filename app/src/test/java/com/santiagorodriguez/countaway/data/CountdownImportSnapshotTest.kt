@@ -1,0 +1,44 @@
+package com.santiagorodriguez.countaway.data
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.nio.file.Files
+
+class CountdownImportSnapshotTest {
+    @Test
+    fun snapshotKeepsTheExactApprovedPayloadUntilCleared() {
+        val directory = Files.createTempDirectory("countaway-import").toFile()
+        val snapshotFile = directory.resolve("snapshot.json")
+        val snapshot = CountdownImportSnapshot(snapshotFile)
+        val approved = """{"schemaVersion":5,"events":[]}"""
+
+        try {
+            snapshot.write(approved)
+
+            assertTrue(snapshot.exists())
+            assertEquals(approved, snapshot.readPayload())
+
+            snapshot.clear()
+            assertFalse(snapshot.exists())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun replacingSnapshotReplacesTheWholePayload() {
+        val directory = Files.createTempDirectory("countaway-import-replace").toFile()
+        val snapshot = CountdownImportSnapshot(directory.resolve("snapshot.json"))
+
+        try {
+            snapshot.write("first")
+            snapshot.write("second")
+
+            assertEquals("second", snapshot.readPayload())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+}

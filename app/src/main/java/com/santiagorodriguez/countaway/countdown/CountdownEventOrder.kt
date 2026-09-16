@@ -5,13 +5,25 @@ import java.time.LocalDate
 
 object CountdownEventOrder {
     fun sortedForDisplay(events: List<CountdownEvent>, today: LocalDate): List<CountdownEvent> {
-        val active = events
-            .filter { !it.date.isBefore(today) }
-            .sortedWith(compareBy<CountdownEvent> { it.date }.thenBy { it.createdAt })
+        val datedEvents = events.map { event ->
+            event to CountdownOccurrenceResolver.displayDate(event, today)
+        }
 
-        val past = events
-            .filter { it.date.isBefore(today) }
-            .sortedWith(compareByDescending<CountdownEvent> { it.date }.thenByDescending { it.createdAt })
+        val active = datedEvents
+            .filter { (_, displayDate) -> !displayDate.isBefore(today) }
+            .sortedWith(
+                compareBy<Pair<CountdownEvent, LocalDate>> { (_, displayDate) -> displayDate }
+                    .thenBy { (event, _) -> event.createdAt },
+            )
+            .map { (event, _) -> event }
+
+        val past = datedEvents
+            .filter { (_, displayDate) -> displayDate.isBefore(today) }
+            .sortedWith(
+                compareByDescending<Pair<CountdownEvent, LocalDate>> { (_, displayDate) -> displayDate }
+                    .thenByDescending { (event, _) -> event.createdAt },
+            )
+            .map { (event, _) -> event }
 
         return active + past
     }

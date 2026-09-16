@@ -14,6 +14,7 @@ import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownDataException
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
+import com.santiagorodriguez.countaway.data.CountdownImportSnapshot
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.data.CountdownStorageCodec
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
@@ -23,7 +24,7 @@ import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 
 class AboutActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
-    private var pendingImportUri: Uri? = null
+    private lateinit var importSnapshot: CountdownImportSnapshot
     private var pendingImportCount: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,6 +32,10 @@ class AboutActivity : BaseActivity() {
         setContentView(R.layout.activity_about)
         InsetUtils.applySystemBarPadding(findViewById(R.id.aboutRoot))
         repository = CountdownRepository(this)
+        importSnapshot = CountdownImportSnapshot(this)
+        if (savedInstanceState == null) {
+            importSnapshot.clear()
+        }
 
         val versionName = packageManager.getPackageInfo(packageName, 0).versionName ?: "—"
         findViewById<TextView>(R.id.versionText).text = getString(R.string.about_version_compact, versionName)
@@ -52,11 +57,8 @@ class AboutActivity : BaseActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        pendingImportUri?.let { uri ->
-            outState.putString(STATE_PENDING_IMPORT_URI, uri.toString())
-        }
-        pendingImportCount?.let { count ->
-            outState.putInt(STATE_PENDING_IMPORT_COUNT, count)
+        if (pendingImportCount != null && importSnapshot.exists()) {
+            outState.putBoolean(STATE_PENDING_IMPORT, true)
         }
         super.onSaveInstanceState(outState)
     }
@@ -118,12 +120,14 @@ class AboutActivity : BaseActivity() {
         try {
             val payload = readUtf8Payload(uri)
             val count = repository.previewImport(payload)
-            pendingImportUri = uri
+            importSnapshot.write(payload)
             pendingImportCount = count
             showImportConfirmation(count)
         } catch (error: CountdownDataException) {
+            clearPendingImport()
             showImportValidationError(error)
         } catch (_: Exception) {
+            clearPendingImport()
             Toast.makeText(this, R.string.backup_import_failed, Toast.LENGTH_LONG).show()
         }
     }
@@ -139,12 +143,19 @@ class AboutActivity : BaseActivity() {
     }
 
     private fun restorePendingImport(state: Bundle?) {
-        val rawUri = state?.getString(STATE_PENDING_IMPORT_URI) ?: return
-        if (!state.containsKey(STATE_PENDING_IMPORT_COUNT)) return
+        if (state?.getBoolean(STATE_PENDING_IMPORT) != true || !importSnapshot.exists()) return
 
-        pendingImportUri = Uri.parse(rawUri)
-        pendingImportCount = state.getInt(STATE_PENDING_IMPORT_COUNT)
-        showImportConfirmation(pendingImportCount ?: return)
+        try {
+            val count = repository.previewImport(importSnapshot.readPayload())
+            pendingImportCount = count
+            showImportConfirmation(count)
+        } catch (error: CountdownDataException) {
+            clearPendingImport()
+            showImportValidationError(error)
+        } catch (_: Exception) {
+            clearPendingImport()
+            Toast.makeText(this, R.string.backup_import_failed, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun readUtf8Payload(uri: Uri): String {
@@ -153,20 +164,25 @@ class AboutActivity : BaseActivity() {
     }
 
     private fun confirmImport() {
-        val uri = pendingImportUri ?: return
-        clearPendingImport()
-
-        try {
-            val payload = readUtf8Payload(uri)
-            repository.importPayload(payload)
-        } catch (error: CountdownDataException) {
-            showImportValidationError(error)
-            return
-        } catch (_: Exception) {
+        if (!importSnapshot.exists()) {
+            clearPendingImport()
             Toast.makeText(this, R.string.backup_import_failed, Toast.LENGTH_LONG).show()
             return
         }
 
+        try {
+            repository.importPayload(importSnapshot.readPayload())
+        } catch (error: CountdownDataException) {
+            clearPendingImport()
+            showImportValidationError(error)
+            return
+        } catch (_: Exception) {
+            clearPendingImport()
+            Toast.makeText(this, R.string.backup_import_failed, Toast.LENGTH_LONG).show()
+            return
+        }
+
+        clearPendingImport()
         ArrivalNotificationState(this).clear()
         runCatching { CountdownWidgetProvider.updateAllWidgets(this) }
         runCatching { WidgetUpdateScheduler.ensureScheduled(this) }
@@ -184,8 +200,8 @@ class AboutActivity : BaseActivity() {
     }
 
     private fun clearPendingImport() {
-        pendingImportUri = null
         pendingImportCount = null
+        importSnapshot.clear()
     }
 
     private fun openExternal(url: String) {
@@ -197,7 +213,6 @@ class AboutActivity : BaseActivity() {
         const val DONATE_WEBSITE = "https://santiagorodriguez.com/donate"
         const val REQUEST_EXPORT = 5101
         const val REQUEST_IMPORT = 5102
-        const val STATE_PENDING_IMPORT_URI = "pending_import_uri"
-        const val STATE_PENDING_IMPORT_COUNT = "pending_import_count"
+        const val STATE_PENDING_IMPORT = "pending_import"
     }
 }
