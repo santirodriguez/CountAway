@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.7
+
+- Show elapsed days after a countdown date has passed, including fixed widgets and native sharing.
+- Keep compact past-event widgets visually distinct from upcoming countdowns.
+- Limit reminder choices to schedules that can still happen, while preserving unchanged historical reminder settings.
+- Add regression coverage for elapsed countdowns and dynamic reminder availability.
+
 ## 1.1.6
 
 - Add System appearance alongside Light and Dark, matching the widget's existing theme options.

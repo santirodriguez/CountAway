@@ -52,6 +52,10 @@ The release process is intentionally strict:
 
 In the normal web release path, publishing the validated draft is the stable-tag gate because that is when GitHub materializes `v<version>` on the draft's configured target commit. A direct push of an existing stable tag remains a supported alternate path and is itself a stable-tag gate.
 
+### Stable public branding asset
+
+`docs/assets/branding/countaway.webp` is a stable public compatibility path used by external catalogs such as Obtainium. Its visual contents may be refreshed, but the path, filename, and `.webp` extension must not change. It is intentionally allowed to duplicate the F-Droid or README icon when those consumers require different paths or formats.
+
 ## Release toolchain
 
 The release workflow uses JDK 17 and explicitly installs Android Build Tools 34.0.0 for `zipalign`, `apksigner`, and `aapt`.

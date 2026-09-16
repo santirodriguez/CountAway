@@ -1,0 +1,1 @@
+Els comptes enrere passats ara mostren quants dies fa que van passar. Els recordatoris eviten opcions amb una data que ja ha passat i conserven les configuracions històriques existents.

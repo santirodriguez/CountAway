@@ -14,7 +14,14 @@ internal data class WidgetEventContent(
     val countText: String,
     val unitRes: Int?,
     val status: CountdownStatus,
-)
+) {
+    fun countTextFor(size: WidgetSize): String =
+        if (size == WidgetSize.COMPACT && status == CountdownStatus.DONE) {
+            "✓ $countText"
+        } else {
+            countText
+        }
+}
 
 internal object WidgetEventResolver {
     fun resolve(
@@ -39,7 +46,7 @@ internal object WidgetEventContentFactory {
             CountdownStatus.TOMORROW,
             CountdownStatus.TODAY,
             -> value.days.coerceAtLeast(0).toString()
-            CountdownStatus.DONE -> "✓"
+            CountdownStatus.DONE -> value.elapsedDays.toString()
         }
         val unitRes = when (value.status) {
             CountdownStatus.FUTURE,
@@ -48,7 +55,11 @@ internal object WidgetEventContentFactory {
             -> R.string.widget_days_left
             CountdownStatus.TOMORROW -> R.string.status_tomorrow
             CountdownStatus.TODAY -> R.string.status_today
-            CountdownStatus.DONE -> null
+            CountdownStatus.DONE -> if (value.elapsedDays == 1L) {
+                R.string.widget_day_ago
+            } else {
+                R.string.widget_days_ago
+            }
         }
 
         return WidgetEventContent(

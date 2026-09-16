@@ -106,7 +106,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                             noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
                         )
                     } else {
-                        renderEvent(displayContext, views, appWidgetId, event, today)
+                        renderEvent(displayContext, views, appWidgetId, event, today, size)
                     }
                 }
             }
@@ -119,6 +119,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             appWidgetId: Int,
             event: CountdownEvent,
             today: LocalDate,
+            size: WidgetSize,
         ) {
             val content = WidgetEventContentFactory.from(event, today)
             val mood = ArrivalMood.marker(content.status)
@@ -127,7 +128,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
 
             views.setImageViewResource(R.id.widgetIcon, content.iconRes)
             views.setTextViewText(R.id.widgetTitle, content.title)
-            views.setTextViewText(R.id.widgetCount, content.countText)
+            views.setTextViewText(R.id.widgetCount, content.countTextFor(size))
             views.setTextViewText(R.id.widgetUnit, content.unitRes?.let(context::getString).orEmpty())
             views.setTextViewText(R.id.widgetDate, event.date.format(dateFormatter))
             views.setTextViewText(R.id.widgetMilestone, mood ?: "")

@@ -15,7 +15,10 @@ enum class CountdownStatus {
 data class CountdownValue(
     val days: Long,
     val status: CountdownStatus,
-)
+) {
+    val elapsedDays: Long
+        get() = (-days).coerceAtLeast(0)
+}
 
 object CountdownCalculator {
     fun daysUntil(today: LocalDate, target: LocalDate): Long =

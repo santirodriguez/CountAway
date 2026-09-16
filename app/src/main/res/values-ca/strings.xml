@@ -24,6 +24,10 @@
     <string name="status_today">Avui</string>
     <string name="status_today_zero">0 · Avui</string>
     <string name="status_done">Ja ha passat</string>
+    <plurals name="status_days_ago">
+        <item quantity="one">fa %1$d dia</item>
+        <item quantity="other">fa %1$d dies</item>
+    </plurals>
 
     <string name="editor_new_title">Nou compte enrere</string>
     <string name="editor_edit_title">Edita el compte enrere</string>
@@ -69,6 +73,8 @@
     <string name="widget_name">Compte enrere de Ja Queda Poc</string>
     <string name="widget_description">Un compte enrere lleuger i redimensionable per a la pantalla d’inici.</string>
     <string name="widget_days_left">dies que falten</string>
+    <string name="widget_day_ago">dia enrere</string>
+    <string name="widget_days_ago">dies enrere</string>
     <string name="widget_select_countdown">Tria un compte enrere</string>
     <string name="widget_no_upcoming">No hi ha cap compte enrere proper</string>
     <string name="widget_tap_to_configure">Toca per configurar</string>

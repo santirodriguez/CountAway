@@ -88,12 +88,13 @@
     </LinearLayout>
 
     <ImageView
-        android:layout_width="190dp"
-        android:layout_height="118dp"
+        android:layout_width="206dp"
+        android:layout_height="134dp"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="4dp"
         android:adjustViewBounds="true"
         android:contentDescription="@string/app_logo_content_description"
+        android:padding="8dp"
         android:scaleType="fitCenter"
         android:src="@drawable/brand_logo" />
 

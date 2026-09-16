@@ -46,6 +46,54 @@ class ReminderEditorPolicyTest {
     }
 
     @Test
+    fun newEventOnlyOffersReminderDatesThatHaveNotPassed() {
+        assertEquals(
+            listOf(
+                ReminderOption.OFF,
+                ReminderOption.ON_DAY,
+                ReminderOption.ONE_DAY,
+            ),
+            ReminderEditorPolicy.availableOptions(
+                existingEvent = null,
+                selectedDate = today.plusDays(2),
+                selectedReminder = ReminderOption.OFF,
+                today = today,
+            ),
+        )
+    }
+
+    @Test
+    fun allReminderChoicesRemainAvailableWhenDateIsFarEnoughAway() {
+        assertEquals(
+            ReminderOption.entries.toList(),
+            ReminderEditorPolicy.availableOptions(
+                existingEvent = null,
+                selectedDate = today.plusDays(7),
+                selectedReminder = ReminderOption.OFF,
+                today = today,
+            ),
+        )
+    }
+
+    @Test
+    fun currentImpossibleSelectionRemainsVisibleUntilUserChangesIt() {
+        assertEquals(
+            listOf(
+                ReminderOption.OFF,
+                ReminderOption.ON_DAY,
+                ReminderOption.ONE_DAY,
+                ReminderOption.SEVEN_DAYS,
+            ),
+            ReminderEditorPolicy.availableOptions(
+                existingEvent = null,
+                selectedDate = today.plusDays(2),
+                selectedReminder = ReminderOption.SEVEN_DAYS,
+                today = today,
+            ),
+        )
+    }
+
+    @Test
     fun impossibleSelectionStopsBeforeNotificationSetup() {
         val effect = ReminderEditorPolicy.selectionEffect(
             currentReminder = ReminderOption.OFF,

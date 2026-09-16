@@ -61,7 +61,7 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
                 CountdownStatus.TWO_DAYS -> "✦ 2 ✦"
                 CountdownStatus.TOMORROW -> "✦ 1 ✦"
                 CountdownStatus.TODAY -> context.getString(R.string.status_today_zero)
-                CountdownStatus.DONE -> context.getString(R.string.status_done)
+                CountdownStatus.DONE -> elapsedStatus(countdown.elapsedDays)
             }
             contentDescription = when (countdown.status) {
                 CountdownStatus.FUTURE,
@@ -70,7 +70,7 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
                 -> context.getString(R.string.status_days, countdown.days)
                 CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
                 CountdownStatus.TODAY -> context.getString(R.string.status_today)
-                CountdownStatus.DONE -> context.getString(R.string.status_done)
+                CountdownStatus.DONE -> elapsedStatus(countdown.elapsedDays)
             }
             setTypeface(typeface, Typeface.BOLD)
             scaleX = 1f
@@ -95,6 +95,11 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
         }
 
         return view
+    }
+
+    private fun elapsedStatus(elapsedDays: Long): String {
+        val quantity = elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+        return context.resources.getQuantityString(R.plurals.status_days_ago, quantity, elapsedDays)
     }
 
     private companion object {

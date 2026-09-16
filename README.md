@@ -10,8 +10,6 @@
 
 CountAway keeps countdowns local, simple, and visible where they are actually useful: on your home screen.
 
-No accounts. No ads. No analytics. No cloud. No unnecessary network access.
-
 ## Why
 
 I wanted a home-screen widget that simply showed how many days were left until something important.
@@ -35,7 +33,7 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 - Optional local reminders on the event day or 1, 3, or 7 days before
 - Share any countdown through Android's regular share sheet
 - Local JSON backup and restore through Android's document picker
-- Subtle 3 · 2 · 1 · 0 arrival states
+- Subtle 3 · 2 · 1 · 0 arrival states, followed by elapsed days after the date passes
 - System, light, and dark app appearance
 - English, Spanish, and Catalan
 - Battery-minded local refreshes
