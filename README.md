@@ -10,8 +10,6 @@
 
 CountAway keeps countdowns local, simple, and visible where they are actually useful: on your home screen.
 
-No accounts. No ads. No analytics. No cloud. No unnecessary network access.
-
 ## Why
 
 I wanted a home-screen widget that simply showed how many days were left until something important.
