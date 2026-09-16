@@ -1,0 +1,1 @@
+Countdowns can now repeat yearly across the app, widgets, sharing, backups, and reminders. Pending reminders recover when Android notifications are re-enabled, and backup imports now confirm the exact validated snapshot that will be restored.

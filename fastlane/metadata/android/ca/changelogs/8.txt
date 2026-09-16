@@ -1,0 +1,1 @@
+Els comptes enrere ara es poden repetir cada any a l'app, als ginys, en compartir, a les còpies de seguretat i als recordatoris. Els recordatoris es recuperen quan es tornen a activar les notificacions, i les importacions restauren exactament la còpia validada que has confirmat.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.8
+
+- Add optional yearly recurrence for countdowns across the app, widgets, sharing, backups, and reminders.
+- Keep yearly countdowns focused on their next occurrence while preserving elapsed-day behavior for one-time past events.
+- Reschedule pending reminders when Android notification blocking is removed.
+- Make backup import confirmation apply to the exact validated snapshot that will be restored.
+- Add regression coverage for yearly occurrence resolution, leap-day handling, recurring reminders, notification recovery, and import snapshots.
+
 ## 1.1.7
 
 - Show elapsed days after a countdown date has passed, including fixed widgets and native sharing.

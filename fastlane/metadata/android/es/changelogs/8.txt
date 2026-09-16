@@ -1,0 +1,1 @@
+Las cuentas regresivas ahora pueden repetirse cada año en la app, los widgets, al compartir, en las copias de seguridad y en los recordatorios. Los recordatorios se recuperan al volver a habilitar las notificaciones, y las importaciones restauran exactamente la copia validada que confirmaste.
