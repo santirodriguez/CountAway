@@ -41,4 +41,24 @@ class CountdownImportSnapshotTest {
             directory.deleteRecursively()
         }
     }
+
+    @Test
+    fun clearingOneSnapshotDoesNotTouchAnotherImportPayload() {
+        val directory = Files.createTempDirectory("countaway-import-isolation").toFile()
+        val first = CountdownImportSnapshot(directory.resolve("snapshot-a.json"))
+        val second = CountdownImportSnapshot(directory.resolve("snapshot-b.json"))
+
+        try {
+            first.write("first")
+            second.write("second")
+
+            first.clear()
+
+            assertFalse(first.exists())
+            assertTrue(second.exists())
+            assertEquals("second", second.readPayload())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
 }
