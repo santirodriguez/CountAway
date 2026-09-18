@@ -1,15 +1,19 @@
 package com.santiagorodriguez.countaway.data
 
-import android.content.Context
 import android.content.ContextWrapper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.RepeatRule
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
@@ -52,10 +56,13 @@ class CountdownStorageContractInstrumentedTest {
     }
 
     @Test
-    fun historicalLongTitleFixtureRemainsReadableAsStoredData() {
-        val event = CountdownStorageCodec.decode(legacyLongTitleFixture()).single()
+    fun historicalLongTitleRoundTripsThroughImport() {
+        val decoded = CountdownStorageCodec.decode(legacyLongTitleFixture())
+        val exported = CountdownStorageCodec.encode(decoded)
+        val restored = CountdownStorageCodec.decodeForImport(exported)
 
-        assertTrue(event.title.length > CountdownValidation.MAX_TITLE_LENGTH)
+        assertTrue(decoded.single().title.length > CountdownValidation.MAX_TITLE_LENGTH)
+        assertEquals(decoded, restored)
     }
 
     @Test
@@ -69,7 +76,159 @@ class CountdownStorageContractInstrumentedTest {
     }
 
     @Test
+    fun schemaVersionStringIsRejectedInsteadOfCoerced() {
+        assertDataProblem(
+            CountdownDataProblem.CORRUPT,
+            """{"schemaVersion":"5","events":[]}""",
+        )
+    }
+
+    @Test
+    fun dateOutsideProductDomainIsRejectedBeforeImportCanReplaceData() {
+        assertDataProblem(CountdownDataProblem.CORRUPT, extremeDateFixture())
+    }
+
+    @Test
     fun repositoryRoundTripExercisesAndroidAtomicFileWithoutTouchingAppData() {
+        withIsolatedRepository { _, repository ->
+            val events = CountdownStorageCodec.decode(SCHEMA_5_FIXTURE)
+
+            repository.save(events)
+
+            assertEquals(events, successfulEvents(repository.loadResult()))
+        }
+    }
+
+    @Test
+    fun backupOnlyAtomicFileStateIsRecoveredInsteadOfReturningAnEmptyList() {
+        withIsolatedRepository { filesDir, repository ->
+            filesDir.mkdirs()
+            File(filesDir, "countaways.json.bak").writeText(SCHEMA_5_FIXTURE, Charsets.UTF_8)
+
+            val loaded = successfulEvents(repository.loadResult())
+
+            assertEquals(CountdownStorageCodec.decode(SCHEMA_5_FIXTURE), loaded)
+            assertTrue(File(filesDir, "countaways.json").isFile)
+        }
+    }
+
+    @Test
+    fun baseAndBackupAtomicFileStateRecoversTheLastCommittedBackup() {
+        withIsolatedRepository { filesDir, repository ->
+            filesDir.mkdirs()
+            File(filesDir, "countaways.json").writeText(SCHEMA_5_FIXTURE, Charsets.UTF_8)
+            File(filesDir, "countaways.json.bak").writeText(SCHEMA_4_FIXTURE, Charsets.UTF_8)
+
+            val loaded = successfulEvents(repository.loadResult())
+
+            assertEquals(CountdownStorageCodec.decode(SCHEMA_4_FIXTURE), loaded)
+        }
+    }
+
+    @Test
+    fun orphanNewFileIsNotMisclassifiedAsNeverHavingStoredData() {
+        withIsolatedRepository { filesDir, repository ->
+            filesDir.mkdirs()
+            File(filesDir, "countaways.json.new").writeText("partial", Charsets.UTF_8)
+
+            val loaded = repository.loadResult()
+
+            assertTrue(loaded is CountdownLoadResult.Failure)
+            assertEquals(
+                CountdownDataProblem.CORRUPT,
+                (loaded as CountdownLoadResult.Failure).problem,
+            )
+        }
+    }
+
+    @Test
+    fun invalidImportLeavesExistingRepositoryUntouched() {
+        withIsolatedRepository { _, repository ->
+            val original = CountdownStorageCodec.decode(SCHEMA_5_FIXTURE)
+            repository.save(original)
+
+            try {
+                repository.importPayload(extremeDateFixture())
+                throw AssertionError("Expected CountdownDataException")
+            } catch (error: CountdownDataException) {
+                assertEquals(CountdownDataProblem.CORRUPT, error.problem)
+            }
+
+            assertEquals(original, successfulEvents(repository.loadResult()))
+        }
+    }
+
+    @Test
+    fun staleEditorSaveCannotOverwriteNewerEventState() {
+        withIsolatedRepository { _, repository ->
+            val original = event("shared", "Original")
+            val newer = original.copy(title = "Newer")
+            val stale = original.copy(title = "Stale")
+            repository.save(listOf(original))
+            repository.save(listOf(newer))
+
+            assertEquals(
+                CountdownMutationResult.CONFLICT,
+                repository.saveEvent(original, stale),
+            )
+            assertEquals(listOf(newer), successfulEvents(repository.loadResult()))
+        }
+    }
+
+    @Test
+    fun staleEditorDeleteCannotDeleteNewerEventState() {
+        withIsolatedRepository { _, repository ->
+            val original = event("shared", "Original")
+            val newer = original.copy(title = "Newer")
+            repository.save(listOf(original))
+            repository.save(listOf(newer))
+
+            assertEquals(
+                CountdownMutationResult.CONFLICT,
+                repository.deleteEvent(original),
+            )
+            assertEquals(listOf(newer), successfulEvents(repository.loadResult()))
+        }
+    }
+
+    @Test
+    fun independentImportSnapshotsDoNotCrossPayloads() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val first = CountdownImportSnapshot.create(context)
+        val second = CountdownImportSnapshot.create(context)
+
+        try {
+            assertFalse(first.identity == second.identity)
+            first.write(SCHEMA_4_FIXTURE)
+            second.write(SCHEMA_5_FIXTURE)
+
+            first.clear()
+
+            assertFalse(first.exists())
+            assertTrue(second.exists())
+            assertEquals(SCHEMA_5_FIXTURE, second.readPayload())
+            assertEquals(second.identity, CountdownImportSnapshot.restore(context, second.identity)?.identity)
+        } finally {
+            first.clear()
+            second.clear()
+        }
+    }
+
+    private fun assertDataProblem(expected: CountdownDataProblem, payload: String) {
+        try {
+            CountdownStorageCodec.decodeForImport(payload)
+            throw AssertionError("Expected CountdownDataException")
+        } catch (error: CountdownDataException) {
+            assertEquals(expected, error.problem)
+        }
+    }
+
+    private fun successfulEvents(result: CountdownLoadResult): List<CountdownEvent> {
+        assertTrue(result is CountdownLoadResult.Success)
+        return (result as CountdownLoadResult.Success).events
+    }
+
+    private fun withIsolatedRepository(block: (File, CountdownRepository) -> Unit) {
         val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
         val isolatedFilesDir = File(
             targetContext.cacheDir,
@@ -80,27 +239,19 @@ class CountdownStorageContractInstrumentedTest {
         }
 
         try {
-            val repository = CountdownRepository(isolatedContext)
-            val events = CountdownStorageCodec.decode(SCHEMA_5_FIXTURE)
-
-            repository.save(events)
-
-            val loaded = repository.loadResult()
-            assertTrue(loaded is CountdownLoadResult.Success)
-            assertEquals(events, (loaded as CountdownLoadResult.Success).events)
+            block(isolatedFilesDir, CountdownRepository(isolatedContext))
         } finally {
             isolatedFilesDir.deleteRecursively()
         }
     }
 
-    private fun assertDataProblem(expected: CountdownDataProblem, payload: String) {
-        try {
-            CountdownStorageCodec.decode(payload)
-            throw AssertionError("Expected CountdownDataException")
-        } catch (error: CountdownDataException) {
-            assertEquals(expected, error.problem)
-        }
-    }
+    private fun event(id: String, title: String): CountdownEvent = CountdownEvent(
+        id = id,
+        title = title,
+        date = LocalDate.of(2026, 12, 1),
+        type = EventType.EVENT,
+        createdAt = Instant.parse("2026-08-23T12:00:00Z"),
+    )
 
     private fun legacyLongTitleFixture(): String {
         val longTitle = "L".repeat(CountdownValidation.MAX_TITLE_LENGTH + 1)
@@ -121,6 +272,24 @@ class CountdownStorageContractInstrumentedTest {
             }
         """.trimIndent()
     }
+
+    private fun extremeDateFixture(): String = """
+        {
+          "schemaVersion": 5,
+          "events": [
+            {
+              "id": "extreme-date",
+              "title": "Extreme",
+              "date": "+999999999-12-31",
+              "type": "event",
+              "iconKey": "calendar",
+              "reminderKey": "on_day",
+              "repeatRule": "none",
+              "createdAt": "2020-01-01T00:00:00Z"
+            }
+          ]
+        }
+    """.trimIndent()
 
     private companion object {
         val SCHEMA_1_FIXTURE = """
