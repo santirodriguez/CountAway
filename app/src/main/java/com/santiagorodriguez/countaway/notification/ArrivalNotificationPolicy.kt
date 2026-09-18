@@ -38,8 +38,9 @@ object ArrivalNotificationPolicy {
         events: List<CountdownEvent>,
         today: LocalDate,
         wasDelivered: (CountdownEvent, LocalDate) -> Boolean,
+        canAttempt: (CountdownEvent, LocalDate) -> Boolean = { _, _ -> true },
     ): LocalDate? = events.asSequence()
-        .mapNotNull { event -> nextPendingDate(event, today, wasDelivered) }
+        .mapNotNull { event -> nextPendingDate(event, today, wasDelivered, canAttempt) }
         .minOrNull()
 
     fun shouldResetDeliveryState(previous: CountdownEvent?, updated: CountdownEvent): Boolean =
@@ -52,9 +53,10 @@ object ArrivalNotificationPolicy {
         event: CountdownEvent,
         today: LocalDate,
         wasDelivered: (CountdownEvent, LocalDate) -> Boolean,
+        canAttempt: (CountdownEvent, LocalDate) -> Boolean,
     ): LocalDate? {
         val first = scheduledDate(event, today) ?: return null
-        if (!wasDelivered(event, first)) return first
+        if (!wasDelivered(event, first) && canAttempt(event, first)) return first
         if (event.repeatRule != RepeatRule.YEARLY) return null
         return scheduledDate(event, first.plusDays(1))
     }
