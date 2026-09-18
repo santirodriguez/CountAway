@@ -5,7 +5,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.model.ReminderOption
 import com.santiagorodriguez.countaway.model.RepeatRule
+import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -188,6 +190,27 @@ class CountdownStorageContractInstrumentedTest {
                 repository.deleteEvent(original),
             )
             assertEquals(listOf(newer), successfulEvents(repository.loadResult()))
+        }
+    }
+
+    @Test
+    fun notificationFailuresAreBoundedWithoutBeingMarkedDelivered() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val state = ArrivalNotificationState(context)
+        val event = event("retry-state", "Retry").copy(reminder = ReminderOption.ON_DAY)
+        val scheduledDate = LocalDate.of(2026, 12, 1)
+        state.remove(event.id)
+
+        try {
+            repeat(ArrivalNotificationState.MAX_DELIVERY_ATTEMPTS) {
+                assertTrue(state.canAttempt(event, scheduledDate))
+                state.recordFailure(event, scheduledDate)
+            }
+
+            assertFalse(state.canAttempt(event, scheduledDate))
+            assertFalse(state.wasDelivered(event, scheduledDate))
+        } finally {
+            state.remove(event.id)
         }
     }
 
