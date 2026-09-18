@@ -172,7 +172,9 @@ class WidgetConfigActivity : BaseActivity() {
     }
 
     override fun onPause() {
-        temporalInvalidationController.stop()
+        if (::temporalInvalidationController.isInitialized) {
+            temporalInvalidationController.stop()
+        }
         loadGeneration += 1
         super.onPause()
     }
