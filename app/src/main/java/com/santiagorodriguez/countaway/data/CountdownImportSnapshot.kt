@@ -7,9 +7,13 @@ import java.io.IOException
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.UUID
 
-class CountdownImportSnapshot(private val file: File) {
-    constructor(context: Context) : this(File(context.cacheDir, FILE_NAME))
+class CountdownImportSnapshot private constructor(
+    private val file: File,
+    val identity: String,
+) {
+    constructor(file: File) : this(file, file.name)
 
     fun write(payload: String) {
         CountdownValidation.validatePayloadSize(payload)
@@ -57,7 +61,20 @@ class CountdownImportSnapshot(private val file: File) {
 
     private fun temporaryFile(): File = File(file.parentFile, "${file.name}.tmp")
 
-    private companion object {
-        const val FILE_NAME = "pending-countaway-import.json"
+    companion object {
+        fun create(context: Context): CountdownImportSnapshot {
+            val identity = UUID.randomUUID().toString()
+            return CountdownImportSnapshot(snapshotFile(context, identity), identity)
+        }
+
+        fun restore(context: Context, identity: String): CountdownImportSnapshot? {
+            val canonicalIdentity = runCatching { UUID.fromString(identity).toString() }.getOrNull()
+                ?: return null
+            if (canonicalIdentity != identity) return null
+            return CountdownImportSnapshot(snapshotFile(context, identity), identity)
+        }
+
+        private fun snapshotFile(context: Context, identity: String): File =
+            File(context.cacheDir, "pending-countaway-import-$identity.json")
     }
 }
