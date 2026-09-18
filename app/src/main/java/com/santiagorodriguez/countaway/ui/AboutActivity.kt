@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.data.CountdownDataException
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownImportSnapshot
@@ -20,6 +21,7 @@ import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.data.CountdownStorageCodec
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
+import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 
@@ -229,6 +231,7 @@ class AboutActivity : BaseActivity() {
                 try {
                     repository.importPayload(snapshot.readPayload())
                     ArrivalNotificationState(context).clear()
+                    ArrivalNotifier.cancelAllEventNotifications(context)
                 } finally {
                     snapshot.clear()
                 }
@@ -277,9 +280,10 @@ class AboutActivity : BaseActivity() {
     private fun refreshBackgroundStateInBackground() {
         val context = applicationContext
         CountdownIo.execute {
-            runCatching { CountdownWidgetProvider.updateAllWidgets(context) }
-            runCatching { WidgetUpdateScheduler.ensureScheduled(context) }
-            runCatching { ArrivalNotificationScheduler.ensureScheduled(context) }
+            val snapshot = CountdownTime.snapshot()
+            runCatching { CountdownWidgetProvider.updateAllWidgets(context, snapshot) }
+            runCatching { WidgetUpdateScheduler.ensureScheduled(context, snapshot) }
+            runCatching { ArrivalNotificationScheduler.ensureScheduled(context, snapshot) }
         }
     }
 
