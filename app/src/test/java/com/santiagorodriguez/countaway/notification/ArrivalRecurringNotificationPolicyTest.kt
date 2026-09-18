@@ -46,6 +46,31 @@ class ArrivalRecurringNotificationPolicyTest {
     }
 
     @Test
+    fun exhaustedYearlyDeliveryAdvancesToTheNextOccurrence() {
+        val event = event(LocalDate.of(2020, 9, 16), ReminderOption.ON_DAY)
+
+        assertEquals(
+            LocalDate.of(2027, 9, 16),
+            ArrivalNotificationPolicy.nextPendingDate(
+                events = listOf(event),
+                today = today,
+                wasDelivered = { _, _ -> false },
+                canAttempt = { _, scheduledDate -> scheduledDate != today },
+            ),
+        )
+    }
+
+    @Test
+    fun leapDayReminderUsesFebruary28InNonLeapYear2100() {
+        val event = event(LocalDate.of(2024, 2, 29), ReminderOption.SEVEN_DAYS)
+
+        assertEquals(
+            LocalDate.of(2100, 2, 21),
+            ArrivalNotificationPolicy.scheduledDate(event, LocalDate.of(2100, 2, 20)),
+        )
+    }
+
+    @Test
     fun changingRepeatRuleResetsDeliveryState() {
         val previous = event(LocalDate.of(2026, 9, 16), ReminderOption.ON_DAY)
         val updated = previous.copy(repeatRule = RepeatRule.NONE)
