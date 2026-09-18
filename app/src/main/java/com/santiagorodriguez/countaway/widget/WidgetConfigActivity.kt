@@ -15,6 +15,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
+import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
@@ -42,6 +43,7 @@ class WidgetConfigActivity : BaseActivity() {
     private var events: List<CountdownEvent> = emptyList()
     private var selectedEventId: String? = null
     private var selectedMode: WidgetEventSelection = WidgetEventSelection.FIXED
+    private var loadGeneration = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -158,6 +160,11 @@ class WidgetConfigActivity : BaseActivity() {
         if (::repository.isInitialized) reloadEvents()
     }
 
+    override fun onPause() {
+        loadGeneration += 1
+        super.onPause()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString(STATE_EVENT_ID, selectedEventId)
         outState.putString(STATE_SELECTION_MODE, selectedMode.name)
@@ -171,9 +178,25 @@ class WidgetConfigActivity : BaseActivity() {
     }
 
     private fun reloadEvents() {
-        val result = repository.loadResult()
+        val generation = ++loadGeneration
+        eventList.isEnabled = false
+        setSaveEnabled(false)
+
+        CountdownIo.submit(
+            task = { repository.loadResult() },
+            onComplete = { result ->
+                if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
+                renderEvents(
+                    result.getOrElse { CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT) },
+                )
+            },
+        )
+    }
+
+    private fun renderEvents(result: CountdownLoadResult) {
         if (result is CountdownLoadResult.Failure) {
             events = emptyList()
+            eventList.isEnabled = false
             eventList.visibility = View.GONE
             emptyState.setText(
                 if (result.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
@@ -200,6 +223,7 @@ class WidgetConfigActivity : BaseActivity() {
             })
         }
         eventList.adapter = ArrayAdapter(this, R.layout.item_widget_event, android.R.id.text1, labels)
+        eventList.isEnabled = true
         emptyState.visibility = View.GONE
         eventList.visibility = View.VISIBLE
 
