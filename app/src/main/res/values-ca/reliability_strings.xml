@@ -14,4 +14,8 @@
     <string name="notification_blocked_message">El recordatori quedarà desat, però Android no el mostrarà fins que activis les notificacions de Ja Queda Poc.</string>
     <string name="notification_open_settings">Obre la configuració de notificacions</string>
     <string name="title_too_long">El títol pot tenir fins a %1$d caràcters.</string>
+    <string name="data_conflict_title">El compte enrere ha canviat</string>
+    <string name="data_conflict_message">Aquest compte enrere ha canviat o s’ha eliminat en un altre lloc. Torna a carregar l’últim estat desat o continua editant aquest esborrany.</string>
+    <string name="data_conflict_reload">Torna a carregar</string>
+    <string name="data_conflict_keep_editing">Continua editant</string>
 </resources>
