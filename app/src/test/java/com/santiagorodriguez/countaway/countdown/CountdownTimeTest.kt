@@ -24,20 +24,20 @@ class CountdownTimeTest {
     @Test
     fun nextDateInvalidationTracksCivilMidnightAcrossDst() {
         val zone = ZoneId.of("America/New_York")
-        val beforeSpringForward = CountdownTimeSnapshot(
-            ZonedDateTime.of(2026, 3, 7, 23, 59, 0, 0, zone),
+        val springForwardDay = CountdownTimeSnapshot(
+            ZonedDateTime.of(2026, 3, 8, 0, 30, 0, 0, zone),
         )
-        val beforeFallBack = CountdownTimeSnapshot(
-            ZonedDateTime.of(2026, 10, 31, 23, 59, 0, 0, zone),
+        val fallBackDay = CountdownTimeSnapshot(
+            ZonedDateTime.of(2026, 11, 1, 0, 30, 0, 0, zone),
         )
 
-        assertTrue(
-            CountdownTemporalInvalidationPolicy.delayUntilNextDateBoundaryMillis(beforeSpringForward) in
-                60_000L..121_000L,
+        assertEquals(
+            22L * 60L * 60L * 1000L + 30L * 60L * 1000L + 1_000L,
+            CountdownTemporalInvalidationPolicy.delayUntilNextDateBoundaryMillis(springForwardDay),
         )
-        assertTrue(
-            CountdownTemporalInvalidationPolicy.delayUntilNextDateBoundaryMillis(beforeFallBack) in
-                60_000L..121_000L,
+        assertEquals(
+            24L * 60L * 60L * 1000L + 30L * 60L * 1000L + 1_000L,
+            CountdownTemporalInvalidationPolicy.delayUntilNextDateBoundaryMillis(fallBackDay),
         )
     }
 
