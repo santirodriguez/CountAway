@@ -75,6 +75,8 @@ class EditorActivity : BaseActivity() {
     private var selectedReminder: ReminderOption = ReminderOption.OFF
     private var suppressRepeatSelection = false
     private var suppressReminderSelection = false
+    private var editorInitialized = false
+    private var loadGeneration = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,7 +96,39 @@ class EditorActivity : BaseActivity() {
         repeatSpinner = findViewById(R.id.repeatSpinner)
         reminderSpinner = findViewById(R.id.reminderSpinner)
 
-        val loadedEvents = loadEventsOrFinish() ?: return
+        setEditorBusy(true)
+        loadEditorData(savedInstanceState)
+    }
+
+    private fun loadEditorData(savedInstanceState: Bundle?) {
+        val generation = ++loadGeneration
+        CountdownIo.submit(
+            task = { repository.loadResult() },
+            onComplete = { result ->
+                if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
+
+                when (val loaded = result.getOrElse {
+                    CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT)
+                }) {
+                    is CountdownLoadResult.Success -> initializeEditor(loaded.events, savedInstanceState)
+                    is CountdownLoadResult.Failure -> {
+                        val message = if (loaded.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
+                            R.string.data_newer_version_edit_blocked
+                        } else {
+                            R.string.data_error_edit_blocked
+                        }
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                        finish()
+                    }
+                }
+            },
+        )
+    }
+
+    private fun initializeEditor(
+        loadedEvents: List<CountdownEvent>,
+        savedInstanceState: Bundle?,
+    ) {
         val requestedEventId = intent.getStringExtra(EXTRA_EVENT_ID)
         existingEvent = requestedEventId?.let { id -> loadedEvents.firstOrNull { it.id == id } }
         if (requestedEventId != null && existingEvent == null) {
@@ -130,16 +164,25 @@ class EditorActivity : BaseActivity() {
 
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
+        editorInitialized = true
+        setEditorBusy(false)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putString(STATE_TITLE, titleInput.text.toString())
-        outState.putString(STATE_DATE, selectedDate.toString())
-        outState.putString(STATE_TYPE, selectedType.name)
-        outState.putString(STATE_ICON, selectedIcon.name)
-        outState.putString(STATE_REPEAT_RULE, selectedRepeatRule.name)
-        outState.putString(STATE_REMINDER, selectedReminder.name)
+        if (editorInitialized) {
+            outState.putString(STATE_TITLE, titleInput.text.toString())
+            outState.putString(STATE_DATE, selectedDate.toString())
+            outState.putString(STATE_TYPE, selectedType.name)
+            outState.putString(STATE_ICON, selectedIcon.name)
+            outState.putString(STATE_REPEAT_RULE, selectedRepeatRule.name)
+            outState.putString(STATE_REMINDER, selectedReminder.name)
+        }
         super.onSaveInstanceState(outState)
+    }
+
+    override fun onDestroy() {
+        loadGeneration += 1
+        super.onDestroy()
     }
 
     override fun onRequestPermissionsResult(
@@ -551,20 +594,6 @@ class EditorActivity : BaseActivity() {
                 )
             }
             .show()
-    }
-
-    private fun loadEventsOrFinish(): List<CountdownEvent>? = when (val result = repository.loadResult()) {
-        is CountdownLoadResult.Success -> result.events
-        is CountdownLoadResult.Failure -> {
-            val message = if (result.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
-                R.string.data_newer_version_edit_blocked
-            } else {
-                R.string.data_error_edit_blocked
-            }
-            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-            finish()
-            null
-        }
     }
 
     private fun restoreEditorState(state: Bundle) {
