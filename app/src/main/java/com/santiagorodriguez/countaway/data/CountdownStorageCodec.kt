@@ -9,6 +9,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.nio.ByteBuffer
+import java.nio.charset.CharacterCodingException
+import java.nio.charset.CodingErrorAction
 import java.time.Instant
 import java.time.LocalDate
 
@@ -62,7 +65,17 @@ object CountdownStorageCodec {
             }
             output.write(buffer, 0, count)
         }
-        return output.toString(Charsets.UTF_8.name())
+
+        return try {
+            Charsets.UTF_8
+                .newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(output.toByteArray()))
+                .toString()
+        } catch (error: CharacterCodingException) {
+            throw CountdownDataException(CountdownDataProblem.CORRUPT, error)
+        }
     }
 
     fun decode(payload: String): List<CountdownEvent> = decodePayload(payload, enforceImportLimits = false)
@@ -78,7 +91,11 @@ object CountdownStorageCodec {
                 throw CountdownDataException(CountdownDataProblem.CORRUPT)
             }
 
-            val schemaVersion = root.getInt(KEY_SCHEMA_VERSION)
+            val rawSchemaVersion = root.get(KEY_SCHEMA_VERSION)
+            if (rawSchemaVersion !is Int) {
+                throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            }
+            val schemaVersion = rawSchemaVersion
             CountdownStorageSchema.problemFor(schemaVersion)?.let { problem ->
                 throw CountdownDataException(problem)
             }
