@@ -9,11 +9,14 @@ import android.widget.ListView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
+import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
@@ -27,6 +30,7 @@ class MainActivity : BaseActivity() {
     private lateinit var emptyTitle: TextView
     private lateinit var emptyDescription: TextView
     private lateinit var addCountdownButton: Button
+    private lateinit var temporalInvalidationController: TemporalInvalidationController
     private var loadGeneration = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +46,7 @@ class MainActivity : BaseActivity() {
         emptyTitle = findViewById(R.id.emptyTitle)
         emptyDescription = findViewById(R.id.emptyDescription)
         addCountdownButton = findViewById(R.id.addCountdownButton)
+        temporalInvalidationController = TemporalInvalidationController(this, ::refreshTemporalState)
 
         countdownList.adapter = adapter
         countdownList.emptyView = emptyState
@@ -73,35 +78,47 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        val snapshot = CountdownTime.snapshot()
+        temporalInvalidationController.start(snapshot)
+        refreshTemporalState(snapshot)
+        renderLanguageSelection()
+        renderThemeButton()
+    }
+
+    override fun onPause() {
+        temporalInvalidationController.stop()
+        loadGeneration += 1
+        super.onPause()
+    }
+
+    private fun refreshTemporalState(snapshot: CountdownTimeSnapshot) {
         val generation = ++loadGeneration
-        val today = LocalDate.now()
         setAddEnabled(false)
         countdownList.isEnabled = false
+        val context = applicationContext
 
         CountdownIo.submit(
-            task = { repository.loadResult() },
+            task = {
+                val result = repository.loadResult()
+                if (result is CountdownLoadResult.Success) {
+                    ArrivalNotifier.reconcileVisibleNotifications(context, result.events, snapshot)
+                }
+                result
+            },
             onComplete = { result ->
                 if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
                 renderData(
                     result.getOrElse { CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT) },
-                    today,
+                    snapshot.today,
                 )
             },
         )
 
-        renderLanguageSelection()
-        renderThemeButton()
-        val context = applicationContext
         CountdownIo.execute {
-            runCatching { CountdownWidgetProvider.updateAllWidgets(context) }
-            runCatching { WidgetUpdateScheduler.ensureScheduled(context) }
-            runCatching { ArrivalNotificationScheduler.ensureScheduled(context) }
+            runCatching { CountdownWidgetProvider.updateAllWidgets(context, snapshot) }
+            runCatching { WidgetUpdateScheduler.ensureScheduled(context, snapshot) }
+            runCatching { ArrivalNotificationScheduler.ensureScheduled(context, snapshot) }
         }
-    }
-
-    override fun onPause() {
-        loadGeneration += 1
-        super.onPause()
     }
 
     private fun renderData(result: CountdownLoadResult, today: LocalDate) {
