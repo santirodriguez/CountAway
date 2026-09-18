@@ -15,6 +15,7 @@ import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
+import com.santiagorodriguez.countaway.model.RepeatRule
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -51,13 +52,22 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
             contentDescription = context.getString(EventIconPresentation.labelRes(displayedIcon))
         }
         view.findViewById<TextView>(R.id.eventTitle).text = event.title
-        view.findViewById<TextView>(R.id.eventMeta).text = context.getString(
-            R.string.event_meta,
-            context.getString(EventTypePresentation.labelRes(event.type)),
-            displayDate.format(dateFormatter),
-        )
+        val meta = if (event.repeatRule == RepeatRule.YEARLY) {
+            context.getString(
+                R.string.event_meta_yearly,
+                context.getString(EventTypePresentation.labelRes(event.type)),
+                displayDate.format(dateFormatter),
+            )
+        } else {
+            context.getString(
+                R.string.event_meta,
+                context.getString(EventTypePresentation.labelRes(event.type)),
+                displayDate.format(dateFormatter),
+            )
+        }
+        view.findViewById<TextView>(R.id.eventMeta).text = meta
 
-        view.findViewById<TextView>(R.id.eventStatus).apply {
+        val statusView = view.findViewById<TextView>(R.id.eventStatus).apply {
             text = when (countdown.status) {
                 CountdownStatus.FUTURE -> context.getString(R.string.status_days, countdown.days)
                 CountdownStatus.THREE_DAYS -> "✦ 3"
@@ -96,6 +106,8 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
                 }
             }
         }
+        view.contentDescription = listOf(event.title, meta, statusView.contentDescription)
+            .joinToString(", ")
 
         return view
     }

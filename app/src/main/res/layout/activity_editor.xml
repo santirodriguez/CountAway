@@ -76,8 +76,8 @@
             android:layout_marginTop="6dp"
             android:background="@drawable/control_surface"
             android:gravity="center_vertical"
-            android:inputType="textCapSentences"
-            android:maxLines="1"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLines="2"
             android:minHeight="54dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
@@ -147,6 +147,20 @@
                 android:paddingEnd="8dp"
                 android:spinnerMode="dropdown" />
         </FrameLayout>
+
+        <TextView
+            android:id="@+id/editorScheduleSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/status_pill"
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp"
+            android:textColor="@color/accent_text"
+            android:textSize="13sp"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/saveButton"

@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ListView
+import android.widget.Toast
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
@@ -153,14 +154,21 @@ class MainActivity : BaseActivity() {
     }
 
     private fun selectLanguage(languageTag: String) {
-        LanguageManager.setLanguage(this, languageTag)
+        val current = LanguageManager.currentLanguageTag(this)
+        if (!LanguageManager.isFollowingSystem(this) && current == languageTag) {
+            LanguageManager.useSystemLanguage(this)
+            Toast.makeText(this, R.string.language_follow_system_enabled, Toast.LENGTH_SHORT).show()
+        } else {
+            LanguageManager.setLanguage(this, languageTag)
+        }
     }
 
     private fun renderLanguageSelection() {
         val current = LanguageManager.currentLanguageTag(this)
-        setLanguageButtonState(R.id.languageEnglishButton, current == LanguageManager.ENGLISH)
-        setLanguageButtonState(R.id.languageSpanishButton, current == LanguageManager.SPANISH)
-        setLanguageButtonState(R.id.languageCatalanButton, current == LanguageManager.CATALAN)
+        val explicit = !LanguageManager.isFollowingSystem(this)
+        setLanguageButtonState(R.id.languageEnglishButton, explicit && current == LanguageManager.ENGLISH)
+        setLanguageButtonState(R.id.languageSpanishButton, explicit && current == LanguageManager.SPANISH)
+        setLanguageButtonState(R.id.languageCatalanButton, explicit && current == LanguageManager.CATALAN)
     }
 
     private fun showThemePicker() {

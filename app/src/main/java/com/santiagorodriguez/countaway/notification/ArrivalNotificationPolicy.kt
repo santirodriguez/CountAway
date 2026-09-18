@@ -11,7 +11,14 @@ object ArrivalNotificationPolicy {
         scheduledDate(event.date, event.reminder)
 
     fun scheduledDate(event: CountdownEvent, today: LocalDate): LocalDate? =
-        nextScheduledDate(event.date, event.repeatRule, event.reminder, today)
+        scheduledDate(event.date, event.repeatRule, event.reminder, today)
+
+    fun scheduledDate(
+        targetDate: LocalDate,
+        repeatRule: RepeatRule,
+        reminder: ReminderOption,
+        today: LocalDate,
+    ): LocalDate? = nextScheduledDate(targetDate, repeatRule, reminder, today)
 
     fun scheduledDate(targetDate: LocalDate, reminder: ReminderOption): LocalDate? =
         reminder.daysBefore?.let { days -> targetDate.minusDays(days.toLong()) }

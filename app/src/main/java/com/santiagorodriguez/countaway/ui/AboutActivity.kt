@@ -17,6 +17,7 @@ import com.santiagorodriguez.countaway.data.CountdownDataException
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownImportSnapshot
 import com.santiagorodriguez.countaway.data.CountdownIo
+import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.data.CountdownStorageCodec
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
@@ -31,6 +32,8 @@ class AboutActivity : BaseActivity() {
     private lateinit var importButton: Button
     private var importSnapshot: CountdownImportSnapshot? = null
     private var pendingImportCount: Int? = null
+    private var pendingCurrentCount: Int? = null
+    private var resumeImportAfterExport = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +73,13 @@ class AboutActivity : BaseActivity() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_EXPORT && resultCode != Activity.RESULT_OK) {
+            val shouldResumeImport = resumeImportAfterExport
+            resumeImportAfterExport = false
+            if (shouldResumeImport) showPendingImportConfirmation()
+            return
+        }
         if (resultCode != Activity.RESULT_OK) return
         val uri = data?.data ?: return
 
@@ -92,22 +102,35 @@ class AboutActivity : BaseActivity() {
         }
     }
 
-    private fun exportBackup() {
+    private fun exportBackup(resumePendingImport: Boolean = false) {
+        resumeImportAfterExport = resumePendingImport
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
             .addCategory(Intent.CATEGORY_OPENABLE)
             .setType("application/json")
             .putExtra(Intent.EXTRA_TITLE, "CountAway-backup.json")
-        startActivityForResult(intent, REQUEST_EXPORT)
+        runCatching {
+            startActivityForResult(intent, REQUEST_EXPORT)
+        }.onFailure {
+            resumeImportAfterExport = false
+            Toast.makeText(this, R.string.backup_provider_unavailable, Toast.LENGTH_LONG).show()
+            if (resumePendingImport) showPendingImportConfirmation()
+        }
     }
 
     private fun importBackup() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
             .addCategory(Intent.CATEGORY_OPENABLE)
             .setType("application/json")
-        startActivityForResult(intent, REQUEST_IMPORT)
+        runCatching {
+            startActivityForResult(intent, REQUEST_IMPORT)
+        }.onFailure {
+            Toast.makeText(this, R.string.backup_provider_unavailable, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun writeBackup(uri: Uri) {
+        val shouldResumeImport = resumeImportAfterExport
+        resumeImportAfterExport = false
         setBackupBusy(true)
         CountdownIo.submit(
             task = {
@@ -129,6 +152,7 @@ class AboutActivity : BaseActivity() {
                     message,
                     if (result.isSuccess) Toast.LENGTH_SHORT else Toast.LENGTH_LONG,
                 ).show()
+                if (shouldResumeImport) showPendingImportConfirmation()
             },
         )
     }
@@ -142,6 +166,10 @@ class AboutActivity : BaseActivity() {
             task = {
                 val payload = readUtf8Payload(uri)
                 val count = repository.previewImport(payload)
+                val currentCount = when (val current = repository.loadResult()) {
+                    is CountdownLoadResult.Success -> current.events.size
+                    is CountdownLoadResult.Failure -> null
+                }
                 val snapshot = CountdownImportSnapshot.create(context)
                 try {
                     snapshot.write(payload)
@@ -149,16 +177,15 @@ class AboutActivity : BaseActivity() {
                     snapshot.clear()
                     throw error
                 }
-                PendingImport(snapshot, count)
+                PendingImport(snapshot, count, currentCount)
             },
             onComplete = { result ->
                 if (isFinishing || isDestroyed) return@submit
                 setBackupBusy(false)
 
                 result.onSuccess { pending ->
-                    importSnapshot = pending.snapshot
-                    pendingImportCount = pending.count
-                    showImportConfirmation(pending.count)
+                    setPendingImport(pending)
+                    showImportConfirmation(pending)
                 }.onFailure { error ->
                     clearPendingImport()
                     showImportFailure(error)
@@ -167,11 +194,25 @@ class AboutActivity : BaseActivity() {
         )
     }
 
-    private fun showImportConfirmation(count: Int) {
+    private fun showImportConfirmation(pending: PendingImport) {
+        val message = pending.currentCount?.let { currentCount ->
+            getString(
+                R.string.backup_import_confirm_details,
+                pending.incomingCount,
+                currentCount,
+            )
+        } ?: getString(
+            R.string.backup_import_confirm_details_unknown,
+            pending.incomingCount,
+        )
+
         AlertDialog.Builder(this)
             .setTitle(R.string.backup_import_confirm_title)
-            .setMessage(resources.getQuantityString(R.plurals.backup_import_confirm_message, count, count))
+            .setMessage(message)
             .setNegativeButton(R.string.action_cancel) { _, _ -> clearPendingImport() }
+            .setNeutralButton(R.string.backup_export_current_first) { _, _ ->
+                exportBackup(resumePendingImport = true)
+            }
             .setPositiveButton(R.string.backup_import_action) { _, _ -> confirmImport() }
             .setOnCancelListener { clearPendingImport() }
             .show()
@@ -189,16 +230,19 @@ class AboutActivity : BaseActivity() {
         CountdownIo.submit(
             task = {
                 val count = repository.previewImport(snapshot.readPayload())
-                PendingImport(snapshot, count)
+                val currentCount = when (val current = repository.loadResult()) {
+                    is CountdownLoadResult.Success -> current.events.size
+                    is CountdownLoadResult.Failure -> null
+                }
+                PendingImport(snapshot, count, currentCount)
             },
             onComplete = { result ->
                 if (isFinishing || isDestroyed) return@submit
                 setBackupBusy(false)
 
                 result.onSuccess { pending ->
-                    importSnapshot = pending.snapshot
-                    pendingImportCount = pending.count
-                    showImportConfirmation(pending.count)
+                    setPendingImport(pending)
+                    showImportConfirmation(pending)
                 }.onFailure { error ->
                     snapshot.clear()
                     clearPendingImport()
@@ -221,8 +265,8 @@ class AboutActivity : BaseActivity() {
             return
         }
 
-        // A confirmed import must not be offered again after recreation while the write is running.
         pendingImportCount = null
+        pendingCurrentCount = null
         setBackupBusy(true)
         val context = applicationContext
 
@@ -249,6 +293,28 @@ class AboutActivity : BaseActivity() {
         )
     }
 
+    private fun setPendingImport(pending: PendingImport) {
+        importSnapshot = pending.snapshot
+        pendingImportCount = pending.incomingCount
+        pendingCurrentCount = pending.currentCount
+    }
+
+    private fun showPendingImportConfirmation() {
+        val snapshot = importSnapshot ?: return
+        val incomingCount = pendingImportCount ?: return
+        if (!snapshot.exists()) {
+            clearPendingImport()
+            return
+        }
+        showImportConfirmation(
+            PendingImport(
+                snapshot = snapshot,
+                incomingCount = incomingCount,
+                currentCount = pendingCurrentCount,
+            ),
+        )
+    }
+
     private fun showImportFailure(error: Throwable) {
         if (error is CountdownDataException) {
             showImportValidationError(error)
@@ -268,6 +334,7 @@ class AboutActivity : BaseActivity() {
 
     private fun clearPendingImport() {
         pendingImportCount = null
+        pendingCurrentCount = null
         importSnapshot?.clear()
         importSnapshot = null
     }
@@ -288,12 +355,17 @@ class AboutActivity : BaseActivity() {
     }
 
     private fun openExternal(url: String) {
-        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }.onFailure {
+            Toast.makeText(this, R.string.external_action_unavailable, Toast.LENGTH_LONG).show()
+        }
     }
 
     private data class PendingImport(
         val snapshot: CountdownImportSnapshot,
-        val count: Int,
+        val incomingCount: Int,
+        val currentCount: Int?,
     )
 
     private companion object {

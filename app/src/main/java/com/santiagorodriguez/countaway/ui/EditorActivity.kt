@@ -16,6 +16,8 @@ import android.text.InputFilter
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.window.OnBackInvokedCallback
+import android.window.OnBackInvokedDispatcher
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -68,6 +70,7 @@ class EditorActivity : BaseActivity() {
     private lateinit var deleteButton: Button
     private lateinit var repeatSpinner: Spinner
     private lateinit var reminderSpinner: Spinner
+    private lateinit var scheduleSummary: TextView
     private lateinit var temporalInvalidationController: TemporalInvalidationController
     private var existingEvent: CountdownEvent? = null
     private var selectedDate: LocalDate = CountdownTime.snapshot().today.plusDays(1)
@@ -78,6 +81,9 @@ class EditorActivity : BaseActivity() {
     private var suppressRepeatSelection = false
     private var suppressReminderSelection = false
     private var editorInitialized = false
+    private var editorBusy = true
+    private var baselineDraft: EditorDraft? = null
+    private var backCallback: OnBackInvokedCallback? = null
     private var loadGeneration = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,6 +103,8 @@ class EditorActivity : BaseActivity() {
         deleteButton = findViewById(R.id.deleteButton)
         repeatSpinner = findViewById(R.id.repeatSpinner)
         reminderSpinner = findViewById(R.id.reminderSpinner)
+        scheduleSummary = findViewById(R.id.editorScheduleSummary)
+        registerBackCallback()
         temporalInvalidationController = TemporalInvalidationController(this) { snapshot ->
             if (editorInitialized) {
                 refreshReminderSpinner(snapshot.today)
@@ -155,6 +163,7 @@ class EditorActivity : BaseActivity() {
             selectedRepeatRule = event.repeatRule
             selectedReminder = event.reminder
         }
+        baselineDraft = currentDraft()
         savedInstanceState?.let(::restoreEditorState)
         titleInput.filters = titleInput.filters + InputFilter.LengthFilter(CountdownValidation.MAX_TITLE_LENGTH)
 
@@ -201,8 +210,18 @@ class EditorActivity : BaseActivity() {
         super.onSaveInstanceState(outState)
     }
 
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            super.onBackPressed()
+        } else {
+            handleBackRequest()
+        }
+    }
+
     override fun onDestroy() {
         temporalInvalidationController.stop()
+        unregisterBackCallback()
         loadGeneration += 1
         super.onDestroy()
     }
@@ -305,6 +324,7 @@ class EditorActivity : BaseActivity() {
         }
         reminderSpinner.setSelection(reminderOptions.indexOf(selectedReminder).coerceAtLeast(0))
         suppressReminderSelection = false
+        renderScheduleSummary(today)
     }
 
     private fun reminderLabel(reminder: ReminderOption): String = when (reminder) {
@@ -326,6 +346,7 @@ class EditorActivity : BaseActivity() {
                 textSize = 12f
                 typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                 setTextColor(getColor(R.color.foreground))
+                minHeight = dp(78)
                 setPadding(dp(6), dp(9), dp(6), dp(9))
                 setCompoundDrawablesWithIntrinsicBounds(0, EventTypePresentation.iconRes(type), 0, 0)
                 compoundDrawablePadding = dp(6)
@@ -335,7 +356,7 @@ class EditorActivity : BaseActivity() {
                 )
                 setOnClickListener { selectType(type) }
             }
-            typeGrid.addView(button, gridParams(heightDp = 78))
+            typeGrid.addView(button, gridParams())
         }
     }
 
@@ -368,13 +389,14 @@ class EditorActivity : BaseActivity() {
                 contentDescription = getString(EventIconPresentation.labelRes(icon))
                 tooltipText = contentDescription
                 scaleType = android.widget.ImageView.ScaleType.CENTER_INSIDE
+                minimumHeight = dp(56)
                 setPadding(dp(15), dp(15), dp(15), dp(15))
                 setOnClickListener {
                     selectedIcon = icon
                     renderCustomIconGrid()
                 }
             }
-            iconGrid.addView(button, gridParams(heightDp = 56))
+            iconGrid.addView(button, gridParams())
         }
     }
 
@@ -455,7 +477,11 @@ class EditorActivity : BaseActivity() {
         val sendIntent = Intent(Intent.ACTION_SEND)
             .setType("text/plain")
             .putExtra(Intent.EXTRA_TEXT, text)
-        startActivity(Intent.createChooser(sendIntent, null))
+        runCatching {
+            startActivity(Intent.createChooser(sendIntent, null))
+        }.onFailure {
+            Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun elapsedStatus(elapsedDays: Long): String {
@@ -532,10 +558,14 @@ class EditorActivity : BaseActivity() {
         }
 
         runCatching { startActivity(intent) }.onFailure {
-            startActivity(
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    .setData(Uri.parse("package:$packageName")),
-            )
+            runCatching {
+                startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        .setData(Uri.parse("package:$packageName")),
+                )
+            }.onFailure {
+                Toast.makeText(this, R.string.external_action_unavailable, Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -662,6 +692,7 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun setEditorBusy(busy: Boolean) {
+        editorBusy = busy
         setViewTreeEnabled(editorRoot, !busy)
     }
 
@@ -684,9 +715,99 @@ class EditorActivity : BaseActivity() {
         }
     }
 
-    private fun gridParams(heightDp: Int): GridLayout.LayoutParams = GridLayout.LayoutParams().apply {
+    private fun renderScheduleSummary(today: LocalDate) {
+        val lines = mutableListOf<String>()
+        val locale = resources.configuration.locales[0]
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
+
+        if (selectedRepeatRule == RepeatRule.YEARLY) {
+            val occurrence = CountdownOccurrenceResolver.displayDate(
+                selectedDate,
+                selectedRepeatRule,
+                today,
+            )
+            lines += getString(
+                R.string.schedule_next_occurrence,
+                occurrence.format(formatter),
+            )
+        }
+
+        ArrivalNotificationPolicy.scheduledDate(
+            selectedDate,
+            selectedRepeatRule,
+            selectedReminder,
+            today,
+        )?.let { reminderDate ->
+            lines += getString(
+                R.string.schedule_next_reminder,
+                reminderDate.format(formatter),
+            )
+        }
+
+        if (
+            selectedRepeatRule == RepeatRule.YEARLY &&
+            selectedDate.monthValue == 2 &&
+            selectedDate.dayOfMonth == 29
+        ) {
+            lines += getString(R.string.schedule_leap_day_note)
+        }
+
+        scheduleSummary.text = lines.joinToString("\n")
+        scheduleSummary.visibility = if (lines.isEmpty()) View.GONE else View.VISIBLE
+    }
+
+    private fun registerBackCallback() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || backCallback != null) return
+        val callback = OnBackInvokedCallback { handleBackRequest() }
+        onBackInvokedDispatcher.registerOnBackInvokedCallback(
+            OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+            callback,
+        )
+        backCallback = callback
+    }
+
+    private fun unregisterBackCallback() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        backCallback?.let(onBackInvokedDispatcher::unregisterOnBackInvokedCallback)
+        backCallback = null
+    }
+
+    private fun handleBackRequest() {
+        if (editorBusy) return
+        if (!editorInitialized || baselineDraft == currentDraft()) {
+            finish()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.unsaved_changes_title)
+            .setMessage(R.string.unsaved_changes_message)
+            .setNegativeButton(R.string.data_conflict_keep_editing, null)
+            .setPositiveButton(R.string.unsaved_changes_discard) { _, _ -> finish() }
+            .show()
+    }
+
+    private fun currentDraft(): EditorDraft = EditorDraft(
+        title = titleInput.text.toString(),
+        date = selectedDate,
+        type = selectedType,
+        icon = selectedIcon,
+        repeatRule = selectedRepeatRule,
+        reminder = selectedReminder,
+    )
+
+    private data class EditorDraft(
+        val title: String,
+        val date: LocalDate,
+        val type: EventType,
+        val icon: EventIcon,
+        val repeatRule: RepeatRule,
+        val reminder: ReminderOption,
+    )
+
+    private fun gridParams(): GridLayout.LayoutParams = GridLayout.LayoutParams().apply {
         width = 0
-        height = dp(heightDp)
+        height = ViewGroup.LayoutParams.WRAP_CONTENT
         columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
         setMargins(dp(4), dp(4), dp(4), dp(4))
     }
