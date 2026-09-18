@@ -14,4 +14,8 @@
     <string name="notification_blocked_message">El recordatorio va a quedar guardado, pero Android no lo va a mostrar hasta que habilites las notificaciones de Ya Estamos.</string>
     <string name="notification_open_settings">Abrir ajustes de notificaciones</string>
     <string name="title_too_long">El título puede tener hasta %1$d caracteres.</string>
+    <string name="data_conflict_title">La cuenta regresiva cambió</string>
+    <string name="data_conflict_message">Esta cuenta regresiva cambió o fue eliminada en otro lugar. Recargá el último estado guardado o seguí editando este borrador.</string>
+    <string name="data_conflict_reload">Recargar</string>
+    <string name="data_conflict_keep_editing">Seguir editando</string>
 </resources>
