@@ -15,6 +15,7 @@ import android.provider.Settings
 import android.text.InputFilter
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -28,7 +29,9 @@ import com.santiagorodriguez.countaway.countdown.CountdownCalculator
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
+import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
+import com.santiagorodriguez.countaway.data.CountdownMutationResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.data.CountdownValidation
 import com.santiagorodriguez.countaway.model.CountdownEvent
@@ -51,11 +54,14 @@ class EditorActivity : BaseActivity() {
     private val eventTypes = EventType.entries.toList()
     private var reminderOptions: List<ReminderOption> = emptyList()
     private lateinit var repository: CountdownRepository
+    private lateinit var editorRoot: View
     private lateinit var titleInput: EditText
     private lateinit var typeGrid: GridLayout
     private lateinit var customIconSection: View
     private lateinit var iconGrid: GridLayout
     private lateinit var dateButton: Button
+    private lateinit var saveButton: Button
+    private lateinit var shareButton: Button
     private lateinit var deleteButton: Button
     private lateinit var repeatSpinner: Spinner
     private lateinit var reminderSpinner: Spinner
@@ -71,7 +77,8 @@ class EditorActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_editor)
-        InsetUtils.applySystemBarPadding(findViewById(R.id.editorRoot))
+        editorRoot = findViewById(R.id.editorRoot)
+        InsetUtils.applySystemBarPadding(editorRoot)
 
         repository = CountdownRepository(this)
         titleInput = findViewById(R.id.titleInput)
@@ -79,6 +86,8 @@ class EditorActivity : BaseActivity() {
         customIconSection = findViewById(R.id.customIconSection)
         iconGrid = findViewById(R.id.iconGrid)
         dateButton = findViewById(R.id.dateButton)
+        saveButton = findViewById(R.id.saveButton)
+        shareButton = findViewById(R.id.shareButton)
         deleteButton = findViewById(R.id.deleteButton)
         repeatSpinner = findViewById(R.id.repeatSpinner)
         reminderSpinner = findViewById(R.id.reminderSpinner)
@@ -114,8 +123,8 @@ class EditorActivity : BaseActivity() {
         configureReminderSpinner()
 
         dateButton.setOnClickListener { showDatePicker() }
-        findViewById<Button>(R.id.saveButton).setOnClickListener { save() }
-        findViewById<Button>(R.id.shareButton).setOnClickListener { share() }
+        saveButton.setOnClickListener { save() }
+        shareButton.setOnClickListener { share() }
 
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
@@ -461,7 +470,6 @@ class EditorActivity : BaseActivity() {
             return
         }
 
-        val events = loadEventsOrFinish()?.toMutableList() ?: return
         val event = CountdownEvent(
             id = existingEvent?.id ?: UUID.randomUUID().toString(),
             title = title,
@@ -472,24 +480,37 @@ class EditorActivity : BaseActivity() {
             createdAt = existingEvent?.createdAt ?: Instant.now(),
             repeatRule = selectedRepeatRule,
         )
+        val expectedEvent = existingEvent
+        setEditorBusy(true)
 
-        val existingIndex = events.indexOfFirst { it.id == event.id }
-        if (existingIndex >= 0) {
-            events[existingIndex] = event
-        } else {
-            events.add(event)
-        }
-        try {
-            repository.save(events)
-        } catch (_: Exception) {
-            Toast.makeText(this, R.string.data_save_failed, Toast.LENGTH_LONG).show()
-            return
-        }
-        if (ArrivalNotificationPolicy.shouldResetDeliveryState(existingEvent, event)) {
-            ArrivalNotificationState(this).remove(event.id)
-        }
-        refreshBackgroundState()
-        finish()
+        CountdownIo.submit(
+            task = { repository.saveEvent(expectedEvent, event) },
+            onComplete = { result ->
+                if (isFinishing || isDestroyed) return@submit
+                setEditorBusy(false)
+
+                val mutation = result.getOrElse {
+                    Toast.makeText(this, R.string.data_save_failed, Toast.LENGTH_LONG).show()
+                    return@submit
+                }
+                when (mutation) {
+                    CountdownMutationResult.APPLIED -> {
+                        if (ArrivalNotificationPolicy.shouldResetDeliveryState(expectedEvent, event)) {
+                            ArrivalNotificationState(this).remove(event.id)
+                        }
+                        refreshBackgroundStateInBackground()
+                        finish()
+                    }
+                    CountdownMutationResult.CONFLICT -> {
+                        if (expectedEvent == null) {
+                            Toast.makeText(this, R.string.data_save_failed, Toast.LENGTH_LONG).show()
+                        } else {
+                            showDataConflict()
+                        }
+                    }
+                }
+            },
+        )
     }
 
     private fun confirmDelete() {
@@ -499,17 +520,27 @@ class EditorActivity : BaseActivity() {
             .setMessage(getString(R.string.delete_message, event.title))
             .setNegativeButton(R.string.action_cancel, null)
             .setPositiveButton(R.string.action_delete) { _, _ ->
-                val events = loadEventsOrFinish()?.filterNot { it.id == event.id }
-                    ?: return@setPositiveButton
-                try {
-                    repository.save(events)
-                } catch (_: Exception) {
-                    Toast.makeText(this, R.string.data_delete_failed, Toast.LENGTH_LONG).show()
-                    return@setPositiveButton
-                }
-                ArrivalNotificationState(this).remove(event.id)
-                refreshBackgroundState()
-                finish()
+                setEditorBusy(true)
+                CountdownIo.submit(
+                    task = { repository.deleteEvent(event) },
+                    onComplete = { result ->
+                        if (isFinishing || isDestroyed) return@submit
+                        setEditorBusy(false)
+
+                        val mutation = result.getOrElse {
+                            Toast.makeText(this, R.string.data_delete_failed, Toast.LENGTH_LONG).show()
+                            return@submit
+                        }
+                        when (mutation) {
+                            CountdownMutationResult.APPLIED -> {
+                                ArrivalNotificationState(this).remove(event.id)
+                                refreshBackgroundStateInBackground()
+                                finish()
+                            }
+                            CountdownMutationResult.CONFLICT -> showDataConflict()
+                        }
+                    },
+                )
             }
             .show()
     }
@@ -547,10 +578,35 @@ class EditorActivity : BaseActivity() {
         }
     }
 
-    private fun refreshBackgroundState() {
-        CountdownWidgetProvider.updateAllWidgets(this)
-        WidgetUpdateScheduler.ensureScheduled(this)
-        ArrivalNotificationScheduler.ensureScheduled(this)
+    private fun showDataConflict() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.data_conflict_title)
+            .setMessage(R.string.data_conflict_message)
+            .setNegativeButton(R.string.data_conflict_keep_editing, null)
+            .setPositiveButton(R.string.data_conflict_reload) { _, _ -> recreate() }
+            .show()
+    }
+
+    private fun setEditorBusy(busy: Boolean) {
+        setViewTreeEnabled(editorRoot, !busy)
+    }
+
+    private fun setViewTreeEnabled(view: View, enabled: Boolean) {
+        view.isEnabled = enabled
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                setViewTreeEnabled(view.getChildAt(index), enabled)
+            }
+        }
+    }
+
+    private fun refreshBackgroundStateInBackground() {
+        val context = applicationContext
+        CountdownIo.execute {
+            runCatching { CountdownWidgetProvider.updateAllWidgets(context) }
+            runCatching { WidgetUpdateScheduler.ensureScheduled(context) }
+            runCatching { ArrivalNotificationScheduler.ensureScheduled(context) }
+        }
     }
 
     private fun gridParams(heightDp: Int): GridLayout.LayoutParams = GridLayout.LayoutParams().apply {
