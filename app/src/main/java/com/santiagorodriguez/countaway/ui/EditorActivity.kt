@@ -251,6 +251,7 @@ class EditorActivity : BaseActivity() {
                     selectedRepeatRule = selectedRepeatRule,
                     today = snapshot.today,
                 ),
+                snapshot.today,
             )
         }
     }
@@ -276,7 +277,7 @@ class EditorActivity : BaseActivity() {
                 )
                 selectedReminder = next
                 refreshReminderSpinner(snapshot.today)
-                handleReminderSelectionEffect(effect)
+                handleReminderSelectionEffect(effect, snapshot.today)
             }
         }
     }
@@ -400,6 +401,7 @@ class EditorActivity : BaseActivity() {
                             today = snapshot.today,
                             selectedRepeatRule = selectedRepeatRule,
                         ),
+                        snapshot.today,
                     )
                 }
             },
@@ -467,7 +469,10 @@ class EditorActivity : BaseActivity() {
         }
     }
 
-    private fun handleReminderSelectionEffect(effect: ReminderSelectionEffect) {
+    private fun handleReminderSelectionEffect(
+        effect: ReminderSelectionEffect,
+        today: LocalDate,
+    ) {
         when (effect) {
             ReminderSelectionEffect.NONE -> Unit
             ReminderSelectionEffect.SHOW_SCHEDULE_UNAVAILABLE ->
@@ -476,7 +481,7 @@ class EditorActivity : BaseActivity() {
                 if (!ArrivalNotificationScheduler.hasNotificationPermission(this)) {
                     requestNotificationPermission()
                 } else {
-                    warnIfNotificationsBlocked(CountdownTime.snapshot().today)
+                    warnIfNotificationsBlocked(today)
                 }
             }
         }
