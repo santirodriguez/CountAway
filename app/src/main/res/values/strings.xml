@@ -118,9 +118,9 @@
     <string name="about_how_title">Make it useful</string>
     <string name="about_how_body">Create a date, add the CountAway widget to your home screen, and choose that countdown. Without the widget, this is mostly a very tasteful list of dates. The widget is where the fun starts.</string>
     <string name="about_how_steps">1. Create a countdown\n2. Add the widget\n3. Stop checking the calendar every five minutes</string>
-    <string name="about_privacy">Everything stays on this device. No accounts, ads, analytics, or network access.</string>
+    <string name="about_privacy">CountAway has no accounts, ads, analytics, or network access. Your data stays local unless you export a backup to a provider you choose.</string>
     <string name="backup_title">Local backup</string>
-    <string name="backup_description">Export or restore your countdowns using a JSON file you control.</string>
+    <string name="backup_description">Export or restore your countdowns using a plain JSON file you control. Where that file is stored depends on the provider you choose.</string>
     <string name="backup_export">Export backup</string>
     <string name="backup_import">Import backup</string>
     <string name="backup_export_success">Backup exported.</string>
