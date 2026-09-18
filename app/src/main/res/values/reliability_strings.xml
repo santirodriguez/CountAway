@@ -14,4 +14,8 @@
     <string name="notification_blocked_message">This reminder will stay saved, but Android will not deliver it until notifications are enabled for CountAway.</string>
     <string name="notification_open_settings">Open notification settings</string>
     <string name="title_too_long">Countdown titles can be up to %1$d characters.</string>
+    <string name="data_conflict_title">Countdown changed</string>
+    <string name="data_conflict_message">This countdown changed or was removed elsewhere. Reload the latest saved state, or keep editing this draft.</string>
+    <string name="data_conflict_reload">Reload</string>
+    <string name="data_conflict_keep_editing">Keep editing</string>
 </resources>
