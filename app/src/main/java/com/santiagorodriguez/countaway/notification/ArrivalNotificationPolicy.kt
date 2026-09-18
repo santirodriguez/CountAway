@@ -38,7 +38,18 @@ object ArrivalNotificationPolicy {
         events: List<CountdownEvent>,
         today: LocalDate,
         wasDelivered: (CountdownEvent, LocalDate) -> Boolean,
-        canAttempt: (CountdownEvent, LocalDate) -> Boolean = { _, _ -> true },
+    ): LocalDate? = nextPendingDate(
+        events = events,
+        today = today,
+        wasDelivered = wasDelivered,
+        canAttempt = { _, _ -> true },
+    )
+
+    fun nextPendingDate(
+        events: List<CountdownEvent>,
+        today: LocalDate,
+        wasDelivered: (CountdownEvent, LocalDate) -> Boolean,
+        canAttempt: (CountdownEvent, LocalDate) -> Boolean,
     ): LocalDate? = events.asSequence()
         .mapNotNull { event -> nextPendingDate(event, today, wasDelivered, canAttempt) }
         .minOrNull()
