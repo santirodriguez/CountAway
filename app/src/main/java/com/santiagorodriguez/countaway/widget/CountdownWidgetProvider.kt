@@ -13,6 +13,8 @@ import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.ArrivalMood
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
@@ -26,7 +28,7 @@ import java.time.format.FormatStyle
 class CountdownWidgetProvider : AppWidgetProvider() {
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        WidgetUpdateScheduler.ensureScheduled(context)
+        WidgetUpdateScheduler.ensureScheduled(context, CountdownTime.snapshot())
     }
 
     override fun onDisabled(context: Context) {
@@ -35,8 +37,9 @@ class CountdownWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
-        appWidgetIds.forEach { updateWidget(context, manager, it) }
-        WidgetUpdateScheduler.ensureScheduled(context)
+        val snapshot = CountdownTime.snapshot()
+        appWidgetIds.forEach { updateWidget(context, manager, it, snapshot.today) }
+        WidgetUpdateScheduler.ensureScheduled(context, snapshot)
     }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
@@ -57,13 +60,23 @@ class CountdownWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        fun updateAllWidgets(context: Context) {
+        fun updateAllWidgets(
+            context: Context,
+            snapshot: CountdownTimeSnapshot = CountdownTime.snapshot(),
+        ) {
             val manager = AppWidgetManager.getInstance(context)
             val component = ComponentName(context, CountdownWidgetProvider::class.java)
-            manager.getAppWidgetIds(component).forEach { updateWidget(context, manager, it) }
+            manager.getAppWidgetIds(component).forEach {
+                updateWidget(context, manager, it, snapshot.today)
+            }
         }
 
-        fun updateWidget(context: Context, manager: AppWidgetManager, appWidgetId: Int) {
+        fun updateWidget(
+            context: Context,
+            manager: AppWidgetManager,
+            appWidgetId: Int,
+            today: LocalDate = CountdownTime.snapshot().today,
+        ) {
             val displayContext = LanguageManager.localizedContext(context)
             val options = manager.getAppWidgetOptions(appWidgetId)
             val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 40)
@@ -79,7 +92,6 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val loadResult = CountdownRepository(context).loadResult()
             val theme = resolveTheme(displayContext, configuration?.appearance ?: WidgetAppearance.SYSTEM)
             val background = configuration?.background ?: WidgetBackground.CLASSIC
-            val today = LocalDate.now()
 
             applyTheme(context, views, theme, background, widthDp, heightDp)
             when (loadResult) {
