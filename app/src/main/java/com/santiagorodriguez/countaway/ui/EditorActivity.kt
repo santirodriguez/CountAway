@@ -1,6 +1,7 @@
 package com.santiagorodriguez.countaway.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.NotificationManager
@@ -210,6 +211,7 @@ class EditorActivity : BaseActivity() {
         super.onSaveInstanceState(outState)
     }
 
+    @SuppressLint("GestureBackNavigation")
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
