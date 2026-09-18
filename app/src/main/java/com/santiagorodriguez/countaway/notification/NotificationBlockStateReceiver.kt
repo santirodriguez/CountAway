@@ -3,6 +3,8 @@ package com.santiagorodriguez.countaway.notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.data.CountdownIo
 
 class NotificationBlockStateReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -10,8 +12,17 @@ class NotificationBlockStateReceiver : BroadcastReceiver() {
         val blocked = intent.getBooleanExtra(NotificationBlockStatePolicy.EXTRA_BLOCKED_STATE, true)
         val channelId = intent.getStringExtra(NotificationBlockStatePolicy.EXTRA_NOTIFICATION_CHANNEL_ID)
 
-        if (NotificationBlockStatePolicy.shouldReschedule(action, blocked, channelId)) {
-            ArrivalNotificationScheduler.ensureScheduled(context)
+        if (!NotificationBlockStatePolicy.shouldReschedule(action, blocked, channelId)) return
+
+        val pending = goAsync()
+        val appContext = context.applicationContext
+        val snapshot = CountdownTime.snapshot()
+        CountdownIo.execute {
+            try {
+                ArrivalNotificationScheduler.ensureScheduled(appContext, snapshot)
+            } finally {
+                pending.finish()
+            }
         }
     }
 }
