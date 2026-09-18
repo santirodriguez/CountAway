@@ -26,6 +26,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
+import com.santiagorodriguez.countaway.countdown.CountdownDateDomain
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
@@ -46,6 +47,7 @@ import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.UUID
@@ -313,7 +315,7 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun showDatePicker() {
-        DatePickerDialog(
+        val dialog = DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
                 val previousDate = selectedDate
@@ -335,7 +337,13 @@ class EditorActivity : BaseActivity() {
             selectedDate.year,
             selectedDate.monthValue - 1,
             selectedDate.dayOfMonth,
-        ).show()
+        )
+        val zone = ZoneId.systemDefault()
+        dialog.datePicker.minDate =
+            CountdownDateDomain.MIN_DATE.atStartOfDay(zone).toInstant().toEpochMilli()
+        dialog.datePicker.maxDate =
+            CountdownDateDomain.MAX_DATE.atStartOfDay(zone).toInstant().toEpochMilli()
+        dialog.show()
     }
 
     private fun renderDate() {
