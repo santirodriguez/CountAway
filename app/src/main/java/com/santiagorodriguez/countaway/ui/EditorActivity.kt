@@ -177,7 +177,11 @@ class EditorActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        temporalInvalidationController.start(CountdownTime.snapshot())
+        val snapshot = CountdownTime.snapshot()
+        temporalInvalidationController.start(snapshot)
+        if (editorInitialized) {
+            refreshReminderSpinner(snapshot.today)
+        }
     }
 
     override fun onPause() {
