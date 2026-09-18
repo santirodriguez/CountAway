@@ -12,6 +12,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
+import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import java.time.LocalDate
@@ -22,7 +23,7 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
     private val inflater = LayoutInflater.from(context)
     private val animatedMilestones = mutableSetOf<String>()
     private var items: List<CountdownEvent> = emptyList()
-    private var today: LocalDate = LocalDate.now()
+    private var today: LocalDate = CountdownTime.snapshot().today
 
     fun submit(events: List<CountdownEvent>, today: LocalDate) {
         this.items = events
