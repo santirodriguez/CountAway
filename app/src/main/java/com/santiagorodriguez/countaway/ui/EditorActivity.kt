@@ -29,6 +29,8 @@ import com.santiagorodriguez.countaway.countdown.CountdownCalculator
 import com.santiagorodriguez.countaway.countdown.CountdownDateDomain
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
@@ -43,11 +45,10 @@ import com.santiagorodriguez.countaway.model.RepeatRule
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationPolicy
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
+import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.UUID
@@ -67,8 +68,9 @@ class EditorActivity : BaseActivity() {
     private lateinit var deleteButton: Button
     private lateinit var repeatSpinner: Spinner
     private lateinit var reminderSpinner: Spinner
+    private lateinit var temporalInvalidationController: TemporalInvalidationController
     private var existingEvent: CountdownEvent? = null
-    private var selectedDate: LocalDate = LocalDate.now().plusDays(1)
+    private var selectedDate: LocalDate = CountdownTime.snapshot().today.plusDays(1)
     private var selectedType: EventType = EventType.TRIP
     private var selectedIcon: EventIcon = EventIcon.defaultFor(EventType.TRIP)
     private var selectedRepeatRule: RepeatRule = RepeatRule.NONE
@@ -95,6 +97,11 @@ class EditorActivity : BaseActivity() {
         deleteButton = findViewById(R.id.deleteButton)
         repeatSpinner = findViewById(R.id.repeatSpinner)
         reminderSpinner = findViewById(R.id.reminderSpinner)
+        temporalInvalidationController = TemporalInvalidationController(this) { snapshot ->
+            if (editorInitialized) {
+                refreshReminderSpinner(snapshot.today)
+            }
+        }
 
         setEditorBusy(true)
         loadEditorData(savedInstanceState)
@@ -168,6 +175,16 @@ class EditorActivity : BaseActivity() {
         setEditorBusy(false)
     }
 
+    override fun onResume() {
+        super.onResume()
+        temporalInvalidationController.start(CountdownTime.snapshot())
+    }
+
+    override fun onPause() {
+        temporalInvalidationController.stop()
+        super.onPause()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         if (editorInitialized) {
             outState.putString(STATE_TITLE, titleInput.text.toString())
@@ -181,6 +198,7 @@ class EditorActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
+        temporalInvalidationController.stop()
         loadGeneration += 1
         super.onDestroy()
     }
@@ -196,10 +214,10 @@ class EditorActivity : BaseActivity() {
         val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
         if (!granted) {
             selectedReminder = ReminderOption.OFF
-            refreshReminderSpinner()
+            refreshReminderSpinner(CountdownTime.snapshot().today)
             Toast.makeText(this, R.string.notification_permission_denied, Toast.LENGTH_SHORT).show()
         } else {
-            warnIfNotificationsBlocked()
+            warnIfNotificationsBlocked(CountdownTime.snapshot().today)
         }
     }
 
@@ -219,14 +237,15 @@ class EditorActivity : BaseActivity() {
             val next = RepeatRule.entries.getOrNull(position) ?: return@SimpleItemSelectedListener
             if (next == selectedRepeatRule) return@SimpleItemSelectedListener
             selectedRepeatRule = next
-            refreshReminderSpinner()
+            val snapshot = CountdownTime.snapshot()
+            refreshReminderSpinner(snapshot.today)
             handleReminderSelectionEffect(
                 ReminderEditorPolicy.repeatChangeEffect(
                     existingEvent = existingEvent,
                     selectedDate = selectedDate,
                     selectedReminder = selectedReminder,
                     selectedRepeatRule = selectedRepeatRule,
-                    today = LocalDate.now(),
+                    today = snapshot.today,
                 ),
             )
         }
@@ -238,31 +257,32 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun configureReminderSpinner() {
-        refreshReminderSpinner()
+        refreshReminderSpinner(CountdownTime.snapshot().today)
         reminderSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
             if (!suppressReminderSelection) {
                 val next = reminderOptions.getOrNull(position) ?: return@SimpleItemSelectedListener
+                val snapshot = CountdownTime.snapshot()
                 val effect = ReminderEditorPolicy.selectionEffect(
                     currentReminder = selectedReminder,
                     nextReminder = next,
                     existingEvent = existingEvent,
                     selectedDate = selectedDate,
-                    today = LocalDate.now(),
+                    today = snapshot.today,
                     selectedRepeatRule = selectedRepeatRule,
                 )
                 selectedReminder = next
-                refreshReminderSpinner()
+                refreshReminderSpinner(snapshot.today)
                 handleReminderSelectionEffect(effect)
             }
         }
     }
 
-    private fun refreshReminderSpinner() {
+    private fun refreshReminderSpinner(today: LocalDate) {
         val nextOptions = ReminderEditorPolicy.availableOptions(
             existingEvent = existingEvent,
             selectedDate = selectedDate,
             selectedReminder = selectedReminder,
-            today = LocalDate.now(),
+            today = today,
             selectedRepeatRule = selectedRepeatRule,
         )
         val optionsChanged = nextOptions != reminderOptions
@@ -358,6 +378,7 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun showDatePicker() {
+        val pickerSnapshot = CountdownTime.snapshot()
         val dialog = DatePickerDialog(
             this,
             { _, year, month, dayOfMonth ->
@@ -365,13 +386,14 @@ class EditorActivity : BaseActivity() {
                 selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
                 renderDate()
                 if (selectedDate != previousDate) {
-                    refreshReminderSpinner()
+                    val snapshot = CountdownTime.snapshot()
+                    refreshReminderSpinner(snapshot.today)
                     handleReminderSelectionEffect(
                         ReminderEditorPolicy.dateChangeEffect(
                             existingEvent = existingEvent,
                             selectedDate = selectedDate,
                             selectedReminder = selectedReminder,
-                            today = LocalDate.now(),
+                            today = snapshot.today,
                             selectedRepeatRule = selectedRepeatRule,
                         ),
                     )
@@ -381,11 +403,10 @@ class EditorActivity : BaseActivity() {
             selectedDate.monthValue - 1,
             selectedDate.dayOfMonth,
         )
-        val zone = ZoneId.systemDefault()
         dialog.datePicker.minDate =
-            CountdownDateDomain.MIN_DATE.atStartOfDay(zone).toInstant().toEpochMilli()
+            CountdownDateDomain.MIN_DATE.atStartOfDay(pickerSnapshot.zone).toInstant().toEpochMilli()
         dialog.datePicker.maxDate =
-            CountdownDateDomain.MAX_DATE.atStartOfDay(zone).toInstant().toEpochMilli()
+            CountdownDateDomain.MAX_DATE.atStartOfDay(pickerSnapshot.zone).toInstant().toEpochMilli()
         dialog.show()
     }
 
@@ -402,9 +423,13 @@ class EditorActivity : BaseActivity() {
             return
         }
 
-        val today = LocalDate.now()
-        val displayDate = CountdownOccurrenceResolver.displayDate(selectedDate, selectedRepeatRule, today)
-        val countdown = CountdownCalculator.value(today, displayDate)
+        val snapshot = CountdownTime.snapshot()
+        val displayDate = CountdownOccurrenceResolver.displayDate(
+            selectedDate,
+            selectedRepeatRule,
+            snapshot.today,
+        )
+        val countdown = CountdownCalculator.value(snapshot.today, displayDate)
         val status = when (countdown.status) {
             CountdownStatus.FUTURE,
             CountdownStatus.THREE_DAYS,
@@ -447,28 +472,28 @@ class EditorActivity : BaseActivity() {
                 if (!ArrivalNotificationScheduler.hasNotificationPermission(this)) {
                     requestNotificationPermission()
                 } else {
-                    warnIfNotificationsBlocked()
+                    warnIfNotificationsBlocked(CountdownTime.snapshot().today)
                 }
             }
         }
     }
 
-    private fun canSaveSelectedReminder(): Boolean = ReminderEditorPolicy.canSave(
+    private fun canSaveSelectedReminder(today: LocalDate): Boolean = ReminderEditorPolicy.canSave(
         existingEvent = existingEvent,
         selectedDate = selectedDate,
         selectedReminder = selectedReminder,
-        today = LocalDate.now(),
+        today = today,
         selectedRepeatRule = selectedRepeatRule,
     )
 
-    private fun warnIfNotificationsBlocked() {
+    private fun warnIfNotificationsBlocked(today: LocalDate) {
         if (
             selectedReminder == ReminderOption.OFF ||
             !ArrivalNotificationPolicy.isSchedulePossible(
                 selectedDate,
                 selectedReminder,
                 selectedRepeatRule,
-                LocalDate.now(),
+                today,
             ) ||
             !ArrivalNotificationScheduler.hasNotificationPermission(this) ||
             ArrivalNotificationScheduler.canPostNotifications(this)
@@ -506,6 +531,7 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun save() {
+        val snapshot = CountdownTime.snapshot()
         val title = titleInput.text.toString().trim()
         if (title.isEmpty()) {
             titleInput.error = getString(R.string.title_required)
@@ -516,7 +542,7 @@ class EditorActivity : BaseActivity() {
             titleInput.error = getString(R.string.title_too_long, CountdownValidation.MAX_TITLE_LENGTH)
             return
         }
-        if (!canSaveSelectedReminder()) {
+        if (!canSaveSelectedReminder(snapshot.today)) {
             Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
             return
         }
@@ -528,7 +554,7 @@ class EditorActivity : BaseActivity() {
             type = selectedType,
             icon = selectedIcon,
             reminder = selectedReminder,
-            createdAt = existingEvent?.createdAt ?: Instant.now(),
+            createdAt = existingEvent?.createdAt ?: snapshot.now.toInstant(),
             repeatRule = selectedRepeatRule,
         )
         val expectedEvent = existingEvent
@@ -549,6 +575,7 @@ class EditorActivity : BaseActivity() {
                         if (ArrivalNotificationPolicy.shouldResetDeliveryState(expectedEvent, event)) {
                             ArrivalNotificationState(this).remove(event.id)
                         }
+                        ArrivalNotifier.cancelEvent(this, event.id)
                         refreshBackgroundStateInBackground()
                         finish()
                     }
@@ -585,6 +612,7 @@ class EditorActivity : BaseActivity() {
                         when (mutation) {
                             CountdownMutationResult.APPLIED -> {
                                 ArrivalNotificationState(this).remove(event.id)
+                                ArrivalNotifier.cancelEvent(this, event.id)
                                 refreshBackgroundStateInBackground()
                                 finish()
                             }
@@ -640,9 +668,10 @@ class EditorActivity : BaseActivity() {
     private fun refreshBackgroundStateInBackground() {
         val context = applicationContext
         CountdownIo.execute {
-            runCatching { CountdownWidgetProvider.updateAllWidgets(context) }
-            runCatching { WidgetUpdateScheduler.ensureScheduled(context) }
-            runCatching { ArrivalNotificationScheduler.ensureScheduled(context) }
+            val snapshot = CountdownTime.snapshot()
+            runCatching { CountdownWidgetProvider.updateAllWidgets(context, snapshot) }
+            runCatching { WidgetUpdateScheduler.ensureScheduled(context, snapshot) }
+            runCatching { ArrivalNotificationScheduler.ensureScheduled(context, snapshot) }
         }
     }
 
