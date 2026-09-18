@@ -14,6 +14,8 @@ import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
@@ -23,6 +25,7 @@ import com.santiagorodriguez.countaway.ui.BaseActivity
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.InsetUtils
 import com.santiagorodriguez.countaway.ui.SimpleItemSelectedListener
+import com.santiagorodriguez.countaway.ui.TemporalInvalidationController
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -43,6 +46,7 @@ class WidgetConfigActivity : BaseActivity() {
     private var events: List<CountdownEvent> = emptyList()
     private var selectedEventId: String? = null
     private var selectedMode: WidgetEventSelection = WidgetEventSelection.FIXED
+    private lateinit var temporalInvalidationController: TemporalInvalidationController
     private var loadGeneration = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,6 +66,9 @@ class WidgetConfigActivity : BaseActivity() {
         InsetUtils.applySystemBarPadding(findViewById(R.id.widgetConfigRoot))
 
         repository = CountdownRepository(this)
+        temporalInvalidationController = TemporalInvalidationController(this) { snapshot ->
+            reloadEvents(snapshot)
+        }
         eventList = findViewById(R.id.widgetEventList)
         emptyState = findViewById(R.id.widgetEmptyState)
         appearanceSpinner = findViewById(R.id.widgetAppearanceSpinner)
@@ -145,7 +152,7 @@ class WidgetConfigActivity : BaseActivity() {
                 selectedMode = WidgetEventSelection.FIXED
                 selectedEventId = events[position - 1].id
             }
-            updateContentPreview()
+            updateContentPreview(CountdownTime.snapshot().today)
             setSaveEnabled(true)
         }
 
@@ -157,10 +164,15 @@ class WidgetConfigActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::repository.isInitialized) reloadEvents()
+        if (::repository.isInitialized) {
+            val snapshot = CountdownTime.snapshot()
+            temporalInvalidationController.start(snapshot)
+            reloadEvents(snapshot)
+        }
     }
 
     override fun onPause() {
+        temporalInvalidationController.stop()
         loadGeneration += 1
         super.onPause()
     }
@@ -177,7 +189,7 @@ class WidgetConfigActivity : BaseActivity() {
         super.onSaveInstanceState(outState)
     }
 
-    private fun reloadEvents() {
+    private fun reloadEvents(snapshot: CountdownTimeSnapshot = CountdownTime.snapshot()) {
         val generation = ++loadGeneration
         eventList.isEnabled = false
         setSaveEnabled(false)
@@ -188,12 +200,13 @@ class WidgetConfigActivity : BaseActivity() {
                 if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
                 renderEvents(
                     result.getOrElse { CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT) },
+                    snapshot.today,
                 )
             },
         )
     }
 
-    private fun renderEvents(result: CountdownLoadResult) {
+    private fun renderEvents(result: CountdownLoadResult, today: LocalDate) {
         if (result is CountdownLoadResult.Failure) {
             events = emptyList()
             eventList.isEnabled = false
@@ -211,7 +224,6 @@ class WidgetConfigActivity : BaseActivity() {
             return
         }
 
-        val today = LocalDate.now()
         events = CountdownEventOrder.sortedForDisplay((result as CountdownLoadResult.Success).events, today)
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
@@ -240,7 +252,7 @@ class WidgetConfigActivity : BaseActivity() {
             selectedEventId = null
             setSaveEnabled(false)
         }
-        updateContentPreview()
+        updateContentPreview(today)
     }
 
     private fun updateStylePreview() {
@@ -273,20 +285,20 @@ class WidgetConfigActivity : BaseActivity() {
         previewTitle.setTextColor(primaryColor)
         previewCount.setTextColor(accentColor)
         previewUnit.setTextColor(secondaryColor)
-        updateContentPreview()
+        updateContentPreview(CountdownTime.snapshot().today)
     }
 
-    private fun updateContentPreview() {
+    private fun updateContentPreview(today: LocalDate = CountdownTime.snapshot().today) {
         if (!::previewIcon.isInitialized) return
         val event = WidgetEventResolver.resolve(
             selection = selectedMode,
             eventId = selectedEventId,
             events = events,
-            today = LocalDate.now(),
+            today = today,
         )
 
         if (event != null) {
-            val content = WidgetEventContentFactory.from(event, LocalDate.now())
+            val content = WidgetEventContentFactory.from(event, today)
             previewIcon.setImageResource(content.iconRes)
             previewTitle.text = content.title
             previewCount.text = content.countText
