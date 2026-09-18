@@ -220,7 +220,7 @@ class WidgetConfigActivity : BaseActivity() {
             )
             emptyState.visibility = View.VISIBLE
             setSaveEnabled(false)
-            updateContentPreview()
+            updateContentPreview(today)
             return
         }
 
@@ -336,8 +336,9 @@ class WidgetConfigActivity : BaseActivity() {
         )
 
         val manager = AppWidgetManager.getInstance(this)
-        CountdownWidgetProvider.updateWidget(this, manager, appWidgetId)
-        WidgetUpdateScheduler.ensureScheduled(this)
+        val snapshot = CountdownTime.snapshot()
+        CountdownWidgetProvider.updateWidget(this, manager, appWidgetId, snapshot.today)
+        WidgetUpdateScheduler.ensureScheduled(this, snapshot)
 
         setResult(
             RESULT_OK,
