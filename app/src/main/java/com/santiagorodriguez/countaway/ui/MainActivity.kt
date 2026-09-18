@@ -10,6 +10,7 @@ import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
+import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
@@ -26,6 +27,7 @@ class MainActivity : BaseActivity() {
     private lateinit var emptyTitle: TextView
     private lateinit var emptyDescription: TextView
     private lateinit var addCountdownButton: Button
+    private var loadGeneration = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,13 +73,35 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        val generation = ++loadGeneration
         val today = LocalDate.now()
-        renderData(repository.loadResult(), today)
+        setAddEnabled(false)
+        countdownList.isEnabled = false
+
+        CountdownIo.submit(
+            task = { repository.loadResult() },
+            onComplete = { result ->
+                if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
+                renderData(
+                    result.getOrElse { CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT) },
+                    today,
+                )
+            },
+        )
+
         renderLanguageSelection()
         renderThemeButton()
-        CountdownWidgetProvider.updateAllWidgets(this)
-        WidgetUpdateScheduler.ensureScheduled(this)
-        ArrivalNotificationScheduler.ensureScheduled(this)
+        val context = applicationContext
+        CountdownIo.execute {
+            runCatching { CountdownWidgetProvider.updateAllWidgets(context) }
+            runCatching { WidgetUpdateScheduler.ensureScheduled(context) }
+            runCatching { ArrivalNotificationScheduler.ensureScheduled(context) }
+        }
+    }
+
+    override fun onPause() {
+        loadGeneration += 1
+        super.onPause()
     }
 
     private fun renderData(result: CountdownLoadResult, today: LocalDate) {
@@ -87,6 +111,7 @@ class MainActivity : BaseActivity() {
                 emptyStateIcon.visibility = View.VISIBLE
                 emptyTitle.setText(R.string.empty_title)
                 emptyDescription.setText(R.string.empty_description)
+                countdownList.isEnabled = true
                 setAddEnabled(true)
             }
             is CountdownLoadResult.Failure -> {
@@ -99,6 +124,7 @@ class MainActivity : BaseActivity() {
                     emptyTitle.setText(R.string.data_error_title)
                     emptyDescription.setText(R.string.data_error_description)
                 }
+                countdownList.isEnabled = false
                 setAddEnabled(false)
             }
         }
