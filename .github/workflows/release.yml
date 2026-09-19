@@ -578,31 +578,39 @@ jobs:
       matrix:
         include:
           - api: 26
-            system_image: "system-images;android-26;google_apis;x86_64"
-            sdk_channel: 0
-            ram_mb: 2048
+            platform_api: "26"
+            system_image_api: "26"
+            target: google_apis
+            channel: stable
+            ram_size: 2048M
+            boot_timeout: 300
           - api: 33
-            system_image: "system-images;android-33;google_apis;x86_64"
-            sdk_channel: 0
-            ram_mb: 2048
+            platform_api: "33"
+            system_image_api: "33"
+            target: google_apis
+            channel: stable
+            ram_size: 2048M
+            boot_timeout: 300
           - api: 36
-            system_image: "system-images;android-36;google_apis;x86_64"
-            sdk_channel: 0
-            ram_mb: 2048
+            platform_api: "36"
+            system_image_api: "36"
+            target: google_apis
+            channel: stable
+            ram_size: 2048M
+            boot_timeout: 300
           - api: 37
-            system_image: "system-images;android-37.0;google_apis_ps16k;x86_64"
-            sdk_channel: 3
-            ram_mb: 4096
+            platform_api: "37.0"
+            system_image_api: "37.0"
+            target: google_apis_ps16k
+            channel: canary
+            ram_size: 4096M
+            boot_timeout: 420
 
     env:
       API_LEVEL: ${{ matrix.api }}
-      SYSTEM_IMAGE: ${{ matrix.system_image }}
-      SDK_CHANNEL: ${{ matrix.sdk_channel }}
-      RAM_MB: ${{ matrix.ram_mb }}
       PACKAGE_ID: "com.santiagorodriguez.countaway"
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
-      AVD_NAME: countaway-api-${{ matrix.api }}
 
     steps:
       - name: Checkout exact candidate source
@@ -639,169 +647,89 @@ jobs:
             sha256sum -c "CountAway-v${VERSION}.apk.sha256"
           )
 
-      - name: Install Android ${{ matrix.api }} emulator image
+      - name: Enable KVM
         run: |
           set -euo pipefail
-
           test -e /dev/kvm
           sudo chmod 666 /dev/kvm
 
-          TEST_SDK_ROOT="${RUNNER_TEMP}/countaway-sdk-${API_LEVEL}"
-          ANDROID_AVD_HOME="${RUNNER_TEMP}/countaway-avd-${API_LEVEL}"
-          export TEST_SDK_ROOT ANDROID_AVD_HOME
-          mkdir -p acceptance-evidence "${TEST_SDK_ROOT}" "${ANDROID_AVD_HOME}"
-          {
-            printf 'TEST_SDK_ROOT=%s\n' "${TEST_SDK_ROOT}"
-            printf 'ANDROID_AVD_HOME=%s\n' "${ANDROID_AVD_HOME}"
-          } >> "${GITHUB_ENV}"
-
-          BOOTSTRAP_SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
-          test -x "${BOOTSTRAP_SDKMANAGER}"
-
-          yes | "${BOOTSTRAP_SDKMANAGER}" --sdk_root="${TEST_SDK_ROOT}" --licenses >/dev/null || true
-          "${BOOTSTRAP_SDKMANAGER}"             --sdk_root="${TEST_SDK_ROOT}"             --channel="${SDK_CHANNEL}"             --install "cmdline-tools;latest" >/dev/null
-
-          SDKMANAGER="${TEST_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
-          AVDMANAGER="${TEST_SDK_ROOT}/cmdline-tools/latest/bin/avdmanager"
-          EMULATOR="${TEST_SDK_ROOT}/emulator/emulator"
-          test -x "${SDKMANAGER}"
-          test -x "${AVDMANAGER}"
-
-          yes | "${SDKMANAGER}" --sdk_root="${TEST_SDK_ROOT}" --licenses >/dev/null || true
-          "${SDKMANAGER}"             --sdk_root="${TEST_SDK_ROOT}"             --channel="${SDK_CHANNEL}"             --install             "emulator"             "platform-tools"             "${SYSTEM_IMAGE}" >/dev/null
-
-          test -x "${EMULATOR}"
-          SDKMANAGER_VERSION="$("${SDKMANAGER}" --version | tail -n 1 | tr -d '\r')"
-
-          IMAGE_TAG="$(printf '%s' "${SYSTEM_IMAGE}" | cut -d';' -f3)"
-          IMAGE_ABI="$(printf '%s' "${SYSTEM_IMAGE}" | cut -d';' -f4)"
-          AVD_PATH="${ANDROID_AVD_HOME}/${AVD_NAME}.avd"
-
-          "${AVDMANAGER}" create avd             --force             --name "${AVD_NAME}"             --package "${SYSTEM_IMAGE}"             --abi "${IMAGE_TAG}/${IMAGE_ABI}"             --device "pixel_2"             --path "${AVD_PATH}"
-
-          CONFIG_INI="${AVD_PATH}/config.ini"
-          test -s "${CONFIG_INI}"
-          printf 'hw.ramSize=%s\n' "${RAM_MB}" >> "${CONFIG_INI}"
-          printf 'hw.keyboard=yes\n' >> "${CONFIG_INI}"
-          printf 'disk.dataPartition.size=4G\n' >> "${CONFIG_INI}"
-
-          AVD_LIST="$(
-            ANDROID_HOME="${TEST_SDK_ROOT}"             ANDROID_SDK_ROOT="${TEST_SDK_ROOT}"             ANDROID_AVD_HOME="${ANDROID_AVD_HOME}"             "${EMULATOR}" -list-avds
-          )"
-          if ! grep -Fxq "${AVD_NAME}" <<< "${AVD_LIST}"; then
-            echo "Created AVD is not discoverable by the isolated emulator SDK" >&2
-            printf 'Discovered AVDs:\n%s\n' "${AVD_LIST}" >&2
-            find "${ANDROID_AVD_HOME}" -maxdepth 2 -type f -print >&2 || true
-            exit 1
-          fi
-
-          {
-            echo "api_level=${API_LEVEL}"
-            echo "system_image=${SYSTEM_IMAGE}"
-            echo "sdk_channel=${SDK_CHANNEL}"
-            echo "sdkmanager_version=${SDKMANAGER_VERSION}"
-            echo "ram_mb=${RAM_MB}"
-            echo "avd_path=${AVD_PATH}"
-          } > "acceptance-evidence/emulator-contract-api-${API_LEVEL}.txt"
-
-          printf '%s\n' "${TEST_SDK_ROOT}/platform-tools" >> "${GITHUB_PATH}"
-
-      - name: Start emulator
+      - name: Prepare API acceptance script
+        env:
+          EMULATOR_PLATFORM_API: ${{ matrix.platform_api }}
+          EMULATOR_SYSTEM_IMAGE_API: ${{ matrix.system_image_api }}
+          EMULATOR_TARGET: ${{ matrix.target }}
+          EMULATOR_CHANNEL: ${{ matrix.channel }}
+          EMULATOR_RAM_SIZE: ${{ matrix.ram_size }}
+          EMULATOR_BOOT_TIMEOUT: ${{ matrix.boot_timeout }}
         run: |
           set -euo pipefail
 
           mkdir -p acceptance-evidence
-          EMULATOR="${TEST_SDK_ROOT}/emulator/emulator"
-          ADB="${TEST_SDK_ROOT}/platform-tools/adb"
-          EMULATOR_LOG="acceptance-evidence/emulator-api-${API_LEVEL}.log"
+          {
+            echo "api_level=${API_LEVEL}"
+            echo "platform_api=${EMULATOR_PLATFORM_API}"
+            echo "system_image_api=${EMULATOR_SYSTEM_IMAGE_API}"
+            echo "target=${EMULATOR_TARGET}"
+            echo "channel=${EMULATOR_CHANNEL}"
+            echo "ram_size=${EMULATOR_RAM_SIZE}"
+            echo "boot_timeout_seconds=${EMULATOR_BOOT_TIMEOUT}"
+            echo "emulator_runner_sha=a421e43855164a8197daf9d8d40fe71c6996bb0d"
+          } > "acceptance-evidence/emulator-contract-api-${API_LEVEL}.txt"
 
-          test -x "${EMULATOR}"
-          test -x "${ADB}"
+          cat > .countaway-acceptance.sh <<'ACCEPTANCE'
+          #!/usr/bin/env bash
+          set -euo pipefail
 
-          ANDROID_HOME="${TEST_SDK_ROOT}"           ANDROID_SDK_ROOT="${TEST_SDK_ROOT}"           ANDROID_AVD_HOME="${ANDROID_AVD_HOME}"           nohup "${EMULATOR}"             -avd "${AVD_NAME}"             -no-window             -noaudio             -no-boot-anim             -no-snapshot             -gpu swiftshader_indirect             -memory "${RAM_MB}"             -verbose             > "${EMULATOR_LOG}" 2>&1 &
-          EMULATOR_PID=$!
+          mkdir -p acceptance-evidence
 
-          "${ADB}" start-server
-          BOOTED=""
-          BOOT_ATTEMPTS=150
-          if [[ "${API_LEVEL}" -ge 37 ]]; then
-            BOOT_ATTEMPTS=210
-          fi
+          capture_runtime_state() {
+            set +e
+            adb shell dumpsys alarm > "acceptance-evidence/alarm-api-${API_LEVEL}.txt"
+            adb logcat -d > "acceptance-evidence/logcat-api-${API_LEVEL}.txt"
+            adb shell dumpsys package "${PACKAGE_ID}"               > "acceptance-evidence/debug-package-api-${API_LEVEL}.txt"
+            set -e
+          }
+          trap capture_runtime_state EXIT
 
-          for _ in $(seq 1 "${BOOT_ATTEMPTS}"); do
-            if ! kill -0 "${EMULATOR_PID}" 2>/dev/null; then
-              echo "Emulator process exited before Android booted" >&2
-              cat "${EMULATOR_LOG}" >&2
+          adb shell getprop ro.build.version.release             > "acceptance-evidence/android-release-api-${API_LEVEL}.txt"
+          adb shell getprop ro.build.version.sdk             > "acceptance-evidence/android-sdk-api-${API_LEVEL}.txt"
+
+          if [[ "${API_LEVEL}" == "33" ]]; then
+            PREVIOUS_APK="candidate/CountAway-v1.1.7.apk"
+            PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v1.1.7/CountAway-v1.1.7.apk"
+            PREVIOUS_APK_SHA256="fb777e14db0c58d111d0556b7e6d1101083a304e83a14adfd1b86d40852c90fc"
+            CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
+
+            curl --fail --location --silent --show-error --retry 2               "${PREVIOUS_APK_URL}"               --output "${PREVIOUS_APK}"
+            echo "${PREVIOUS_APK_SHA256}  ${PREVIOUS_APK}" | sha256sum -c -
+
+            adb install "${PREVIOUS_APK}"
+            adb shell am start -W               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"               > "acceptance-evidence/upgrade-1.1.7-launch-api-${API_LEVEL}.txt"
+            sleep 1
+            adb shell dumpsys package "${PACKAGE_ID}"               > "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
+
+            adb install -r "${CANDIDATE_APK}"
+            adb shell am start -W               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"               > "acceptance-evidence/upgrade-1.1.8-launch-api-${API_LEVEL}.txt"
+            sleep 2
+
+            PID="$(adb shell pidof "${PACKAGE_ID}" | tr -d '\r')"
+            if [[ -z "${PID}" ]]; then
+              adb logcat -d > "acceptance-evidence/upgrade-logcat-api-${API_LEVEL}.txt" || true
+              echo "CountAway did not remain alive after 1.1.7 -> ${VERSION} signed upgrade" >&2
               exit 1
             fi
 
-            if "${ADB}" get-state >/dev/null 2>&1; then
-              BOOTED="$("${ADB}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
-              if [[ "${BOOTED}" == "1" ]]; then
-                break
-              fi
-            fi
-            sleep 2
-          done
-
-          if [[ "${BOOTED}" != "1" ]]; then
-            echo "Android API ${API_LEVEL} did not boot within the bounded acceptance window" >&2
-            "${ADB}" devices -l >&2 || true
-            cat "${EMULATOR_LOG}" >&2
-            exit 1
+            adb shell dumpsys package "${PACKAGE_ID}"               > "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
+            grep -Fq "versionName=${VERSION}"               "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
+            grep -Eq 'versionCode=8([[:space:]]|$)'               "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
+            adb uninstall "${PACKAGE_ID}"
           fi
-
-          "${ADB}" shell input keyevent 82 || true
-          "${ADB}" shell settings put global window_animation_scale 0 || true
-          "${ADB}" shell settings put global transition_animation_scale 0 || true
-          "${ADB}" shell settings put global animator_duration_scale 0 || true
-          "${ADB}" shell getprop ro.build.version.release > "acceptance-evidence/android-release-api-${API_LEVEL}.txt"
-          "${ADB}" shell getprop ro.build.version.sdk > "acceptance-evidence/android-sdk-api-${API_LEVEL}.txt"
-
-      - name: Smoke signed upgrade from public 1.1.7
-        if: matrix.api == 33
-        run: |
-          set -euo pipefail
-
-          PREVIOUS_APK="candidate/CountAway-v1.1.7.apk"
-          PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v1.1.7/CountAway-v1.1.7.apk"
-          PREVIOUS_APK_SHA256="fb777e14db0c58d111d0556b7e6d1101083a304e83a14adfd1b86d40852c90fc"
-          CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
-
-          curl --fail --location --silent --show-error --retry 2             "${PREVIOUS_APK_URL}"             --output "${PREVIOUS_APK}"
-          echo "${PREVIOUS_APK_SHA256}  ${PREVIOUS_APK}" | sha256sum -c -
-
-          adb install "${PREVIOUS_APK}"
-          adb shell am start -W             -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"             > "acceptance-evidence/upgrade-1.1.7-launch-api-${API_LEVEL}.txt"
-          sleep 1
-          adb shell dumpsys package "${PACKAGE_ID}"             > "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
-
-          adb install -r "${CANDIDATE_APK}"
-          adb shell am start -W             -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"             > "acceptance-evidence/upgrade-1.1.8-launch-api-${API_LEVEL}.txt"
-          sleep 2
-
-          PID="$(adb shell pidof "${PACKAGE_ID}" | tr -d '\r')"
-          if [[ -z "${PID}" ]]; then
-            adb logcat -d > "acceptance-evidence/upgrade-logcat-api-${API_LEVEL}.txt" || true
-            echo "CountAway did not remain alive after 1.1.7 -> ${VERSION} signed upgrade" >&2
-            exit 1
-          fi
-
-          adb shell dumpsys package "${PACKAGE_ID}"             > "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
-          grep -Fq "versionName=${VERSION}" "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
-          grep -Eq 'versionCode=8([[:space:]]|$)' "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
-          adb uninstall "${PACKAGE_ID}"
-
-      - name: Smoke signed release APK
-        run: |
-          set -euo pipefail
 
           APK="candidate/CountAway-v${VERSION}.apk"
-          adb install -r "${APK}"
-
+          adb install "${APK}"
           adb shell am start -W             -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"             > "acceptance-evidence/signed-launch-api-${API_LEVEL}.txt"
-
           sleep 2
+
           PID="$(adb shell pidof "${PACKAGE_ID}" | tr -d '\r')"
           if [[ -z "${PID}" ]]; then
             adb logcat -d > "acceptance-evidence/signed-launch-logcat-api-${API_LEVEL}.txt" || true
@@ -812,17 +740,26 @@ jobs:
           adb shell dumpsys package "${PACKAGE_ID}"             > "acceptance-evidence/signed-package-api-${API_LEVEL}.txt"
           adb uninstall "${PACKAGE_ID}"
 
-      - name: Run Android instrumentation tests
-        run: ./gradlew connectedDebugAndroidTest --stacktrace
+          ./gradlew connectedDebugAndroidTest --stacktrace
+          ACCEPTANCE
 
-      - name: Capture runtime state
-        if: always()
-        run: |
-          set +e
-          adb shell dumpsys alarm > "acceptance-evidence/alarm-api-${API_LEVEL}.txt"
-          adb logcat -d > "acceptance-evidence/logcat-api-${API_LEVEL}.txt"
-          adb shell dumpsys package "${PACKAGE_ID}"             > "acceptance-evidence/debug-package-api-${API_LEVEL}.txt"
-          set -e
+          chmod +x .countaway-acceptance.sh
+
+      - name: Run Android API ${{ matrix.api }} acceptance
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.platform_api }}
+          system-image-api-level: ${{ matrix.system_image_api }}
+          target: ${{ matrix.target }}
+          arch: x86_64
+          profile: pixel_2
+          ram-size: ${{ matrix.ram_size }}
+          disk-size: 4G
+          channel: ${{ matrix.channel }}
+          emulator-boot-timeout: ${{ matrix.boot_timeout }}
+          enable-hw-keyboard: true
+          disable-animations: true
+          script: bash .countaway-acceptance.sh
 
       - name: Upload API ${{ matrix.api }} acceptance evidence
         if: always()
