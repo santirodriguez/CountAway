@@ -103,6 +103,9 @@
     <string name="widget_background_sunset">Sunset</string>
     <string name="widget_background_six">Ridge</string>
     <string name="widget_add_to_home">Save widget</string>
+    <string name="widget_add_from_event">Add widget for this countdown</string>
+    <string name="widget_save_before_pin">Save your changes before adding the widget.</string>
+    <string name="widget_open_countdown">Open countdown</string>
     <string name="widget_event_option">%1$s · %2$s</string>
 
     <string name="notification_channel_name">Countdown reminders</string>

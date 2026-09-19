@@ -2,8 +2,6 @@ package com.santiagorodriguez.countaway.ui
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -24,6 +22,7 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
+import com.santiagorodriguez.countaway.widget.WidgetPinning
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 
 class AboutActivity : BaseActivity() {
@@ -90,14 +89,7 @@ class AboutActivity : BaseActivity() {
     }
 
     private fun requestWidgetPin() {
-        val manager = AppWidgetManager.getInstance(this)
-        if (!manager.isRequestPinAppWidgetSupported) {
-            Toast.makeText(this, R.string.about_widget_pin_unavailable, Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val provider = ComponentName(this, CountdownWidgetProvider::class.java)
-        if (!manager.requestPinAppWidget(provider, null, null)) {
+        if (!WidgetPinning.request(this)) {
             Toast.makeText(this, R.string.about_widget_pin_unavailable, Toast.LENGTH_SHORT).show()
         }
     }

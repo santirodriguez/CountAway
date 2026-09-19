@@ -95,6 +95,9 @@
     <string name="widget_background_sunset">Capvespre</string>
     <string name="widget_background_six">Carena</string>
     <string name="widget_add_to_home">Desa el widget</string>
+    <string name="widget_add_from_event">Afegeix un widget per a aquest compte enrere</string>
+    <string name="widget_save_before_pin">Desa els canvis abans d’afegir el widget.</string>
+    <string name="widget_open_countdown">Obre el compte enrere</string>
     <string name="widget_event_option">%1$s · %2$s</string>
 
     <string name="notification_channel_name">Recordatoris de comptes enrere</string>

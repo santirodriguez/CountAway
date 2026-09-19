@@ -50,6 +50,7 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
+import com.santiagorodriguez.countaway.widget.WidgetPinning
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -68,6 +69,7 @@ class EditorActivity : BaseActivity() {
     private lateinit var dateButton: Button
     private lateinit var saveButton: Button
     private lateinit var shareButton: Button
+    private lateinit var addWidgetButton: Button
     private lateinit var deleteButton: Button
     private lateinit var repeatSpinner: Spinner
     private lateinit var reminderSpinner: Spinner
@@ -101,6 +103,7 @@ class EditorActivity : BaseActivity() {
         dateButton = findViewById(R.id.dateButton)
         saveButton = findViewById(R.id.saveButton)
         shareButton = findViewById(R.id.shareButton)
+        addWidgetButton = findViewById(R.id.addWidgetButton)
         deleteButton = findViewById(R.id.deleteButton)
         repeatSpinner = findViewById(R.id.repeatSpinner)
         reminderSpinner = findViewById(R.id.reminderSpinner)
@@ -179,6 +182,8 @@ class EditorActivity : BaseActivity() {
         saveButton.setOnClickListener { save() }
         shareButton.setOnClickListener { share() }
 
+        addWidgetButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
+        addWidgetButton.setOnClickListener { addWidgetForSavedEvent() }
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
         editorInitialized = true
@@ -483,6 +488,17 @@ class EditorActivity : BaseActivity() {
             startActivity(Intent.createChooser(sendIntent, null))
         }.onFailure {
             Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun addWidgetForSavedEvent() {
+        val event = existingEvent ?: return
+        if (baselineDraft != currentDraft()) {
+            Toast.makeText(this, R.string.widget_save_before_pin, Toast.LENGTH_LONG).show()
+            return
+        }
+        if (!WidgetPinning.request(this, event.id)) {
+            Toast.makeText(this, R.string.about_widget_pin_unavailable, Toast.LENGTH_SHORT).show()
         }
     }
 

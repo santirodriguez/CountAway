@@ -26,6 +26,14 @@ internal data class WidgetEventContent(
 }
 
 internal object WidgetEventResolver {
+    fun resolveNext(
+        events: List<CountdownEvent>,
+        today: LocalDate,
+    ): CountdownEvent? = CountdownEventOrder.sortedForDisplay(events, today)
+        .firstOrNull { event ->
+            !CountdownOccurrenceResolver.displayDate(event, today).isBefore(today)
+        }
+
     fun resolve(
         selection: WidgetEventSelection,
         eventId: String?,
@@ -33,10 +41,7 @@ internal object WidgetEventResolver {
         today: LocalDate,
     ): CountdownEvent? = when (selection) {
         WidgetEventSelection.FIXED -> eventId?.let { id -> events.firstOrNull { it.id == id } }
-        WidgetEventSelection.NEXT -> CountdownEventOrder.sortedForDisplay(events, today)
-            .firstOrNull { event ->
-                !CountdownOccurrenceResolver.displayDate(event, today).isBefore(today)
-            }
+        WidgetEventSelection.NEXT -> resolveNext(events, today)
     }
 }
 

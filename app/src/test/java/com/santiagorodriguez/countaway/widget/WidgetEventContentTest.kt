@@ -82,6 +82,7 @@ class WidgetEventContentTest {
 
         assertEquals("6", future.countTextFor(WidgetSize.COMPACT))
         assertEquals("✓ 6", elapsed.countTextFor(WidgetSize.COMPACT))
+        assertEquals("6", elapsed.countTextFor(WidgetSize.SHORT))
         assertEquals("6", elapsed.countTextFor(WidgetSize.STANDARD))
         assertEquals("6", elapsed.countTextFor(WidgetSize.LARGE))
     }
@@ -108,6 +109,15 @@ class WidgetEventContentTest {
                 today = today,
             ),
         )
+    }
+
+    @Test
+    fun nextResolutionCanBeComputedOnceAndReusedForAWidgetBatch() {
+        val past = event("past-batch", "Past", today.minusDays(2))
+        val next = event("next-batch", "Next", today.plusDays(3))
+        val later = event("later-batch", "Later", today.plusDays(8))
+
+        assertEquals(next, WidgetEventResolver.resolveNext(listOf(later, past, next), today))
     }
 
     @Test

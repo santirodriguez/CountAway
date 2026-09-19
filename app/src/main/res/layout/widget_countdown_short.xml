@@ -15,49 +15,50 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="4dp">
-
-        <TextView
-            android:id="@+id/widgetTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:fontFamily="sans-serif-medium"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:maxLines="2"
-            android:textSize="10sp" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="6dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="3dp">
 
         <ImageView
             android:id="@+id/widgetIcon"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
             android:contentDescription="@null"
             android:scaleType="centerInside" />
-
-        <TextView
-            android:id="@+id/widgetMilestone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:textSize="9sp"
-            android:visibility="gone" />
 
         <TextView
             android:id="@+id/widgetCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
             android:fontFamily="sans-serif-condensed"
             android:gravity="center"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:textSize="26sp"
+            android:textSize="24sp"
             android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widgetTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="7dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:maxLines="2"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/widgetMilestone"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/widgetUnit"

@@ -95,6 +95,9 @@
     <string name="widget_background_sunset">Atardecer</string>
     <string name="widget_background_six">Cresta</string>
     <string name="widget_add_to_home">Guardar widget</string>
+    <string name="widget_add_from_event">Agregá un widget para esta cuenta regresiva</string>
+    <string name="widget_save_before_pin">Guardá los cambios antes de agregar el widget.</string>
+    <string name="widget_open_countdown">Abrí la cuenta regresiva</string>
     <string name="widget_event_option">%1$s · %2$s</string>
 
     <string name="notification_channel_name">Recordatorios de cuentas regresivas</string>

@@ -67,6 +67,10 @@
         </receiver>
 
         <receiver
+            android:name=".widget.WidgetPinResultReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".notification.ArrivalNotificationReceiver"
             android:exported="false" />
 
