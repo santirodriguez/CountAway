@@ -88,7 +88,7 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 
 The first 1.1.8 RC was produced by Actions run 35129580248 and had APK SHA-256 `847368f26019971a04d62abc282bdb47c9f8408b120f2ced026d568f296c3625`.
 
-Normal CI only compiles instrumentation tests. A `release-candidate` run executes them on API 26/33/36/37 emulators after smoke-launching the exact signed candidate on each API. Physical-device, launcher, upgrade-preservation, Doze, TalkBack, and other human acceptance still remain separate release gates.
+Normal CI only compiles instrumentation tests. A `release-candidate` run executes them on API 26/33/36/37 emulators after smoke-launching the exact signed candidate on each API, and API 33 also verifies that the immutable public 1.1.7 APK can be upgraded in place to the signed candidate. That package-level smoke does not create user data inside 1.1.7, so data-preservation upgrade acceptance, physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
 
 ## Independent rebuild comparison
 
@@ -113,7 +113,7 @@ A release-candidate run:
 7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
 8. records APK checksum/size, size deltas, and validation reports;
 9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
-10. for `release-candidate`, boots API 26/33/36/37 emulators, smoke-launches the exact signed APK on each, then runs the compiled Android instrumentation suite from the same exact source SHA;
+10. for `release-candidate`, boots API 26/33/36/37 emulators, smoke-launches the exact signed APK on each, performs a signed package-level 1.1.7 -> candidate upgrade smoke on API 33 using the immutable public 1.1.7 APK digest, then runs the compiled Android instrumentation suite from the same exact source SHA;
 11. uploads the release candidate, validation evidence, reproducibility evidence, per-API acceptance evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:

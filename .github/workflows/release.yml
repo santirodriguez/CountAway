@@ -674,6 +674,40 @@ jobs:
           adb shell getprop ro.build.version.release > "acceptance-evidence/android-release-api-${API_LEVEL}.txt"
           adb shell getprop ro.build.version.sdk > "acceptance-evidence/android-sdk-api-${API_LEVEL}.txt"
 
+      - name: Smoke signed upgrade from public 1.1.7
+        if: matrix.api == 33
+        run: |
+          set -euo pipefail
+
+          PREVIOUS_APK="candidate/CountAway-v1.1.7.apk"
+          PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v1.1.7/CountAway-v1.1.7.apk"
+          PREVIOUS_APK_SHA256="fb777e14db0c58d111d0556b7e6d1101083a304e83a14adfd1b86d40852c90fc"
+          CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
+
+          curl --fail --location --silent --show-error --retry 2             "${PREVIOUS_APK_URL}"             --output "${PREVIOUS_APK}"
+          echo "${PREVIOUS_APK_SHA256}  ${PREVIOUS_APK}" | sha256sum -c -
+
+          adb install "${PREVIOUS_APK}"
+          adb shell am start -W             -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"             > "acceptance-evidence/upgrade-1.1.7-launch-api-${API_LEVEL}.txt"
+          sleep 1
+          adb shell dumpsys package "${PACKAGE_ID}"             > "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
+
+          adb install -r "${CANDIDATE_APK}"
+          adb shell am start -W             -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"             > "acceptance-evidence/upgrade-1.1.8-launch-api-${API_LEVEL}.txt"
+          sleep 2
+
+          PID="$(adb shell pidof "${PACKAGE_ID}" | tr -d '\r')"
+          if [[ -z "${PID}" ]]; then
+            adb logcat -d > "acceptance-evidence/upgrade-logcat-api-${API_LEVEL}.txt" || true
+            echo "CountAway did not remain alive after 1.1.7 -> ${VERSION} signed upgrade" >&2
+            exit 1
+          fi
+
+          adb shell dumpsys package "${PACKAGE_ID}"             > "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
+          grep -Fq "versionName=${VERSION}" "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
+          grep -Eq 'versionCode=8([[:space:]]|$)' "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
+          adb uninstall "${PACKAGE_ID}"
+
       - name: Smoke signed release APK
         run: |
           set -euo pipefail
