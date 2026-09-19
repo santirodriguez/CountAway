@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.countdown
 
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.model.RepeatRule
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.Instant
@@ -29,6 +30,22 @@ class CountdownEventOrderTest {
     }
 
     @Test
+    fun yearlyEventsSortByTheirNextOccurrence() {
+        val recurring = event(
+            "recurring",
+            LocalDate.of(2020, 8, 8),
+            repeatRule = RepeatRule.YEARLY,
+        )
+        val oneShot = event("one-shot", today.plusDays(5))
+        val past = event("past", today.minusDays(1))
+
+        assertEquals(
+            listOf("recurring", "one-shot", "past"),
+            CountdownEventOrder.sortedForDisplay(listOf(past, oneShot, recurring), today).map { it.id },
+        )
+    }
+
+    @Test
     fun equalDatesUseCreationTimeForStableOrdering() {
         val date = today.plusDays(5)
         val older = event("older", date, Instant.parse("2026-01-01T00:00:00Z"))
@@ -44,11 +61,13 @@ class CountdownEventOrderTest {
         id: String,
         date: LocalDate,
         createdAt: Instant = Instant.parse("2026-01-01T00:00:00Z"),
+        repeatRule: RepeatRule = RepeatRule.NONE,
     ) = CountdownEvent(
         id = id,
         title = id,
         date = date,
         type = EventType.CUSTOM,
         createdAt = createdAt,
+        repeatRule = repeatRule,
     )
 }

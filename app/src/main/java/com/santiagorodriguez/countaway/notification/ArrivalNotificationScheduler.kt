@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import java.time.LocalDate
@@ -18,7 +20,10 @@ object ArrivalNotificationScheduler {
     const val ACTION_ARRIVAL_CHECK = "com.santiagorodriguez.countaway.notification.ARRIVAL_CHECK"
     const val CHANNEL_ID = "countdown_arrivals"
 
-    fun ensureScheduled(context: Context) {
+    fun ensureScheduled(
+        context: Context,
+        snapshot: CountdownTimeSnapshot = CountdownTime.snapshot(),
+    ) {
         if (!canPostNotifications(context)) {
             cancel(context)
             return
@@ -29,24 +34,36 @@ object ArrivalNotificationScheduler {
             is CountdownLoadResult.Failure -> return
         }
         val state = ArrivalNotificationState(context)
-        val today = LocalDate.now()
-        val nextDate = ArrivalNotificationPolicy.nextPendingDate(events, today, state::wasDelivered)
-            ?: run {
-                cancel(context)
-                return
-            }
+        val nextDate = ArrivalNotificationPolicy.nextPendingDate(
+            events = events,
+            today = snapshot.today,
+            wasDelivered = state::wasDelivered,
+            canAttempt = state::canAttempt,
+        ) ?: run {
+            cancel(context)
+            return
+        }
 
+        val triggerMillis = triggerMillis(snapshot.now, nextDate) ?: run {
+            cancel(context)
+            return
+        }
         val alarmManager = context.getSystemService(AlarmManager::class.java)
-        val trigger = triggerTime(ZonedDateTime.now(), nextDate)
-        alarmManager.setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            trigger.toInstant().toEpochMilli(),
-            pendingIntent(context),
-        )
+        runCatching {
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                triggerMillis,
+                pendingIntent(context),
+            )
+        }.onFailure {
+            cancel(context)
+        }
     }
 
     fun cancel(context: Context) {
-        context.getSystemService(AlarmManager::class.java).cancel(pendingIntent(context))
+        runCatching {
+            context.getSystemService(AlarmManager::class.java).cancel(pendingIntent(context))
+        }
     }
 
     fun hasNotificationPermission(context: Context): Boolean =
@@ -63,10 +80,13 @@ object ArrivalNotificationScheduler {
         return channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE
     }
 
+    internal fun triggerMillis(now: ZonedDateTime, eventDate: LocalDate): Long? =
+        runCatching { triggerTime(now, eventDate).toInstant().toEpochMilli() }.getOrNull()
+
     internal fun triggerTime(now: ZonedDateTime, eventDate: LocalDate): ZonedDateTime {
         val scheduled = eventDate.atTime(REMINDER_TIME).atZone(now.zone)
         return if (!scheduled.isAfter(now) && eventDate == now.toLocalDate()) {
-            now.plusSeconds(10)
+            now.plusMinutes(RETRY_DELAY_MINUTES)
         } else {
             scheduled
         }
@@ -80,5 +100,6 @@ object ArrivalNotificationScheduler {
     )
 
     private val REMINDER_TIME: LocalTime = LocalTime.of(9, 0)
+    private const val RETRY_DELAY_MINUTES = 15L
     private const val REQUEST_CODE = 41_900
 }

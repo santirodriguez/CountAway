@@ -6,13 +6,18 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ListView
+import android.widget.Toast
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
+import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
+import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
@@ -26,6 +31,8 @@ class MainActivity : BaseActivity() {
     private lateinit var emptyTitle: TextView
     private lateinit var emptyDescription: TextView
     private lateinit var addCountdownButton: Button
+    private lateinit var temporalInvalidationController: TemporalInvalidationController
+    private var loadGeneration = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +47,7 @@ class MainActivity : BaseActivity() {
         emptyTitle = findViewById(R.id.emptyTitle)
         emptyDescription = findViewById(R.id.emptyDescription)
         addCountdownButton = findViewById(R.id.addCountdownButton)
+        temporalInvalidationController = TemporalInvalidationController(this, ::refreshTemporalState)
 
         countdownList.adapter = adapter
         countdownList.emptyView = emptyState
@@ -71,13 +79,47 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        val today = LocalDate.now()
-        renderData(repository.loadResult(), today)
+        val snapshot = CountdownTime.snapshot()
+        temporalInvalidationController.start(snapshot)
+        refreshTemporalState(snapshot)
         renderLanguageSelection()
         renderThemeButton()
-        CountdownWidgetProvider.updateAllWidgets(this)
-        WidgetUpdateScheduler.ensureScheduled(this)
-        ArrivalNotificationScheduler.ensureScheduled(this)
+    }
+
+    override fun onPause() {
+        temporalInvalidationController.stop()
+        loadGeneration += 1
+        super.onPause()
+    }
+
+    private fun refreshTemporalState(snapshot: CountdownTimeSnapshot) {
+        val generation = ++loadGeneration
+        setAddEnabled(false)
+        countdownList.isEnabled = false
+        val context = applicationContext
+
+        CountdownIo.submit(
+            task = {
+                val result = repository.loadResult()
+                if (result is CountdownLoadResult.Success) {
+                    ArrivalNotifier.reconcileVisibleNotifications(context, result.events, snapshot)
+                }
+                result
+            },
+            onComplete = { result ->
+                if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
+                renderData(
+                    result.getOrElse { CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT) },
+                    snapshot.today,
+                )
+            },
+        )
+
+        CountdownIo.execute {
+            runCatching { CountdownWidgetProvider.updateAllWidgets(context, snapshot) }
+            runCatching { WidgetUpdateScheduler.ensureScheduled(context, snapshot) }
+            runCatching { ArrivalNotificationScheduler.ensureScheduled(context, snapshot) }
+        }
     }
 
     private fun renderData(result: CountdownLoadResult, today: LocalDate) {
@@ -87,6 +129,7 @@ class MainActivity : BaseActivity() {
                 emptyStateIcon.visibility = View.VISIBLE
                 emptyTitle.setText(R.string.empty_title)
                 emptyDescription.setText(R.string.empty_description)
+                countdownList.isEnabled = true
                 setAddEnabled(true)
             }
             is CountdownLoadResult.Failure -> {
@@ -99,6 +142,7 @@ class MainActivity : BaseActivity() {
                     emptyTitle.setText(R.string.data_error_title)
                     emptyDescription.setText(R.string.data_error_description)
                 }
+                countdownList.isEnabled = false
                 setAddEnabled(false)
             }
         }
@@ -110,14 +154,21 @@ class MainActivity : BaseActivity() {
     }
 
     private fun selectLanguage(languageTag: String) {
-        LanguageManager.setLanguage(this, languageTag)
+        val current = LanguageManager.currentLanguageTag(this)
+        if (!LanguageManager.isFollowingSystem(this) && current == languageTag) {
+            LanguageManager.useSystemLanguage(this)
+            Toast.makeText(this, R.string.language_follow_system_enabled, Toast.LENGTH_SHORT).show()
+        } else {
+            LanguageManager.setLanguage(this, languageTag)
+        }
     }
 
     private fun renderLanguageSelection() {
         val current = LanguageManager.currentLanguageTag(this)
-        setLanguageButtonState(R.id.languageEnglishButton, current == LanguageManager.ENGLISH)
-        setLanguageButtonState(R.id.languageSpanishButton, current == LanguageManager.SPANISH)
-        setLanguageButtonState(R.id.languageCatalanButton, current == LanguageManager.CATALAN)
+        val explicit = !LanguageManager.isFollowingSystem(this)
+        setLanguageButtonState(R.id.languageEnglishButton, explicit && current == LanguageManager.ENGLISH)
+        setLanguageButtonState(R.id.languageSpanishButton, explicit && current == LanguageManager.SPANISH)
+        setLanguageButtonState(R.id.languageCatalanButton, explicit && current == LanguageManager.CATALAN)
     }
 
     private fun showThemePicker() {

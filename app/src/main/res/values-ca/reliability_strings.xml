@@ -14,4 +14,22 @@
     <string name="notification_blocked_message">El recordatori quedarà desat, però Android no el mostrarà fins que activis les notificacions de Ja Queda Poc.</string>
     <string name="notification_open_settings">Obre la configuració de notificacions</string>
     <string name="title_too_long">El títol pot tenir fins a %1$d caràcters.</string>
+    <string name="data_conflict_title">El compte enrere ha canviat</string>
+    <string name="data_conflict_message">Aquest compte enrere ha canviat o s’ha eliminat en un altre lloc. Torna a carregar l’últim estat desat o continua editant aquest esborrany.</string>
+    <string name="data_conflict_reload">Torna a carregar</string>
+    <string name="data_conflict_keep_editing">Continua editant</string>
+    <string name="language_follow_system_enabled">Seguint l’idioma del sistema.</string>
+    <string name="event_meta_yearly">%1$s · %2$s · Anual</string>
+    <string name="schedule_next_occurrence">Propera data: %1$s · Es repeteix cada any.</string>
+    <string name="schedule_next_reminder">Proper recordatori: %1$s · cap a les 09:00.</string>
+    <string name="schedule_leap_day_note">Els anys no bixests, el 29 de febrer es repeteix el 28 de febrer.</string>
+    <string name="unsaved_changes_title">Vols descartar els canvis sense desar?</string>
+    <string name="unsaved_changes_message">Aquest esborrany té canvis que encara no has desat.</string>
+    <string name="unsaved_changes_discard">Descarta</string>
+    <string name="external_action_unavailable">No hi ha cap app disponible per a aquesta acció.</string>
+    <string name="backup_provider_unavailable">No hi ha cap proveïdor de documents disponible.</string>
+    <string name="share_unavailable">No hi ha cap app disponible per compartir aquest compte enrere.</string>
+    <string name="backup_import_confirm_details">Esdeveniments de la còpia: %1$d\nDesats actualment: %2$d\n\nNomés se substitueixen els comptes enrere. No es restaura la ubicació dels widgets.</string>
+    <string name="backup_import_confirm_details_unknown">Esdeveniments de la còpia: %1$d\nNo s’ha pogut llegir quants n’hi ha desats ara.\n\nNomés se substitueixen els comptes enrere. No es restaura la ubicació dels widgets.</string>
+    <string name="backup_export_current_first">Exporta els actuals primer</string>
 </resources>

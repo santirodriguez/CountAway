@@ -1,0 +1,1 @@
+Ahora podés repetir cuentas regresivas cada año en la app, los widgets, al compartir, en las copias y en los recordatorios. Mejoramos la seguridad de guardado/importación, los reintentos y cambios de fecha/hora. Los widgets siguen el tema real del sistema, se restauran mejor, se adaptan a más tamaños y podés agregarlos desde una cuenta guardada.

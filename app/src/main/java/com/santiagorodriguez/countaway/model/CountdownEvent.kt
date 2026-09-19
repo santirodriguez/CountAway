@@ -11,4 +11,5 @@ data class CountdownEvent(
     val icon: EventIcon = EventIcon.defaultFor(type),
     val reminder: ReminderOption = ReminderOption.OFF,
     val createdAt: Instant,
+    val repeatRule: RepeatRule = RepeatRule.NONE,
 )

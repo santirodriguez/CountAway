@@ -4,10 +4,14 @@ import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
+import com.santiagorodriguez.countaway.model.RepeatRule
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.nio.ByteBuffer
+import java.nio.charset.CharacterCodingException
+import java.nio.charset.CodingErrorAction
 import java.time.Instant
 import java.time.LocalDate
 
@@ -25,7 +29,8 @@ object CountdownStorageSchema {
     const val LEGACY_VERSION = 1
     const val PREVIOUS_VERSION = 2
     const val NOTIFICATION_VERSION = 3
-    const val CURRENT_VERSION = 4
+    const val REMINDER_VERSION = 4
+    const val CURRENT_VERSION = 5
 
     fun isSupported(version: Int): Boolean = version in LEGACY_VERSION..CURRENT_VERSION
 
@@ -33,6 +38,16 @@ object CountdownStorageSchema {
         isSupported(version) -> null
         version > CURRENT_VERSION -> CountdownDataProblem.UNSUPPORTED_SCHEMA
         else -> CountdownDataProblem.CORRUPT
+    }
+
+    fun repeatRuleFor(version: Int, rawStorageKey: String?): RepeatRule? = when (version) {
+        LEGACY_VERSION,
+        PREVIOUS_VERSION,
+        NOTIFICATION_VERSION,
+        REMINDER_VERSION,
+        -> RepeatRule.NONE
+        CURRENT_VERSION -> rawStorageKey?.let(RepeatRule::fromStorageKey)
+        else -> null
     }
 }
 
@@ -50,7 +65,17 @@ object CountdownStorageCodec {
             }
             output.write(buffer, 0, count)
         }
-        return output.toString(Charsets.UTF_8.name())
+
+        return try {
+            Charsets.UTF_8
+                .newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(output.toByteArray()))
+                .toString()
+        } catch (error: CharacterCodingException) {
+            throw CountdownDataException(CountdownDataProblem.CORRUPT, error)
+        }
     }
 
     fun decode(payload: String): List<CountdownEvent> = decodePayload(payload, enforceImportLimits = false)
@@ -66,7 +91,11 @@ object CountdownStorageCodec {
                 throw CountdownDataException(CountdownDataProblem.CORRUPT)
             }
 
-            val schemaVersion = root.getInt(KEY_SCHEMA_VERSION)
+            val rawSchemaVersion = root.get(KEY_SCHEMA_VERSION)
+            if (rawSchemaVersion !is Int) {
+                throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            }
+            val schemaVersion = rawSchemaVersion
             CountdownStorageSchema.problemFor(schemaVersion)?.let { problem ->
                 throw CountdownDataException(problem)
             }
@@ -115,6 +144,7 @@ object CountdownStorageCodec {
             CountdownStorageSchema.LEGACY_VERSION -> EventType.fromLegacyName(rawType)
             CountdownStorageSchema.PREVIOUS_VERSION,
             CountdownStorageSchema.NOTIFICATION_VERSION,
+            CountdownStorageSchema.REMINDER_VERSION,
             CountdownStorageSchema.CURRENT_VERSION,
             -> EventType.fromStorageKey(rawType)
             else -> null
@@ -126,9 +156,10 @@ object CountdownStorageCodec {
             -> EventIcon.defaultFor(type)
             CountdownStorageSchema.NOTIFICATION_VERSION ->
                 EventIcon.fromStorageKey(json.optString(KEY_ICON)) ?: EventIcon.defaultFor(type)
-            CountdownStorageSchema.CURRENT_VERSION ->
-                EventIcon.fromStorageKey(json.getString(KEY_ICON))
-                    ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            CountdownStorageSchema.REMINDER_VERSION,
+            CountdownStorageSchema.CURRENT_VERSION,
+            -> EventIcon.fromStorageKey(json.getString(KEY_ICON))
+                ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
             else -> throw CountdownDataException(CountdownDataProblem.CORRUPT)
         }
 
@@ -142,11 +173,21 @@ object CountdownStorageCodec {
                 } else {
                     ReminderOption.OFF
                 }
-            CountdownStorageSchema.CURRENT_VERSION ->
-                ReminderOption.fromStorageKey(json.getString(KEY_REMINDER))
-                    ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            CountdownStorageSchema.REMINDER_VERSION,
+            CountdownStorageSchema.CURRENT_VERSION,
+            -> ReminderOption.fromStorageKey(json.getString(KEY_REMINDER))
+                ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
             else -> throw CountdownDataException(CountdownDataProblem.CORRUPT)
         }
+
+        val repeatRule = CountdownStorageSchema.repeatRuleFor(
+            schemaVersion,
+            if (schemaVersion == CountdownStorageSchema.CURRENT_VERSION) {
+                json.getString(KEY_REPEAT_RULE)
+            } else {
+                null
+            },
+        ) ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
 
         return CountdownEvent(
             id = json.getString(KEY_ID),
@@ -156,6 +197,7 @@ object CountdownStorageCodec {
             icon = icon,
             reminder = reminder,
             createdAt = Instant.parse(json.getString(KEY_CREATED_AT)),
+            repeatRule = repeatRule,
         )
     }
 
@@ -166,6 +208,7 @@ object CountdownStorageCodec {
         .put(KEY_TYPE, event.type.storageKey)
         .put(KEY_ICON, event.icon.storageKey)
         .put(KEY_REMINDER, event.reminder.storageKey)
+        .put(KEY_REPEAT_RULE, event.repeatRule.storageKey)
         .put(KEY_CREATED_AT, event.createdAt.toString())
 
     private const val KEY_SCHEMA_VERSION = "schemaVersion"
@@ -176,6 +219,7 @@ object CountdownStorageCodec {
     private const val KEY_TYPE = "type"
     private const val KEY_ICON = "iconKey"
     private const val KEY_REMINDER = "reminderKey"
+    private const val KEY_REPEAT_RULE = "repeatRule"
     private const val KEY_NOTIFY_ON_ARRIVAL = "notifyOnArrival"
     private const val KEY_CREATED_AT = "createdAt"
     private const val READ_BUFFER_BYTES = 16 * 1024

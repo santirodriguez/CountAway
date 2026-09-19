@@ -6,6 +6,7 @@
     <color name="foreground">#0C1830</color>
     <color name="secondary_text">#607089</color>
     <color name="accent">#13BEB9</color>
+    <color name="accent_text">#0B6B68</color>
     <color name="accent_soft">#DDF7F5</color>
     <color name="on_accent">#031331</color>
     <color name="outline">#D8E1EC</color>

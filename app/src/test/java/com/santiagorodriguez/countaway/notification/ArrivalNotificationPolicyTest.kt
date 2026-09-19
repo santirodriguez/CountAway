@@ -132,7 +132,39 @@ class ArrivalNotificationPolicyTest {
             ZonedDateTime.of(2026, 8, 7, 9, 0, 0, 0, zone),
             ArrivalNotificationScheduler.triggerTime(before, today),
         )
-        assertEquals(after.plusSeconds(10), ArrivalNotificationScheduler.triggerTime(after, today))
+        assertEquals(after.plusMinutes(15), ArrivalNotificationScheduler.triggerTime(after, today))
+    }
+
+    @Test
+    fun exhaustedOneShotDeliveryDoesNotCreateAnIndefiniteRetryLoop() {
+        val event = event("failed", today, ReminderOption.ON_DAY)
+
+        assertNull(
+            ArrivalNotificationPolicy.nextPendingDate(
+                events = listOf(event),
+                today = today,
+                wasDelivered = { _, _ -> false },
+                canAttempt = { _, _ -> false },
+            ),
+        )
+    }
+
+    @Test
+    fun advanceReminderCanCrossTheYearBoundaryUsingCivilDates() {
+        val event = event("new-year", LocalDate.of(2027, 1, 2), ReminderOption.THREE_DAYS)
+
+        assertEquals(
+            LocalDate.of(2026, 12, 30),
+            ArrivalNotificationPolicy.scheduledDate(event, LocalDate.of(2026, 12, 30)),
+        )
+    }
+
+    @Test
+    fun extremeUnexpectedDateCannotOverflowSchedulerIntoACrash() {
+        val zone = ZoneId.of("UTC")
+        val now = ZonedDateTime.of(2026, 8, 7, 8, 0, 0, 0, zone)
+
+        assertNull(ArrivalNotificationScheduler.triggerMillis(now, LocalDate.MAX))
     }
 
     private fun event(id: String, date: LocalDate, reminder: ReminderOption): CountdownEvent = CountdownEvent(

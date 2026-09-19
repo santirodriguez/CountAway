@@ -26,10 +26,11 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 
 ## What it does
 
-- Multiple local countdowns with presets and custom icons
-- Compact 1×1 and resizable home-screen widgets
+- Multiple local countdowns with presets, custom icons, and optional yearly recurrence
+- Compact 1×1 and responsive home-screen widgets, including wide-short layouts
 - Fixed-event widgets or an automatic **Next countdown** mode
 - Nine widget backgrounds with a live preview and system, light, and dark appearance
+- Direct home-screen widget pinning from a saved countdown on supported launchers
 - Optional local reminders on the event day or 1, 3, or 7 days before
 - Share any countdown through Android's regular share sheet
 - Local JSON backup and restore through Android's document picker
@@ -58,14 +59,14 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 
 ## Privacy
 
-CountAway stores everything on your device and has no Internet permission. It does not need your location, contacts, camera, microphone, or a suspiciously creative excuse to collect any of them. If you enable reminders, Android may ask for notification permission. Backup and restore use Android's system document picker and do not require broad storage access.
+CountAway keeps its app data local and has no Internet permission. It does not need your location, contacts, camera, microphone, or a suspiciously creative excuse to collect any of them. If you enable reminders, Android may ask for notification permission. If you explicitly export a backup through Android's system document picker, the destination is the document provider you choose; CountAway itself still performs no network access and requires no broad storage permission.
 
 ## Build
 
 Requires JDK 17 and Android SDK 36.
 
 ```bash
-./gradlew test lint assembleDebug assembleRelease
+./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease
 ```
 
 Maintainer signing and release steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md). F-Droid preparation and submission notes are in [`docs/FDROID.md`](docs/FDROID.md).

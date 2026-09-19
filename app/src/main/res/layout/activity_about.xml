@@ -34,7 +34,7 @@
             android:paddingTop="4dp"
             android:paddingEnd="10dp"
             android:paddingBottom="4dp"
-            android:textColor="@color/accent"
+            android:textColor="@color/accent_text"
             android:textSize="12sp" />
 
         <LinearLayout
@@ -88,7 +88,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
                     android:text="@string/about_step_one"
-                    android:textColor="@color/accent"
+                    android:textColor="@color/accent_text"
                     android:textSize="13sp" />
 
                 <TextView
@@ -131,7 +131,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
                     android:text="@string/about_step_two"
-                    android:textColor="@color/accent"
+                    android:textColor="@color/accent_text"
                     android:textSize="13sp" />
 
                 <TextView
@@ -172,7 +172,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
                     android:text="@string/about_step_three"
-                    android:textColor="@color/accent"
+                    android:textColor="@color/accent_text"
                     android:textSize="13sp" />
 
                 <LinearLayout

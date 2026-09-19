@@ -25,19 +25,16 @@ object LanguageManager {
         localizedContext(context, currentLanguageTag(context))
 
     fun currentLanguageTag(context: Context): String {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val platformLocales = context.getSystemService(LocaleManager::class.java).applicationLocales
-            if (!platformLocales.isEmpty) {
-                return canonicalTag(platformLocales[0])
-            }
-        }
-
-        storedLanguageTag(context)?.let { return it }
-        return canonicalTag(context.resources.configuration.locales[0])
+        explicitLanguageTag(context)?.let { return it }
+        return SupportedLanguagePolicy.firstSupportedTag(systemLocales(context))
+            ?: ENGLISH
     }
 
+    fun isFollowingSystem(context: Context): Boolean = explicitLanguageTag(context) == null
+
     fun setLanguage(activity: Activity, languageTag: String) {
-        val canonical = canonicalTag(Locale.forLanguageTag(languageTag))
+        val canonical = SupportedLanguagePolicy.canonicalSupportedTag(Locale.forLanguageTag(languageTag))
+            ?: ENGLISH
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -55,14 +52,27 @@ object LanguageManager {
         }
     }
 
+    fun useSystemLanguage(activity: Activity) {
+        activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .remove(KEY_LANGUAGE)
+            .apply()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity.getSystemService(LocaleManager::class.java).applicationLocales =
+                LocaleList.getEmptyLocaleList()
+        } else {
+            activity.recreate()
+        }
+    }
+
     fun syncPlatformLocale(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
 
         val localeManager = context.getSystemService(LocaleManager::class.java)
         if (!localeManager.applicationLocales.isEmpty) {
-            val currentLocale = localeManager.applicationLocales[0]
-            val canonical = canonicalTag(currentLocale)
-            if (currentLocale.toLanguageTag() != canonical) {
+            val canonical = firstSupportedTag(localeManager.applicationLocales)
+            if (canonical != null && localeManager.applicationLocales.toLanguageTags() != canonical) {
                 localeManager.applicationLocales = LocaleList.forLanguageTags(canonical)
             }
             return
@@ -80,7 +90,7 @@ object LanguageManager {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val platformLocales = context.getSystemService(LocaleManager::class.java).applicationLocales
             if (!platformLocales.isEmpty) {
-                return canonicalTag(platformLocales[0])
+                return firstSupportedTag(platformLocales)
             }
         }
         return storedLanguageTag(context)
@@ -91,7 +101,7 @@ object LanguageManager {
         val stored = preferences.getString(KEY_LANGUAGE, null)
         val normalized = stored
             ?.let(Locale::forLanguageTag)
-            ?.let(::canonicalSupportedTag)
+            ?.let(SupportedLanguagePolicy::canonicalSupportedTag)
         if (stored != null && normalized != null && stored != normalized) {
             preferences.edit().putString(KEY_LANGUAGE, normalized).apply()
         }
@@ -106,13 +116,18 @@ object LanguageManager {
         return context.createConfigurationContext(configuration)
     }
 
-    private fun canonicalTag(locale: Locale): String =
-        canonicalSupportedTag(locale) ?: ENGLISH
-
-    private fun canonicalSupportedTag(locale: Locale): String? = when (locale.language) {
-        "en" -> ENGLISH
-        "es" -> SPANISH
-        "ca" -> CATALAN
-        else -> null
+    private fun systemLocales(context: Context): List<Locale> {
+        val locales = context.resources.configuration.locales
+        return buildList {
+            for (index in 0 until locales.size()) {
+                add(locales[index])
+            }
+        }
     }
+
+    private fun firstSupportedTag(locales: LocaleList): String? = buildList {
+        for (index in 0 until locales.size()) {
+            add(locales[index])
+        }
+    }.let(SupportedLanguagePolicy::firstSupportedTag)
 }

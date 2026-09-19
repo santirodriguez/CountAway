@@ -10,9 +10,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
+import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
+import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
+import com.santiagorodriguez.countaway.model.RepeatRule
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -21,7 +24,7 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
     private val inflater = LayoutInflater.from(context)
     private val animatedMilestones = mutableSetOf<String>()
     private var items: List<CountdownEvent> = emptyList()
-    private var today: LocalDate = LocalDate.now()
+    private var today: LocalDate = CountdownTime.snapshot().today
 
     fun submit(events: List<CountdownEvent>, today: LocalDate) {
         this.items = events
@@ -38,7 +41,8 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: inflater.inflate(R.layout.item_countdown, parent, false)
         val event = getItem(position)
-        val countdown = CountdownCalculator.value(today, event.date)
+        val displayDate = CountdownOccurrenceResolver.displayDate(event, today)
+        val countdown = CountdownCalculator.value(today, displayDate)
         val locale = context.resources.configuration.locales[0]
         val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
@@ -48,13 +52,22 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
             contentDescription = context.getString(EventIconPresentation.labelRes(displayedIcon))
         }
         view.findViewById<TextView>(R.id.eventTitle).text = event.title
-        view.findViewById<TextView>(R.id.eventMeta).text = context.getString(
-            R.string.event_meta,
-            context.getString(EventTypePresentation.labelRes(event.type)),
-            event.date.format(dateFormatter),
-        )
+        val meta = if (event.repeatRule == RepeatRule.YEARLY) {
+            context.getString(
+                R.string.event_meta_yearly,
+                context.getString(EventTypePresentation.labelRes(event.type)),
+                displayDate.format(dateFormatter),
+            )
+        } else {
+            context.getString(
+                R.string.event_meta,
+                context.getString(EventTypePresentation.labelRes(event.type)),
+                displayDate.format(dateFormatter),
+            )
+        }
+        view.findViewById<TextView>(R.id.eventMeta).text = meta
 
-        view.findViewById<TextView>(R.id.eventStatus).apply {
+        val statusView = view.findViewById<TextView>(R.id.eventStatus).apply {
             text = when (countdown.status) {
                 CountdownStatus.FUTURE -> context.getString(R.string.status_days, countdown.days)
                 CountdownStatus.THREE_DAYS -> "✦ 3"
@@ -78,7 +91,7 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
             alpha = 1f
 
             if (countdown.status in MILESTONE_STATUSES) {
-                val animationKey = "${event.id}:${event.date}:${countdown.status}"
+                val animationKey = "${event.id}:$displayDate:${countdown.status}"
                 if (animatedMilestones.add(animationKey)) {
                     scaleX = 0.94f
                     scaleY = 0.94f
@@ -93,6 +106,8 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
                 }
             }
         }
+        view.contentDescription = listOf(event.title, meta, statusView.contentDescription)
+            .joinToString(", ")
 
         return view
     }
