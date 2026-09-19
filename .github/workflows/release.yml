@@ -452,7 +452,6 @@ jobs:
             app/build/test-results/
             app/build/outputs/apk/androidTest/debug/
           if-no-files-found: warn
-          retention-days: 90
 
       - name: Upload release candidate
         if: steps.version.outputs.prepare_release == 'false'
@@ -461,7 +460,6 @@ jobs:
           name: CountAway-v${{ steps.version.outputs.version }}-release-candidate
           path: dist/
           if-no-files-found: error
-          retention-days: 14
 
       - name: Upload release bundle
         if: steps.version.outputs.prepare_release == 'true'
@@ -472,7 +470,6 @@ jobs:
             dist/CountAway-v${{ steps.version.outputs.version }}.apk
             dist/CountAway-v${{ steps.version.outputs.version }}.apk.sha256
           if-no-files-found: error
-          retention-days: 14
 
       - name: Upload R8 mapping
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -480,7 +477,6 @@ jobs:
           name: CountAway-v${{ steps.version.outputs.version }}-r8-mapping
           path: app/build/outputs/mapping/release/
           if-no-files-found: error
-          retention-days: 90
 
   reproducibility-check:
     name: Rebuild unsigned APK independently
@@ -539,7 +535,6 @@ jobs:
           name: CountAway-v${{ needs.build-signed-apk.outputs.version }}-reproducibility-${{ needs.build-signed-apk.outputs.source_sha }}
           path: reproducibility-evidence/
           if-no-files-found: warn
-          retention-days: 90
 
   draft-release:
     name: Prepare draft GitHub Release

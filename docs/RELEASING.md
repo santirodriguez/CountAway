@@ -69,9 +69,9 @@ Do not replace the pinned signing toolchain with “latest” without re-validat
 
 ## Validation evidence
 
-Android CI retains source identity, test results, lint/build reports, and the compiled instrumentation-test APK for 30 days.
+Android CI retains source identity, test results, lint/build reports, and the compiled instrumentation-test APK through the repository's GitHub Actions artifact-retention policy.
 
-Release-candidate and draft-preparation runs retain a separate validation artifact for 90 days. It records, as applicable:
+Release-candidate and draft-preparation runs retain their validation/reproducibility artifacts through that same repository policy. The currently observed repository policy expires Actions artifacts after 7 days, so review or download release evidence inside that window unless the repository setting is explicitly changed. These artifacts record, as applicable:
 
 - exact source SHA and version;
 - signed APK SHA-256 and byte size;
