@@ -603,8 +603,6 @@ jobs:
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
       AVD_NAME: countaway-api-${{ matrix.api }}
-      TEST_SDK_ROOT: ${{ runner.temp }}/countaway-sdk-${{ matrix.api }}
-      ANDROID_AVD_HOME: ${{ runner.temp }}/countaway-avd-${{ matrix.api }}
 
     steps:
       - name: Checkout exact candidate source
@@ -647,7 +645,15 @@ jobs:
 
           test -e /dev/kvm
           sudo chmod 666 /dev/kvm
+
+          TEST_SDK_ROOT="${RUNNER_TEMP}/countaway-sdk-${API_LEVEL}"
+          ANDROID_AVD_HOME="${RUNNER_TEMP}/countaway-avd-${API_LEVEL}"
+          export TEST_SDK_ROOT ANDROID_AVD_HOME
           mkdir -p acceptance-evidence "${TEST_SDK_ROOT}" "${ANDROID_AVD_HOME}"
+          {
+            printf 'TEST_SDK_ROOT=%s\n' "${TEST_SDK_ROOT}"
+            printf 'ANDROID_AVD_HOME=%s\n' "${ANDROID_AVD_HOME}"
+          } >> "${GITHUB_ENV}"
 
           BOOTSTRAP_SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
           test -x "${BOOTSTRAP_SDKMANAGER}"

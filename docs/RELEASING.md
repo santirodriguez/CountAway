@@ -88,7 +88,7 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 
 The first 1.1.8 RC was produced by Actions run 35129580248 and had APK SHA-256 `847368f26019971a04d62abc282bdb47c9f8408b120f2ced026d568f296c3625`.
 
-Normal CI only compiles instrumentation tests. A `release-candidate` run executes them on API 26/33/36/37 emulators after smoke-launching the exact signed candidate on each API, and API 33 also verifies that the immutable public 1.1.7 APK can be upgraded in place to the signed candidate. Emulator jobs use an isolated current Android command-line-tools installation and explicit AVD paths; API 37 uses the published `system-images;android-37.0;google_apis_ps16k;x86_64` image with 4 GB RAM. That package-level smoke does not create user data inside 1.1.7, so data-preservation upgrade acceptance, physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
+Normal CI only compiles instrumentation tests. A `release-candidate` run executes them on API 26/33/36/37 emulators after smoke-launching the exact signed candidate on each API, and API 33 also verifies that the immutable public 1.1.7 APK can be upgraded in place to the signed candidate. Emulator jobs use an isolated current Android command-line-tools installation under the runner temporary directory and explicit AVD paths; API 37 uses the published `system-images;android-37.0;google_apis_ps16k;x86_64` image with 4 GB RAM. That package-level smoke does not create user data inside 1.1.7, so data-preservation upgrade acceptance, physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
 
 ## Independent rebuild comparison
 
