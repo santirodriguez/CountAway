@@ -672,13 +672,6 @@ jobs:
 
           test -x "${EMULATOR}"
           SDKMANAGER_VERSION="$("${SDKMANAGER}" --version | tail -n 1 | tr -d '\r')"
-          if [[ "${API_LEVEL}" -ge 37 ]]; then
-            SDKMANAGER_MAJOR="${SDKMANAGER_VERSION%%.*}"
-            if [[ ! "${SDKMANAGER_MAJOR}" =~ ^[0-9]+$ || "${SDKMANAGER_MAJOR}" -lt 20 ]]; then
-              echo "API 37 AVD creation requires current command-line tools; got ${SDKMANAGER_VERSION}" >&2
-              exit 1
-            fi
-          fi
 
           IMAGE_TAG="$(printf '%s' "${SYSTEM_IMAGE}" | cut -d';' -f3)"
           IMAGE_ABI="$(printf '%s' "${SYSTEM_IMAGE}" | cut -d';' -f4)"
@@ -691,6 +684,16 @@ jobs:
           printf 'hw.ramSize=%s\n' "${RAM_MB}" >> "${CONFIG_INI}"
           printf 'hw.keyboard=yes\n' >> "${CONFIG_INI}"
           printf 'disk.dataPartition.size=4G\n' >> "${CONFIG_INI}"
+
+          AVD_LIST="$(
+            ANDROID_HOME="${TEST_SDK_ROOT}"             ANDROID_SDK_ROOT="${TEST_SDK_ROOT}"             ANDROID_AVD_HOME="${ANDROID_AVD_HOME}"             "${EMULATOR}" -list-avds
+          )"
+          if ! grep -Fxq "${AVD_NAME}" <<< "${AVD_LIST}"; then
+            echo "Created AVD is not discoverable by the isolated emulator SDK" >&2
+            printf 'Discovered AVDs:\n%s\n' "${AVD_LIST}" >&2
+            find "${ANDROID_AVD_HOME}" -maxdepth 2 -type f -print >&2 || true
+            exit 1
+          fi
 
           {
             echo "api_level=${API_LEVEL}"
@@ -708,28 +711,52 @@ jobs:
           set -euo pipefail
 
           mkdir -p acceptance-evidence
-          nohup "${TEST_SDK_ROOT}/emulator/emulator"             -avd "${AVD_NAME}"             -no-window             -noaudio             -no-boot-anim             -no-snapshot             -gpu swiftshader_indirect             -memory "${RAM_MB}"             > "acceptance-evidence/emulator-api-${API_LEVEL}.log" 2>&1 &
+          EMULATOR="${TEST_SDK_ROOT}/emulator/emulator"
+          ADB="${TEST_SDK_ROOT}/platform-tools/adb"
+          EMULATOR_LOG="acceptance-evidence/emulator-api-${API_LEVEL}.log"
 
-          adb wait-for-device
+          test -x "${EMULATOR}"
+          test -x "${ADB}"
+
+          ANDROID_HOME="${TEST_SDK_ROOT}"           ANDROID_SDK_ROOT="${TEST_SDK_ROOT}"           ANDROID_AVD_HOME="${ANDROID_AVD_HOME}"           nohup "${EMULATOR}"             -avd "${AVD_NAME}"             -no-window             -noaudio             -no-boot-anim             -no-snapshot             -gpu swiftshader_indirect             -memory "${RAM_MB}"             -verbose             > "${EMULATOR_LOG}" 2>&1 &
+          EMULATOR_PID=$!
+
+          "${ADB}" start-server
           BOOTED=""
-          for _ in $(seq 1 150); do
-            BOOTED="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
-            if [[ "${BOOTED}" == "1" ]]; then
-              break
+          BOOT_ATTEMPTS=150
+          if [[ "${API_LEVEL}" -ge 37 ]]; then
+            BOOT_ATTEMPTS=210
+          fi
+
+          for _ in $(seq 1 "${BOOT_ATTEMPTS}"); do
+            if ! kill -0 "${EMULATOR_PID}" 2>/dev/null; then
+              echo "Emulator process exited before Android booted" >&2
+              cat "${EMULATOR_LOG}" >&2
+              exit 1
+            fi
+
+            if "${ADB}" get-state >/dev/null 2>&1; then
+              BOOTED="$("${ADB}" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+              if [[ "${BOOTED}" == "1" ]]; then
+                break
+              fi
             fi
             sleep 2
           done
+
           if [[ "${BOOTED}" != "1" ]]; then
-            cat "acceptance-evidence/emulator-api-${API_LEVEL}.log" >&2
+            echo "Android API ${API_LEVEL} did not boot within the bounded acceptance window" >&2
+            "${ADB}" devices -l >&2 || true
+            cat "${EMULATOR_LOG}" >&2
             exit 1
           fi
 
-          adb shell input keyevent 82 || true
-          adb shell settings put global window_animation_scale 0 || true
-          adb shell settings put global transition_animation_scale 0 || true
-          adb shell settings put global animator_duration_scale 0 || true
-          adb shell getprop ro.build.version.release > "acceptance-evidence/android-release-api-${API_LEVEL}.txt"
-          adb shell getprop ro.build.version.sdk > "acceptance-evidence/android-sdk-api-${API_LEVEL}.txt"
+          "${ADB}" shell input keyevent 82 || true
+          "${ADB}" shell settings put global window_animation_scale 0 || true
+          "${ADB}" shell settings put global transition_animation_scale 0 || true
+          "${ADB}" shell settings put global animator_duration_scale 0 || true
+          "${ADB}" shell getprop ro.build.version.release > "acceptance-evidence/android-release-api-${API_LEVEL}.txt"
+          "${ADB}" shell getprop ro.build.version.sdk > "acceptance-evidence/android-sdk-api-${API_LEVEL}.txt"
 
       - name: Smoke signed upgrade from public 1.1.7
         if: matrix.api == 33
