@@ -159,7 +159,9 @@ jobs:
           test -s "docs/assets/branding/countaway.webp"
           grep -Fq 'android:allowBackup="false"' app/src/main/AndroidManifest.xml
           grep -Fq 'android:dataExtractionRules="@xml/data_extraction_rules"' app/src/main/AndroidManifest.xml
+          grep -Fq 'android:fullBackupContent="@xml/backup_rules"' app/src/main/AndroidManifest.xml
           test -s "app/src/main/res/xml/data_extraction_rules.xml"
+          test -s "app/src/main/res/xml/backup_rules.xml"
           grep -Fq 'applicationId = "com.santiagorodriguez.countaway"' app/build.gradle.kts
           grep -Fq 'minSdk = 26' app/build.gradle.kts
           grep -Fq 'targetSdk = 36' app/build.gradle.kts

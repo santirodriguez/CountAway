@@ -50,7 +50,7 @@ The release process is intentionally strict:
 - A prepared release must have a matching `CHANGELOG.md` section, `docs/releases/<version>.md`, all three Fastlane changelogs named after the exact `versionCode` for `en-US`, `es`, and `ca`, and the expected screenshot set.
 - The release APK must be signed by certificate SHA-256 `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
 - The release APK must preserve applicationId `com.santiagorodriguez.countaway`, minSdk 26, target/compile SDK 36, the expected permission surface, no app-declared runtime libraries, the expected AGP/Kotlin runtime baseline (`kotlin-stdlib:2.2.10` plus `org.jetbrains:annotations:13.0`), no native code, R8 mapping, and resource shrinking.
-- App data must remain excluded from Android cloud backup and device-to-device migration by `allowBackup=false` plus `dataExtractionRules`; user-controlled JSON export/import remains the intentional portability path.
+- App data must remain excluded from Android cloud backup and device-to-device migration by `allowBackup=false`, legacy `fullBackupContent` exclusions for Android 11 and lower, and `dataExtractionRules` exclusions for Android 12+; user-controlled JSON export/import remains the intentional portability path.
 - Stable public release assets must be immutable. Once a release is public, rerunning release preparation must not replace an existing APK or checksum with different bytes.
 - GitHub Actions dependencies are pinned to immutable commit SHAs.
 
