@@ -49,7 +49,7 @@ The release process is intentionally strict:
 - The release version must exactly match `versionName` in the release source.
 - A prepared release must have a matching `CHANGELOG.md` section, `docs/releases/<version>.md`, all three Fastlane changelogs named after the exact `versionCode` for `en-US`, `es`, and `ca`, and the expected screenshot set.
 - The release APK must be signed by certificate SHA-256 `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
-- The release APK must preserve applicationId `com.santiagorodriguez.countaway`, minSdk 26, target/compile SDK 36, the expected permission surface, no runtime dependencies, no native code, R8 mapping, and resource shrinking.
+- The release APK must preserve applicationId `com.santiagorodriguez.countaway`, minSdk 26, target/compile SDK 36, the expected permission surface, no app-declared runtime libraries, the expected AGP/Kotlin runtime baseline (`kotlin-stdlib:2.2.10` plus `org.jetbrains:annotations:13.0`), no native code, R8 mapping, and resource shrinking.
 - Stable public release assets must be immutable. Once a release is public, rerunning release preparation must not replace an existing APK or checksum with different bytes.
 - GitHub Actions dependencies are pinned to immutable commit SHAs.
 
@@ -78,7 +78,7 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 - unsigned APK SHA-256 for independent rebuild comparison;
 - signing certificate and pinned `apksigner` version;
 - package, min/target/compile SDKs, and exact manifest permission surface;
-- release runtime dependency report and absence of native libraries;
+- release runtime dependency report, no app-declared runtime libraries, the expected Kotlin/annotations baseline, and absence of native libraries;
 - presence of R8 mapping and resource shrinking;
 - current APK-size deltas against the previous public 1.1.7 APK (377,945 bytes) and the first 1.1.8 RC (382,041 bytes);
 - compiled instrumentation-test APK and ordinary test/lint reports;
@@ -105,7 +105,7 @@ A release-candidate run:
 
 1. rejects a source ref that does not resolve to the supplied exact SHA;
 2. resolves the application version from Gradle;
-3. validates package/SDK/build invariants and the zero-runtime-dependency contract;
+3. validates package/SDK/build invariants, no app-declared runtime libraries, and the expected Kotlin/annotations runtime baseline;
 4. runs tests and lint and compiles the instrumentation-test APK;
 5. builds the R8/resource-shrunk release APK;
 6. verifies APK alignment and signs with pinned Android Build Tools 34.0.0;

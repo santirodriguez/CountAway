@@ -166,20 +166,39 @@ jobs:
 
           mkdir -p release-evidence
           RUNTIME_REPORT="release-evidence/CountAway-v${VERSION}-runtime-dependencies.txt"
-          ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --console=plain > "${RUNTIME_REPORT}"
-          if ! grep -Fq "No dependencies" "${RUNTIME_REPORT}"; then
-            echo "Unexpected release runtime dependency detected" >&2
-            cat "${RUNTIME_REPORT}" >&2
+          ./gradlew -q :app:dependencies --configuration releaseRuntimeClasspath --console=plain > "${RUNTIME_REPORT}"
+
+          if grep -Eq '^[[:space:]]*(implementation|api|runtimeOnly|releaseImplementation|releaseRuntimeOnly)[[:space:]]*\(' app/build.gradle.kts; then
+            echo "Unexpected app-declared release runtime dependency found in app/build.gradle.kts" >&2
             exit 1
           fi
 
+          mapfile -t RUNTIME_MODULES < <(
+            grep -Eo '([A-Za-z0-9_.-]+:){2}[A-Za-z0-9_.+-]+' "${RUNTIME_REPORT}" | sort -u
+          )
+          mapfile -t EXPECTED_RUNTIME_MODULES < <(
+            printf '%s\n' \
+              "org.jetbrains.kotlin:kotlin-stdlib:2.2.10" \
+              "org.jetbrains:annotations:13.0" \
+              | sort
+          )
+          if [[ "${RUNTIME_MODULES[*]}" != "${EXPECTED_RUNTIME_MODULES[*]}" ]]; then
+            echo "Unexpected release runtime classpath:" >&2
+            printf '  %s\n' "${RUNTIME_MODULES[@]}" >&2
+            echo "Expected only the AGP/Kotlin baseline:" >&2
+            printf '  %s\n' "${EXPECTED_RUNTIME_MODULES[@]}" >&2
+            exit 1
+          fi
+
+          RUNTIME_MODULES_CSV="$(IFS=,; echo "${RUNTIME_MODULES[*]}")"
           {
             echo "source_sha=${GITHUB_SHA}"
             echo "github_ref=${GITHUB_REF}"
             echo "event_name=${GITHUB_EVENT_NAME}"
             echo "version=${VERSION}"
             echo "version_code=${VERSION_CODE}"
-            echo "release_runtime_dependencies=none"
+            echo "app_declared_runtime_dependencies=none"
+            echo "release_runtime_modules=${RUNTIME_MODULES_CSV}"
           } > "release-evidence/CountAway-v${VERSION}-source.txt"
 
       - name: Install pinned Android signing tools
@@ -382,8 +401,10 @@ jobs:
           fi
 
           test -s "${RUNTIME_REPORT}"
-          grep -Fq "No dependencies" "${RUNTIME_REPORT}"
           cp "${RUNTIME_REPORT}" "${DIST_DIR}/CountAway-v${VERSION}-runtime-dependencies.txt"
+          RUNTIME_MODULES_CSV="$(
+            grep -Eo '([A-Za-z0-9_.-]+:){2}[A-Za-z0-9_.+-]+' "${RUNTIME_REPORT}"               | sort -u               | paste -sd, -
+          )"
 
           APK_SHA256="$(sha256sum "${FINAL_APK}" | awk '{print $1}')"
           APK_BYTES="$(stat -c%s "${FINAL_APK}")"
@@ -427,7 +448,8 @@ jobs:
             echo "apk_sha256=${APK_SHA256}"
             echo "apk_bytes=${APK_BYTES}"
             echo "permissions=$(IFS=,; echo "${ACTUAL_PERMISSIONS[*]}")"
-            echo "release_runtime_dependencies=none"
+            echo "app_declared_runtime_dependencies=none"
+            echo "release_runtime_modules=${RUNTIME_MODULES_CSV}"
             echo "native_code=none"
             echo "r8_mapping=present"
             echo "resource_shrinking=enabled"
