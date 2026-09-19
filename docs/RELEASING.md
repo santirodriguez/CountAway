@@ -42,15 +42,18 @@ The release process is intentionally strict:
 
 - `versionName` and `versionCode` come from `app/build.gradle.kts`; the workflow does not maintain a second version value.
 - A manual workflow run explicitly selects either `release-candidate` or `prepare-draft-release`.
+- Every manual release run must also provide the exact 40-character source commit SHA expected for that run. The workflow rejects a selected branch/ref that resolves to a different SHA.
 - `prepare-draft-release` is allowed only from `main` and only for the current `main` head.
 - Draft preparation creates or updates a draft GitHub Release configured with tag name `v<version>` and the exact validated target commit. GitHub does not create the actual `refs/tags/v<version>` Git ref until that draft is published.
-- A missing `v<version>` Git ref while the matching GitHub Release is still a draft is therefore expected. Do not create a duplicate tag manually or treat the missing ref as a preparation failure.
+- A missing `v<version>` Git ref while the matching GitHub Release is still a draft is expected. Do not create a duplicate tag manually or treat the missing ref as a preparation failure.
 - The release version must exactly match `versionName` in the release source.
-- A prepared release must have a matching `CHANGELOG.md` section, `docs/releases/<version>.md`, and Fastlane changelogs named after the exact `versionCode` for `en-US`, `es`, and `ca`.
+- A prepared release must have a matching `CHANGELOG.md` section, `docs/releases/<version>.md`, all three Fastlane changelogs named after the exact `versionCode` for `en-US`, `es`, and `ca`, and the expected screenshot set.
 - The release APK must be signed by certificate SHA-256 `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
+- The release APK must preserve applicationId `com.santiagorodriguez.countaway`, minSdk 26, target/compile SDK 36, the expected permission surface, no runtime dependencies, no native code, R8 mapping, and resource shrinking.
+- Stable public release assets must be immutable. Once a release is public, rerunning release preparation must not replace an existing APK or checksum with different bytes.
 - GitHub Actions dependencies are pinned to immutable commit SHAs.
 
-In the normal web release path, publishing the validated draft is the stable-tag gate because that is when GitHub materializes `v<version>` on the draft's configured target commit. A direct push of an existing stable tag remains a supported alternate path and is itself a stable-tag gate.
+Normal pull-request CI is useful but not equivalent to candidate validation: GitHub may test a PR merge ref. The release-candidate workflow binds its output to the explicitly supplied source SHA and records that identity in retained validation evidence.
 
 ### Stable public branding asset
 
@@ -64,21 +67,52 @@ The Gradle/AGP build already produces aligned APK output. The workflow verifies 
 
 Do not replace the pinned signing toolchain with “latest” without re-validating the F-Droid reproducible-build path.
 
+## Validation evidence
+
+Android CI retains source identity, test results, lint/build reports, and the compiled instrumentation-test APK for 30 days.
+
+Release-candidate and draft-preparation runs retain a separate validation artifact for 90 days. It records, as applicable:
+
+- exact source SHA and version;
+- signed APK SHA-256 and byte size;
+- unsigned APK SHA-256 for independent rebuild comparison;
+- signing certificate and pinned `apksigner` version;
+- package, min/target/compile SDKs, and exact manifest permission surface;
+- release runtime dependency report and absence of native libraries;
+- presence of R8 mapping and resource shrinking;
+- current APK-size deltas against the previous public 1.1.7 APK (377,945 bytes) and the first 1.1.8 RC (382,041 bytes);
+- compiled instrumentation-test APK and ordinary test/lint reports;
+- screenshot SHA-256s during stable preparation;
+- F-Droid Gate A evidence when preparing a stable draft.
+
+The first 1.1.8 RC was produced by Actions run 35129580248 and had APK SHA-256 `847368f26019971a04d62abc282bdb47c9f8408b120f2ced026d568f296c3625`.
+
+Compiled instrumentation tests are not device execution. Device/emulator acceptance remains a separate release gate.
+
+## Independent rebuild comparison
+
+Every release workflow run performs a second `assembleRelease` in a separate GitHub-hosted runner using the same exact source SHA, JDK, Gradle setup, and repository configuration. The SHA-256 of the independently rebuilt unsigned APK must match the primary job's unsigned APK SHA-256.
+
+This is a repository-side reproducibility check, not a substitute for F-Droid's own reproducible-build verification. A mismatch blocks readiness and must be investigated. Do not change the signing certificate, add scanner/reproducibility exceptions, or publish a tag merely to force a result.
+
 ## Build a release candidate
 
-Run the **CountAway Release** workflow manually from the branch and commit that should be tested, and choose `release-candidate`.
+Run the **CountAway Release** workflow manually from the branch and commit that should be tested, choose `release-candidate`, and enter the exact full commit SHA shown for that source.
 
 There is no version input. The workflow derives `versionName` and `versionCode` directly from `app/build.gradle.kts` and rejects ambiguous or invalid values.
 
 A release-candidate run:
 
-1. resolves the application version from Gradle;
-2. runs tests and lint;
-3. builds the R8/resource-shrunk release APK;
-4. verifies APK alignment and signs with the pinned Android Build Tools;
-5. verifies the signing certificate SHA-256, package name, version code, and version name;
-6. generates a SHA-256 checksum and signing-certificate report;
-7. uploads the release candidate and R8 mapping as workflow artifacts.
+1. rejects a source ref that does not resolve to the supplied exact SHA;
+2. resolves the application version from Gradle;
+3. validates package/SDK/build invariants and the zero-runtime-dependency contract;
+4. runs tests and lint and compiles the instrumentation-test APK;
+5. builds the R8/resource-shrunk release APK;
+6. verifies APK alignment and signs with pinned Android Build Tools 34.0.0;
+7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
+8. records APK checksum/size, size deltas, and validation reports;
+9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
+10. uploads the release candidate, validation evidence, reproducibility evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:
 
@@ -87,18 +121,36 @@ CountAway-v<version>.apk
 CountAway-v<version>.apk.sha256
 ```
 
-The signing report and R8 mapping are verification/debug artifacts and do not need to be attached to the public release.
+The signing, verification, test/lint, dependency, size, reproducibility, and R8 artifacts are verification/debug evidence and do not need to be attached to the public release.
+
+## F-Droid Gate A
+
+CountAway metadata has been accepted into the official `fdroid/fdroiddata` repository. Acceptance of metadata or a green inclusion pipeline is not sufficient to release a new CountAway version.
+
+Before `prepare-draft-release`, Gate A requires the existing CountAway package to be operational in the official public F-Droid repository:
+
+1. the package must be returned by F-Droid's public package API/index;
+2. at least one published CountAway APK must be downloadable from the official F-Droid repository;
+3. that downloaded APK must verify with CountAway's historical signing certificate above;
+4. a manual installation/smoke check of the published F-Droid APK must already have been completed by the maintainer.
+
+The workflow independently verifies items 1–3 during draft preparation. A 404, API error, missing APK, empty package record, or signing mismatch fails closed. The workflow cannot prove the human installation step; record that check before starting draft preparation.
+
+This gate applies even if a release is prepared manually outside the normal checklist. The app itself performs no network check and receives no Internet permission.
 
 ## Prepare a draft release
 
-After the release candidate is approved and the final release commit is on `main`:
+After the release candidate is approved, Gate A is satisfied, and the final release commit is on `main`:
 
 1. confirm `versionName` and `versionCode` are final;
-2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, and all three Fastlane changelogs are present and correct;
-3. confirm Android CI is green on that exact commit;
-4. run **CountAway Release** manually from `main` and choose `prepare-draft-release`.
+2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, all three Fastlane changelogs, screenshots, and README screenshot references are present and coherent;
+3. confirm the approved release candidate was built from the exact intended source SHA and review its retained validation report, checksum, APK size/deltas, signing identity, permissions, runtime-dependency report, R8 mapping, and independent rebuild result;
+4. confirm device/emulator acceptance, including upgrade preservation from the previous public release;
+5. confirm Gate A, including the maintainer's F-Droid APK installation check;
+6. merge release changes only after explicit approval;
+7. run **CountAway Release** manually from the current `main` head, choose `prepare-draft-release`, and enter that exact `main` SHA.
 
-The workflow derives the version from Gradle, verifies that the selected commit is still the current `main` head, rebuilds the exact source, validates release metadata, signing identity, package/version information, and checksum, then creates or updates a draft GitHub Release with tag name `v<version>` and `target_commitish` set to that exact commit.
+The workflow revalidates the selected SHA, rebuilds the exact source, validates release metadata and screenshots, repeats the release-contract checks, verifies F-Droid Gate A from public evidence, and creates or updates a draft GitHub Release with tag name `v<version>` and `target_commitish` set to that exact commit.
 
 At this stage the tag name is reserved by the draft release, but the Git ref does not yet exist. GitHub can expose the draft through an `untagged-...` URL, and resolving `v<version>` as a repository ref can return not found. Both are expected until publication.
 
@@ -111,20 +163,26 @@ CountAway-v<version>.apk
 CountAway-v<version>.apk.sha256
 ```
 
-The draft must remain unpublished until its configured target commit, release notes, APK, checksum, signing identity, and installation behavior have been reviewed.
+If a public release with the same stable tag already exists, the workflow refuses different asset bytes and leaves an identical public release untouched.
+
+The draft must remain unpublished until its configured target commit, release notes, APK, checksum, signing identity, installation behavior, and retained validation evidence have been reviewed.
 
 ## Publish
 
 Publishing is intentionally separate from preparation. Before publishing the GitHub Release:
 
-- verify CI on the exact release commit;
+- verify the approved candidate and prepared draft source identity are the intended exact commit;
 - install and smoke-test the signed APK on a real Android device or emulator;
 - verify an upgrade from the previous public CountAway release preserves countdowns and existing widgets;
 - verify the SHA-256 checksum;
 - verify the signing certificate SHA-256 matches the expected fingerprint above;
-- confirm the final release notes and public assets;
+- review APK size against the previous public release and first 1.1.8 RC, and explain material growth;
+- confirm final release notes, Fastlane metadata, screenshots, and public assets;
+- confirm Gate A remains satisfied;
 - confirm the release is still a draft and targets the intended commit.
 
 Only then publish the prepared GitHub Release. In the normal web path, publication creates the stable `v<version>` Git ref on the draft's configured target commit. Immediately after publication, verify that the tag resolves to that exact commit and that the public APK and checksum URLs resolve before continuing to F-Droid.
 
-For the mandatory public-asset check before updating F-Droid, continue with [`FDROID.md`](FDROID.md).
+Never move an existing stable tag after publication.
+
+For post-publication F-Droid verification, continue with [`FDROID.md`](FDROID.md).

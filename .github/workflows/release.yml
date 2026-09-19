@@ -11,6 +11,10 @@ on:
         options:
           - release-candidate
           - prepare-draft-release
+      expected_sha:
+        description: Exact 40-character commit SHA expected for this manual run
+        required: true
+        type: string
   push:
     tags:
       - "v*"
@@ -23,16 +27,21 @@ jobs:
   build-signed-apk:
     name: Build signed APK
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     permissions:
       contents: read
     env:
       ANDROID_BUILD_TOOLS_VERSION: "34.0.0"
       EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
+      PACKAGE_ID: "com.santiagorodriguez.countaway"
+      PREVIOUS_PUBLIC_APK_BYTES: "377945"
+      FIRST_CURRENT_RC_APK_BYTES: "382041"
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
+      source_sha: ${{ steps.version.outputs.source_sha }}
       prepare_release: ${{ steps.version.outputs.prepare_release }}
+      unsigned_apk_sha256: ${{ steps.apk.outputs.unsigned_apk_sha256 }}
 
     steps:
       - name: Checkout
@@ -42,6 +51,7 @@ jobs:
         id: version
         env:
           REQUESTED_MODE: ${{ inputs.mode }}
+          EXPECTED_MANUAL_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
 
@@ -77,6 +87,14 @@ jobs:
             workflow_dispatch)
               if [[ "${GITHUB_REF_TYPE}" != "branch" ]]; then
                 echo "Manual release runs must run from a branch, got ${GITHUB_REF_TYPE}: ${GITHUB_REF}" >&2
+                exit 1
+              fi
+              if [[ ! "${EXPECTED_MANUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+                echo "Manual release runs require the exact 40-character source SHA" >&2
+                exit 1
+              fi
+              if [[ "${GITHUB_SHA}" != "${EXPECTED_MANUAL_SHA}" ]]; then
+                echo "Selected ref resolved to ${GITHUB_SHA}, expected ${EXPECTED_MANUAL_SHA}" >&2
                 exit 1
               fi
 
@@ -118,6 +136,7 @@ jobs:
 
           printf 'version=%s\n' "${VERSION}" >> "${GITHUB_OUTPUT}"
           printf 'version_code=%s\n' "${VERSION_CODE}" >> "${GITHUB_OUTPUT}"
+          printf 'source_sha=%s\n' "${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
           printf 'prepare_release=%s\n' "${PREPARE_RELEASE}" >> "${GITHUB_OUTPUT}"
           printf 'VERSION=%s\n' "${VERSION}" >> "${GITHUB_ENV}"
           printf 'VERSION_CODE=%s\n' "${VERSION_CODE}" >> "${GITHUB_ENV}"
@@ -131,6 +150,37 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Validate source and runtime contracts
+        run: |
+          set -euo pipefail
+
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -s "docs/assets/branding/countaway.webp"
+          grep -Fq 'applicationId = "com.santiagorodriguez.countaway"' app/build.gradle.kts
+          grep -Fq 'minSdk = 26' app/build.gradle.kts
+          grep -Fq 'targetSdk = 36' app/build.gradle.kts
+          grep -Fq 'compileSdk = 36' app/build.gradle.kts
+          grep -Fq 'isMinifyEnabled = true' app/build.gradle.kts
+          grep -Fq 'isShrinkResources = true' app/build.gradle.kts
+
+          mkdir -p release-evidence
+          RUNTIME_REPORT="release-evidence/CountAway-v${VERSION}-runtime-dependencies.txt"
+          ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --console=plain > "${RUNTIME_REPORT}"
+          if ! grep -Fq "No dependencies" "${RUNTIME_REPORT}"; then
+            echo "Unexpected release runtime dependency detected" >&2
+            cat "${RUNTIME_REPORT}" >&2
+            exit 1
+          fi
+
+          {
+            echo "source_sha=${GITHUB_SHA}"
+            echo "github_ref=${GITHUB_REF}"
+            echo "event_name=${GITHUB_EVENT_NAME}"
+            echo "version=${VERSION}"
+            echo "version_code=${VERSION_CODE}"
+            echo "release_runtime_dependencies=none"
+          } > "release-evidence/CountAway-v${VERSION}-source.txt"
 
       - name: Install pinned Android signing tools
         run: |
@@ -146,6 +196,68 @@ jobs:
           test -x "${BUILD_TOOLS_DIR}/aapt"
           "${BUILD_TOOLS_DIR}/apksigner" version
 
+      - name: Verify initial F-Droid publication gate
+        if: steps.version.outputs.prepare_release == 'true'
+        run: |
+          set -euo pipefail
+
+          BUILD_TOOLS_DIR="${ANDROID_HOME}/build-tools/${ANDROID_BUILD_TOOLS_VERSION}"
+          APKSIGNER="${BUILD_TOOLS_DIR}/apksigner"
+          AAPT="${BUILD_TOOLS_DIR}/aapt"
+          GATE_DIR="${RUNNER_TEMP}/countaway-fdroid-gate"
+          mkdir -p "${GATE_DIR}" release-evidence
+
+          PACKAGE_JSON="${GATE_DIR}/package.json"
+          curl --fail --location --silent --show-error --retry 2             "https://f-droid.org/api/v1/packages/${PACKAGE_ID}"             --output "${PACKAGE_JSON}"
+
+          jq -e --arg package "${PACKAGE_ID}"             '.packageName == $package and (.packages | length > 0)'             "${PACKAGE_JSON}" >/dev/null
+
+          FDROID_VERSION_CODE="$(
+            jq -r '[.packages[].versionCode] | max // empty' "${PACKAGE_JSON}"
+          )"
+          if [[ ! "${FDROID_VERSION_CODE}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "F-Droid API did not expose a published CountAway version code" >&2
+            exit 1
+          fi
+
+          FDROID_VERSION_NAME="$(
+            jq -r --argjson code "${FDROID_VERSION_CODE}"               '.packages[] | select(.versionCode == $code) | .versionName'               "${PACKAGE_JSON}" | head -n 1
+          )"
+          if [[ -z "${FDROID_VERSION_NAME}" || "${FDROID_VERSION_NAME}" == "null" ]]; then
+            echo "F-Droid API did not expose a published CountAway version name" >&2
+            exit 1
+          fi
+
+          FDROID_APK="${GATE_DIR}/${PACKAGE_ID}_${FDROID_VERSION_CODE}.apk"
+          FDROID_APK_URL="https://f-droid.org/repo/${PACKAGE_ID}_${FDROID_VERSION_CODE}.apk"
+          curl --fail --location --silent --show-error --retry 2             "${FDROID_APK_URL}"             --output "${FDROID_APK}"
+          test -s "${FDROID_APK}"
+
+          FDROID_SIGNING_REPORT="${GATE_DIR}/signing.txt"
+          "${APKSIGNER}" verify --verbose --print-certs "${FDROID_APK}"             | tee "${FDROID_SIGNING_REPORT}"
+
+          FDROID_CERT_SHA256="$(
+            sed -nE 's/^Signer #1 certificate SHA-256 digest: ([[:xdigit:]]+)$/\1/p'               "${FDROID_SIGNING_REPORT}"               | head -n 1               | tr '[:upper:]' '[:lower:]'
+          )"
+          if [[ "${FDROID_CERT_SHA256}" != "${EXPECTED_SIGNING_CERT_SHA256}" ]]; then
+            echo "Published F-Droid APK signing identity does not match CountAway" >&2
+            exit 1
+          fi
+
+          "${AAPT}" dump badging "${FDROID_APK}" > "${GATE_DIR}/badging.txt"
+          grep -Fq "package: name='${PACKAGE_ID}'" "${GATE_DIR}/badging.txt"
+
+          {
+            echo "status=pass"
+            echo "package=${PACKAGE_ID}"
+            echo "published_version=${FDROID_VERSION_NAME}"
+            echo "published_version_code=${FDROID_VERSION_CODE}"
+            echo "apk_url=${FDROID_APK_URL}"
+            echo "signing_cert_sha256=${FDROID_CERT_SHA256}"
+            echo "checked_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "note=APK download and signing identity verified; install smoke test remains a manual release gate."
+          } > "release-evidence/CountAway-fdroid-gate.txt"
+
       - name: Validate release metadata
         run: |
           set -euo pipefail
@@ -157,12 +269,30 @@ jobs:
             for locale in en-US es ca; do
               test -s "fastlane/metadata/android/${locale}/changelogs/${VERSION_CODE}.txt"
             done
+
+            declare -a SCREENSHOTS=(
+              "fastlane/metadata/android/en-US/images/phoneScreenshots/1.png"
+              "fastlane/metadata/android/en-US/images/phoneScreenshots/2.png"
+              "fastlane/metadata/android/en-US/images/phoneScreenshots/3.png"
+              "fastlane/metadata/android/en-US/images/phoneScreenshots/4.png"
+            )
+            for screenshot in "${SCREENSHOTS[@]}"; do
+              test -s "${screenshot}"
+              file "${screenshot}" | grep -Fq "PNG image data"
+            done
+            sha256sum "${SCREENSHOTS[@]}"               > "release-evidence/CountAway-v${VERSION}-screenshots.sha256"
+
+            grep -Fq 'phoneScreenshots/1.png" alt="CountAway home screen"' README.md
+            grep -Fq 'phoneScreenshots/2.png" alt="CountAway countdown editor"' README.md
+            grep -Fq 'phoneScreenshots/3.png" alt="CountAway widget configuration"' README.md
+            grep -Fq 'phoneScreenshots/4.png" alt="CountAway home-screen widget"' README.md
           fi
 
       - name: Build optimized release
-        run: ./gradlew clean test lint assembleRelease --stacktrace
+        run: ./gradlew clean test lint assembleDebugAndroidTest assembleRelease --stacktrace
 
       - name: Sign and verify APK
+        id: apk
         env:
           COUNTAWAY_RELEASE_KEYSTORE_B64: ${{ secrets.COUNTAWAY_RELEASE_KEYSTORE_B64 }}
           COUNTAWAY_RELEASE_STORE_PASSWORD: ${{ secrets.COUNTAWAY_RELEASE_STORE_PASSWORD }}
@@ -183,6 +313,7 @@ jobs:
 
           UNSIGNED_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
           test -f "${UNSIGNED_APK}"
+          test -s "app/build/outputs/mapping/release/mapping.txt"
 
           SIGNING_DIR="${RUNNER_TEMP}/countaway-signing"
           DIST_DIR="${GITHUB_WORKSPACE}/dist"
@@ -196,25 +327,24 @@ jobs:
           FINAL_APK="${DIST_DIR}/${APK_NAME}"
           SIGNING_REPORT="${DIST_DIR}/CountAway-v${VERSION}-signing.txt"
           BADGING_REPORT="${DIST_DIR}/CountAway-v${VERSION}-badging.txt"
+          PERMISSIONS_REPORT="${DIST_DIR}/CountAway-v${VERSION}-permissions.txt"
+          VERIFICATION_REPORT="${DIST_DIR}/CountAway-v${VERSION}-verification.txt"
+          SIZE_REPORT="${DIST_DIR}/CountAway-v${VERSION}-size-comparison.txt"
+          RUNTIME_REPORT="release-evidence/CountAway-v${VERSION}-runtime-dependencies.txt"
+
+          UNSIGNED_APK_SHA256="$(sha256sum "${UNSIGNED_APK}" | awk '{print $1}')"
+          printf 'unsigned_apk_sha256=%s\n' "${UNSIGNED_APK_SHA256}" >> "${GITHUB_OUTPUT}"
 
           # AGP already aligns APK output. Verify it rather than rewriting the archive.
           "${ZIPALIGN}" -c -v 4 "${UNSIGNED_APK}"
 
-          "${APKSIGNER}" sign \
-            --ks "${KEYSTORE}" \
-            --ks-key-alias "${COUNTAWAY_RELEASE_KEY_ALIAS}" \
-            --ks-pass env:COUNTAWAY_RELEASE_STORE_PASSWORD \
-            --key-pass env:COUNTAWAY_RELEASE_KEY_PASSWORD \
-            --out "${FINAL_APK}" \
-            "${UNSIGNED_APK}"
+          "${APKSIGNER}" sign             --ks "${KEYSTORE}"             --ks-key-alias "${COUNTAWAY_RELEASE_KEY_ALIAS}"             --ks-pass env:COUNTAWAY_RELEASE_STORE_PASSWORD             --key-pass env:COUNTAWAY_RELEASE_KEY_PASSWORD             --out "${FINAL_APK}"             "${UNSIGNED_APK}"
 
           "${ZIPALIGN}" -c -v 4 "${FINAL_APK}"
           "${APKSIGNER}" verify --verbose --print-certs "${FINAL_APK}" | tee "${SIGNING_REPORT}"
 
           ACTUAL_SIGNING_CERT_SHA256="$(
-            sed -nE 's/^Signer #1 certificate SHA-256 digest: ([[:xdigit:]]+)$/\1/p' "${SIGNING_REPORT}" \
-              | head -n 1 \
-              | tr '[:upper:]' '[:lower:]'
+            sed -nE 's/^Signer #1 certificate SHA-256 digest: ([[:xdigit:]]+)$/\1/p' "${SIGNING_REPORT}"               | head -n 1               | tr '[:upper:]' '[:lower:]'
           )"
           if [[ -z "${ACTUAL_SIGNING_CERT_SHA256}" ]]; then
             echo "Could not read signer SHA-256 fingerprint from apksigner output" >&2
@@ -226,13 +356,103 @@ jobs:
           fi
 
           "${AAPT}" dump badging "${FINAL_APK}" | tee "${BADGING_REPORT}"
-          grep -Fq "package: name='com.santiagorodriguez.countaway'" "${BADGING_REPORT}"
+          grep -Fq "package: name='${PACKAGE_ID}'" "${BADGING_REPORT}"
           grep -Fq "versionCode='${VERSION_CODE}' versionName='${VERSION}'" "${BADGING_REPORT}"
+          grep -Fq "sdkVersion:'26'" "${BADGING_REPORT}"
+          grep -Fq "targetSdkVersion:'36'" "${BADGING_REPORT}"
+          grep -Fq "compileSdkVersion='36'" "${BADGING_REPORT}"
+
+          mapfile -t ACTUAL_PERMISSIONS < <(
+            sed -nE "s/^uses-permission: name='([^']+)'.*/\1/p" "${BADGING_REPORT}" | sort -u
+          )
+          mapfile -t EXPECTED_PERMISSIONS < <(
+            printf '%s\n'               "android.permission.POST_NOTIFICATIONS"               "android.permission.RECEIVE_BOOT_COMPLETED"               | sort
+          )
+          if [[ "${ACTUAL_PERMISSIONS[*]}" != "${EXPECTED_PERMISSIONS[*]}" ]]; then
+            echo "Unexpected release permission surface:" >&2
+            printf '  %s\n' "${ACTUAL_PERMISSIONS[@]}" >&2
+            exit 1
+          fi
+          printf '%s\n' "${ACTUAL_PERMISSIONS[@]}" > "${PERMISSIONS_REPORT}"
+
+          if unzip -Z1 "${FINAL_APK}" | grep -Eq '^lib/.+\.so$'; then
+            echo "Unexpected native library found in release APK" >&2
+            unzip -Z1 "${FINAL_APK}" | grep -E '^lib/.+\.so$' >&2
+            exit 1
+          fi
+
+          test -s "${RUNTIME_REPORT}"
+          grep -Fq "No dependencies" "${RUNTIME_REPORT}"
+          cp "${RUNTIME_REPORT}" "${DIST_DIR}/CountAway-v${VERSION}-runtime-dependencies.txt"
+
+          APK_SHA256="$(sha256sum "${FINAL_APK}" | awk '{print $1}')"
+          APK_BYTES="$(stat -c%s "${FINAL_APK}")"
+          APKSIGNER_VERSION="$("${APKSIGNER}" version | tr -d '\r')"
+          DELTA_PREVIOUS="$((APK_BYTES - PREVIOUS_PUBLIC_APK_BYTES))"
+          DELTA_FIRST_RC="$((APK_BYTES - FIRST_CURRENT_RC_APK_BYTES))"
+          PERCENT_PREVIOUS="$(
+            awk -v current="${APK_BYTES}" -v base="${PREVIOUS_PUBLIC_APK_BYTES}"               'BEGIN { printf "%.2f", ((current - base) * 100) / base }'
+          )"
+          PERCENT_FIRST_RC="$(
+            awk -v current="${APK_BYTES}" -v base="${FIRST_CURRENT_RC_APK_BYTES}"               'BEGIN { printf "%.2f", ((current - base) * 100) / base }'
+          )"
 
           (
             cd "${DIST_DIR}"
             sha256sum "${APK_NAME}" > "${APK_NAME}.sha256"
           )
+
+          {
+            echo "current_apk_bytes=${APK_BYTES}"
+            echo "previous_public_1_1_7_apk_bytes=${PREVIOUS_PUBLIC_APK_BYTES}"
+            echo "delta_from_previous_public_bytes=${DELTA_PREVIOUS}"
+            echo "delta_from_previous_public_percent=${PERCENT_PREVIOUS}"
+            echo "first_current_rc_apk_bytes=${FIRST_CURRENT_RC_APK_BYTES}"
+            echo "delta_from_first_current_rc_bytes=${DELTA_FIRST_RC}"
+            echo "delta_from_first_current_rc_percent=${PERCENT_FIRST_RC}"
+            echo "review=Explain material growth by changed files/resources/dependencies before publication."
+          } > "${SIZE_REPORT}"
+
+          {
+            echo "source_sha=${GITHUB_SHA}"
+            echo "unsigned_apk_sha256=${UNSIGNED_APK_SHA256}"
+            echo "version=${VERSION}"
+            echo "version_code=${VERSION_CODE}"
+            echo "package_id=${PACKAGE_ID}"
+            echo "min_sdk=26"
+            echo "target_sdk=36"
+            echo "compile_sdk=36"
+            echo "signing_cert_sha256=${ACTUAL_SIGNING_CERT_SHA256}"
+            echo "apksigner_version=${APKSIGNER_VERSION}"
+            echo "apk_sha256=${APK_SHA256}"
+            echo "apk_bytes=${APK_BYTES}"
+            echo "permissions=$(IFS=,; echo "${ACTUAL_PERMISSIONS[*]}")"
+            echo "release_runtime_dependencies=none"
+            echo "native_code=none"
+            echo "r8_mapping=present"
+            echo "resource_shrinking=enabled"
+            echo "branding_asset=docs/assets/branding/countaway.webp"
+            echo "instrumented_tests=compiled_not_executed"
+          } > "${VERIFICATION_REPORT}"
+
+      - name: Upload release validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CountAway-v${{ steps.version.outputs.version }}-validation-${{ github.sha }}
+          path: |
+            release-evidence/
+            dist/*-badging.txt
+            dist/*-permissions.txt
+            dist/*-signing.txt
+            dist/*-verification.txt
+            dist/*-size-comparison.txt
+            dist/*-runtime-dependencies.txt
+            app/build/reports/
+            app/build/test-results/
+            app/build/outputs/apk/androidTest/debug/
+          if-no-files-found: warn
+          retention-days: 90
 
       - name: Upload release candidate
         if: steps.version.outputs.prepare_release == 'false'
@@ -262,10 +482,71 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+  reproducibility-check:
+    name: Rebuild unsigned APK independently
+    needs: build-signed-apk
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout exact candidate source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ needs.build-signed-apk.outputs.source_sha }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Rebuild and compare
+        env:
+          EXPECTED_UNSIGNED_APK_SHA256: ${{ needs.build-signed-apk.outputs.unsigned_apk_sha256 }}
+          SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
+          VERSION: ${{ needs.build-signed-apk.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          test "$(git rev-parse HEAD)" = "${SOURCE_SHA}"
+          ./gradlew clean assembleRelease --stacktrace
+
+          UNSIGNED_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -f "${UNSIGNED_APK}"
+          ACTUAL_UNSIGNED_APK_SHA256="$(sha256sum "${UNSIGNED_APK}" | awk '{print $1}')"
+
+          mkdir -p reproducibility-evidence
+          {
+            echo "source_sha=${SOURCE_SHA}"
+            echo "expected_unsigned_apk_sha256=${EXPECTED_UNSIGNED_APK_SHA256}"
+            echo "actual_unsigned_apk_sha256=${ACTUAL_UNSIGNED_APK_SHA256}"
+          } > "reproducibility-evidence/CountAway-v${VERSION}-unsigned-rebuild.txt"
+
+          if [[ "${ACTUAL_UNSIGNED_APK_SHA256}" != "${EXPECTED_UNSIGNED_APK_SHA256}" ]]; then
+            echo "Independent release rebuild does not match the primary unsigned APK" >&2
+            exit 1
+          fi
+
+      - name: Upload reproducibility evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CountAway-v${{ needs.build-signed-apk.outputs.version }}-reproducibility-${{ needs.build-signed-apk.outputs.source_sha }}
+          path: reproducibility-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+
   draft-release:
     name: Prepare draft GitHub Release
     if: needs.build-signed-apk.outputs.prepare_release == 'true'
-    needs: build-signed-apk
+    needs:
+      - build-signed-apk
+      - reproducibility-check
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -274,16 +555,18 @@ jobs:
       - name: Checkout exact release commit
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.build-signed-apk.outputs.source_sha }}
           fetch-depth: 0
           fetch-tags: true
 
       - name: Verify release target
         env:
           VERSION: ${{ needs.build-signed-apk.outputs.version }}
+          SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
         run: |
           set -euo pipefail
 
+          test "$(git rev-parse HEAD)" = "${SOURCE_SHA}"
           TAG="v${VERSION}"
 
           case "${GITHUB_EVENT_NAME}" in
@@ -295,15 +578,15 @@ jobs:
 
               git rev-parse "refs/remotes/origin/main" >/dev/null
               MAIN_SHA="$(git rev-parse "refs/remotes/origin/main")"
-              if [[ "${GITHUB_SHA}" != "${MAIN_SHA}" ]]; then
-                echo "Manual draft release must use the current main head ${MAIN_SHA}, got ${GITHUB_SHA}" >&2
+              if [[ "${SOURCE_SHA}" != "${MAIN_SHA}" ]]; then
+                echo "Manual draft release must use the current main head ${MAIN_SHA}, got ${SOURCE_SHA}" >&2
                 exit 1
               fi
 
               if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
                 TAG_SHA="$(git rev-list -n 1 "refs/tags/${TAG}")"
-                if [[ "${TAG_SHA}" != "${GITHUB_SHA}" ]]; then
-                  echo "${TAG} already points to ${TAG_SHA}, expected ${GITHUB_SHA}" >&2
+                if [[ "${TAG_SHA}" != "${SOURCE_SHA}" ]]; then
+                  echo "${TAG} already points to ${TAG_SHA}, expected ${SOURCE_SHA}" >&2
                   exit 1
                 fi
               fi
@@ -316,13 +599,13 @@ jobs:
 
               git rev-parse "refs/tags/${TAG}" >/dev/null
               TAG_SHA="$(git rev-list -n 1 "refs/tags/${TAG}")"
-              if [[ "${TAG_SHA}" != "${GITHUB_SHA}" ]]; then
-                echo "${TAG} points to ${TAG_SHA}, expected ${GITHUB_SHA}" >&2
+              if [[ "${TAG_SHA}" != "${SOURCE_SHA}" ]]; then
+                echo "${TAG} points to ${TAG_SHA}, expected ${SOURCE_SHA}" >&2
                 exit 1
               fi
 
               git rev-parse "refs/remotes/origin/main" >/dev/null
-              if ! git merge-base --is-ancestor "${GITHUB_SHA}" "refs/remotes/origin/main"; then
+              if ! git merge-base --is-ancestor "${SOURCE_SHA}" "refs/remotes/origin/main"; then
                 echo "${TAG} does not point to a commit in main history" >&2
                 exit 1
               fi
@@ -351,11 +634,51 @@ jobs:
             sha256sum -c "CountAway-v${VERSION}.apk.sha256"
           )
 
+      - name: Protect published release assets from mutation
+        id: asset_guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build-signed-apk.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          printf 'skip_release=false\n' >> "${GITHUB_OUTPUT}"
+          TAG="v${VERSION}"
+          RELEASE_JSON="${RUNNER_TEMP}/existing-release.json"
+          RELEASE_ERROR="${RUNNER_TEMP}/existing-release.err"
+
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" > "${RELEASE_JSON}" 2> "${RELEASE_ERROR}"; then
+            if [[ "$(jq -r '.draft' "${RELEASE_JSON}")" == "false" ]]; then
+              for asset in "CountAway-v${VERSION}.apk" "CountAway-v${VERSION}.apk.sha256"; do
+                EXPECTED_DIGEST="sha256:$(sha256sum "release-assets/${asset}" | awk '{print $1}')"
+                ACTUAL_DIGEST="$(
+                  jq -r --arg name "${asset}"                     '.assets[]? | select(.name == $name) | .digest // empty'                     "${RELEASE_JSON}"
+                )"
+                if [[ -z "${ACTUAL_DIGEST}" ]]; then
+                  echo "Published release ${TAG} exists without immutable asset digest for ${asset}" >&2
+                  exit 1
+                fi
+                if [[ "${ACTUAL_DIGEST}" != "${EXPECTED_DIGEST}" ]]; then
+                  echo "Refusing to replace published ${asset}: ${ACTUAL_DIGEST} != ${EXPECTED_DIGEST}" >&2
+                  exit 1
+                fi
+              done
+              echo "Published release already contains the same APK and checksum; no mutation is needed."
+              printf 'skip_release=true\n' >> "${GITHUB_OUTPUT}"
+            fi
+          else
+            if ! grep -Fq "HTTP 404" "${RELEASE_ERROR}"; then
+              cat "${RELEASE_ERROR}" >&2
+              exit 1
+            fi
+          fi
+
       - name: Create or update draft release
+        if: steps.asset_guard.outputs.skip_release != 'true'
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: v${{ needs.build-signed-apk.outputs.version }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: ${{ needs.build-signed-apk.outputs.source_sha }}
           name: CountAway v${{ needs.build-signed-apk.outputs.version }}
           draft: ${{ github.event_name == 'workflow_dispatch' }}
           prerelease: false
