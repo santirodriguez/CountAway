@@ -582,6 +582,8 @@ jobs:
             system_image_api: "26"
             target: google_apis
             channel: stable
+            gpu_mode: swiftshader_indirect
+            emulator_build: ""
             ram_size: 2048M
             boot_timeout: 300
           - api: 33
@@ -589,6 +591,8 @@ jobs:
             system_image_api: "33"
             target: google_apis
             channel: stable
+            gpu_mode: swiftshader_indirect
+            emulator_build: ""
             ram_size: 2048M
             boot_timeout: 300
           - api: 36
@@ -596,13 +600,17 @@ jobs:
             system_image_api: "36"
             target: google_apis
             channel: stable
+            gpu_mode: swiftshader_indirect
+            emulator_build: ""
             ram_size: 2048M
             boot_timeout: 300
           - api: 37
             platform_api: "37.0"
             system_image_api: "37.0"
             target: google_apis_ps16k
-            channel: canary
+            channel: stable
+            gpu_mode: swangle_indirect
+            emulator_build: "15917651"
             ram_size: 4096M
             boot_timeout: 420
 
@@ -659,6 +667,8 @@ jobs:
           EMULATOR_SYSTEM_IMAGE_API: ${{ matrix.system_image_api }}
           EMULATOR_TARGET: ${{ matrix.target }}
           EMULATOR_CHANNEL: ${{ matrix.channel }}
+          EMULATOR_GPU_MODE: ${{ matrix.gpu_mode }}
+          EMULATOR_BUILD: ${{ matrix.emulator_build }}
           EMULATOR_RAM_SIZE: ${{ matrix.ram_size }}
           EMULATOR_BOOT_TIMEOUT: ${{ matrix.boot_timeout }}
         run: |
@@ -671,6 +681,8 @@ jobs:
             echo "system_image_api=${EMULATOR_SYSTEM_IMAGE_API}"
             echo "target=${EMULATOR_TARGET}"
             echo "channel=${EMULATOR_CHANNEL}"
+            echo "gpu_mode=${EMULATOR_GPU_MODE}"
+            echo "emulator_build=${EMULATOR_BUILD:-channel-default}"
             echo "ram_size=${EMULATOR_RAM_SIZE}"
             echo "boot_timeout_seconds=${EMULATOR_BOOT_TIMEOUT}"
             echo "emulator_runner_sha=a421e43855164a8197daf9d8d40fe71c6996bb0d"
@@ -756,6 +768,8 @@ jobs:
           ram-size: ${{ matrix.ram_size }}
           disk-size: 4G
           channel: ${{ matrix.channel }}
+          emulator-build: ${{ matrix.emulator_build }}
+          emulator-options: -no-window -gpu ${{ matrix.gpu_mode }} -no-snapshot -noaudio -no-boot-anim
           emulator-boot-timeout: ${{ matrix.boot_timeout }}
           enable-hw-keyboard: true
           disable-animations: true
