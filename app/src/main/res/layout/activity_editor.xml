@@ -62,9 +62,11 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/titleLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:labelFor="@id/titleInput"
             android:text="@string/field_title"
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
@@ -76,6 +78,7 @@
             android:layout_marginTop="6dp"
             android:background="@drawable/control_surface"
             android:gravity="center_vertical"
+            android:importantForAutofill="no"
             android:inputType="textCapSentences|textMultiLine"
             android:maxLines="2"
             android:minHeight="54dp"

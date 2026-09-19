@@ -50,6 +50,7 @@ The release process is intentionally strict:
 - A prepared release must have a matching `CHANGELOG.md` section, `docs/releases/<version>.md`, all three Fastlane changelogs named after the exact `versionCode` for `en-US`, `es`, and `ca`, and the expected screenshot set.
 - The release APK must be signed by certificate SHA-256 `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
 - The release APK must preserve applicationId `com.santiagorodriguez.countaway`, minSdk 26, target/compile SDK 36, the expected permission surface, no app-declared runtime libraries, the expected AGP/Kotlin runtime baseline (`kotlin-stdlib:2.2.10` plus `org.jetbrains:annotations:13.0`), no native code, R8 mapping, and resource shrinking.
+- App data must remain excluded from Android cloud backup and device-to-device migration by `allowBackup=false` plus `dataExtractionRules`; user-controlled JSON export/import remains the intentional portability path.
 - Stable public release assets must be immutable. Once a release is public, rerunning release preparation must not replace an existing APK or checksum with different bytes.
 - GitHub Actions dependencies are pinned to immutable commit SHAs.
 
@@ -87,7 +88,7 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 
 The first 1.1.8 RC was produced by Actions run 35129580248 and had APK SHA-256 `847368f26019971a04d62abc282bdb47c9f8408b120f2ced026d568f296c3625`.
 
-Compiled instrumentation tests are not device execution. Device/emulator acceptance remains a separate release gate.
+Normal CI only compiles instrumentation tests. A `release-candidate` run executes them on API 26/33/36/37 emulators after smoke-launching the exact signed candidate on each API. Physical-device, launcher, upgrade-preservation, Doze, TalkBack, and other human acceptance still remain separate release gates.
 
 ## Independent rebuild comparison
 
@@ -112,7 +113,8 @@ A release-candidate run:
 7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
 8. records APK checksum/size, size deltas, and validation reports;
 9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
-10. uploads the release candidate, validation evidence, reproducibility evidence, and R8 mapping as workflow artifacts.
+10. for `release-candidate`, boots API 26/33/36/37 emulators, smoke-launches the exact signed APK on each, then runs the compiled Android instrumentation suite from the same exact source SHA;
+11. uploads the release candidate, validation evidence, reproducibility evidence, per-API acceptance evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:
 

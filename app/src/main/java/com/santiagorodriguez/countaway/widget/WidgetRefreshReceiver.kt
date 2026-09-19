@@ -12,6 +12,8 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 
 class WidgetRefreshReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
+        if (intent?.action !in REFRESH_ACTIONS) return
+
         val pending = goAsync()
         val appContext = context.applicationContext
         val snapshot = CountdownTime.snapshot()
@@ -30,5 +32,16 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
                 pending.finish()
             }
         }
+    }
+
+    private companion object {
+        val REFRESH_ACTIONS = setOf(
+            Intent.ACTION_BOOT_COMPLETED,
+            Intent.ACTION_MY_PACKAGE_REPLACED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED,
+            Intent.ACTION_DATE_CHANGED,
+            Intent.ACTION_LOCALE_CHANGED,
+        )
     }
 }

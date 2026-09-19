@@ -75,14 +75,16 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         for (index in pairCount until newWidgetIds.size) {
             preferences.remove(newWidgetIds[index])
         }
-        newWidgetIds.forEach { appWidgetId ->
-            runCatching {
-                manager.updateAppWidgetOptions(
-                    appWidgetId,
-                    Bundle().apply {
-                        putBoolean(AppWidgetManager.OPTION_APPWIDGET_RESTORE_COMPLETED, true)
-                    },
-                )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            newWidgetIds.forEach { appWidgetId ->
+                runCatching {
+                    manager.updateAppWidgetOptions(
+                        appWidgetId,
+                        Bundle().apply {
+                            putBoolean(AppWidgetManager.OPTION_APPWIDGET_RESTORE_COMPLETED, true)
+                        },
+                    )
+                }
             }
         }
 

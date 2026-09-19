@@ -157,6 +157,9 @@ jobs:
 
           test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
           test -s "docs/assets/branding/countaway.webp"
+          grep -Fq 'android:allowBackup="false"' app/src/main/AndroidManifest.xml
+          grep -Fq 'android:dataExtractionRules="@xml/data_extraction_rules"' app/src/main/AndroidManifest.xml
+          test -s "app/src/main/res/xml/data_extraction_rules.xml"
           grep -Fq 'applicationId = "com.santiagorodriguez.countaway"' app/build.gradle.kts
           grep -Fq 'minSdk = 26' app/build.gradle.kts
           grep -Fq 'targetSdk = 36' app/build.gradle.kts
@@ -556,6 +559,160 @@ jobs:
         with:
           name: CountAway-v${{ needs.build-signed-apk.outputs.version }}-reproducibility-${{ needs.build-signed-apk.outputs.source_sha }}
           path: reproducibility-evidence/
+          if-no-files-found: warn
+
+  device-acceptance:
+    name: Android API ${{ matrix.api }} candidate acceptance
+    if: needs.build-signed-apk.outputs.prepare_release == 'false'
+    needs:
+      - build-signed-apk
+      - reproducibility-check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [26, 33, 36, 37]
+
+    env:
+      API_LEVEL: ${{ matrix.api }}
+      PACKAGE_ID: "com.santiagorodriguez.countaway"
+      VERSION: ${{ needs.build-signed-apk.outputs.version }}
+      SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
+      AVD_NAME: countaway-api-${{ matrix.api }}
+
+    steps:
+      - name: Checkout exact candidate source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ needs.build-signed-apk.outputs.source_sha }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Download signed candidate
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: CountAway-v${{ needs.build-signed-apk.outputs.version }}-release-candidate
+          path: candidate
+
+      - name: Verify candidate identity
+        run: |
+          set -euo pipefail
+
+          test "$(git rev-parse HEAD)" = "${SOURCE_SHA}"
+          APK="candidate/CountAway-v${VERSION}.apk"
+          CHECKSUM="candidate/CountAway-v${VERSION}.apk.sha256"
+          test -s "${APK}"
+          test -s "${CHECKSUM}"
+          (
+            cd candidate
+            sha256sum -c "CountAway-v${VERSION}.apk.sha256"
+          )
+
+      - name: Install Android ${{ matrix.api }} emulator image
+        run: |
+          set -euo pipefail
+
+          test -e /dev/kvm
+          sudo chmod 666 /dev/kvm
+
+          SDKMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          AVDMANAGER="${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager"
+          test -x "${SDKMANAGER}"
+          test -x "${AVDMANAGER}"
+
+          yes | "${SDKMANAGER}" --licenses >/dev/null || true
+          "${SDKMANAGER}" --install             "emulator"             "platform-tools"             "system-images;android-${API_LEVEL};google_apis;x86_64" >/dev/null
+
+          echo no | "${AVDMANAGER}" create avd             --force             --name "${AVD_NAME}"             --package "system-images;android-${API_LEVEL};google_apis;x86_64"
+
+          RAM_MB=2048
+          if [[ "${API_LEVEL}" -ge 37 ]]; then
+            RAM_MB=4096
+          fi
+          printf 'hw.ramSize=%s\n' "${RAM_MB}" >> "${HOME}/.android/avd/${AVD_NAME}.avd/config.ini"
+          printf 'hw.keyboard=yes\n' >> "${HOME}/.android/avd/${AVD_NAME}.avd/config.ini"
+          printf 'disk.dataPartition.size=4G\n' >> "${HOME}/.android/avd/${AVD_NAME}.avd/config.ini"
+          printf 'RAM_MB=%s\n' "${RAM_MB}" >> "${GITHUB_ENV}"
+
+      - name: Start emulator
+        run: |
+          set -euo pipefail
+
+          mkdir -p acceptance-evidence
+          nohup "${ANDROID_HOME}/emulator/emulator"             -avd "${AVD_NAME}"             -no-window             -noaudio             -no-boot-anim             -no-snapshot             -gpu swiftshader_indirect             -memory "${RAM_MB}"             > "acceptance-evidence/emulator-api-${API_LEVEL}.log" 2>&1 &
+
+          adb wait-for-device
+          BOOTED=""
+          for _ in $(seq 1 150); do
+            BOOTED="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            if [[ "${BOOTED}" == "1" ]]; then
+              break
+            fi
+            sleep 2
+          done
+          if [[ "${BOOTED}" != "1" ]]; then
+            cat "acceptance-evidence/emulator-api-${API_LEVEL}.log" >&2
+            exit 1
+          fi
+
+          adb shell input keyevent 82 || true
+          adb shell settings put global window_animation_scale 0 || true
+          adb shell settings put global transition_animation_scale 0 || true
+          adb shell settings put global animator_duration_scale 0 || true
+          adb shell getprop ro.build.version.release > "acceptance-evidence/android-release-api-${API_LEVEL}.txt"
+          adb shell getprop ro.build.version.sdk > "acceptance-evidence/android-sdk-api-${API_LEVEL}.txt"
+
+      - name: Smoke signed release APK
+        run: |
+          set -euo pipefail
+
+          APK="candidate/CountAway-v${VERSION}.apk"
+          adb install -r "${APK}"
+
+          adb shell am start -W             -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"             > "acceptance-evidence/signed-launch-api-${API_LEVEL}.txt"
+
+          sleep 2
+          PID="$(adb shell pidof "${PACKAGE_ID}" | tr -d '\r')"
+          if [[ -z "${PID}" ]]; then
+            adb logcat -d > "acceptance-evidence/signed-launch-logcat-api-${API_LEVEL}.txt" || true
+            echo "Signed candidate process did not remain alive after launch on API ${API_LEVEL}" >&2
+            exit 1
+          fi
+
+          adb shell dumpsys package "${PACKAGE_ID}"             > "acceptance-evidence/signed-package-api-${API_LEVEL}.txt"
+          adb uninstall "${PACKAGE_ID}"
+
+      - name: Run Android instrumentation tests
+        run: ./gradlew connectedDebugAndroidTest --stacktrace
+
+      - name: Capture runtime state
+        if: always()
+        run: |
+          set +e
+          adb shell dumpsys alarm > "acceptance-evidence/alarm-api-${API_LEVEL}.txt"
+          adb logcat -d > "acceptance-evidence/logcat-api-${API_LEVEL}.txt"
+          adb shell dumpsys package "${PACKAGE_ID}"             > "acceptance-evidence/debug-package-api-${API_LEVEL}.txt"
+          set -e
+
+      - name: Upload API ${{ matrix.api }} acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CountAway-v${{ needs.build-signed-apk.outputs.version }}-api-${{ matrix.api }}-acceptance-${{ needs.build-signed-apk.outputs.source_sha }}
+          path: |
+            acceptance-evidence/
+            app/build/reports/androidTests/connected/
+            app/build/outputs/androidTest-results/connected/
           if-no-files-found: warn
 
   draft-release:
