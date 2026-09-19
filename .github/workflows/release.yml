@@ -564,7 +564,7 @@ jobs:
           if-no-files-found: warn
 
   device-acceptance:
-    name: Android API ${{ matrix.api }} candidate acceptance
+    name: Android API ${{ matrix.api }} ${{ matrix.job_name }}
     if: needs.build-signed-apk.outputs.prepare_release == 'false'
     needs:
       - build-signed-apk
@@ -578,6 +578,9 @@ jobs:
       matrix:
         include:
           - api: 26
+            job_name: candidate acceptance
+            evidence_kind: acceptance
+            non_gating: false
             platform_api: "26"
             system_image_api: "26"
             target: google_apis
@@ -587,6 +590,9 @@ jobs:
             ram_size: 2048M
             boot_timeout: 300
           - api: 33
+            job_name: candidate acceptance
+            evidence_kind: acceptance
+            non_gating: false
             platform_api: "33"
             system_image_api: "33"
             target: google_apis
@@ -596,6 +602,9 @@ jobs:
             ram_size: 2048M
             boot_timeout: 300
           - api: 36
+            job_name: candidate acceptance
+            evidence_kind: acceptance
+            non_gating: false
             platform_api: "36"
             system_image_api: "36"
             target: google_apis
@@ -605,6 +614,9 @@ jobs:
             ram_size: 2048M
             boot_timeout: 300
           - api: 37
+            job_name: emulator diagnostic (non-gating)
+            evidence_kind: emulator-diagnostic
+            non_gating: true
             platform_api: "37.0"
             system_image_api: "37.0"
             target: google_apis_ps16k
@@ -664,6 +676,7 @@ jobs:
       - name: Prepare API acceptance script
         env:
           EMULATOR_PLATFORM_API: ${{ matrix.platform_api }}
+          EMULATOR_EVIDENCE_KIND: ${{ matrix.evidence_kind }}
           EMULATOR_SYSTEM_IMAGE_API: ${{ matrix.system_image_api }}
           EMULATOR_TARGET: ${{ matrix.target }}
           EMULATOR_CHANNEL: ${{ matrix.channel }}
@@ -677,6 +690,7 @@ jobs:
           mkdir -p acceptance-evidence
           {
             echo "api_level=${API_LEVEL}"
+            echo "evidence_kind=${EMULATOR_EVIDENCE_KIND}"
             echo "platform_api=${EMULATOR_PLATFORM_API}"
             echo "system_image_api=${EMULATOR_SYSTEM_IMAGE_API}"
             echo "target=${EMULATOR_TARGET}"
@@ -757,7 +771,9 @@ jobs:
 
           chmod +x .countaway-acceptance.sh
 
-      - name: Run Android API ${{ matrix.api }} acceptance
+      - name: Run Android API ${{ matrix.api }} ${{ matrix.job_name }}
+        id: emulator
+        continue-on-error: ${{ matrix.non_gating }}
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: ${{ matrix.platform_api }}
@@ -775,11 +791,33 @@ jobs:
           disable-animations: true
           script: bash .countaway-acceptance.sh
 
-      - name: Upload API ${{ matrix.api }} acceptance evidence
+      - name: Record API 37 emulator diagnostic
+        if: ${{ always() && matrix.non_gating }}
+        env:
+          EMULATOR_OUTCOME: ${{ steps.emulator.outcome }}
+        run: |
+          set -euo pipefail
+
+          printf 'emulator_runner_outcome=%s\n' "${EMULATOR_OUTCOME}" \
+            >> "acceptance-evidence/emulator-contract-api-${API_LEVEL}.txt"
+
+          {
+            echo "### Android 17 / API 37 emulator diagnostic"
+            echo
+            echo "- Runner outcome: \`${EMULATOR_OUTCOME}\`"
+            echo "- This hosted-emulator result is non-gating because current Android 17 images can abort in SurfaceFlinger/mapper.ranchu before CountAway starts."
+            echo "- A successful physical Android 17 acceptance run remains mandatory before release readiness."
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          if [[ "${EMULATOR_OUTCOME}" != "success" ]]; then
+            echo "::warning::API 37 hosted-emulator diagnostic failed before or during acceptance; inspect the job log and retained evidence. Physical Android 17 acceptance remains mandatory."
+          fi
+
+      - name: Upload API ${{ matrix.api }} ${{ matrix.job_name }} evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: CountAway-v${{ needs.build-signed-apk.outputs.version }}-api-${{ matrix.api }}-acceptance-${{ needs.build-signed-apk.outputs.source_sha }}
+          name: CountAway-v${{ needs.build-signed-apk.outputs.version }}-api-${{ matrix.api }}-${{ matrix.evidence_kind }}-${{ needs.build-signed-apk.outputs.source_sha }}
           path: |
             acceptance-evidence/
             app/build/reports/androidTests/connected/

@@ -53,6 +53,8 @@ The release process is intentionally strict:
 - App data must remain excluded from Android cloud backup and device-to-device migration by `allowBackup=false`, legacy `fullBackupContent` exclusions for Android 11 and lower, and `dataExtractionRules` exclusions for Android 12+; user-controlled JSON export/import remains the intentional portability path.
 - Stable public release assets must be immutable. Once a release is public, rerunning release preparation must not replace an existing APK or checksum with different bytes.
 - GitHub Actions dependencies are pinned to immutable commit SHAs.
+- Hosted API 37 emulator execution is a non-gating diagnostic while the current Android 17 system images can abort inside SurfaceFlinger/mapper.ranchu before CountAway starts.
+- A successful physical Android 17/API 37 acceptance run is mandatory before release readiness; hosted-emulator diagnostics cannot replace it.
 
 Normal pull-request CI is useful but not equivalent to candidate validation: GitHub may test a PR merge ref. The release-candidate workflow binds its output to the explicitly supplied source SHA and records that identity in retained validation evidence.
 
@@ -88,7 +90,11 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 
 The first 1.1.8 RC was produced by Actions run 35129580248 and had APK SHA-256 `847368f26019971a04d62abc282bdb47c9f8408b120f2ced026d568f296c3625`.
 
-Normal CI only compiles instrumentation tests. A `release-candidate` run executes them on API 26/33/36/37 emulators after smoke-launching the exact signed candidate on each API, and API 33 also verifies that the immutable public 1.1.7 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support. API 37 uses platform/system image 37.0 with `google_apis_ps16k`, the stable channel, pinned emulator 37.1.11 (build 15917651), `swangle_indirect` graphics, 4 GB RAM, and a 420-second boot timeout; API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. That package-level smoke does not create user data inside 1.1.7, so data-preservation upgrade acceptance, physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
+Normal CI only compiles instrumentation tests. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.1.7 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
+
+API 37 remains an acceptance target, but its hosted-emulator job is explicitly diagnostic and non-gating. Current Android 17 `google_apis_ps16k` images can abort in `SurfaceFlinger`/`mapper.ranchu` on the host-advertised `ReadColorBufferDMA` path, tearing down framework services before CountAway starts; this reproduced with both canary/default-graphics and stable/`swangle_indirect` configurations. The diagnostic retains the best-known stable configuration—platform/system image 37.0, emulator 37.1.11 build 15917651, `swangle_indirect`, 4 GB RAM, and a 420-second boot timeout—and records its outcome without treating it as product acceptance. Reinstate it as a blocking automated gate only after an updated system image/emulator no longer exhibits the framework abort. Until then, a successful physical Android 17/API 37 run is mandatory before release readiness.
+
+API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. The package-level upgrade smoke does not create user data inside 1.1.7, so data-preservation upgrade acceptance, physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
 
 ## Independent rebuild comparison
 
@@ -113,7 +119,7 @@ A release-candidate run:
 7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
 8. records APK checksum/size, size deltas, and validation reports;
 9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
-10. for `release-candidate`, boots API 26/33/36/37 emulators, smoke-launches the exact signed APK on each, performs a signed package-level 1.1.7 -> candidate upgrade smoke on API 33 using the immutable public 1.1.7 APK digest, then runs the compiled Android instrumentation suite from the same exact source SHA;
+10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs the signed package-level 1.1.7 -> candidate upgrade smoke on API 33 using the immutable public 1.1.7 APK digest, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
 11. uploads the release candidate, validation evidence, reproducibility evidence, per-API acceptance evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:
@@ -147,7 +153,7 @@ After the release candidate is approved, Gate A is satisfied, and the final rele
 1. confirm `versionName` and `versionCode` are final;
 2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, all three Fastlane changelogs, screenshots, and README screenshot references are present and coherent;
 3. confirm the approved release candidate was built from the exact intended source SHA and review its retained validation report, checksum, APK size/deltas, signing identity, permissions, runtime-dependency report, R8 mapping, and independent rebuild result;
-4. confirm device/emulator acceptance, including upgrade preservation from the previous public release;
+4. confirm blocking emulator acceptance on API 26/33/36, review the API 37 emulator diagnostic, record successful physical Android 17/API 37 acceptance, and verify real upgrade preservation from the previous public release;
 5. confirm Gate A, including the maintainer's F-Droid APK installation check;
 6. merge release changes only after explicit approval;
 7. run **CountAway Release** manually from the current `main` head, choose `prepare-draft-release`, and enter that exact `main` SHA.
@@ -174,7 +180,7 @@ The draft must remain unpublished until its configured target commit, release no
 Publishing is intentionally separate from preparation. Before publishing the GitHub Release:
 
 - verify the approved candidate and prepared draft source identity are the intended exact commit;
-- install and smoke-test the signed APK on a real Android device or emulator;
+- install and smoke-test the signed APK on a physical Android 17/API 37 device;
 - verify an upgrade from the previous public CountAway release preserves countdowns and existing widgets;
 - verify the SHA-256 checksum;
 - verify the signing certificate SHA-256 matches the expected fingerprint above;
