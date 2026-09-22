@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+- Add device-local widget defaults for background and System, Light, or Dark appearance, applied only when configuring new widgets.
+- Add long-press quick pinning for saved countdowns and a native per-instance Widget settings path for existing fixed widgets.
+- Refine Ridge into a proportional chevron treatment and tune the other widget styles with style-specific Light/Dark palettes and stronger contrast.
+- Make widget configuration, defaults, pin previews, and installed widgets share the same production layouts and presentation rules across Compact, Short, Standard, and Large sizes.
+- Improve large-text behavior by prioritizing the countdown value and dropping optional widget detail when space is constrained.
+- Keep CountAway lightweight and local-only with the existing permissions, signing identity, JSON schema, SDK baseline, and no new runtime dependencies or Internet permission.
+- Harden the release path so an exact version-matched release branch can produce the reviewed draft/tag without requiring a pre-publication merge to main.
+
 ## 1.1.8
 
 - Add optional yearly recurrence across the app, widgets, sharing, backups, and reminders, including February 29 fallback behavior.

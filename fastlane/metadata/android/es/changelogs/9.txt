@@ -1,0 +1,1 @@
+Ahora configurar widgets es más rápido y flexible: elegí valores predeterminados para widgets nuevos, mantené apretada una cuenta guardada para agregarla y editá instancias existentes. Ridge y los demás estilos mejoran su escala y contraste entre tamaños, vistas previas, modos Claro/Oscuro y texto grande.

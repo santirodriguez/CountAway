@@ -34,7 +34,8 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 - Optional local reminders before or on the event day
 - System, Light, and Dark appearance for both the app and widgets
 - Native sharing plus local JSON backup and restore
-- Direct widget pinning on supported launchers
+- Device-local defaults for the style of newly configured widgets
+- Long-press quick pinning on supported launchers, plus per-instance widget settings
 - English, Spanish, and Catalan
 
 Everything stays local, with no accounts, ads, analytics, or cloud sync.

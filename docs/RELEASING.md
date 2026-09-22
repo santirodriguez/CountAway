@@ -43,7 +43,7 @@ The release process is intentionally strict:
 - `versionName` and `versionCode` come from `app/build.gradle.kts`; the workflow does not maintain a second version value.
 - A manual workflow run explicitly selects either `release-candidate` or `prepare-draft-release`.
 - Every manual release run must also provide the exact 40-character source commit SHA expected for that run. The workflow rejects a selected branch/ref that resolves to a different SHA.
-- `prepare-draft-release` is allowed only from `main` and only for the current `main` head.
+- `prepare-draft-release` is allowed from `main` or the exact version-derived `release/<version>` branch, and only when the selected remote branch still resolves to the supplied exact SHA.
 - Draft preparation creates or updates a draft GitHub Release configured with tag name `v<version>` and the exact validated target commit. GitHub does not create the actual `refs/tags/v<version>` Git ref until that draft is published.
 - A missing `v<version>` Git ref while the matching GitHub Release is still a draft is expected. Do not create a duplicate tag manually or treat the missing ref as a preparation failure.
 - The release version must exactly match `versionName` in the release source.
@@ -83,18 +83,16 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 - package, min/target/compile SDKs, and exact manifest permission surface;
 - release runtime dependency report, no app-declared runtime libraries, the expected Kotlin/annotations baseline, and absence of native libraries;
 - presence of R8 mapping and resource shrinking;
-- current APK-size deltas against the previous public 1.1.7 APK (377,945 bytes) and the first 1.1.8 RC (382,041 bytes);
+- current APK-size delta against the previous public 1.1.8 APK (402,801 bytes);
 - compiled instrumentation-test APK and ordinary test/lint reports;
 - screenshot SHA-256s during stable preparation;
 - F-Droid Gate A evidence when preparing a stable draft.
 
-The first 1.1.8 RC was produced by Actions run 35129580248 and had APK SHA-256 `847368f26019971a04d62abc282bdb47c9f8408b120f2ced026d568f296c3625`.
-
-Normal CI only compiles instrumentation tests. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.1.7 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
+Normal CI only compiles instrumentation tests. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.1.8 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
 
 API 37 remains an acceptance target, but its hosted-emulator job is explicitly diagnostic and non-gating. Current Android 17 `google_apis_ps16k` images can abort in `SurfaceFlinger`/`mapper.ranchu` on the host-advertised `ReadColorBufferDMA` path, tearing down framework services before CountAway starts; this reproduced with both canary/default-graphics and stable/`swangle_indirect` configurations. The diagnostic retains the best-known stable configuration—platform/system image 37.0, emulator 37.1.11 build 15917651, `swangle_indirect`, 4 GB RAM, and a 420-second boot timeout—and records its outcome without treating it as product acceptance. Reinstate it as a blocking automated gate only after an updated system image/emulator no longer exhibits the framework abort. Until then, a successful physical Android 17/API 37 run is mandatory before release readiness.
 
-API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. The package-level upgrade smoke does not create user data inside 1.1.7, so data-preservation upgrade acceptance, physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
+API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. The package-level upgrade smoke does not create user data inside 1.1.8, so data-preservation upgrade acceptance, physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
 
 ## Independent rebuild comparison
 
@@ -119,7 +117,7 @@ A release-candidate run:
 7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
 8. records APK checksum/size, size deltas, and validation reports;
 9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
-10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs the signed package-level 1.1.7 -> candidate upgrade smoke on API 33 using the immutable public 1.1.7 APK digest, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
+10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs the signed package-level 1.1.8 -> candidate upgrade smoke on API 33 using the immutable public 1.1.8 APK digest, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
 11. uploads the release candidate, validation evidence, reproducibility evidence, per-API acceptance evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:
@@ -150,21 +148,21 @@ This gate applies even if a release is prepared manually outside the normal chec
 
 ## Prepare a draft release
 
-After the release candidate is approved, Gate A is satisfied, and the final release commit is on `main`:
+After the exact release candidate is accepted, Gate A is satisfied, and the release branch is frozen:
 
 1. confirm `versionName` and `versionCode` are final;
 2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, all three Fastlane changelogs, screenshots, and README screenshot references are present and coherent;
-3. confirm the approved release candidate was built from the exact intended source SHA and review its retained validation report, checksum, APK size/deltas, signing identity, permissions, runtime-dependency report, R8 mapping, and independent rebuild result;
+3. confirm the accepted release candidate was built from the exact intended source SHA and review its retained validation report, checksum, APK size/delta, signing identity, permissions, runtime-dependency report, R8 mapping, and independent rebuild result;
 4. confirm blocking emulator acceptance on API 26/33/36, review the API 37 emulator diagnostic, record successful physical Android 17/API 37 acceptance, and verify real upgrade preservation from the previous public release;
 5. confirm Gate A, including the maintainer's F-Droid APK installation check;
-6. merge release changes only after explicit approval;
-7. run **CountAway Release** manually from the current `main` head, choose `prepare-draft-release`, and enter that exact `main` SHA.
+6. keep the exact `release/<version>` branch present and frozen through draft/tag/publication verification;
+7. run **CountAway Release** manually from either the current `main` head or the exact current `release/<version>` head, choose `prepare-draft-release`, and enter that exact selected-branch SHA.
 
-The workflow revalidates the selected SHA, rebuilds the exact source, validates release metadata and screenshots, repeats the release-contract checks, verifies F-Droid Gate A from public evidence, and creates or updates a draft GitHub Release with tag name `v<version>` and `target_commitish` set to that exact commit.
+For branch-first releases, the normal path is the exact version-matched `release/<version>` branch. The workflow re-fetches the selected remote branch, rejects stale or mismatched SHAs, validates release metadata/screenshots and F-Droid Gate A, and creates or updates a draft GitHub Release with tag name `v<version>` and `target_commitish` set to that exact commit.
 
 At this stage the tag name is reserved by the draft release, but the Git ref does not yet exist. GitHub can expose the draft through an `untagged-...` URL, and resolving `v<version>` as a repository ref can return not found. Both are expected until publication.
 
-A direct push of an existing valid `v<version>` tag remains supported, but the normal web release path is `prepare-draft-release` from `main` followed by explicit draft publication.
+A direct push of an existing valid `v<version>` tag remains supported. Its commit must either be in current `main` history or exactly match the current version-derived release-branch head. Do not delete the release branch before tag/publication verification.
 
 The draft release receives only:
 
@@ -186,13 +184,13 @@ Publishing is intentionally separate from preparation. Before publishing the Git
 - verify an upgrade from the previous public CountAway release preserves countdowns and existing widgets;
 - verify the SHA-256 checksum;
 - verify the signing certificate SHA-256 matches the expected fingerprint above;
-- review APK size against the previous public release and first 1.1.8 RC, and explain material growth;
+- review APK size against the previous public 1.1.8 release and explain material growth;
 - confirm final release notes, Fastlane metadata, screenshots, and public assets;
 - confirm Gate A remains satisfied;
 - confirm the release is still a draft and targets the intended commit.
 
-Only then publish the prepared GitHub Release. In the normal web path, publication creates the stable `v<version>` Git ref on the draft's configured target commit. Immediately after publication, verify that the tag resolves to that exact commit and that the public APK and checksum URLs resolve before continuing to F-Droid.
+Only then publish the prepared GitHub Release. In the normal web path, publication creates the stable `v<version>` Git ref on the draft's configured target commit. Immediately after publication, verify that the tag resolves to that exact commit and that the public APK and checksum URLs resolve before continuing to F-Droid. Only after publication should integration of the same reviewed release branch into `main` be proposed and separately approved.
 
-Never move an existing stable tag after publication.
+Never move an existing stable tag after publication. Keep the release branch until release/tag/distribution verification is complete.
 
 For post-publication F-Droid verification, continue with [`FDROID.md`](FDROID.md).

@@ -1,0 +1,1 @@
+Ara configurar ginys és més ràpid i flexible: tria valors predeterminats per als ginys nous, mantén premut un compte desat per afegir-lo i edita instàncies existents. Ridge i la resta d’estils milloren l’escala i el contrast entre mides, previsualitzacions, modes Clar/Fosc i text gran.

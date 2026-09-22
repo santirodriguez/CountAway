@@ -1,0 +1,1 @@
+Widget setup is faster and more flexible: choose defaults for new widgets, long-press a saved countdown to pin it, and edit existing fixed widget instances. Ridge and the other styles now scale and contrast more consistently across widget sizes, previews, Light/Dark modes, and large text.

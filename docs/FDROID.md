@@ -124,15 +124,16 @@ For CountAway 1.1.8 and later stable releases:
 
 1. Keep `versionName`, `versionCode`, `CHANGELOG.md`, `docs/releases/<version>.md`, Fastlane changelogs, and screenshots synchronized.
 2. Get normal Android CI green and review its retained reports; remember that pull-request CI may validate a merge ref rather than the raw branch SHA.
-3. Build the signed `release-candidate` from the exact proposed SHA and review its retained checksum, signing, package/SDK, permission, dependency, native-code, R8, APK-size, and independent-rebuild evidence.
-4. Run device/emulator acceptance, including upgrade preservation from the previous public release.
+3. Build the signed `release-candidate` from the exact frozen release-branch SHA and review checksum, signing, package/SDK, permission, dependency, native-code, R8, APK-size, independent-rebuild, emulator, and instrumentation evidence.
+4. Complete the required human/device acceptance, including a real data-bearing upgrade from the previous public release.
 5. Verify Gate A from the official public F-Droid package/API, downloadable APK, signing identity, and a maintainer installation smoke test.
-6. Merge release changes only after review and explicit approval.
-7. Run `prepare-draft-release` from the current exact `main` SHA; review the rebuilt evidence and F-Droid Gate A check.
+6. Keep the exact `release/<version>` branch present and frozen through draft, tag, publication, and immediate verification.
+7. Run `prepare-draft-release` from the exact current `release/<version>` head (or `main` for the legacy/main path) and supply that exact SHA. The workflow re-fetches the selected branch and rejects stale or mismatched heads.
 8. Review the unpublished draft. The missing `v<version>` Git ref at this stage is expected and must not be recreated manually.
 9. Publish the draft only after the APK, checksum, notes, screenshots, upgrade behavior, exact target commit, and validation evidence are approved. Publication creates the stable tag in the normal web path.
 10. Verify `v<version>` resolves to the exact approved commit and the public upstream APK/checksum URLs resolve.
 11. Let F-Droid's configured auto-update machinery detect the stable version unless maintainers or a concrete failure require manual intervention.
 12. Track Gate B until the new F-Droid version is built/reproduced, indexed, and publicly downloadable.
+13. Only after publication, propose integration of the same reviewed release branch into `main`; that merge requires separate explicit approval and must not retarget the published tag.
 
 Gate A is complete for CountAway 1.1.8, and the README includes the official F-Droid badge/link.
