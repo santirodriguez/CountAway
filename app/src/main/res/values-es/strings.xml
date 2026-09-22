@@ -95,6 +95,9 @@
     <string name="widget_background_sunset">Atardecer</string>
     <string name="widget_background_six">Cresta</string>
     <string name="widget_add_to_home">Guardar widget</string>
+    <string name="widget_add_from_event">Agregá un widget para esta cuenta regresiva</string>
+    <string name="widget_save_before_pin">Guardá los cambios antes de agregar el widget.</string>
+    <string name="widget_open_countdown">Abrí la cuenta regresiva</string>
     <string name="widget_event_option">%1$s · %2$s</string>
 
     <string name="notification_channel_name">Recordatorios de cuentas regresivas</string>
@@ -110,9 +113,9 @@
     <string name="about_how_title">Para que sirva de verdad</string>
     <string name="about_how_body">Creá una fecha, agregá el widget de Ya Estamos a la pantalla de inicio y elegí esa cuenta regresiva. Sin el widget, esto es básicamente una lista bastante linda de fechas. Con el widget empieza la gracia.</string>
     <string name="about_how_steps">1. Creá una cuenta regresiva\n2. Agregá el widget\n3. Dejá de mirar el calendario cada cinco minutos</string>
-    <string name="about_privacy">Todo queda guardado en este dispositivo. Sin cuentas, publicidad, seguimiento ni acceso a internet.</string>
+    <string name="about_privacy">Ya Estamos no usa cuentas, publicidad, analíticas ni acceso a internet. Tus datos quedan locales salvo que exportes una copia a un proveedor que elijas.</string>
     <string name="backup_title">Copia local</string>
-    <string name="backup_description">Exportá o restaurá tus cuentas regresivas usando un archivo JSON que controlás vos.</string>
+    <string name="backup_description">Exportá o restaurá tus cuentas regresivas usando un archivo JSON de texto que controlás vos. El lugar donde se guarde depende del proveedor que elijas.</string>
     <string name="backup_export">Exportar copia</string>
     <string name="backup_import">Importar copia</string>
     <string name="backup_export_success">Copia exportada.</string>

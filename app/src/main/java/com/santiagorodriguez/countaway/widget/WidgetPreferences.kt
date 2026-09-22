@@ -42,6 +42,31 @@ class WidgetPreferences(context: Context) {
             .apply()
     }
 
+    fun remap(oldAppWidgetId: Int, newAppWidgetId: Int) {
+        if (oldAppWidgetId == newAppWidgetId) return
+        val configuration = get(oldAppWidgetId)
+        val editor = preferences.edit()
+            .remove(eventKey(newAppWidgetId))
+            .remove(appearanceKey(newAppWidgetId))
+            .remove(backgroundKey(newAppWidgetId))
+            .remove(selectionKey(newAppWidgetId))
+
+        configuration?.let { current ->
+            editor
+                .putString(eventKey(newAppWidgetId), current.eventId)
+                .putString(appearanceKey(newAppWidgetId), current.appearance.storageKey)
+                .putString(backgroundKey(newAppWidgetId), current.background.storageKey)
+                .putString(selectionKey(newAppWidgetId), current.eventSelection.storageKey)
+        }
+
+        editor
+            .remove(eventKey(oldAppWidgetId))
+            .remove(appearanceKey(oldAppWidgetId))
+            .remove(backgroundKey(oldAppWidgetId))
+            .remove(selectionKey(oldAppWidgetId))
+            .apply()
+    }
+
     fun remove(appWidgetId: Int) {
         preferences.edit()
             .remove(eventKey(appWidgetId))

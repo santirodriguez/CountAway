@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.8
+
+- Add optional yearly recurrence across the app, widgets, sharing, backups, and reminders, including February 29 fallback behavior.
+- Harden local persistence and restore handling with AtomicFile recovery, strict schema/UTF-8/date validation, historical self-backup compatibility, and exact import snapshots.
+- Prevent stale editors from silently overwriting or resurrecting countdowns changed elsewhere.
+- Keep reminders coherent across date/time/timezone changes, bound failed delivery retries, and reconcile already-visible notifications after edits, deletes, and restores.
+- Improve countdown UX with next-occurrence/reminder summaries, unsaved-draft protection, safer external intents, stronger contrast, and better large-font/IME behavior.
+- Make widgets more resilient with responsive Compact/Short/Standard/Large layouts, true System-theme following, safe host-ID restore, batched data resolution, and direct pinning from a saved countdown.
+- Improve functional locale fallback while preserving the existing English, Spanish, and Catalan product variants.
+- Strengthen release validation with exact-SHA candidate binding, retained test/lint evidence, independent rebuild comparison, final-APK permission/runtime/native-code checks, public-asset immutability, and an explicit F-Droid publication gate.
+- Keep the release lightweight and local-only: no new runtime dependencies, Internet permission, accounts, analytics, cloud sync, exact alarms, foreground services, or permanent services.
+
 ## 1.1.7
 
 - Show elapsed days after a countdown date has passed, including fixed widgets and native sharing.

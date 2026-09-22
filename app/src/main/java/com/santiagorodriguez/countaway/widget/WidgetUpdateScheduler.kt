@@ -6,34 +6,50 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import java.time.ZonedDateTime
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 
 object WidgetUpdateScheduler {
     const val ACTION_DAILY_REFRESH = "com.santiagorodriguez.countaway.widget.DAILY_REFRESH"
 
-    fun ensureScheduled(context: Context) {
+    fun ensureScheduled(
+        context: Context,
+        snapshot: CountdownTimeSnapshot = CountdownTime.snapshot(),
+    ) {
         if (!hasWidgets(context)) {
             cancel(context)
             return
         }
 
-        val alarmManager = context.getSystemService(AlarmManager::class.java)
-        val now = ZonedDateTime.now()
-        val nextRefresh = now.toLocalDate()
-            .plusDays(1)
-            .atStartOfDay(now.zone)
-            .plusMinutes(1)
+        val nextRefreshMillis = runCatching {
+            snapshot.today
+                .plusDays(1)
+                .atStartOfDay(snapshot.zone)
+                .plusMinutes(1)
+                .toInstant()
+                .toEpochMilli()
+        }.getOrNull() ?: run {
+            cancel(context)
+            return
+        }
 
-        alarmManager.setWindow(
-            AlarmManager.RTC,
-            nextRefresh.toInstant().toEpochMilli(),
-            REFRESH_WINDOW_MILLIS,
-            pendingIntent(context),
-        )
+        val alarmManager = context.getSystemService(AlarmManager::class.java)
+        runCatching {
+            alarmManager.setWindow(
+                AlarmManager.RTC,
+                nextRefreshMillis,
+                REFRESH_WINDOW_MILLIS,
+                pendingIntent(context),
+            )
+        }.onFailure {
+            cancel(context)
+        }
     }
 
     fun cancel(context: Context) {
-        context.getSystemService(AlarmManager::class.java).cancel(pendingIntent(context))
+        runCatching {
+            context.getSystemService(AlarmManager::class.java).cancel(pendingIntent(context))
+        }
     }
 
     private fun hasWidgets(context: Context): Boolean {

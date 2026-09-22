@@ -15,7 +15,9 @@ object InsetUtils {
         view.setOnApplyWindowInsetsListener { target, insets ->
             val safeInsets = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val modern = insets.getInsets(
-                    WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout(),
+                    WindowInsets.Type.systemBars() or
+                        WindowInsets.Type.displayCutout() or
+                        WindowInsets.Type.ime(),
                 )
                 SafeInsets(modern.left, modern.top, modern.right, modern.bottom)
             } else {

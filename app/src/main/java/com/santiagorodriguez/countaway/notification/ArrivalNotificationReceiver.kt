@@ -9,21 +9,36 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
+import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.LanguageManager
-import java.time.LocalDate
 
 class ArrivalNotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        ArrivalNotifier.notifyDueEvents(context)
-        ArrivalNotificationScheduler.ensureScheduled(context)
+        val pending = goAsync()
+        val appContext = context.applicationContext
+        val snapshot = CountdownTime.snapshot()
+        CountdownIo.execute {
+            try {
+                ArrivalNotifier.notifyDueEvents(appContext, snapshot)
+                ArrivalNotificationScheduler.ensureScheduled(appContext, snapshot)
+            } finally {
+                pending.finish()
+            }
+        }
     }
 }
 
 object ArrivalNotifier {
-    fun notifyDueEvents(context: Context) {
+    fun notifyDueEvents(
+        context: Context,
+        snapshot: CountdownTimeSnapshot = CountdownTime.snapshot(),
+    ) {
         if (!ArrivalNotificationScheduler.hasNotificationPermission(context)) return
 
         val displayContext = LanguageManager.localizedContext(context)
@@ -42,10 +57,17 @@ object ArrivalNotifier {
             is CountdownLoadResult.Failure -> return
         }
         val state = ArrivalNotificationState(context)
-        val today = LocalDate.now()
         val dueEvents = events.mapNotNull { event ->
-            val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event) ?: return@mapNotNull null
-            if (ArrivalNotificationPolicy.isDue(event, today, state.deliveredDate(event.id))) {
+            val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event, snapshot.today)
+                ?: return@mapNotNull null
+            if (
+                ArrivalNotificationPolicy.isDue(
+                    event,
+                    snapshot.today,
+                    state.deliveredDate(event.id),
+                ) &&
+                state.canAttempt(event, scheduledDate)
+            ) {
                 event to scheduledDate
             } else {
                 null
@@ -91,8 +113,58 @@ object ArrivalNotifier {
             }.onSuccess {
                 if (ArrivalNotificationScheduler.canPostNotifications(context)) {
                     state.markDelivered(event, scheduledDate)
+                } else {
+                    state.recordFailure(event, scheduledDate)
                 }
+            }.onFailure {
+                state.recordFailure(event, scheduledDate)
             }
+        }
+    }
+
+    fun cancelEvent(context: Context, eventId: String) {
+        runCatching {
+            context.getSystemService(NotificationManager::class.java).cancel(
+                ArrivalNotificationIdentity.tag(eventId),
+                ArrivalNotificationIdentity.ID,
+            )
+        }
+    }
+
+    fun cancelAllEventNotifications(context: Context) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        runCatching {
+            manager.activeNotifications
+                .filter { notification -> notification.id == ArrivalNotificationIdentity.ID }
+                .forEach { notification -> manager.cancel(notification.tag, notification.id) }
+        }
+    }
+
+    fun reconcileVisibleNotifications(
+        context: Context,
+        events: List<CountdownEvent>,
+        snapshot: CountdownTimeSnapshot = CountdownTime.snapshot(),
+    ) {
+        val state = ArrivalNotificationState(context)
+        val keepTags = events.mapNotNullTo(HashSet()) { event ->
+            val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event, snapshot.today)
+            if (
+                scheduledDate == snapshot.today &&
+                state.deliveredDate(event.id) == scheduledDate
+            ) {
+                ArrivalNotificationIdentity.tag(event.id)
+            } else {
+                null
+            }
+        }
+        val manager = context.getSystemService(NotificationManager::class.java)
+        runCatching {
+            manager.activeNotifications
+                .filter { notification ->
+                    notification.id == ArrivalNotificationIdentity.ID &&
+                        notification.tag !in keepTags
+                }
+                .forEach { notification -> manager.cancel(notification.tag, notification.id) }
         }
     }
 

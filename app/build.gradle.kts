@@ -10,8 +10,9 @@ android {
         applicationId = "com.santiagorodriguez.countaway"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.1.7"
+        versionCode = 8
+        versionName = "1.1.8"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -37,4 +38,8 @@ android {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+
+    androidTestImplementation("androidx.test:core:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
 }

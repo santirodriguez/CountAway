@@ -130,6 +130,7 @@
                 android:scaleType="fitXY" />
 
             <LinearLayout
+                android:id="@+id/widgetPreviewContent"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
@@ -143,7 +144,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
                     android:includeFontPadding="false"
-                    android:maxLines="1"
+                    android:maxLines="2"
                     android:text="@string/widget_select_countdown"
                     android:textSize="13sp" />
 
@@ -174,6 +175,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
                     android:includeFontPadding="false"
+                    android:maxLines="2"
                     android:text="@string/widget_tap_to_configure"
                     android:textSize="11sp" />
             </LinearLayout>

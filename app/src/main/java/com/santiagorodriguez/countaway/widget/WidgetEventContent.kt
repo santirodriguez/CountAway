@@ -3,6 +3,7 @@ package com.santiagorodriguez.countaway.widget
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownCalculator
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EventIconPresentation
@@ -11,6 +12,7 @@ import java.time.LocalDate
 internal data class WidgetEventContent(
     val iconRes: Int,
     val title: String,
+    val date: LocalDate,
     val countText: String,
     val unitRes: Int?,
     val status: CountdownStatus,
@@ -24,6 +26,14 @@ internal data class WidgetEventContent(
 }
 
 internal object WidgetEventResolver {
+    fun resolveNext(
+        events: List<CountdownEvent>,
+        today: LocalDate,
+    ): CountdownEvent? = CountdownEventOrder.sortedForDisplay(events, today)
+        .firstOrNull { event ->
+            !CountdownOccurrenceResolver.displayDate(event, today).isBefore(today)
+        }
+
     fun resolve(
         selection: WidgetEventSelection,
         eventId: String?,
@@ -31,14 +41,14 @@ internal object WidgetEventResolver {
         today: LocalDate,
     ): CountdownEvent? = when (selection) {
         WidgetEventSelection.FIXED -> eventId?.let { id -> events.firstOrNull { it.id == id } }
-        WidgetEventSelection.NEXT -> CountdownEventOrder.sortedForDisplay(events, today)
-            .firstOrNull { !it.date.isBefore(today) }
+        WidgetEventSelection.NEXT -> resolveNext(events, today)
     }
 }
 
 internal object WidgetEventContentFactory {
     fun from(event: CountdownEvent, today: LocalDate): WidgetEventContent {
-        val value = CountdownCalculator.value(today, event.date)
+        val displayDate = CountdownOccurrenceResolver.displayDate(event, today)
+        val value = CountdownCalculator.value(today, displayDate)
         val countText = when (value.status) {
             CountdownStatus.FUTURE,
             CountdownStatus.THREE_DAYS,
@@ -65,6 +75,7 @@ internal object WidgetEventContentFactory {
         return WidgetEventContent(
             iconRes = EventIconPresentation.drawableRes(event.icon),
             title = event.title,
+            date = displayDate,
             countText = countText,
             unitRes = unitRes,
             status = value.status,

@@ -1,19 +1,25 @@
 package com.santiagorodriguez.countaway.widget
 
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
-import android.content.res.Configuration
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.Spinner
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
+import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
@@ -21,6 +27,7 @@ import com.santiagorodriguez.countaway.ui.BaseActivity
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.InsetUtils
 import com.santiagorodriguez.countaway.ui.SimpleItemSelectedListener
+import com.santiagorodriguez.countaway.ui.TemporalInvalidationController
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -32,6 +39,7 @@ class WidgetConfigActivity : BaseActivity() {
     private lateinit var appearanceSpinner: Spinner
     private lateinit var backgroundSpinner: Spinner
     private lateinit var previewBackground: ImageView
+    private lateinit var previewContent: LinearLayout
     private lateinit var previewIcon: ImageView
     private lateinit var previewTitle: TextView
     private lateinit var previewCount: TextView
@@ -41,6 +49,8 @@ class WidgetConfigActivity : BaseActivity() {
     private var events: List<CountdownEvent> = emptyList()
     private var selectedEventId: String? = null
     private var selectedMode: WidgetEventSelection = WidgetEventSelection.FIXED
+    private lateinit var temporalInvalidationController: TemporalInvalidationController
+    private var loadGeneration = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,7 +60,9 @@ class WidgetConfigActivity : BaseActivity() {
             AppWidgetManager.EXTRA_APPWIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID,
         )
-        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+        val manager = AppWidgetManager.getInstance(applicationContext)
+        val provider = ComponentName(applicationContext, CountdownWidgetProvider::class.java)
+        if (!WidgetInstanceValidator.isOwnedBy(manager, appWidgetId, provider)) {
             finish()
             return
         }
@@ -59,11 +71,15 @@ class WidgetConfigActivity : BaseActivity() {
         InsetUtils.applySystemBarPadding(findViewById(R.id.widgetConfigRoot))
 
         repository = CountdownRepository(this)
+        temporalInvalidationController = TemporalInvalidationController(this) { snapshot ->
+            reloadEvents(snapshot)
+        }
         eventList = findViewById(R.id.widgetEventList)
         emptyState = findViewById(R.id.widgetEmptyState)
         appearanceSpinner = findViewById(R.id.widgetAppearanceSpinner)
         backgroundSpinner = findViewById(R.id.widgetBackgroundSpinner)
         previewBackground = findViewById(R.id.widgetPreviewBackground)
+        previewContent = findViewById(R.id.widgetPreviewContent)
         previewIcon = findViewById(R.id.widgetPreviewIcon)
         previewTitle = findViewById(R.id.widgetPreviewTitle)
         previewCount = findViewById(R.id.widgetPreviewCount)
@@ -97,7 +113,7 @@ class WidgetConfigActivity : BaseActivity() {
             ),
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
-        val existing = WidgetPreferences(this).get(appWidgetId)
+        val existing = WidgetPreferences(applicationContext).get(appWidgetId)
         if (savedInstanceState == null) {
             selectedEventId = existing?.eventId
             selectedMode = existing?.eventSelection ?: WidgetEventSelection.FIXED
@@ -142,7 +158,7 @@ class WidgetConfigActivity : BaseActivity() {
                 selectedMode = WidgetEventSelection.FIXED
                 selectedEventId = events[position - 1].id
             }
-            updateContentPreview()
+            updateContentPreview(CountdownTime.snapshot().today)
             setSaveEnabled(true)
         }
 
@@ -154,7 +170,19 @@ class WidgetConfigActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::repository.isInitialized) reloadEvents()
+        if (::repository.isInitialized) {
+            val snapshot = CountdownTime.snapshot()
+            temporalInvalidationController.start(snapshot)
+            reloadEvents(snapshot)
+        }
+    }
+
+    override fun onPause() {
+        if (::temporalInvalidationController.isInitialized) {
+            temporalInvalidationController.stop()
+        }
+        loadGeneration += 1
+        super.onPause()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -169,10 +197,27 @@ class WidgetConfigActivity : BaseActivity() {
         super.onSaveInstanceState(outState)
     }
 
-    private fun reloadEvents() {
-        val result = repository.loadResult()
+    private fun reloadEvents(snapshot: CountdownTimeSnapshot = CountdownTime.snapshot()) {
+        val generation = ++loadGeneration
+        eventList.isEnabled = false
+        setSaveEnabled(false)
+
+        CountdownIo.submit(
+            task = { repository.loadResult() },
+            onComplete = { result ->
+                if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
+                renderEvents(
+                    result.getOrElse { CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT) },
+                    snapshot.today,
+                )
+            },
+        )
+    }
+
+    private fun renderEvents(result: CountdownLoadResult, today: LocalDate) {
         if (result is CountdownLoadResult.Failure) {
             events = emptyList()
+            eventList.isEnabled = false
             eventList.visibility = View.GONE
             emptyState.setText(
                 if (result.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
@@ -183,20 +228,22 @@ class WidgetConfigActivity : BaseActivity() {
             )
             emptyState.visibility = View.VISIBLE
             setSaveEnabled(false)
-            updateContentPreview()
+            updateContentPreview(today)
             return
         }
 
-        events = CountdownEventOrder.sortedForDisplay((result as CountdownLoadResult.Success).events, LocalDate.now())
+        events = CountdownEventOrder.sortedForDisplay((result as CountdownLoadResult.Success).events, today)
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
         val labels = buildList {
             add(getString(R.string.widget_next_countdown))
             addAll(events.map { event ->
-                getString(R.string.widget_event_option, event.title, event.date.format(formatter))
+                val displayDate = CountdownOccurrenceResolver.displayDate(event, today)
+                getString(R.string.widget_event_option, event.title, displayDate.format(formatter))
             })
         }
         eventList.adapter = ArrayAdapter(this, R.layout.item_widget_event, android.R.id.text1, labels)
+        eventList.isEnabled = true
         emptyState.visibility = View.GONE
         eventList.visibility = View.VISIBLE
 
@@ -213,7 +260,7 @@ class WidgetConfigActivity : BaseActivity() {
             selectedEventId = null
             setSaveEnabled(false)
         }
-        updateContentPreview()
+        updateContentPreview(today)
     }
 
     private fun updateStylePreview() {
@@ -224,42 +271,113 @@ class WidgetConfigActivity : BaseActivity() {
         val background = WidgetBackground.entries.getOrElse(backgroundSpinner.selectedItemPosition) {
             WidgetBackground.CLASSIC
         }
-        val systemDark = applicationContext.resources.configuration.uiMode and
-            Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-        val dark = appearance.resolveDark(systemDark)
+        val theme = WidgetThemeResolver.resolve(this, appearance)
+        val (previewWidthDp, previewHeightDp) = previewDimensions()
+        val previewSize = WidgetSize.fromDimensions(previewWidthDp, previewHeightDp)
+        applyPreviewSize(previewSize)
 
         previewBackground.setImageBitmap(
             WidgetBackgroundRenderer.render(
-                context = this,
+                context = applicationContext,
                 background = background,
-                dark = dark,
-                widthDp = PREVIEW_WIDTH_DP,
-                heightDp = PREVIEW_HEIGHT_DP,
+                dark = theme.dark,
+                widthDp = previewWidthDp,
+                heightDp = previewHeightDp,
             ),
         )
-        val primaryColor = getColor(if (dark) R.color.widget_dark_text else R.color.widget_light_text)
-        val secondaryColor = getColor(
-            if (dark) R.color.widget_dark_secondary_text else R.color.widget_light_secondary_text,
-        )
-        val accentColor = getColor(if (dark) R.color.widget_dark_accent else R.color.widget_light_accent)
-        previewIcon.setColorFilter(accentColor)
-        previewTitle.setTextColor(primaryColor)
-        previewCount.setTextColor(accentColor)
-        previewUnit.setTextColor(secondaryColor)
-        updateContentPreview()
+        previewIcon.setColorFilter(theme.accentTextColor)
+        previewTitle.setTextColor(theme.primaryTextColor)
+        previewCount.setTextColor(theme.accentTextColor)
+        previewUnit.setTextColor(theme.secondaryTextColor)
+        updateContentPreview(CountdownTime.snapshot().today)
     }
 
-    private fun updateContentPreview() {
+    private fun previewDimensions(): Pair<Int, Int> {
+        val options = AppWidgetManager.getInstance(applicationContext).getAppWidgetOptions(appWidgetId)
+        val widthDp = options
+            .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, DEFAULT_PREVIEW_WIDTH_DP)
+            .takeIf { it > 0 } ?: DEFAULT_PREVIEW_WIDTH_DP
+        val heightDp = options
+            .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, DEFAULT_PREVIEW_HEIGHT_DP)
+            .takeIf { it > 0 } ?: DEFAULT_PREVIEW_HEIGHT_DP
+        return widthDp to heightDp
+    }
+
+    private fun applyPreviewSize(size: WidgetSize) {
+        previewContent.removeAllViews()
+        if (size == WidgetSize.SHORT) {
+            previewContent.orientation = LinearLayout.HORIZONTAL
+            previewContent.gravity = Gravity.CENTER_VERTICAL
+            previewIcon.layoutParams = LinearLayout.LayoutParams(dp(18), dp(18))
+            previewCount.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { marginStart = dp(6) }
+            previewTitle.layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f,
+            ).apply { marginStart = dp(8) }
+            previewContent.addView(previewIcon)
+            previewContent.addView(previewCount)
+            previewContent.addView(previewTitle)
+            previewContent.addView(previewUnit)
+            previewCount.textSize = 24f
+            previewTitle.textSize = 10f
+            previewTitle.maxLines = 2
+            previewUnit.visibility = View.GONE
+            return
+        }
+
+        previewContent.orientation = LinearLayout.VERTICAL
+        previewContent.gravity = Gravity.CENTER
+        previewTitle.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        )
+        val iconSizeDp = if (size == WidgetSize.LARGE) 30 else if (size == WidgetSize.STANDARD) 22 else 16
+        previewIcon.layoutParams = LinearLayout.LayoutParams(dp(iconSizeDp), dp(iconSizeDp))
+        previewCount.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        )
+        previewUnit.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        )
+        previewContent.addView(previewTitle)
+        previewContent.addView(previewIcon)
+        previewContent.addView(previewCount)
+        previewContent.addView(previewUnit)
+        previewTitle.maxLines = 2
+        previewTitle.textSize = when (size) {
+            WidgetSize.COMPACT -> 10f
+            WidgetSize.STANDARD -> 13f
+            WidgetSize.LARGE -> 17f
+            WidgetSize.SHORT -> 10f
+        }
+        previewCount.textSize = when (size) {
+            WidgetSize.COMPACT -> 26f
+            WidgetSize.STANDARD -> 42f
+            WidgetSize.LARGE -> 52f
+            WidgetSize.SHORT -> 24f
+        }
+        previewUnit.visibility = if (size == WidgetSize.COMPACT) View.GONE else View.VISIBLE
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun updateContentPreview(today: LocalDate = CountdownTime.snapshot().today) {
         if (!::previewIcon.isInitialized) return
         val event = WidgetEventResolver.resolve(
             selection = selectedMode,
             eventId = selectedEventId,
             events = events,
-            today = LocalDate.now(),
+            today = today,
         )
 
         if (event != null) {
-            val content = WidgetEventContentFactory.from(event, LocalDate.now())
+            val content = WidgetEventContentFactory.from(event, today)
             previewIcon.setImageResource(content.iconRes)
             previewTitle.text = content.title
             previewCount.text = content.countText
@@ -288,7 +406,7 @@ class WidgetConfigActivity : BaseActivity() {
         if (selectedMode == WidgetEventSelection.FIXED && selectedEventId == null) return
         val appearance = WidgetAppearance.entries[appearanceSpinner.selectedItemPosition]
         val background = WidgetBackground.entries[backgroundSpinner.selectedItemPosition]
-        WidgetPreferences(this).save(
+        WidgetPreferences(applicationContext).save(
             appWidgetId = appWidgetId,
             eventId = selectedEventId,
             appearance = appearance,
@@ -296,9 +414,13 @@ class WidgetConfigActivity : BaseActivity() {
             eventSelection = selectedMode,
         )
 
-        val manager = AppWidgetManager.getInstance(this)
-        CountdownWidgetProvider.updateWidget(this, manager, appWidgetId)
-        WidgetUpdateScheduler.ensureScheduled(this)
+        val appContext = applicationContext
+        val manager = AppWidgetManager.getInstance(appContext)
+        val snapshot = CountdownTime.snapshot()
+        CountdownIo.execute {
+            runCatching { CountdownWidgetProvider.updateWidget(appContext, manager, appWidgetId, snapshot) }
+            runCatching { WidgetUpdateScheduler.ensureScheduled(appContext, snapshot) }
+        }
 
         setResult(
             RESULT_OK,
@@ -311,8 +433,8 @@ class WidgetConfigActivity : BaseActivity() {
         values.firstOrNull { it.name == name } ?: default
 
     private companion object {
-        const val PREVIEW_WIDTH_DP = 320
-        const val PREVIEW_HEIGHT_DP = 132
+        const val DEFAULT_PREVIEW_WIDTH_DP = 180
+        const val DEFAULT_PREVIEW_HEIGHT_DP = 110
         const val STATE_EVENT_ID = "selected_event_id"
         const val STATE_SELECTION_MODE = "selected_mode"
         const val STATE_APPEARANCE = "selected_appearance"

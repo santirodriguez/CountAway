@@ -14,4 +14,22 @@
     <string name="notification_blocked_message">El recordatorio va a quedar guardado, pero Android no lo va a mostrar hasta que habilites las notificaciones de Ya Estamos.</string>
     <string name="notification_open_settings">Abrir ajustes de notificaciones</string>
     <string name="title_too_long">El título puede tener hasta %1$d caracteres.</string>
+    <string name="data_conflict_title">La cuenta regresiva cambió</string>
+    <string name="data_conflict_message">Esta cuenta regresiva cambió o fue eliminada en otro lugar. Recargá el último estado guardado o seguí editando este borrador.</string>
+    <string name="data_conflict_reload">Recargar</string>
+    <string name="data_conflict_keep_editing">Seguir editando</string>
+    <string name="language_follow_system_enabled">Siguiendo el idioma del sistema.</string>
+    <string name="event_meta_yearly">%1$s · %2$s · Anual</string>
+    <string name="schedule_next_occurrence">Próxima fecha: %1$s · Se repite cada año.</string>
+    <string name="schedule_next_reminder">Próximo recordatorio: %1$s · alrededor de las 09:00.</string>
+    <string name="schedule_leap_day_note">En los años no bisiestos, el 29 de febrero se repite el 28 de febrero.</string>
+    <string name="unsaved_changes_title">¿Descartar cambios sin guardar?</string>
+    <string name="unsaved_changes_message">Este borrador tiene cambios que todavía no guardaste.</string>
+    <string name="unsaved_changes_discard">Descartar</string>
+    <string name="external_action_unavailable">No hay una app disponible para esta acción.</string>
+    <string name="backup_provider_unavailable">No hay un proveedor de documentos disponible.</string>
+    <string name="share_unavailable">No hay una app disponible para compartir esta cuenta regresiva.</string>
+    <string name="backup_import_confirm_details">Eventos de la copia: %1$d\nGuardados actualmente: %2$d\n\nSólo se reemplazan las cuentas regresivas. No se restaura la ubicación de los widgets.</string>
+    <string name="backup_import_confirm_details_unknown">Eventos de la copia: %1$d\nNo se pudo leer cuántos hay guardados ahora.\n\nSólo se reemplazan las cuentas regresivas. No se restaura la ubicación de los widgets.</string>
+    <string name="backup_export_current_first">Exportar actuales primero</string>
 </resources>

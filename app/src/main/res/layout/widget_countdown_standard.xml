@@ -8,6 +8,7 @@
         android:id="@+id/widgetBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:contentDescription="@null"
         android:scaleType="fitXY"
         android:src="@drawable/widget_background_light" />
 
@@ -16,7 +17,7 @@
         android:layout_height="match_parent"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="10dp">
 
         <TextView
             android:id="@+id/widgetTitle"
@@ -25,15 +26,15 @@
             android:ellipsize="end"
             android:fontFamily="sans-serif-medium"
             android:gravity="center"
-            android:letterSpacing="0.02"
-            android:maxLines="1"
-            android:textSize="14sp" />
+            android:maxLines="2"
+            android:textSize="13sp" />
 
         <ImageView
             android:id="@+id/widgetIcon"
-            android:layout_width="25dp"
-            android:layout_height="25dp"
-            android:layout_marginTop="5dp"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_marginTop="3dp"
+            android:contentDescription="@null"
             android:scaleType="centerInside" />
 
         <TextView
@@ -44,7 +45,7 @@
             android:gravity="center"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:visibility="gone" />
 
         <TextView
@@ -56,9 +57,8 @@
             android:fontFamily="sans-serif-condensed"
             android:gravity="center"
             android:includeFontPadding="false"
-            android:letterSpacing="-0.02"
             android:maxLines="1"
-            android:textSize="48sp"
+            android:textSize="42sp"
             android:textStyle="bold" />
 
         <TextView
@@ -67,8 +67,8 @@
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
             android:gravity="center"
-            android:maxLines="1"
-            android:textSize="13sp" />
+            android:maxLines="2"
+            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/widgetDate"
@@ -76,5 +76,4 @@
             android:layout_height="0dp"
             android:visibility="gone" />
     </LinearLayout>
-
 </FrameLayout>

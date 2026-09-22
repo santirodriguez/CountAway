@@ -62,9 +62,11 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/titleLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:labelFor="@id/titleInput"
             android:text="@string/field_title"
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
@@ -76,8 +78,9 @@
             android:layout_marginTop="6dp"
             android:background="@drawable/control_surface"
             android:gravity="center_vertical"
-            android:inputType="textCapSentences"
-            android:maxLines="1"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLines="2"
             android:minHeight="54dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
@@ -104,6 +107,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:text="@string/field_repeat"
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/control_surface">
+
+            <Spinner
+                android:id="@+id/repeatSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:background="@android:color/transparent"
+                android:paddingStart="14dp"
+                android:paddingEnd="8dp"
+                android:spinnerMode="dropdown" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
             android:text="@string/field_reminder"
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
@@ -124,6 +151,20 @@
                 android:spinnerMode="dropdown" />
         </FrameLayout>
 
+        <TextView
+            android:id="@+id/editorScheduleSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/status_pill"
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp"
+            android:textColor="@color/accent_text"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
         <Button
             android:id="@+id/saveButton"
             style="@style/Widget.CountAway.Button.Primary"
@@ -139,6 +180,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="@string/action_share" />
+
+        <Button
+            android:id="@+id/addWidgetButton"
+            style="@style/Widget.CountAway.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/widget_add_from_event"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/deleteButton"
