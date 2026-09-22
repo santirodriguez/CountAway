@@ -9,7 +9,7 @@ F-Droid documentation:
 - https://f-droid.org/docs/Reproducible_Builds/
 - https://f-droid.org/docs/All_About_Descriptions_Graphics_and_Screenshots/
 
-## Accepted metadata
+## Accepted and published
 
 CountAway's initial inclusion merge request, `fdroid/fdroiddata!46416`, was merged into official `fdroiddata` on September 18, 2026.
 
@@ -22,7 +22,7 @@ The accepted metadata currently identifies CountAway 1.1.7 / versionCode 7 and p
 - `AutoUpdateMode: Version`;
 - stable semantic tag detection.
 
-Metadata acceptance is not the same as public package availability. Before CountAway 1.1.8 can be prepared for publication, Gate A below must prove that the initial package is operational in the public F-Droid repository.
+Gate A was completed on September 22, 2026: CountAway 1.1.7 / versionCode 7 is publicly listed in the official F-Droid repository, its official APK is downloadable under the expected signing contract, and the maintainer installed and smoke-tested that F-Droid build successfully.
 
 ## Upstream readiness
 
@@ -39,7 +39,7 @@ CountAway remains intentionally straightforward for F-Droid:
 - official releases use stable semantic `v<version>` tags;
 - release APKs use the same long-lived upstream signing identity.
 
-Do not add an F-Droid badge to the README until Gate A has been verified against the public repository.
+The README may include the official F-Droid badge now that Gate A has been verified against the public repository.
 
 ## Reproducible upstream APKs
 
@@ -66,7 +66,7 @@ Gate A is satisfied only when all of the following are true:
 
 A merged metadata change, merged inclusion MR, passing inclusion pipeline, F-Droid website 404, API error, or failed fetch is not by itself proof that Gate A passed or failed.
 
-The CountAway release workflow verifies items 1–3 during stable draft preparation and fails closed on missing/error evidence. Item 4 remains a human release checklist requirement. No Gate A network logic is included in the Android app.
+The CountAway release workflow verifies items 1–3 during stable draft preparation and fails closed on missing/error evidence. Item 4 remains a human release checklist requirement. For CountAway 1.1.8, all four Gate A items were completed by September 22, 2026. No Gate A network logic is included in the Android app.
 
 ## Stable tag and upstream binary gates
 
@@ -135,4 +135,4 @@ For CountAway 1.1.8 and later stable releases:
 11. Let F-Droid's configured auto-update machinery detect the stable version unless maintainers or a concrete failure require manual intervention.
 12. Track Gate B until the new F-Droid version is built/reproduced, indexed, and publicly downloadable.
 
-Only after Gate A is verifiably complete should the README be updated separately with the official F-Droid badge/link.
+Gate A is complete for CountAway 1.1.8, and the README includes the official F-Droid badge/link.

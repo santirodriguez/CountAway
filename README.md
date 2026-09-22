@@ -20,6 +20,8 @@ So CountAway does the obvious thing: pick a date, put it on your home screen, an
 
 ## Installation
 
+[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="72">](https://f-droid.org/packages/com.santiagorodriguez.countaway/)
+
 [<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="72">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/santirodriguez/CountAway)
 
 Or download the signed APK directly from [GitHub Releases](https://github.com/santirodriguez/CountAway/releases).
