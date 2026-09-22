@@ -58,6 +58,10 @@ class MainActivity : BaseActivity() {
             val event = adapter.getItem(position)
             startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
         }
+        countdownList.setOnItemLongClickListener { _, _, position, _ ->
+            addWidgetFromLongPress(adapter.getItem(position))
+            true
+        }
 
         addCountdownButton.setOnClickListener {
             startActivity(Intent(this, EditorActivity::class.java))

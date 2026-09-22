@@ -121,16 +121,10 @@ class CountdownEventAdapter(
     private fun bindAddWidgetAction(view: View, event: CountdownEvent) {
         val action = onAddWidget
         if (action == null) {
-            view.setOnLongClickListener(null)
-            view.isLongClickable = false
             view.accessibilityDelegate = null
             return
         }
 
-        view.setOnLongClickListener {
-            action(event)
-            true
-        }
         view.accessibilityDelegate = object : View.AccessibilityDelegate() {
             override fun onInitializeAccessibilityNodeInfo(
                 host: View,
