@@ -119,7 +119,7 @@
 
     <string name="about_version">Version %1$s</string>
     <string name="about_how_title">Make it useful</string>
-    <string name="about_how_body">Create a date, add the CountAway widget to your home screen, and choose that countdown. Without the widget, this is mostly a very tasteful list of dates. The widget is where the fun starts. You can also long-press a saved countdown to add its widget directly.</string>
+    <string name="about_how_body">Create a date, add the CountAway widget to your home screen, and choose that countdown. Without the widget, this is mostly a very tasteful list of dates. The widget is where the fun starts. You can also long-press a saved countdown to choose its widget style and add it.</string>
     <string name="about_how_steps">1. Create a countdown\n2. Add the widget\n3. Stop checking the calendar every five minutes</string>
     <string name="about_privacy">CountAway has no accounts, ads, analytics, or network access. Your data stays local unless you export a backup to a provider you choose.</string>
     <string name="backup_title">Local backup</string>

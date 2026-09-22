@@ -111,7 +111,7 @@
 
     <string name="about_version">Versión %1$s</string>
     <string name="about_how_title">Para que sirva de verdad</string>
-    <string name="about_how_body">Creá una fecha, agregá el widget de Ya Estamos a la pantalla de inicio y elegí esa cuenta regresiva. Sin el widget, esto es básicamente una lista bastante linda de fechas. Con el widget empieza la gracia. También podés mantener apretada una cuenta guardada para agregar su widget directamente.</string>
+    <string name="about_how_body">Creá una fecha, agregá el widget de Ya Estamos a la pantalla de inicio y elegí esa cuenta regresiva. Sin el widget, esto es básicamente una lista bastante linda de fechas. Con el widget empieza la gracia. También podés mantener apretada una cuenta guardada para elegir el estilo del widget y agregarlo.</string>
     <string name="about_how_steps">1. Creá una cuenta regresiva\n2. Agregá el widget\n3. Dejá de mirar el calendario cada cinco minutos</string>
     <string name="about_privacy">Ya Estamos no usa cuentas, publicidad, analíticas ni acceso a internet. Tus datos quedan locales salvo que exportes una copia a un proveedor que elijas.</string>
     <string name="backup_title">Copia local</string>

@@ -1,1 +1,1 @@
-Ara configurar ginys és més ràpid i flexible: tria valors predeterminats per als ginys nous, mantén premut un compte desat per afegir-lo i edita instàncies existents. Ridge i la resta d’estils milloren l’escala i el contrast entre mides, previsualitzacions, modes Clar/Fosc i text gran.
+Mantén premut un compte desat per triar el fons i l’aparença Sistema, Clar o Fosc amb previsualització abans d’afegir el giny. Ja Queda Poc recorda l’últim estil per al pròxim giny nou. Ridge i la resta d’estils també milloren l’escala, el contrast i el text gran.

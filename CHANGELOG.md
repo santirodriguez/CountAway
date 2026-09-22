@@ -2,10 +2,11 @@
 
 ## 1.2.0
 
-- Add device-local widget defaults for background and System, Light, or Dark appearance, applied only when configuring new widgets.
-- Add long-press quick pinning for saved countdowns and a native per-instance Widget settings path for existing fixed widgets.
+- Add a focused long-press widget setup flow for saved countdowns with Background, System/Light/Dark appearance, and a live preview before Android's pin confirmation.
+- Remember the last style chosen for a new widget while keeping existing widget configurations independent; canceled setup does not change it.
+- Keep the countdown editor focused on countdown editing and rely on Android's reconfigurable-widget path for existing placed widgets.
 - Refine Ridge into a proportional chevron treatment and tune the other widget styles with style-specific Light/Dark palettes and stronger contrast.
-- Make widget configuration, defaults, pin previews, and installed widgets share the same production layouts and presentation rules across Compact, Short, Standard, and Large sizes.
+- Make widget setup, generic picker configuration, pin previews, and installed widgets share the same production layouts and presentation rules across Compact, Short, Standard, and Large sizes.
 - Improve large-text behavior by prioritizing the countdown value and dropping optional widget detail when space is constrained.
 - Keep CountAway lightweight and local-only with the existing permissions, signing identity, JSON schema, SDK baseline, and no new runtime dependencies or Internet permission.
 - Harden the release path so an exact version-matched release branch can produce the reviewed draft/tag without requiring a pre-publication merge to main.
