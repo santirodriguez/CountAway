@@ -3,9 +3,7 @@ package com.santiagorodriguez.countaway.widget
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.Spinner
-import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.ui.BaseActivity
 import com.santiagorodriguez.countaway.ui.InsetUtils
@@ -14,11 +12,8 @@ import com.santiagorodriguez.countaway.ui.SimpleItemSelectedListener
 class WidgetDefaultsActivity : BaseActivity() {
     private lateinit var appearanceSpinner: Spinner
     private lateinit var backgroundSpinner: Spinner
-    private lateinit var previewBackground: ImageView
-    private lateinit var previewIcon: ImageView
-    private lateinit var previewTitle: TextView
-    private lateinit var previewCount: TextView
-    private lateinit var previewUnit: TextView
+    private lateinit var previewSizeSpinner: Spinner
+    private lateinit var previewController: WidgetPreviewController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,11 +22,20 @@ class WidgetDefaultsActivity : BaseActivity() {
 
         appearanceSpinner = findViewById(R.id.widgetDefaultsAppearanceSpinner)
         backgroundSpinner = findViewById(R.id.widgetDefaultsBackgroundSpinner)
-        previewBackground = findViewById(R.id.widgetDefaultsPreviewBackground)
-        previewIcon = findViewById(R.id.widgetDefaultsPreviewIcon)
-        previewTitle = findViewById(R.id.widgetDefaultsPreviewTitle)
-        previewCount = findViewById(R.id.widgetDefaultsPreviewCount)
-        previewUnit = findViewById(R.id.widgetDefaultsPreviewUnit)
+        previewSizeSpinner = findViewById(R.id.widgetDefaultsPreviewSizeSpinner)
+        previewController = WidgetPreviewController(
+            context = this,
+            container = findViewById(R.id.widgetDefaultsPreviewContainer),
+            frame = findViewById(R.id.widgetDefaultsPreviewFrame),
+            backgroundView = findViewById(R.id.widgetDefaultsPreviewBackground),
+            contentView = findViewById(R.id.widgetDefaultsPreviewContent),
+            iconView = findViewById(R.id.widgetDefaultsPreviewIcon),
+            titleView = findViewById(R.id.widgetDefaultsPreviewTitle),
+            milestoneView = findViewById(R.id.widgetDefaultsPreviewMilestone),
+            countView = findViewById(R.id.widgetDefaultsPreviewCount),
+            unitView = findViewById(R.id.widgetDefaultsPreviewUnit),
+            dateView = findViewById(R.id.widgetDefaultsPreviewDate),
+        )
 
         appearanceSpinner.adapter = ArrayAdapter(
             this,
@@ -59,6 +63,17 @@ class WidgetDefaultsActivity : BaseActivity() {
             ),
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
+        previewSizeSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            listOf(
+                getString(R.string.widget_size_compact),
+                getString(R.string.widget_size_short),
+                getString(R.string.widget_size_standard),
+                getString(R.string.widget_size_large),
+            ),
+        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+
         val stored = WidgetDefaultsPreferences(applicationContext).get()
         val initial = if (savedInstanceState == null) {
             stored
@@ -70,10 +85,19 @@ class WidgetDefaultsActivity : BaseActivity() {
             )
         }
         applySelection(initial)
+        val restoredPreviewSize = savedInstanceState
+            ?.getString(STATE_PREVIEW_SIZE)
+            ?.let { name -> WidgetSize.entries.firstOrNull { it.name == name } }
+            ?: WidgetSize.STANDARD
+        previewSizeSpinner.setSelection(
+            WidgetPreviewSizing.orderedSizes.indexOf(restoredPreviewSize).coerceAtLeast(0),
+        )
 
         appearanceSpinner.onItemSelectedListener =
             SimpleItemSelectedListener { updatePreview() }
         backgroundSpinner.onItemSelectedListener =
+            SimpleItemSelectedListener { updatePreview() }
+        previewSizeSpinner.onItemSelectedListener =
             SimpleItemSelectedListener { updatePreview() }
         updatePreview()
 
@@ -94,6 +118,9 @@ class WidgetDefaultsActivity : BaseActivity() {
         val selection = currentSelection()
         outState.putString(STATE_APPEARANCE, selection.appearance.name)
         outState.putString(STATE_BACKGROUND, selection.background.name)
+        WidgetPreviewSizing.orderedSizes.getOrNull(previewSizeSpinner.selectedItemPosition)?.let {
+            outState.putString(STATE_PREVIEW_SIZE, it.name)
+        }
         super.onSaveInstanceState(outState)
     }
 
@@ -112,29 +139,22 @@ class WidgetDefaultsActivity : BaseActivity() {
     }
 
     private fun updatePreview() {
-        if (!::previewBackground.isInitialized) return
-        val selection = currentSelection()
-        val theme = WidgetThemeResolver.resolve(this, selection.appearance)
-
-        previewBackground.setImageBitmap(
-            WidgetBackgroundRenderer.render(
-                context = applicationContext,
-                background = selection.background,
-                dark = theme.dark,
-                widthDp = PREVIEW_WIDTH_DP,
-                heightDp = PREVIEW_HEIGHT_DP,
-            ),
+        if (!::previewController.isInitialized) return
+        val size = WidgetPreviewSizing.orderedSizes
+            .getOrElse(previewSizeSpinner.selectedItemPosition) { WidgetSize.STANDARD }
+        previewController.renderStyle(
+            selection = currentSelection(),
+            dimensions = WidgetPreviewSizing.representative(size),
         )
-        previewIcon.setColorFilter(theme.accentTextColor)
-        previewTitle.setTextColor(theme.primaryTextColor)
-        previewCount.setTextColor(theme.accentTextColor)
-        previewUnit.setTextColor(theme.secondaryTextColor)
+        previewController.renderPlaceholder(
+            title = getString(R.string.widget_defaults_preview_title),
+            unit = getString(R.string.widget_days_left),
+        )
     }
 
     private companion object {
-        const val PREVIEW_WIDTH_DP = 180
-        const val PREVIEW_HEIGHT_DP = 110
         const val STATE_APPEARANCE = "default_appearance"
         const val STATE_BACKGROUND = "default_background"
+        const val STATE_PREVIEW_SIZE = "default_preview_size"
     }
 }
