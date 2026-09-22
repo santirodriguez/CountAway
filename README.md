@@ -14,9 +14,9 @@ CountAway keeps countdowns local, simple, and visible where they are actually us
 
 I wanted a home-screen widget that simply showed how many days were left until something important.
 
-A surprising number of alternatives either glitched out or decided that “count the days” needed a full executive career path and fourteen unnecessary features.
+Somehow, “count the days” often turns into an account, a subscription, a dashboard, and a minor career change.
 
-So CountAway does the obvious thing: pick a date, put it on your home screen, and move on with your life.
+CountAway skips all that. Pick a date, put it on your home screen, and get on with your life.
 
 ## Installation
 
@@ -28,18 +28,16 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 
 ## What it does
 
-- Multiple local countdowns with presets, custom icons, and optional yearly recurrence
-- Compact 1×1 and responsive home-screen widgets, including wide-short layouts
+- Multiple local countdowns with custom icons and optional yearly recurrence
+- Responsive home-screen widgets, from compact 1×1 to wide layouts
 - Fixed-event widgets or an automatic **Next countdown** mode
-- Nine widget backgrounds with a live preview and system, light, and dark appearance
-- Direct home-screen widget pinning from a saved countdown on supported launchers
-- Optional local reminders on the event day or 1, 3, or 7 days before
-- Share any countdown through Android's regular share sheet
-- Local JSON backup and restore through Android's document picker
-- Subtle 3 · 2 · 1 · 0 arrival states, followed by elapsed days after the date passes
-- System, light, and dark app appearance
+- Optional local reminders before or on the event day
+- System, Light, and Dark appearance for both the app and widgets
+- Native sharing plus local JSON backup and restore
+- Direct widget pinning on supported launchers
 - English, Spanish, and Catalan
-- Battery-minded local refreshes
+
+Everything stays local, with no accounts, ads, analytics, or cloud sync.
 
 ## Screenshots
 
@@ -61,7 +59,9 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 
 ## Privacy
 
-CountAway keeps its app data local and has no Internet permission. It does not need your location, contacts, camera, microphone, or a suspiciously creative excuse to collect any of them. If you enable reminders, Android may ask for notification permission. If you explicitly export a backup through Android's system document picker, the destination is the document provider you choose; CountAway itself still performs no network access and requires no broad storage permission.
+CountAway has no Internet permission, accounts, ads, analytics, or cloud sync.
+
+Your countdowns stay on your device. Revolutionary stuff, apparently.
 
 ## Build
 
