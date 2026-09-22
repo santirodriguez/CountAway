@@ -20,8 +20,7 @@ import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
-import com.santiagorodriguez.countaway.widget.WidgetDefaultsActivity
-import com.santiagorodriguez.countaway.widget.WidgetPinning
+import com.santiagorodriguez.countaway.widget.WidgetPinSetupActivity
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
 
@@ -43,7 +42,7 @@ class MainActivity : BaseActivity() {
         InsetUtils.applySystemBarPadding(findViewById(R.id.mainRoot))
 
         repository = CountdownRepository(this)
-        adapter = CountdownEventAdapter(this, ::addWidgetFromLongPress)
+        adapter = CountdownEventAdapter(this, ::openWidgetPinSetup)
         countdownList = findViewById(R.id.countdownList)
         emptyState = findViewById(R.id.emptyState)
         emptyStateIcon = findViewById(R.id.emptyStateIcon)
@@ -59,7 +58,7 @@ class MainActivity : BaseActivity() {
             startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
         }
         countdownList.setOnItemLongClickListener { _, _, position, _ ->
-            addWidgetFromLongPress(adapter.getItem(position))
+            openWidgetPinSetup(adapter.getItem(position))
             true
         }
 
@@ -155,10 +154,11 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun addWidgetFromLongPress(event: CountdownEvent) {
-        if (!WidgetPinning.request(this, event)) {
-            Toast.makeText(this, R.string.widget_pin_unavailable_guidance, Toast.LENGTH_LONG).show()
-        }
+    private fun openWidgetPinSetup(event: CountdownEvent) {
+        startActivity(
+            Intent(this, WidgetPinSetupActivity::class.java)
+                .putExtra(WidgetPinSetupActivity.EXTRA_EVENT_ID, event.id),
+        )
     }
 
     private fun setAddEnabled(enabled: Boolean) {
@@ -197,9 +197,6 @@ class MainActivity : BaseActivity() {
             .setSingleChoiceItems(labels, selected) { dialog, which ->
                 dialog.dismiss()
                 ThemeManager.setTheme(this, themes[which])
-            }
-            .setNeutralButton(R.string.widget_defaults_title) { _, _ ->
-                startActivity(Intent(this, WidgetDefaultsActivity::class.java))
             }
             .setNegativeButton(R.string.action_cancel, null)
             .show()

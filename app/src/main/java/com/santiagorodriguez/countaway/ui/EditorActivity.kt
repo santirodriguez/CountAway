@@ -4,9 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DatePickerDialog
-import android.appwidget.AppWidgetManager
 import android.app.NotificationManager
-import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
@@ -52,14 +50,6 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
-import com.santiagorodriguez.countaway.widget.WidgetAppearance
-import com.santiagorodriguez.countaway.widget.WidgetBackground
-import com.santiagorodriguez.countaway.widget.WidgetConfigActivity
-import com.santiagorodriguez.countaway.widget.WidgetEventSelection
-import com.santiagorodriguez.countaway.widget.WidgetInstanceValidator
-import com.santiagorodriguez.countaway.widget.WidgetPinning
-import com.santiagorodriguez.countaway.widget.WidgetPreferences
-import com.santiagorodriguez.countaway.widget.WidgetSize
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -78,8 +68,6 @@ class EditorActivity : BaseActivity() {
     private lateinit var dateButton: Button
     private lateinit var saveButton: Button
     private lateinit var shareButton: Button
-    private lateinit var addWidgetButton: Button
-    private lateinit var widgetSettingsButton: Button
     private lateinit var deleteButton: Button
     private lateinit var repeatSpinner: Spinner
     private lateinit var reminderSpinner: Spinner
@@ -113,8 +101,6 @@ class EditorActivity : BaseActivity() {
         dateButton = findViewById(R.id.dateButton)
         saveButton = findViewById(R.id.saveButton)
         shareButton = findViewById(R.id.shareButton)
-        addWidgetButton = findViewById(R.id.addWidgetButton)
-        widgetSettingsButton = findViewById(R.id.widgetSettingsButton)
         deleteButton = findViewById(R.id.deleteButton)
         repeatSpinner = findViewById(R.id.repeatSpinner)
         reminderSpinner = findViewById(R.id.reminderSpinner)
@@ -193,10 +179,6 @@ class EditorActivity : BaseActivity() {
         saveButton.setOnClickListener { save() }
         shareButton.setOnClickListener { share() }
 
-        addWidgetButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
-        addWidgetButton.setOnClickListener { addWidgetForSavedEvent() }
-        widgetSettingsButton.setOnClickListener { showWidgetSettingsForSavedEvent() }
-        refreshWidgetSettingsAction()
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
         editorInitialized = true
@@ -209,7 +191,6 @@ class EditorActivity : BaseActivity() {
         temporalInvalidationController.start(snapshot)
         if (editorInitialized) {
             refreshReminderSpinner(snapshot.today)
-            refreshWidgetSettingsAction()
         }
     }
 
@@ -504,145 +485,6 @@ class EditorActivity : BaseActivity() {
             Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
         }
     }
-
-    private fun addWidgetForSavedEvent() {
-        val event = existingEvent ?: return
-        if (baselineDraft != currentDraft()) {
-            Toast.makeText(this, R.string.widget_save_before_pin, Toast.LENGTH_LONG).show()
-            return
-        }
-        if (!WidgetPinning.request(this, event)) {
-            Toast.makeText(this, R.string.widget_pin_unavailable_guidance, Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun refreshWidgetSettingsAction() {
-        val event = existingEvent
-        widgetSettingsButton.visibility = if (
-            event != null && fixedWidgetInstances(event.id).isNotEmpty()
-        ) {
-            View.VISIBLE
-        } else {
-            View.GONE
-        }
-    }
-
-    private fun showWidgetSettingsForSavedEvent() {
-        val event = existingEvent ?: return
-        val instances = fixedWidgetInstances(event.id)
-        when (instances.size) {
-            0 -> {
-                widgetSettingsButton.visibility = View.GONE
-                Toast.makeText(this, R.string.widget_instance_unavailable, Toast.LENGTH_SHORT).show()
-            }
-            1 -> openWidgetSettings(instances.single().appWidgetId, event.id)
-            else -> {
-                val labels = instances.mapIndexed { index, instance ->
-                    getString(
-                        R.string.widget_instance_numbered,
-                        index + 1,
-                        getString(
-                            R.string.widget_instance_summary,
-                            backgroundLabel(instance.configuration.background),
-                            appearanceLabel(instance.configuration.appearance),
-                            sizeLabel(instance.size),
-                        ),
-                    )
-                }.toTypedArray()
-                AlertDialog.Builder(this)
-                    .setTitle(R.string.widget_settings_choose)
-                    .setItems(labels) { _, which ->
-                        instances.getOrNull(which)?.let {
-                            openWidgetSettings(it.appWidgetId, event.id)
-                        }
-                    }
-                    .setNegativeButton(R.string.action_cancel, null)
-                    .show()
-            }
-        }
-    }
-
-    private fun fixedWidgetInstances(eventId: String): List<WidgetInstanceChoice> {
-        val appContext = applicationContext
-        val manager = AppWidgetManager.getInstance(appContext)
-        val provider = ComponentName(appContext, CountdownWidgetProvider::class.java)
-        val preferences = WidgetPreferences(appContext)
-        return manager.getAppWidgetIds(provider).toList().mapNotNull { appWidgetId ->
-            if (!WidgetInstanceValidator.isOwnedBy(manager, appWidgetId, provider)) {
-                return@mapNotNull null
-            }
-            val configuration = preferences.get(appWidgetId)
-            if (
-                configuration == null ||
-                configuration.eventSelection != WidgetEventSelection.FIXED ||
-                configuration.eventId != eventId
-            ) {
-                return@mapNotNull null
-            }
-            val size = runCatching {
-                val options = manager.getAppWidgetOptions(appWidgetId)
-                val width = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
-                val height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
-                if (width > 0 && height > 0) WidgetSize.fromDimensions(width, height) else null
-            }.getOrNull()
-            WidgetInstanceChoice(appWidgetId, configuration, size)
-        }
-    }
-
-    private fun openWidgetSettings(appWidgetId: Int, eventId: String) {
-        val appContext = applicationContext
-        val manager = AppWidgetManager.getInstance(appContext)
-        val provider = ComponentName(appContext, CountdownWidgetProvider::class.java)
-        val configuration = WidgetPreferences(appContext).get(appWidgetId)
-        val matchesEvent = configuration?.let {
-            it.eventSelection == WidgetEventSelection.FIXED && it.eventId == eventId
-        } == true
-        val valid =
-            WidgetInstanceValidator.isOwnedBy(manager, appWidgetId, provider) && matchesEvent
-        if (!valid) {
-            refreshWidgetSettingsAction()
-            Toast.makeText(this, R.string.widget_instance_unavailable, Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        startActivity(
-            Intent(this, WidgetConfigActivity::class.java)
-                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                .setData(Uri.parse("countaway://widget/$appWidgetId/configure")),
-        )
-    }
-
-    private fun appearanceLabel(appearance: WidgetAppearance): String = getString(
-        when (appearance) {
-            WidgetAppearance.SYSTEM -> R.string.widget_appearance_system
-            WidgetAppearance.LIGHT -> R.string.widget_appearance_light
-            WidgetAppearance.DARK -> R.string.widget_appearance_dark
-        },
-    )
-
-    private fun backgroundLabel(background: WidgetBackground): String = getString(
-        when (background) {
-            WidgetBackground.CLASSIC -> R.string.widget_background_classic
-            WidgetBackground.MIST -> R.string.widget_background_mist
-            WidgetBackground.HORIZON -> R.string.widget_background_horizon
-            WidgetBackground.FOREST -> R.string.widget_background_forest
-            WidgetBackground.SUNSET -> R.string.widget_background_sunset
-            WidgetBackground.PULSE -> R.string.widget_background_pulse
-            WidgetBackground.BREEZE -> R.string.widget_background_breeze
-            WidgetBackground.EMBER -> R.string.widget_background_ember
-            WidgetBackground.MONOGRAM -> R.string.widget_background_six
-        },
-    )
-
-    private fun sizeLabel(size: WidgetSize?): String = getString(
-        when (size) {
-            WidgetSize.COMPACT -> R.string.widget_size_compact
-            WidgetSize.SHORT -> R.string.widget_size_short
-            WidgetSize.STANDARD -> R.string.widget_size_standard
-            WidgetSize.LARGE -> R.string.widget_size_large
-            null -> R.string.widget_size_unknown
-        },
-    )
 
     private fun elapsedStatus(elapsedDays: Long): String {
         val quantity = elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
@@ -954,12 +796,6 @@ class EditorActivity : BaseActivity() {
         icon = selectedIcon,
         repeatRule = selectedRepeatRule,
         reminder = selectedReminder,
-    )
-
-    private data class WidgetInstanceChoice(
-        val appWidgetId: Int,
-        val configuration: com.santiagorodriguez.countaway.widget.WidgetConfiguration,
-        val size: WidgetSize?,
     )
 
     private data class EditorDraft(

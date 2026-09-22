@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widgetDefaultsRoot"
+    android:id="@+id/widgetPinSetupRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
@@ -17,7 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
-            android:text="@string/widget_defaults_title"
+            android:text="@string/widget_pin_setup_title"
             android:textColor="@color/foreground"
             android:textSize="28sp" />
 
@@ -25,38 +25,28 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/widget_defaults_description"
+            android:text="@string/widget_pin_setup_description"
             android:textColor="@color/secondary_text"
             android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/widgetPinSetupEventTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/status_pill"
+            android:fontFamily="sans-serif-medium"
+            android:paddingStart="14dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="10dp"
+            android:textColor="@color/foreground"
+            android:textSize="16sp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="@string/widget_appearance_label"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/control_surface">
-
-            <Spinner
-                android:id="@+id/widgetDefaultsAppearanceSpinner"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="@android:color/transparent"
-                android:paddingStart="14dp"
-                android:paddingEnd="8dp"
-                android:spinnerMode="dropdown" />
-        </FrameLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
             android:text="@string/widget_background_label"
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
@@ -68,7 +58,7 @@
             android:background="@drawable/control_surface">
 
             <Spinner
-                android:id="@+id/widgetDefaultsBackgroundSpinner"
+                android:id="@+id/widgetPinSetupBackgroundSpinner"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:background="@android:color/transparent"
@@ -81,7 +71,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:text="@string/widget_preview_size_label"
+            android:text="@string/widget_appearance_label"
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
 
@@ -92,7 +82,7 @@
             android:background="@drawable/control_surface">
 
             <Spinner
-                android:id="@+id/widgetDefaultsPreviewSizeSpinner"
+                android:id="@+id/widgetPinSetupAppearanceSpinner"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:background="@android:color/transparent"
@@ -110,37 +100,29 @@
             android:textSize="13sp" />
 
         <FrameLayout
-            android:id="@+id/widgetDefaultsPreviewContainer"
+            android:id="@+id/widgetPinSetupPreviewContainer"
             android:layout_width="match_parent"
             android:layout_height="176dp"
             android:layout_marginTop="6dp"
             android:importantForAccessibility="no">
 
             <FrameLayout
-                android:id="@+id/widgetDefaultsPreviewFrame"
+                android:id="@+id/widgetPinSetupPreviewFrame"
                 android:layout_width="160dp"
                 android:layout_height="100dp"
                 android:layout_gravity="center" />
         </FrameLayout>
 
         <Button
-            android:id="@+id/widgetDefaultsResetButton"
-            style="@style/Widget.CountAway.Button.Secondary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:text="@string/widget_defaults_reset" />
-
-        <Button
-            android:id="@+id/widgetDefaultsSaveButton"
+            android:id="@+id/widgetPinSetupAddButton"
             style="@style/Widget.CountAway.Button.Primary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/action_save" />
+            android:layout_marginTop="18dp"
+            android:text="@string/widget_pin_setup_add" />
 
         <Button
-            android:id="@+id/widgetDefaultsCancelButton"
+            android:id="@+id/widgetPinSetupCancelButton"
             style="@style/Widget.CountAway.Button.Secondary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

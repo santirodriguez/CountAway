@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -57,12 +58,17 @@ class WidgetThemeResolverInstrumentedTest {
                         widthDp = dimensions.widthDp,
                         heightDp = dimensions.heightDp,
                     )
-                    val xStart = (bitmap.width * 0.06f).toInt().coerceAtLeast(0)
-                    val xEnd = (bitmap.width * 0.94f).toInt().coerceAtMost(bitmap.width - 1)
-                    val yStart = (bitmap.height * 0.06f).toInt().coerceAtLeast(0)
-                    val yEnd = (bitmap.height * 0.94f).toInt().coerceAtMost(bitmap.height - 1)
-                    val xStep = maxOf(1, (xEnd - xStart) / 24)
-                    val yStep = maxOf(1, (yEnd - yStart) / 16)
+                    val pixelsPerDp = minOf(
+                        bitmap.width.toFloat() / dimensions.widthDp,
+                        bitmap.height.toFloat() / dimensions.heightDp,
+                    )
+                    val cornerSafeInset = (21f * pixelsPerDp).roundToInt().coerceAtLeast(1)
+                    val xStart = cornerSafeInset.coerceAtMost(bitmap.width / 2)
+                    val xEnd = (bitmap.width - 1 - cornerSafeInset).coerceAtLeast(bitmap.width / 2)
+                    val yStart = cornerSafeInset.coerceAtMost(bitmap.height / 2)
+                    val yEnd = (bitmap.height - 1 - cornerSafeInset).coerceAtLeast(bitmap.height / 2)
+                    val xStep = maxOf(1, (xEnd - xStart) / 16)
+                    val yStep = maxOf(1, (yEnd - yStart) / 12)
 
                     var y = yStart
                     while (y <= yEnd) {

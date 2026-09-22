@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="widget_defaults_title">Widget defaults</string>
-    <string name="widget_defaults_description">Choose the style used when configuring new widgets. Existing widgets stay unchanged.</string>
-    <string name="widget_defaults_reset">Reset to Classic + System</string>
-    <string name="widget_defaults_preview_title">Example countdown</string>
-    <string name="widget_preview_size_label">Preview size</string>
-</resources>

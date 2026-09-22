@@ -14,10 +14,7 @@ class WidgetPinResultReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val callbackIntent = intent ?: return
         val snapshot = WidgetPinRequestSnapshot.fromCallbackData(callbackIntent.dataString) ?: return
-        val appWidgetId = callbackIntent.getIntExtra(
-            AppWidgetManager.EXTRA_APPWIDGET_ID,
-            AppWidgetManager.INVALID_APPWIDGET_ID,
-        )
+        val appWidgetId = appWidgetIdFrom(callbackIntent)
         val appContext = context.applicationContext
         val manager = AppWidgetManager.getInstance(appContext)
         val provider = ComponentName(appContext, CountdownWidgetProvider::class.java)
@@ -58,5 +55,13 @@ class WidgetPinResultReceiver : BroadcastReceiver() {
                 pending.finish()
             }
         }
+    }
+
+    internal companion object {
+        fun appWidgetIdFrom(intent: Intent?): Int =
+            intent?.getIntExtra(
+                AppWidgetManager.EXTRA_APPWIDGET_ID,
+                AppWidgetManager.INVALID_APPWIDGET_ID,
+            ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
     }
 }

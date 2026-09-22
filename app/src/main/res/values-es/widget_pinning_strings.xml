@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_add_accessibility_action">Agregar widget</string>
+    <string name="widget_pin_setup_title">Agregar widget</string>
+    <string name="widget_pin_setup_description">Elegí cómo se verá esta cuenta regresiva. Ya Estamos recordará este estilo para el próximo widget que agregues.</string>
+    <string name="widget_pin_setup_add">Agregar widget</string>
+    <string name="widget_pin_event_unavailable">Esta cuenta regresiva ya no está disponible.</string>
     <string name="widget_pin_unavailable_guidance">El launcher no pudo iniciar el agregado del widget. Agregá Ya Estamos desde el selector de widgets de la pantalla de inicio y revisá si el diseño de la pantalla está bloqueado.</string>
-    <string name="widget_settings">Configuración del widget</string>
-    <string name="widget_settings_choose">Elegí un widget</string>
     <string name="widget_instance_unavailable">Ese widget ya no está disponible.</string>
-    <string name="widget_instance_summary">%1$s · %2$s · %3$s</string>
-    <string name="widget_instance_numbered">%1$d. %2$s</string>
-    <string name="widget_size_compact">Compacto</string>
-    <string name="widget_size_short">Ancho bajo</string>
-    <string name="widget_size_standard">Estándar</string>
-    <string name="widget_size_large">Grande</string>
-    <string name="widget_size_unknown">Tamaño no disponible</string>
 </resources>

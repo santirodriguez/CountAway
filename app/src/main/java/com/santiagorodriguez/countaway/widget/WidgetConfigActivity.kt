@@ -42,6 +42,7 @@ class WidgetConfigActivity : BaseActivity() {
     private var events: List<CountdownEvent> = emptyList()
     private var selectedEventId: String? = null
     private var selectedMode: WidgetEventSelection = WidgetEventSelection.FIXED
+    private var isNewWidget = false
     private lateinit var temporalInvalidationController: TemporalInvalidationController
     private var loadGeneration = 0
 
@@ -106,6 +107,7 @@ class WidgetConfigActivity : BaseActivity() {
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         val existing = WidgetPreferences(applicationContext).get(appWidgetId)
+        isNewWidget = existing == null
         val existingStyle = existing?.let { configuration ->
             WidgetStyleSelection(
                 appearance = configuration.appearance,
@@ -332,6 +334,7 @@ class WidgetConfigActivity : BaseActivity() {
 
         val appearance = WidgetAppearance.entries[appearanceSpinner.selectedItemPosition]
         val background = WidgetBackground.entries[backgroundSpinner.selectedItemPosition]
+        val style = WidgetStyleSelection(appearance = appearance, background = background)
         WidgetPreferences(applicationContext).save(
             appWidgetId = appWidgetId,
             eventId = selectedEventId,
@@ -339,6 +342,9 @@ class WidgetConfigActivity : BaseActivity() {
             background = background,
             eventSelection = selectedMode,
         )
+        if (isNewWidget) {
+            WidgetDefaultsPreferences(applicationContext).save(style)
+        }
 
         val snapshot = CountdownTime.snapshot()
         CountdownIo.execute {

@@ -7,7 +7,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import java.net.URI
@@ -92,8 +91,11 @@ object WidgetPinning {
     fun request(activity: Activity): Boolean =
         requestInternal(activity = activity, event = null, snapshot = null)
 
-    fun request(activity: Activity, event: CountdownEvent): Boolean {
-        val style = WidgetDefaultsPreferences(activity).get()
+    fun request(
+        activity: Activity,
+        event: CountdownEvent,
+        style: WidgetStyleSelection,
+    ): Boolean {
         val snapshot = WidgetPinRequestSnapshot.create(event.id, style)
         return requestInternal(activity, event, snapshot)
     }
@@ -106,7 +108,7 @@ object WidgetPinning {
         snapshot.requestToken.hashCode(),
         Intent(context, WidgetPinResultReceiver::class.java)
             .setData(Uri.parse(snapshot.callbackData())),
-        PendingIntent.FLAG_ONE_SHOT or mutableCallbackFlag(),
+        PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
     )
 
     private fun requestInternal(
@@ -139,6 +141,5 @@ object WidgetPinning {
         return requested
     }
 
-    private fun mutableCallbackFlag(): Int =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+
 }

@@ -26,7 +26,7 @@
         </activity>
 
         <activity
-            android:name=".widget.WidgetDefaultsActivity"
+            android:name=".widget.WidgetPinSetupActivity"
             android:exported="false" />
 
         <activity
