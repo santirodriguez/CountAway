@@ -19,6 +19,7 @@ import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
+import com.santiagorodriguez.countaway.widget.WidgetDefaultsActivity
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
 
@@ -184,6 +185,9 @@ class MainActivity : BaseActivity() {
             .setSingleChoiceItems(labels, selected) { dialog, which ->
                 dialog.dismiss()
                 ThemeManager.setTheme(this, themes[which])
+            }
+            .setNeutralButton(R.string.widget_defaults_title) { _, _ ->
+                startActivity(Intent(this, WidgetDefaultsActivity::class.java))
             }
             .setNegativeButton(R.string.action_cancel, null)
             .show()

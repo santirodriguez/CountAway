@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_defaults_title">Estil predeterminat del giny</string>
+    <string name="widget_defaults_description">Tria l’estil que s’utilitzarà en configurar ginys nous. Els ginys existents no canvien.</string>
+    <string name="widget_defaults_reset">Restableix a Clàssic + Sistema</string>
+    <string name="widget_defaults_preview_title">Compte enrere d’exemple</string>
+</resources>

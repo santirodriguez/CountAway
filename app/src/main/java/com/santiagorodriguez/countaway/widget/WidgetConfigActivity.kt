@@ -114,15 +114,21 @@ class WidgetConfigActivity : BaseActivity() {
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
 
         val existing = WidgetPreferences(applicationContext).get(appWidgetId)
+        val existingStyle = existing?.let { configuration ->
+            WidgetStyleSelection(
+                appearance = configuration.appearance,
+                background = configuration.background,
+            )
+        }
+        val defaults = WidgetDefaultsPreferences(applicationContext).get()
+        val baselineStyle = WidgetStyleSelectionResolver.initial(
+            existing = existingStyle,
+            defaults = defaults,
+        )
+
         if (savedInstanceState == null) {
             selectedEventId = existing?.eventId
             selectedMode = existing?.eventSelection ?: WidgetEventSelection.FIXED
-            appearanceSpinner.setSelection(
-                WidgetAppearance.entries.indexOf(existing?.appearance ?: WidgetAppearance.SYSTEM),
-            )
-            backgroundSpinner.setSelection(
-                WidgetBackground.entries.indexOf(existing?.background ?: WidgetBackground.CLASSIC),
-            )
         } else {
             selectedEventId = savedInstanceState.getString(STATE_EVENT_ID)
             selectedMode = enumValueOrDefault(
@@ -130,19 +136,19 @@ class WidgetConfigActivity : BaseActivity() {
                 WidgetEventSelection.entries,
                 existing?.eventSelection ?: WidgetEventSelection.FIXED,
             )
-            val appearance = enumValueOrDefault(
-                savedInstanceState.getString(STATE_APPEARANCE),
-                WidgetAppearance.entries,
-                existing?.appearance ?: WidgetAppearance.SYSTEM,
-            )
-            val background = enumValueOrDefault(
-                savedInstanceState.getString(STATE_BACKGROUND),
-                WidgetBackground.entries,
-                existing?.background ?: WidgetBackground.CLASSIC,
-            )
-            appearanceSpinner.setSelection(WidgetAppearance.entries.indexOf(appearance))
-            backgroundSpinner.setSelection(WidgetBackground.entries.indexOf(background))
         }
+
+        val initialStyle = if (savedInstanceState == null) {
+            baselineStyle
+        } else {
+            WidgetStyleSelectionResolver.restore(
+                baseline = baselineStyle,
+                appearanceName = savedInstanceState.getString(STATE_APPEARANCE),
+                backgroundName = savedInstanceState.getString(STATE_BACKGROUND),
+            )
+        }
+        appearanceSpinner.setSelection(WidgetAppearance.entries.indexOf(initialStyle.appearance))
+        backgroundSpinner.setSelection(WidgetBackground.entries.indexOf(initialStyle.background))
 
         val styleListener = SimpleItemSelectedListener { updateStylePreview() }
         appearanceSpinner.onItemSelectedListener = styleListener

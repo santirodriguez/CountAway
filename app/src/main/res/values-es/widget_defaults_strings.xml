@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_defaults_title">Estilo predeterminado del widget</string>
+    <string name="widget_defaults_description">Elegí el estilo que se usará al configurar widgets nuevos. Los widgets existentes no cambian.</string>
+    <string name="widget_defaults_reset">Restablecer a Clásico + Sistema</string>
+    <string name="widget_defaults_preview_title">Cuenta regresiva de ejemplo</string>
+</resources>
