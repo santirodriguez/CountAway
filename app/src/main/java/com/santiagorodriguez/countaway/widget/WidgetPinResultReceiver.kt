@@ -12,8 +12,9 @@ import com.santiagorodriguez.countaway.data.CountdownRepository
 
 class WidgetPinResultReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        val snapshot = WidgetPinRequestSnapshot.fromCallbackData(intent?.dataString) ?: return
-        val appWidgetId = intent.getIntExtra(
+        val callbackIntent = intent ?: return
+        val snapshot = WidgetPinRequestSnapshot.fromCallbackData(callbackIntent.dataString) ?: return
+        val appWidgetId = callbackIntent.getIntExtra(
             AppWidgetManager.EXTRA_APPWIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID,
         )

@@ -567,7 +567,7 @@ class EditorActivity : BaseActivity() {
         val manager = AppWidgetManager.getInstance(appContext)
         val provider = ComponentName(appContext, CountdownWidgetProvider::class.java)
         val preferences = WidgetPreferences(appContext)
-        return manager.getAppWidgetIds(provider).mapNotNull { appWidgetId ->
+        return manager.getAppWidgetIds(provider).toList().mapNotNull { appWidgetId ->
             if (!WidgetInstanceValidator.isOwnedBy(manager, appWidgetId, provider)) {
                 return@mapNotNull null
             }
