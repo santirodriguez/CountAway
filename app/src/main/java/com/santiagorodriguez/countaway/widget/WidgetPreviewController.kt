@@ -1,6 +1,7 @@
 package com.santiagorodriguez.countaway.widget
 
 import android.content.Context
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
@@ -136,7 +137,7 @@ internal class WidgetPreviewController(
             contentView.addView(countView)
             contentView.addView(titleView)
             titleView.textSize = 10f
-            countView.textSize = 24f
+            configureCountAutoSize(size)
             titleView.maxLines = 2
             milestoneView.visibility = View.GONE
             unitView.visibility = View.GONE
@@ -222,14 +223,24 @@ internal class WidgetPreviewController(
             WidgetSize.LARGE -> 13f
             WidgetSize.SHORT -> 9f
         }
-        countView.textSize = when (size) {
-            WidgetSize.COMPACT -> 26f
-            WidgetSize.STANDARD -> 42f
-            WidgetSize.LARGE -> 60f
-            WidgetSize.SHORT -> 24f
-        }
+        configureCountAutoSize(size)
         unitView.textSize = if (size == WidgetSize.LARGE) 15f else 12f
         dateView.textSize = 13f
+    }
+
+    private fun configureCountAutoSize(size: WidgetSize) {
+        val (minSp, maxSp) = when (size) {
+            WidgetSize.COMPACT -> 12 to 26
+            WidgetSize.SHORT -> 12 to 24
+            WidgetSize.STANDARD -> 12 to 42
+            WidgetSize.LARGE -> 14 to 60
+        }
+        countView.setAutoSizeTextTypeUniformWithConfiguration(
+            minSp,
+            maxSp,
+            1,
+            TypedValue.COMPLEX_UNIT_SP,
+        )
     }
 
     private fun dp(value: Int): Int =
