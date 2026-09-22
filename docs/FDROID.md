@@ -13,7 +13,7 @@ F-Droid documentation:
 
 CountAway's initial inclusion merge request, `fdroid/fdroiddata!46416`, was merged into official `fdroiddata` on September 18, 2026.
 
-The accepted metadata currently identifies CountAway 1.1.7 / versionCode 7 and preserves:
+The initial accepted metadata identified CountAway 1.1.7 / versionCode 7 and preserved:
 
 - category `Timer`;
 - source repository `https://github.com/santirodriguez/CountAway.git`;

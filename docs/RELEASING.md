@@ -144,6 +144,8 @@ Before `prepare-draft-release`, Gate A requires the existing CountAway package t
 
 The workflow independently verifies items 1–3 during draft preparation. A 404, API error, missing APK, empty package record, or signing mismatch fails closed. The workflow cannot prove the human installation step; record that check before starting draft preparation.
 
+For CountAway 1.1.8, Gate A was completed on September 22, 2026. Keep these checks enabled during draft preparation as a regression guard.
+
 This gate applies even if a release is prepared manually outside the normal checklist. The app itself performs no network check and receives no Internet permission.
 
 ## Prepare a draft release
