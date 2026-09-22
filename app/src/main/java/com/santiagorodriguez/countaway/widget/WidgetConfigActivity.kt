@@ -75,14 +75,6 @@ class WidgetConfigActivity : BaseActivity() {
             context = this,
             container = findViewById(R.id.widgetPreviewContainer),
             frame = findViewById(R.id.widgetPreviewFrame),
-            backgroundView = findViewById(R.id.widgetPreviewBackground),
-            contentView = findViewById(R.id.widgetPreviewContent),
-            iconView = findViewById(R.id.widgetPreviewIcon),
-            titleView = findViewById(R.id.widgetPreviewTitle),
-            milestoneView = findViewById(R.id.widgetPreviewMilestone),
-            countView = findViewById(R.id.widgetPreviewCount),
-            unitView = findViewById(R.id.widgetPreviewUnit),
-            dateView = findViewById(R.id.widgetPreviewDate),
         )
         saveButton = findViewById(R.id.widgetSaveButton)
         setSaveEnabled(false)

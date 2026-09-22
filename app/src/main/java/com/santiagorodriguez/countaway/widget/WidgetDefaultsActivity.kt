@@ -27,14 +27,6 @@ class WidgetDefaultsActivity : BaseActivity() {
             context = this,
             container = findViewById(R.id.widgetDefaultsPreviewContainer),
             frame = findViewById(R.id.widgetDefaultsPreviewFrame),
-            backgroundView = findViewById(R.id.widgetDefaultsPreviewBackground),
-            contentView = findViewById(R.id.widgetDefaultsPreviewContent),
-            iconView = findViewById(R.id.widgetDefaultsPreviewIcon),
-            titleView = findViewById(R.id.widgetDefaultsPreviewTitle),
-            milestoneView = findViewById(R.id.widgetDefaultsPreviewMilestone),
-            countView = findViewById(R.id.widgetDefaultsPreviewCount),
-            unitView = findViewById(R.id.widgetDefaultsPreviewUnit),
-            dateView = findViewById(R.id.widgetDefaultsPreviewDate),
         )
 
         appearanceSpinner.adapter = ArrayAdapter(
