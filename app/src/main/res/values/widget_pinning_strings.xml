@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_add_accessibility_action">Add widget</string>
+    <string name="widget_pin_unavailable_guidance">Your launcher couldn’t start widget pinning. Add CountAway from the home-screen widget picker and check whether the home-screen layout is locked.</string>
+    <string name="widget_settings">Widget settings</string>
+    <string name="widget_settings_choose">Choose a widget</string>
+    <string name="widget_instance_unavailable">That widget is no longer available.</string>
+    <string name="widget_instance_summary">%1$s · %2$s · %3$s</string>
+    <string name="widget_instance_numbered">%1$d. %2$s</string>
+    <string name="widget_size_compact">Compact</string>
+    <string name="widget_size_short">Wide short</string>
+    <string name="widget_size_standard">Standard</string>
+    <string name="widget_size_large">Large</string>
+    <string name="widget_size_unknown">Size unavailable</string>
+</resources>

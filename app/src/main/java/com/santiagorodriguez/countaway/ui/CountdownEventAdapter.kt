@@ -2,9 +2,11 @@ package com.santiagorodriguez.countaway.ui
 
 import android.content.Context
 import android.graphics.Typeface
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
@@ -20,7 +22,10 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
+class CountdownEventAdapter(
+    private val context: Context,
+    private val onAddWidget: ((CountdownEvent) -> Unit)? = null,
+) : BaseAdapter() {
     private val inflater = LayoutInflater.from(context)
     private val animatedMilestones = mutableSetOf<String>()
     private var items: List<CountdownEvent> = emptyList()
@@ -108,8 +113,50 @@ class CountdownEventAdapter(private val context: Context) : BaseAdapter() {
         }
         view.contentDescription = listOf(event.title, meta, statusView.contentDescription)
             .joinToString(", ")
+        bindAddWidgetAction(view, event)
 
         return view
+    }
+
+    private fun bindAddWidgetAction(view: View, event: CountdownEvent) {
+        val action = onAddWidget
+        if (action == null) {
+            view.setOnLongClickListener(null)
+            view.isLongClickable = false
+            view.accessibilityDelegate = null
+            return
+        }
+
+        view.setOnLongClickListener {
+            action(event)
+            true
+        }
+        view.accessibilityDelegate = object : View.AccessibilityDelegate() {
+            override fun onInitializeAccessibilityNodeInfo(
+                host: View,
+                info: AccessibilityNodeInfo,
+            ) {
+                super.onInitializeAccessibilityNodeInfo(host, info)
+                info.addAction(
+                    AccessibilityNodeInfo.AccessibilityAction(
+                        AccessibilityNodeInfo.ACTION_LONG_CLICK,
+                        context.getString(R.string.widget_add_accessibility_action),
+                    ),
+                )
+            }
+
+            override fun performAccessibilityAction(
+                host: View,
+                actionId: Int,
+                arguments: Bundle?,
+            ): Boolean {
+                if (actionId == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
+                    action(event)
+                    return true
+                }
+                return super.performAccessibilityAction(host, actionId, arguments)
+            }
+        }
     }
 
     private fun elapsedStatus(elapsedDays: Long): String {

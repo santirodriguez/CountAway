@@ -12,11 +12,11 @@ import com.santiagorodriguez.countaway.data.CountdownRepository
 
 class WidgetPinResultReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        val appWidgetId = intent?.getIntExtra(
+        val snapshot = WidgetPinRequestSnapshot.fromCallbackData(intent?.dataString) ?: return
+        val appWidgetId = intent.getIntExtra(
             AppWidgetManager.EXTRA_APPWIDGET_ID,
             AppWidgetManager.INVALID_APPWIDGET_ID,
-        ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
-        val eventId = intent?.getStringExtra(WidgetPinning.EXTRA_EVENT_ID) ?: return
+        )
         val appContext = context.applicationContext
         val manager = AppWidgetManager.getInstance(appContext)
         val provider = ComponentName(appContext, CountdownWidgetProvider::class.java)
@@ -26,22 +26,33 @@ class WidgetPinResultReceiver : BroadcastReceiver() {
         CountdownIo.execute {
             try {
                 val eventExists = when (val result = CountdownRepository(appContext).loadResult()) {
-                    is CountdownLoadResult.Success -> result.events.any { it.id == eventId }
+                    is CountdownLoadResult.Success -> result.events.any { it.id == snapshot.eventId }
                     is CountdownLoadResult.Failure -> false
                 }
-                if (eventExists) {
-                    WidgetPreferences(appContext).save(
+                val stillOwned = WidgetInstanceValidator.isOwnedBy(manager, appWidgetId, provider)
+                val preferences = WidgetPreferences(appContext)
+                val existing = preferences.get(appWidgetId)
+                if (
+                    WidgetPinResultPolicy.shouldApply(
+                        owned = stillOwned,
+                        eventExists = eventExists,
+                        existing = existing,
+                    )
+                ) {
+                    preferences.save(
                         appWidgetId = appWidgetId,
-                        eventId = eventId,
-                        appearance = WidgetAppearance.SYSTEM,
-                        background = WidgetBackground.CLASSIC,
+                        eventId = snapshot.eventId,
+                        appearance = snapshot.style.appearance,
+                        background = snapshot.style.background,
                         eventSelection = WidgetEventSelection.FIXED,
                     )
                 }
 
-                val snapshot = CountdownTime.snapshot()
-                CountdownWidgetProvider.updateWidget(appContext, manager, appWidgetId, snapshot)
-                WidgetUpdateScheduler.ensureScheduled(appContext, snapshot)
+                if (stillOwned) {
+                    val timeSnapshot = CountdownTime.snapshot()
+                    CountdownWidgetProvider.updateWidget(appContext, manager, appWidgetId, timeSnapshot)
+                    WidgetUpdateScheduler.ensureScheduled(appContext, timeSnapshot)
+                }
             } finally {
                 pending.finish()
             }

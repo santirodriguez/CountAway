@@ -13,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
@@ -410,6 +411,15 @@ class WidgetConfigActivity : BaseActivity() {
 
     private fun saveConfiguration() {
         if (selectedMode == WidgetEventSelection.FIXED && selectedEventId == null) return
+        val appContext = applicationContext
+        val manager = AppWidgetManager.getInstance(appContext)
+        val provider = ComponentName(appContext, CountdownWidgetProvider::class.java)
+        if (!WidgetInstanceValidator.isOwnedBy(manager, appWidgetId, provider)) {
+            Toast.makeText(this, R.string.widget_instance_unavailable, Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
         val appearance = WidgetAppearance.entries[appearanceSpinner.selectedItemPosition]
         val background = WidgetBackground.entries[backgroundSpinner.selectedItemPosition]
         WidgetPreferences(applicationContext).save(
@@ -420,8 +430,6 @@ class WidgetConfigActivity : BaseActivity() {
             eventSelection = selectedMode,
         )
 
-        val appContext = applicationContext
-        val manager = AppWidgetManager.getInstance(appContext)
         val snapshot = CountdownTime.snapshot()
         CountdownIo.execute {
             runCatching { CountdownWidgetProvider.updateWidget(appContext, manager, appWidgetId, snapshot) }

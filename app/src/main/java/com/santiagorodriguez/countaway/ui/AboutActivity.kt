@@ -90,7 +90,7 @@ class AboutActivity : BaseActivity() {
 
     private fun requestWidgetPin() {
         if (!WidgetPinning.request(this)) {
-            Toast.makeText(this, R.string.about_widget_pin_unavailable, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.widget_pin_unavailable_guidance, Toast.LENGTH_LONG).show()
         }
     }
 

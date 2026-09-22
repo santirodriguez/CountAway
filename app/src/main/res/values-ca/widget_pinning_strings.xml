@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_add_accessibility_action">Afegeix el widget</string>
+    <string name="widget_pin_unavailable_guidance">El llançador no ha pogut iniciar l’afegit del widget. Afegeix Ja Queda Poc des del selector de widgets de la pantalla d’inici i comprova si el disseny de la pantalla està bloquejat.</string>
+    <string name="widget_settings">Configuració del widget</string>
+    <string name="widget_settings_choose">Tria un widget</string>
+    <string name="widget_instance_unavailable">Aquest widget ja no està disponible.</string>
+    <string name="widget_instance_summary">%1$s · %2$s · %3$s</string>
+    <string name="widget_instance_numbered">%1$d. %2$s</string>
+    <string name="widget_size_compact">Compacte</string>
+    <string name="widget_size_short">Ample i baix</string>
+    <string name="widget_size_standard">Estàndard</string>
+    <string name="widget_size_large">Gran</string>
+    <string name="widget_size_unknown">Mida no disponible</string>
+</resources>

@@ -16,10 +16,12 @@ import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetDefaultsActivity
+import com.santiagorodriguez.countaway.widget.WidgetPinning
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
 
@@ -41,7 +43,7 @@ class MainActivity : BaseActivity() {
         InsetUtils.applySystemBarPadding(findViewById(R.id.mainRoot))
 
         repository = CountdownRepository(this)
-        adapter = CountdownEventAdapter(this)
+        adapter = CountdownEventAdapter(this, ::addWidgetFromLongPress)
         countdownList = findViewById(R.id.countdownList)
         emptyState = findViewById(R.id.emptyState)
         emptyStateIcon = findViewById(R.id.emptyStateIcon)
@@ -146,6 +148,12 @@ class MainActivity : BaseActivity() {
                 countdownList.isEnabled = false
                 setAddEnabled(false)
             }
+        }
+    }
+
+    private fun addWidgetFromLongPress(event: CountdownEvent) {
+        if (!WidgetPinning.request(this, event)) {
+            Toast.makeText(this, R.string.widget_pin_unavailable_guidance, Toast.LENGTH_LONG).show()
         }
     }
 
