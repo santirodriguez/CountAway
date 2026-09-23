@@ -188,7 +188,7 @@ object WidgetBackgroundRenderer {
             sunX,
             sunY,
             radius,
-            fillPaint(sunColor, if (dark) 34 else 24),
+            fillPaint(sunColor, if (dark) 24 else 24),
         )
         floatArrayOf(0.70f, 0.78f, 0.86f).forEachIndexed { index, y ->
             val inset = width * (0.06f + index * 0.05f)
@@ -199,7 +199,7 @@ object WidgetBackgroundRenderer {
                 height * y,
                 accentPaint(
                     hazeColor,
-                    if (dark) 18 - index * 2 else 15 - index * 2,
+                    if (dark) 14 - index * 2 else 15 - index * 2,
                     stroke * (1.1f - index * 0.12f),
                 ),
             )
@@ -209,7 +209,7 @@ object WidgetBackgroundRenderer {
             horizonY,
             width * 1.03f,
             horizonY,
-            accentPaint(sunColor, if (dark) 23 else 18, stroke * 0.9f),
+            accentPaint(sunColor, if (dark) 18 else 18, stroke * 0.9f),
         )
     }
 
