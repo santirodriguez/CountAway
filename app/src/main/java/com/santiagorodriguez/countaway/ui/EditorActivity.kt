@@ -733,7 +733,7 @@ class EditorActivity : BaseActivity() {
             lines += getString(
                 R.string.schedule_next_occurrence,
                 occurrence.format(formatter),
-                repeatLabel(selectedRepeatRule),
+                repeatLabel(selectedRepeatRule).lowercase(locale),
             )
         }
 
