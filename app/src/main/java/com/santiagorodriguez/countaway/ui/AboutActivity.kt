@@ -35,12 +35,14 @@ class AboutActivity : BaseActivity() {
     private var pendingImportCount: Int? = null
     private var pendingCurrentCount: Int? = null
     private var resumeImportAfterExport = false
+    private var calendarTapCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_about)
         InsetUtils.applySystemBarPadding(findViewById(R.id.aboutRoot))
         repository = CountdownRepository(this)
+        calendarTapCount = savedInstanceState?.getInt(STATE_CALENDAR_TAPS, 0) ?: 0
 
         val versionName = packageManager.getPackageInfo(packageName, 0).versionName ?: "—"
         findViewById<TextView>(R.id.versionText).text = getString(R.string.about_version_compact, versionName)
@@ -62,9 +64,11 @@ class AboutActivity : BaseActivity() {
         }
 
         restorePendingImport(savedInstanceState)
+        restoreCalendarMoment()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.putInt(STATE_CALENDAR_TAPS, calendarTapCount)
         val snapshot = importSnapshot
         if (pendingImportCount != null && snapshot != null && snapshot.exists()) {
             outState.putString(STATE_PENDING_IMPORT_ID, snapshot.identity)
@@ -101,9 +105,13 @@ class AboutActivity : BaseActivity() {
     }
 
     private fun playCalendarMoment() {
+        if (calendarTapCount >= AboutEasterEggPolicy.MAX_TAPS) return
+
         val action = findViewById<View>(R.id.stopCheckingAction)
         val icon = findViewById<ImageView>(R.id.stopCheckingIcon)
         val reaction = findViewById<TextView>(R.id.stopCheckingReaction)
+        calendarTapCount = AboutEasterEggPolicy.nextTapCount(calendarTapCount)
+        val milestone = AboutEasterEggPolicy.messageMilestoneForTap(calendarTapCount)
 
         val haptic = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             HapticFeedbackConstants.CONFIRM
@@ -112,16 +120,29 @@ class AboutActivity : BaseActivity() {
         }
         action.performHapticFeedback(haptic)
 
+        val emphasis = when (milestone) {
+            100 -> 1.18f
+            50 -> 1.14f
+            20 -> 1.12f
+            10 -> 1.10f
+            else -> 1.08f
+        }
+        val liftDp = when (milestone) {
+            100 -> 10f
+            50 -> 8f
+            else -> 6f
+        }
+
         icon.animate().cancel()
         icon.rotation = 0f
         icon.translationY = 0f
         icon.scaleX = 1f
         icon.scaleY = 1f
         icon.animate()
-            .rotation(-9f)
-            .translationY(-6f * resources.displayMetrics.density)
-            .scaleX(1.08f)
-            .scaleY(1.08f)
+            .rotation(if (calendarTapCount % 2 == 0) 9f else -9f)
+            .translationY(-liftDp * resources.displayMetrics.density)
+            .scaleX(emphasis)
+            .scaleY(emphasis)
             .setDuration(120L)
             .withEndAction {
                 icon.animate()
@@ -134,11 +155,34 @@ class AboutActivity : BaseActivity() {
             }
             .start()
 
-        reaction.visibility = View.VISIBLE
-        reaction.alpha = 0f
-        reaction.animate().cancel()
-        reaction.animate().alpha(1f).setDuration(160L).start()
-        reaction.announceForAccessibility(reaction.text)
+        if (milestone != null) {
+            reaction.setText(calendarReactionRes(milestone))
+            reaction.visibility = View.VISIBLE
+            reaction.alpha = 0f
+            reaction.animate().cancel()
+            reaction.animate().alpha(1f).setDuration(160L).start()
+            reaction.announceForAccessibility(reaction.text)
+        }
+    }
+
+    private fun restoreCalendarMoment() {
+        val milestone = AboutEasterEggPolicy.visibleMilestoneFor(calendarTapCount) ?: return
+        findViewById<TextView>(R.id.stopCheckingReaction).apply {
+            setText(calendarReactionRes(milestone))
+            visibility = View.VISIBLE
+            alpha = 1f
+        }
+    }
+
+    private fun calendarReactionRes(milestone: Int): Int = when (milestone) {
+        1 -> R.string.about_calendar_reaction_1
+        3 -> R.string.about_calendar_reaction_3
+        7 -> R.string.about_calendar_reaction_7
+        10 -> R.string.about_calendar_reaction_10
+        20 -> R.string.about_calendar_reaction_20
+        50 -> R.string.about_calendar_reaction_50
+        100 -> R.string.about_calendar_reaction_100
+        else -> error("Unsupported Help easter-egg milestone: $milestone")
     }
 
     private fun exportBackup(resumePendingImport: Boolean = false) {
@@ -413,5 +457,6 @@ class AboutActivity : BaseActivity() {
         const val REQUEST_EXPORT = 5101
         const val REQUEST_IMPORT = 5102
         const val STATE_PENDING_IMPORT_ID = "pending_import_id"
+        const val STATE_CALENDAR_TAPS = "calendar_taps"
     }
 }

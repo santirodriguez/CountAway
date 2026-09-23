@@ -12,4 +12,5 @@
     <string name="widget_pin_multiple_detected">Ya Estamos no pudo identificar con seguridad el widget nuevo. Abrilo desde la pantalla de inicio para configurarlo.</string>
     <string name="widget_pin_conflict">Ese widget ya estaba configurado, así que Ya Estamos lo dejó sin cambios.</string>
     <string name="widget_instance_unavailable">Ese widget ya no está disponible.</string>
+    <string name="widget_style_summary">Estilo: %1$s · Apariencia: %2$s</string>
 </resources>

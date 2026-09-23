@@ -16,6 +16,7 @@ class AboutHelpLayoutContractTest {
         assertFalse(help.contains("android:layout_height=\"54dp\""))
         assertTrue(help.contains("android:minHeight=\"64dp\""))
         assertTrue(help.contains("@string/about_create_countdown_note"))
+        assertFalse(xml.contains("android:text=\"@string/about_how_body\""))
         assertTrue(help.contains("@string/about_add_widget_note"))
         assertTrue(help.contains("android:id=\"@+id/stopCheckingIcon\""))
         assertTrue(help.contains("android:gravity=\"start\""))

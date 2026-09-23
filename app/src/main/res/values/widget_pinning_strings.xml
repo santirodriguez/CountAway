@@ -12,4 +12,5 @@
     <string name="widget_pin_multiple_detected">CountAway couldn’t safely identify the new widget. Open it from your Home screen to configure it.</string>
     <string name="widget_pin_conflict">That widget was already configured, so CountAway left it unchanged.</string>
     <string name="widget_instance_unavailable">That widget is no longer available.</string>
+    <string name="widget_style_summary">Style: %1$s · Appearance: %2$s</string>
 </resources>

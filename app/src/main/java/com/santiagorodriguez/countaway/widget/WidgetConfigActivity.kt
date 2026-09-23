@@ -273,8 +273,31 @@ class WidgetConfigActivity : BaseActivity() {
                 WidgetBackground.CLASSIC
             },
         )
+        findViewById<TextView>(R.id.widgetStyleSummary).text = getString(
+            R.string.widget_style_summary,
+            getString(backgroundLabel(selection.background)),
+            getString(appearanceLabel(selection.appearance)),
+        )
         previewController.renderStyle(selection, previewDimensions())
         updateContentPreview(CountdownTime.snapshot().today)
+    }
+
+    private fun appearanceLabel(appearance: WidgetAppearance): Int = when (appearance) {
+        WidgetAppearance.SYSTEM -> R.string.widget_appearance_system
+        WidgetAppearance.LIGHT -> R.string.widget_appearance_light
+        WidgetAppearance.DARK -> R.string.widget_appearance_dark
+    }
+
+    private fun backgroundLabel(background: WidgetBackground): Int = when (background) {
+        WidgetBackground.CLASSIC -> R.string.widget_background_classic
+        WidgetBackground.MIST -> R.string.widget_background_mist
+        WidgetBackground.HORIZON -> R.string.widget_background_horizon
+        WidgetBackground.FOREST -> R.string.widget_background_forest
+        WidgetBackground.SUNSET -> R.string.widget_background_sunset
+        WidgetBackground.PULSE -> R.string.widget_background_pulse
+        WidgetBackground.BREEZE -> R.string.widget_background_breeze
+        WidgetBackground.EMBER -> R.string.widget_background_ember
+        WidgetBackground.MONOGRAM -> R.string.widget_background_six
     }
 
     private fun previewDimensions(): WidgetPreviewDimensions {

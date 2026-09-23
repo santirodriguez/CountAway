@@ -12,4 +12,5 @@
     <string name="widget_pin_multiple_detected">Ja Queda Poc no ha pogut identificar amb seguretat el widget nou. Obre’l des de la pantalla d’inici per configurar-lo.</string>
     <string name="widget_pin_conflict">Aquest widget ja estava configurat, així que Ja Queda Poc l’ha deixat sense canvis.</string>
     <string name="widget_instance_unavailable">Aquest widget ja no està disponible.</string>
+    <string name="widget_style_summary">Estil: %1$s · Aparença: %2$s</string>
 </resources>

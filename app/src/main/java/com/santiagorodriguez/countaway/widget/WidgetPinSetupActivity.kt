@@ -438,14 +438,26 @@ class WidgetPinSetupActivity : BaseActivity() {
     }
 
     private fun updatePreview() {
+        val selection = currentSelection()
+        findViewById<TextView>(R.id.widgetPinSetupStyleSummary).text = getString(
+            R.string.widget_style_summary,
+            getString(backgroundLabel(selection.background)),
+            getString(appearanceLabel(selection.appearance)),
+        )
         val currentEvent = event ?: return
         previewController.renderStyle(
-            selection = currentSelection(),
+            selection = selection,
             dimensions = WidgetPreviewSizing.representative(WidgetSize.STANDARD),
         )
         previewController.renderEvent(
             WidgetEventContentFactory.from(currentEvent, CountdownTime.snapshot().today),
         )
+    }
+
+    private fun appearanceLabel(appearance: WidgetAppearance): Int = when (appearance) {
+        WidgetAppearance.SYSTEM -> R.string.widget_appearance_system
+        WidgetAppearance.LIGHT -> R.string.widget_appearance_light
+        WidgetAppearance.DARK -> R.string.widget_appearance_dark
     }
 
     private fun setAddEnabled(enabled: Boolean) {
