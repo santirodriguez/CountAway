@@ -2,19 +2,12 @@
 
 ## 1.2.0
 
-- Add a focused long-press widget setup flow for saved countdowns with a visual 3×3 style picker, System/Light/Dark appearance, and a live preview before Android's pin confirmation.
-- Make direct pinning resilient on real launchers by preserving the exact countdown/style snapshot and reconciling the newly created widget ID without overwriting an existing configuration.
-- Remember the last successfully used style for a new widget while keeping existing widget configurations independent; canceled setup does not change it.
-- Keep the countdown editor focused on countdown editing and rely on Android's reconfigurable-widget path for existing placed widgets.
-- Refresh Horizon, Forest, Pulse, Breeze, Ember, and Ridge with lightweight style-specific artwork rendered natively without adding runtime image dependencies; Ridge keeps its subtle blue-and-white chevron identity.
-- Add weekly and monthly recurrence alongside yearly recurrence, with correct short-month handling, visible recurrence metadata, next-occurrence feedback, and recurring reminders that continue rolling forward.
-- Fix the scheduled daily widget refresh path so placed widgets keep advancing without requiring the app to be reopened.
-- Refine Classic, Mist, Horizon, and Sunset visual identity while preserving the accepted Ember, Forest, Pulse, Breeze, and Ridge artwork; show the selected style/appearance next to widget previews.
-- Simplify Help by removing redundant intro copy and expand the Step 3 calendar easter egg into progressive tap reactions while keeping the large-text-safe cards.
-- Make widget setup, generic picker configuration, pin previews, and installed widgets share the same production layouts and presentation rules across Compact, Short, Standard, and Large sizes.
-- Improve large-text behavior by prioritizing the countdown value and dropping optional widget detail when space is constrained.
-- Keep CountAway lightweight and local-only with the existing permissions, signing identity, JSON schema, SDK baseline, and no new runtime dependencies or Internet permission.
-- Harden the release path so an exact version-matched release branch can produce the reviewed draft/tag without requiring a pre-publication merge to main.
+- Add a focused long-press widget setup flow with live preview, all nine widget styles, System/Light/Dark appearance, and direct Home-screen pinning.
+- Add weekly and monthly recurrence alongside yearly recurrence, with short-month handling, next-occurrence details, and reminders that continue across recurrences.
+- Improve widget reliability with safer direct pinning and reconfiguration, plus a fix for daily refreshes so placed widgets keep advancing without reopening the app.
+- Refresh widget visuals and previews across supported sizes, with clearer style/appearance feedback and better large-text behavior.
+- Simplify Help and improve layout/readability while preserving the existing lightweight interaction model.
+- Keep CountAway local-only and lightweight with the existing data schema, permissions, signing identity, SDK baseline, and no new runtime dependencies or Internet permission.
 
 ## 1.1.8
 

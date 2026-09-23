@@ -1,1 +1,1 @@
-Mantén premut un compte per triar i previsualitzar el giny. Afegim repetició setmanal/mensual amb recordatoris i mesos curts ben resolts. Refinem Clàssic, Boira, Horitzó i Capvespre mantenint l’estil càlid d’Ember; Help queda més net amb un easter egg progressiu. L’actualització diària torna a avançar bé.
+Configuració de ginys més directa, amb previsualització i afegit a l’inici. Afegim repetició setmanal i mensual, recordatoris recurrents i millor gestió dels mesos curts. També millorem l’aspecte, el text gran, la reconfiguració i l’actualització diària dels ginys.
