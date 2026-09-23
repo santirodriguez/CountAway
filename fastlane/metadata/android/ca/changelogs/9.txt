@@ -1,1 +1,1 @@
-Mantén premut un compte per triar i previsualitzar l’estil del giny abans d’afegir-lo. Afegim repetició setmanal i mensual juntament amb l’anual, amb properes dates visibles, mesos curts ben resolts i recordatoris que continuen avançant.
+Mantén premut un compte per triar i previsualitzar l’estil del giny. Afegim repetició setmanal i mensual, mesos curts ben resolts i recordatoris recurrents. L’actualització diària torna a mantenir al dia els ginys col·locats.

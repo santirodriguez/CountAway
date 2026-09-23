@@ -8,6 +8,7 @@
 - Keep the countdown editor focused on countdown editing and rely on Android's reconfigurable-widget path for existing placed widgets.
 - Refresh Horizon, Forest, Pulse, Breeze, Ember, and Ridge with lightweight style-specific artwork rendered natively without adding runtime image dependencies; Ridge keeps its subtle blue-and-white chevron identity.
 - Add weekly and monthly recurrence alongside yearly recurrence, with correct short-month handling, visible recurrence metadata, next-occurrence feedback, and recurring reminders that continue rolling forward.
+- Fix the scheduled daily widget refresh path so placed widgets keep advancing without requiring the app to be reopened.
 - Polish Help with flexible large-text-safe step cards, shorter title/subtitle copy, and the existing interactive calendar easter egg.
 - Make widget setup, generic picker configuration, pin previews, and installed widgets share the same production layouts and presentation rules across Compact, Short, Standard, and Large sizes.
 - Improve large-text behavior by prioritizing the countdown value and dropping optional widget detail when space is constrained.

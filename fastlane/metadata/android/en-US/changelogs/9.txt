@@ -1,1 +1,1 @@
-Long-press a countdown to choose its widget style and preview it before adding it. Add weekly and monthly recurrence alongside yearly recurrence, with visible next dates, short-month handling, and recurring reminders that keep rolling forward.
+Long-press a countdown to choose and preview its widget style. Add weekly and monthly recurrence alongside yearly recurrence, with short-month handling and recurring reminders. Daily widget refreshes now keep placed widgets advancing reliably.
