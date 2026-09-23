@@ -254,7 +254,7 @@
                     android:layout_marginStart="40dp"
                     android:layout_marginTop="6dp"
                     android:gravity="start"
-                    android:text="@string/about_calendar_reaction"
+                    android:text="@string/about_calendar_reaction_1"
                     android:textColor="@color/accent_text"
                     android:textSize="12sp"
                     android:visibility="gone" />
