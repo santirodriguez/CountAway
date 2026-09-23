@@ -2,10 +2,12 @@
 
 ## 1.2.0
 
-- Add a focused long-press widget setup flow for saved countdowns with Background, System/Light/Dark appearance, and a live preview before Android's pin confirmation.
-- Remember the last style chosen for a new widget while keeping existing widget configurations independent; canceled setup does not change it.
+- Add a focused long-press widget setup flow for saved countdowns with a visual 3×3 style picker, System/Light/Dark appearance, and a live preview before Android's pin confirmation.
+- Make direct pinning resilient on real launchers by preserving the exact countdown/style snapshot and reconciling the newly created widget ID without overwriting an existing configuration.
+- Remember the last successfully used style for a new widget while keeping existing widget configurations independent; canceled setup does not change it.
 - Keep the countdown editor focused on countdown editing and rely on Android's reconfigurable-widget path for existing placed widgets.
-- Refine Ridge into a proportional chevron treatment and tune the other widget styles with style-specific Light/Dark palettes and stronger contrast.
+- Refresh Horizon, Forest, Pulse, Breeze, Ember, and Ridge with lightweight style-specific artwork rendered natively without adding runtime image dependencies; Ridge keeps its subtle blue-and-white chevron identity.
+- Polish Help with a clearer three-step flow and a small interactive calendar easter egg.
 - Make widget setup, generic picker configuration, pin previews, and installed widgets share the same production layouts and presentation rules across Compact, Short, Standard, and Large sizes.
 - Improve large-text behavior by prioritizing the countdown value and dropping optional widget detail when space is constrained.
 - Keep CountAway lightweight and local-only with the existing permissions, signing identity, JSON schema, SDK baseline, and no new runtime dependencies or Internet permission.
