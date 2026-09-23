@@ -4,9 +4,12 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
@@ -22,7 +25,6 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
-import com.santiagorodriguez.countaway.widget.WidgetPinning
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 
 class AboutActivity : BaseActivity() {
@@ -46,7 +48,8 @@ class AboutActivity : BaseActivity() {
         findViewById<View>(R.id.createCountdownAction).setOnClickListener {
             startActivity(Intent(this, EditorActivity::class.java))
         }
-        findViewById<View>(R.id.addWidgetAction).setOnClickListener { requestWidgetPin() }
+        findViewById<View>(R.id.addWidgetAction).setOnClickListener { showWidgetSetupHint() }
+        findViewById<View>(R.id.stopCheckingAction).setOnClickListener { playCalendarMoment() }
         findViewById<View>(R.id.websiteButton).setOnClickListener {
             openExternal(PERSONAL_WEBSITE)
         }
@@ -88,10 +91,54 @@ class AboutActivity : BaseActivity() {
         }
     }
 
-    private fun requestWidgetPin() {
-        if (!WidgetPinning.request(this)) {
-            Toast.makeText(this, R.string.widget_pin_unavailable_guidance, Toast.LENGTH_LONG).show()
+    private fun showWidgetSetupHint() {
+        Toast.makeText(this, R.string.about_widget_long_press_hint, Toast.LENGTH_LONG).show()
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        )
+        finish()
+    }
+
+    private fun playCalendarMoment() {
+        val action = findViewById<View>(R.id.stopCheckingAction)
+        val icon = findViewById<ImageView>(R.id.stopCheckingIcon)
+        val reaction = findViewById<TextView>(R.id.stopCheckingReaction)
+
+        val haptic = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            HapticFeedbackConstants.CONFIRM
+        } else {
+            HapticFeedbackConstants.VIRTUAL_KEY
         }
+        action.performHapticFeedback(haptic)
+
+        icon.animate().cancel()
+        icon.rotation = 0f
+        icon.translationY = 0f
+        icon.scaleX = 1f
+        icon.scaleY = 1f
+        icon.animate()
+            .rotation(-9f)
+            .translationY(-6f * resources.displayMetrics.density)
+            .scaleX(1.08f)
+            .scaleY(1.08f)
+            .setDuration(120L)
+            .withEndAction {
+                icon.animate()
+                    .rotation(0f)
+                    .translationY(0f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(180L)
+                    .start()
+            }
+            .start()
+
+        reaction.visibility = View.VISIBLE
+        reaction.alpha = 0f
+        reaction.animate().cancel()
+        reaction.animate().alpha(1f).setDuration(160L).start()
+        reaction.announceForAccessibility(reaction.text)
     }
 
     private fun exportBackup(resumePendingImport: Boolean = false) {

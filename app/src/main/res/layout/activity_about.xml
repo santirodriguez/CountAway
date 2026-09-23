@@ -15,8 +15,8 @@
         android:padding="24dp">
 
         <ImageView
-            android:layout_width="168dp"
-            android:layout_height="112dp"
+            android:layout_width="144dp"
+            android:layout_height="96dp"
             android:adjustViewBounds="true"
             android:contentDescription="@string/app_logo_content_description"
             android:scaleType="fitCenter"
@@ -40,7 +40,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="16dp"
             android:background="@drawable/surface_card"
             android:gravity="center_horizontal"
             android:orientation="vertical"
@@ -153,59 +153,85 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/stopCheckingAction"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/control_surface"
-                android:gravity="center_vertical"
+                android:clickable="true"
+                android:clipToOutline="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 android:minHeight="64dp"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:paddingStart="12dp"
                 android:paddingTop="8dp"
                 android:paddingEnd="12dp"
                 android:paddingBottom="8dp">
 
-                <TextView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:background="@drawable/about_step_badge"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:text="@string/about_step_three"
-                    android:textColor="@color/accent_text"
-                    android:textSize="13sp" />
-
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                     <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/about_step_badge"
                         android:fontFamily="sans-serif-medium"
                         android:gravity="center"
-                        android:text="@string/about_stop_checking"
-                        android:textColor="@color/foreground"
-                        android:textSize="14sp" />
+                        android:text="@string/about_step_three"
+                        android:textColor="@color/accent_text"
+                        android:textSize="13sp" />
 
-                    <TextView
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_weight="1"
                         android:gravity="center"
-                        android:text="@string/about_stop_checking_note"
-                        android:textColor="@color/secondary_text"
-                        android:textSize="12sp" />
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:text="@string/about_stop_checking"
+                            android:textColor="@color/foreground"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:gravity="center"
+                            android:text="@string/about_stop_checking_note"
+                            android:textColor="@color/secondary_text"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:id="@+id/stopCheckingIcon"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:contentDescription="@null"
+                        android:padding="3dp"
+                        android:src="@drawable/ic_event_calendar"
+                        android:tint="@color/accent_text" />
                 </LinearLayout>
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_sentiment_neutral" />
+                <TextView
+                    android:id="@+id/stopCheckingReaction"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="40dp"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:text="@string/about_calendar_reaction"
+                    android:textColor="@color/accent_text"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
 

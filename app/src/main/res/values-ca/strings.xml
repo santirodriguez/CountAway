@@ -111,7 +111,7 @@
 
     <string name="about_version">Versió %1$s</string>
     <string name="about_how_title">Perquè sigui útil de debò</string>
-    <string name="about_how_body">Crea una data, afegeix el widget de Ja Queda Poc a la pantalla d’inici i tria aquest compte enrere. Sense el widget, això és bàsicament una llista força maca de dates. Amb el widget comença la gràcia. També pots mantenir premut un compte desat per triar l’estil del giny i afegir-lo.</string>
+    <string name="about_how_body">Tres passos i després deixa de mirar el calendari. Crea un compte enrere, mantén-lo premut per triar l’estil del giny i deixa que la pantalla d’inici faci la resta.</string>
     <string name="about_how_steps">1. Crea un compte enrere\n2. Afegeix el widget\n3. Deixa de mirar el calendari cada cinc minuts</string>
     <string name="about_privacy">Ja Queda Poc no utilitza comptes, publicitat, analítica ni accés a internet. Les dades es mantenen locals tret que exportis una còpia a un proveïdor que triïs.</string>
     <string name="backup_title">Còpia local</string>

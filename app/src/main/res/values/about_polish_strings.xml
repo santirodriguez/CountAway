@@ -5,7 +5,7 @@
     <string name="about_step_three" translatable="false">3</string>
     <string name="about_version_compact">v%1$s</string>
     <string name="about_create_countdown">Create a countdown</string>
-    <string name="about_add_widget">Add the widget</string>
+    <string name="about_add_widget">Long-press it, choose a style, add it</string>
     <string name="about_stop_checking">Stop checking the calendar</string>
     <string name="about_stop_checking_note">That\'s kind of the point.</string>
     <string name="about_widget_pin_unavailable">Add the widget from your home screen instead.</string>
@@ -15,4 +15,6 @@
     <string name="about_support_project">Support the project</string>
     <string name="about_author_name">Created by Santiago Rodriguez</string>
     <string name="about_website">santiagorodriguez.com</string>
+    <string name="about_widget_long_press_hint">Long-press a countdown to choose its widget style.</string>
+    <string name="about_calendar_reaction">Good. The widget’s got this.</string>
 </resources>

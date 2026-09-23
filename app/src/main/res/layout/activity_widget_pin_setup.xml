@@ -93,7 +93,6 @@
                 android:layout_width="0dp"
                 android:layout_height="44dp"
                 android:layout_weight="1"
-                android:button="@null"
                 android:gravity="center"
                 android:text="@string/widget_appearance_system"
                 android:textColor="@color/foreground" />
@@ -103,7 +102,6 @@
                 android:layout_width="0dp"
                 android:layout_height="44dp"
                 android:layout_weight="1"
-                android:button="@null"
                 android:gravity="center"
                 android:text="@string/widget_appearance_light"
                 android:textColor="@color/foreground" />
@@ -113,7 +111,6 @@
                 android:layout_width="0dp"
                 android:layout_height="44dp"
                 android:layout_weight="1"
-                android:button="@null"
                 android:gravity="center"
                 android:text="@string/widget_appearance_dark"
                 android:textColor="@color/foreground" />

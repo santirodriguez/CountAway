@@ -1,7 +1,7 @@
 package com.santiagorodriguez.countaway.widget
 
 internal sealed class WidgetPinFallbackOutcome {
-    data object None : WidgetPinFallbackOutcome()
+    object None : WidgetPinFallbackOutcome()
     data class Single(val appWidgetId: Int) : WidgetPinFallbackOutcome()
     data class Multiple(val appWidgetIds: Set<Int>) : WidgetPinFallbackOutcome()
 }
