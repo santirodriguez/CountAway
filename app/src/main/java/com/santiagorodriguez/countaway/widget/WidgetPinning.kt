@@ -95,10 +95,17 @@ object WidgetPinning {
         activity: Activity,
         event: CountdownEvent,
         style: WidgetStyleSelection,
-    ): Boolean {
-        val snapshot = WidgetPinRequestSnapshot.create(event.id, style)
-        return requestInternal(activity, event, snapshot)
-    }
+    ): Boolean = request(
+        activity = activity,
+        event = event,
+        snapshot = WidgetPinRequestSnapshot.create(event.id, style),
+    )
+
+    internal fun request(
+        activity: Activity,
+        event: CountdownEvent,
+        snapshot: WidgetPinRequestSnapshot,
+    ): Boolean = requestInternal(activity, event, snapshot)
 
     internal fun callbackPendingIntent(
         context: Context,
@@ -108,7 +115,7 @@ object WidgetPinning {
         snapshot.requestToken.hashCode(),
         Intent(context, WidgetPinResultReceiver::class.java)
             .setData(Uri.parse(snapshot.callbackData())),
-        PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
     private fun requestInternal(
@@ -140,6 +147,4 @@ object WidgetPinning {
         if (!requested) callback?.cancel()
         return requested
     }
-
-
 }

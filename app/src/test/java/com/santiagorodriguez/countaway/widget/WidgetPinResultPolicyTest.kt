@@ -6,10 +6,10 @@ import org.junit.Test
 
 class WidgetPinResultPolicyTest {
     @Test
-    fun confirmedUnconfiguredOwnedWidgetCanReceiveSnapshot() {
+    fun validUnconfiguredWidgetCanReceiveSnapshotWithoutVisibilityGate() {
         assertTrue(
             WidgetPinResultPolicy.shouldApply(
-                owned = true,
+                validWidgetId = true,
                 eventExists = true,
                 existing = null,
             ),
@@ -27,7 +27,7 @@ class WidgetPinResultPolicyTest {
 
         assertFalse(
             WidgetPinResultPolicy.shouldApply(
-                owned = true,
+                validWidgetId = true,
                 eventExists = true,
                 existing = existing,
             ),
@@ -35,20 +35,40 @@ class WidgetPinResultPolicyTest {
     }
 
     @Test
-    fun removedWidgetOrDeletedEventIsRejected() {
+    fun invalidWidgetOrDeletedEventIsRejected() {
         assertFalse(
             WidgetPinResultPolicy.shouldApply(
-                owned = false,
+                validWidgetId = false,
                 eventExists = true,
                 existing = null,
             ),
         )
         assertFalse(
             WidgetPinResultPolicy.shouldApply(
-                owned = true,
+                validWidgetId = true,
                 eventExists = false,
                 existing = null,
             ),
         )
+    }
+
+    @Test
+    fun matchingExistingConfigurationIsRecognizedAsIdempotent() {
+        val snapshot = WidgetPinRequestSnapshot.create(
+            eventId = "event-a",
+            style = WidgetStyleSelection(
+                appearance = WidgetAppearance.LIGHT,
+                background = WidgetBackground.HORIZON,
+            ),
+            requestToken = "token",
+        )
+        val existing = WidgetConfiguration(
+            eventId = "event-a",
+            appearance = WidgetAppearance.LIGHT,
+            background = WidgetBackground.HORIZON,
+            eventSelection = WidgetEventSelection.FIXED,
+        )
+
+        assertTrue(WidgetPinResultPolicy.matchesSnapshot(existing, snapshot))
     }
 }

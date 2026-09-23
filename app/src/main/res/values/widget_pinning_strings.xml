@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_add_accessibility_action">Add widget</string>
-    <string name="widget_pin_setup_title">Add widget</string>
-    <string name="widget_pin_setup_description">Choose how this countdown should look. CountAway remembers this style for the next widget you add.</string>
-    <string name="widget_pin_setup_add">Add widget</string>
+    <string name="widget_pin_setup_title">Add to Home screen</string>
+    <string name="widget_pin_setup_description">Choose a style for this countdown. Your last successfully added style becomes the starting point next time.</string>
+    <string name="widget_pin_setup_add">Add to Home screen</string>
+    <string name="widget_pin_setup_system_hint">System follows your device’s Light or Dark appearance.</string>
+    <string name="widget_pin_setup_style_selected">%1$s, selected</string>
     <string name="widget_pin_event_unavailable">This countdown is no longer available.</string>
     <string name="widget_pin_unavailable_guidance">Your launcher couldn’t start widget pinning. Add CountAway from the home-screen widget picker and check whether the home-screen layout is locked.</string>
+    <string name="widget_pin_not_added">Widget wasn’t added. Your choices are still here.</string>
+    <string name="widget_pin_multiple_detected">CountAway couldn’t safely identify the new widget. Open it from your Home screen to configure it.</string>
+    <string name="widget_pin_conflict">That widget was already configured, so CountAway left it unchanged.</string>
     <string name="widget_instance_unavailable">That widget is no longer available.</string>
 </resources>

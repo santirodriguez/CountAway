@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_add_accessibility_action">Agregar widget</string>
-    <string name="widget_pin_setup_title">Agregar widget</string>
-    <string name="widget_pin_setup_description">Elegí cómo se verá esta cuenta regresiva. Ya Estamos recordará este estilo para el próximo widget que agregues.</string>
-    <string name="widget_pin_setup_add">Agregar widget</string>
+    <string name="widget_pin_setup_title">Agregar a la pantalla de inicio</string>
+    <string name="widget_pin_setup_description">Elegí un estilo para esta cuenta regresiva. El último estilo agregado correctamente será el punto de partida la próxima vez.</string>
+    <string name="widget_pin_setup_add">Agregar a la pantalla de inicio</string>
+    <string name="widget_pin_setup_system_hint">Sistema sigue la apariencia Clara u Oscura del dispositivo.</string>
+    <string name="widget_pin_setup_style_selected">%1$s, seleccionado</string>
     <string name="widget_pin_event_unavailable">Esta cuenta regresiva ya no está disponible.</string>
     <string name="widget_pin_unavailable_guidance">El launcher no pudo iniciar el agregado del widget. Agregá Ya Estamos desde el selector de widgets de la pantalla de inicio y revisá si el diseño de la pantalla está bloqueado.</string>
+    <string name="widget_pin_not_added">El widget no se agregó. Tus opciones siguen acá.</string>
+    <string name="widget_pin_multiple_detected">Ya Estamos no pudo identificar con seguridad el widget nuevo. Abrilo desde la pantalla de inicio para configurarlo.</string>
+    <string name="widget_pin_conflict">Ese widget ya estaba configurado, así que Ya Estamos lo dejó sin cambios.</string>
     <string name="widget_instance_unavailable">Ese widget ya no está disponible.</string>
 </resources>
