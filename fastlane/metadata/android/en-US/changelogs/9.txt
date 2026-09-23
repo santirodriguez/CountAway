@@ -1,1 +1,1 @@
-Long-press a saved countdown to choose its widget background and System, Light, or Dark appearance with a live preview before pinning. CountAway remembers the last style for the next new widget. Ridge and the other styles also improve scaling, contrast, and large-text behavior.
+Long-press a countdown to choose from all nine widget styles, System/Light/Dark appearance, and a live preview before adding it. Direct pinning now keeps the exact selected countdown on supported launchers, and refreshed lightweight artwork gives each style more identity.

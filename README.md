@@ -34,8 +34,9 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 - Optional local reminders before or on the event day
 - System, Light, and Dark appearance for both the app and widgets
 - Native sharing plus local JSON backup and restore
-- Long-press widget setup with live style preview on supported launchers
-- Remembers the last style chosen for the next new widget
+- Long-press widget setup with a visual style picker and live preview on supported launchers
+- Reliable fixed-countdown pinning with remembered last-used style for the next new widget
+- Lightweight style-specific widget artwork rendered natively
 - English, Spanish, and Catalan
 
 Everything stays local, with no accounts, ads, analytics, or cloud sync.

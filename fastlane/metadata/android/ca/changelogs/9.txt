@@ -1,1 +1,1 @@
-Mantén premut un compte desat per triar el fons i l’aparença Sistema, Clar o Fosc amb previsualització abans d’afegir el giny. Ja Queda Poc recorda l’últim estil per al pròxim giny nou. Ridge i la resta d’estils també milloren l’escala, el contrast i el text gran.
+Mantén premut un compte per triar entre els nou estils, aparença Sistema/Clar/Fosc i una previsualització abans d’afegir-lo. L’afegit directe ara conserva el compte exacte triat en llançadors compatibles, i els estils tenen nous detalls visuals lleugers.
