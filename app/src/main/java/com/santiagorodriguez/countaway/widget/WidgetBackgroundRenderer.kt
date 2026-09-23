@@ -130,17 +130,19 @@ object WidgetBackgroundRenderer {
         height: Float,
         density: Float,
     ) {
-        val horizonColor = if (dark) Color.rgb(173, 211, 238) else Color.rgb(113, 149, 173)
-        val celestialColor = if (dark) Color.rgb(220, 234, 255) else Color.rgb(226, 155, 65)
+        val horizonColor = if (dark) Color.rgb(173, 211, 238) else Color.rgb(102, 145, 173)
+        val celestialColor = if (dark) Color.rgb(220, 234, 255) else Color.rgb(236, 166, 78)
         val stroke = accentStroke(width, height, density)
         val horizonY = height * 0.76f
-        val discRadius = minOf(width, height) * 0.105f
+        val discRadius = minOf(width, height) * if (dark) 0.105f else 0.085f
+        val discX = width * if (dark) 0.79f else 0.73f
+        val discY = height * if (dark) 0.63f else 0.72f
 
         canvas.drawCircle(
-            width * 0.79f,
-            height * 0.63f,
+            discX,
+            discY,
             discRadius,
-            fillPaint(celestialColor, if (dark) 26 else 18),
+            fillPaint(celestialColor, if (dark) 26 else 20),
         )
         canvas.drawLine(
             -width * 0.03f,
@@ -174,17 +176,19 @@ object WidgetBackgroundRenderer {
         height: Float,
         density: Float,
     ) {
-        val sunColor = if (dark) Color.rgb(255, 159, 91) else Color.rgb(224, 112, 48)
-        val hazeColor = if (dark) Color.rgb(242, 118, 105) else Color.rgb(161, 69, 99)
+        val sunColor = if (dark) Color.rgb(255, 174, 96) else Color.rgb(224, 112, 48)
+        val hazeColor = if (dark) Color.rgb(238, 126, 112) else Color.rgb(161, 69, 99)
         val stroke = accentStroke(width, height, density)
         val horizonY = height * 0.78f
-        val radius = minOf(width, height) * 0.16f
+        val radius = minOf(width, height) * if (dark) 0.12f else 0.16f
+        val sunX = width * if (dark) 0.72f else 0.78f
+        val sunY = height * if (dark) 0.765f else 0.86f
 
         canvas.drawCircle(
-            width * 0.78f,
-            height * 0.86f,
+            sunX,
+            sunY,
             radius,
-            fillPaint(sunColor, if (dark) 31 else 24),
+            fillPaint(sunColor, if (dark) 34 else 24),
         )
         floatArrayOf(0.70f, 0.78f, 0.86f).forEachIndexed { index, y ->
             val inset = width * (0.06f + index * 0.05f)
@@ -323,98 +327,58 @@ object WidgetBackgroundRenderer {
         height: Float,
         density: Float,
     ) {
+        val color = if (dark) Color.rgb(255, 217, 160) else Color.rgb(124, 65, 0)
         val stroke = accentStroke(width, height, density)
-
-        if (!dark) {
-            val color = Color.rgb(124, 65, 0)
-            canvas.drawPath(
-                Path().apply {
-                    moveTo(width * 0.46f, height * 1.04f)
-                    cubicTo(
-                        width * 0.68f, height * 0.89f,
-                        width * 0.76f, height * 0.62f,
-                        width * 0.89f, height * 0.47f,
-                    )
-                    cubicTo(
-                        width * 0.97f, height * 0.38f,
-                        width * 0.96f, height * 0.23f,
-                        width * 0.90f, height * 0.06f,
-                    )
-                },
-                accentPaint(color, 24, stroke),
-            )
-            canvas.drawPath(
-                Path().apply {
-                    moveTo(width * 0.57f, height * 1.03f)
-                    cubicTo(
-                        width * 0.70f, height * 0.82f,
-                        width * 0.68f, height * 0.69f,
-                        width * 0.78f, height * 0.53f,
-                    )
-                },
-                accentPaint(color, 18, stroke * 0.76f),
-            )
-            arrayOf(
-                0.69f to 0.74f,
-                0.79f to 0.58f,
-                0.86f to 0.43f,
-                0.91f to 0.27f,
-            ).forEachIndexed { index, (x, y) ->
-                canvas.drawCircle(
-                    width * x,
-                    height * y,
-                    maxOf(1.2f * density, minOf(width, height) * (0.009f + index * 0.0015f)),
-                    fillPaint(color, 21),
-                )
-            }
-            drawSpark(
-                canvas = canvas,
-                centerX = width * 0.86f,
-                centerY = height * 0.19f,
-                radius = minOf(width, height) * 0.037f,
-                color = color,
-                alpha = 23,
-            )
-            return
-        }
-
-        val primary = Color.rgb(255, 177, 90)
-        val secondary = Color.rgb(244, 102, 67)
-        val embers = arrayOf(
-            floatArrayOf(0.73f, 0.80f, 0.014f),
-            floatArrayOf(0.80f, 0.69f, 0.010f),
-            floatArrayOf(0.86f, 0.58f, 0.016f),
-            floatArrayOf(0.90f, 0.44f, 0.009f),
-            floatArrayOf(0.83f, 0.34f, 0.007f),
-        )
-
-        embers.forEachIndexed { index, ember ->
-            canvas.drawCircle(
-                width * ember[0],
-                height * ember[1],
-                maxOf(1.1f * density, minOf(width, height) * ember[2]),
-                fillPaint(if (index % 2 == 0) primary else secondary, 34 - index * 3),
-            )
-        }
 
         canvas.drawPath(
             Path().apply {
-                moveTo(width * 0.72f, height * 0.89f)
+                moveTo(width * 0.46f, height * 1.04f)
                 cubicTo(
-                    width * 0.78f, height * 0.79f,
-                    width * 0.79f, height * 0.72f,
-                    width * 0.83f, height * 0.65f,
+                    width * 0.68f, height * 0.89f,
+                    width * 0.76f, height * 0.62f,
+                    width * 0.89f, height * 0.47f,
+                )
+                cubicTo(
+                    width * 0.97f, height * 0.38f,
+                    width * 0.96f, height * 0.23f,
+                    width * 0.90f, height * 0.06f,
                 )
             },
-            accentPaint(primary, 19, stroke * 0.72f),
+            accentPaint(color, if (dark) 32 else 24, stroke),
         )
+        canvas.drawPath(
+            Path().apply {
+                moveTo(width * 0.57f, height * 1.03f)
+                cubicTo(
+                    width * 0.70f, height * 0.82f,
+                    width * 0.68f, height * 0.69f,
+                    width * 0.78f, height * 0.53f,
+                )
+            },
+            accentPaint(color, if (dark) 23 else 18, stroke * 0.76f),
+        )
+
+        val dots = arrayOf(
+            0.69f to 0.74f,
+            0.79f to 0.58f,
+            0.86f to 0.43f,
+            0.91f to 0.27f,
+        )
+        dots.forEachIndexed { index, (x, y) ->
+            canvas.drawCircle(
+                width * x,
+                height * y,
+                maxOf(1.2f * density, minOf(width, height) * (0.009f + index * 0.0015f)),
+                fillPaint(color, if (dark) 27 else 21),
+            )
+        }
         drawSpark(
             canvas = canvas,
-            centerX = width * 0.91f,
-            centerY = height * 0.31f,
-            radius = minOf(width, height) * 0.031f,
-            color = secondary,
-            alpha = 25,
+            centerX = width * 0.86f,
+            centerY = height * 0.19f,
+            radius = minOf(width, height) * 0.037f,
+            color = color,
+            alpha = if (dark) 31 else 23,
         )
     }
 
