@@ -1,1 +1,1 @@
-Mantén premut un compte per triar i previsualitzar l’estil del giny. Afegim repetició setmanal i mensual, mesos curts ben resolts i recordatoris recurrents. L’actualització diària torna a mantenir al dia els ginys col·locats.
+Mantén premut un compte per triar i previsualitzar el giny. Afegim repetició setmanal/mensual amb recordatoris i mesos curts ben resolts. Refinem Clàssic, Boira, Horitzó, Capvespre i Ember; Help queda més net amb un easter egg progressiu. L’actualització diària torna a avançar bé.

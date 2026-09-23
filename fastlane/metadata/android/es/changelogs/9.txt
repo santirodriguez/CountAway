@@ -1,1 +1,1 @@
-Mantené apretada una cuenta para elegir y previsualizar el estilo del widget. Sumamos repetición semanal y mensual, meses cortos bien resueltos y recordatorios recurrentes. El refresco diario vuelve a mantener actualizados los widgets colocados.
+Mantené apretada una cuenta para elegir y previsualizar el widget. Sumamos repetición semanal/mensual con recordatorios y meses cortos bien resueltos. Refinamos Clásico, Niebla, Horizonte, Atardecer y Ember; Help queda más limpio con un easter egg progresivo. El refresco diario vuelve a avanzar bien.

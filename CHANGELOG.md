@@ -9,7 +9,8 @@
 - Refresh Horizon, Forest, Pulse, Breeze, Ember, and Ridge with lightweight style-specific artwork rendered natively without adding runtime image dependencies; Ridge keeps its subtle blue-and-white chevron identity.
 - Add weekly and monthly recurrence alongside yearly recurrence, with correct short-month handling, visible recurrence metadata, next-occurrence feedback, and recurring reminders that continue rolling forward.
 - Fix the scheduled daily widget refresh path so placed widgets keep advancing without requiring the app to be reopened.
-- Polish Help with flexible large-text-safe step cards, shorter title/subtitle copy, and the existing interactive calendar easter egg.
+- Refine Classic, Mist, Horizon, Sunset, and Ember visual identity while preserving the accepted Forest, Pulse, Breeze, and Ridge artwork; show the selected style/appearance next to widget previews.
+- Simplify Help by removing redundant intro copy and expand the Step 3 calendar easter egg into progressive tap reactions while keeping the large-text-safe cards.
 - Make widget setup, generic picker configuration, pin previews, and installed widgets share the same production layouts and presentation rules across Compact, Short, Standard, and Large sizes.
 - Improve large-text behavior by prioritizing the countdown value and dropping optional widget detail when space is constrained.
 - Keep CountAway lightweight and local-only with the existing permissions, signing identity, JSON schema, SDK baseline, and no new runtime dependencies or Internet permission.
