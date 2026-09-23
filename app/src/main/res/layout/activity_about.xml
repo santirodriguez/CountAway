@@ -69,7 +69,7 @@
             <LinearLayout
                 android:id="@+id/createCountdownAction"
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
                 android:background="@drawable/control_surface"
                 android:clickable="true"
@@ -77,9 +77,12 @@
                 android:focusable="true"
                 android:foreground="?android:attr/selectableItemBackground"
                 android:gravity="center_vertical"
+                android:minHeight="64dp"
                 android:orientation="horizontal"
                 android:paddingStart="12dp"
-                android:paddingEnd="12dp">
+                android:paddingTop="8dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="8dp">
 
                 <TextView
                     android:layout_width="28dp"
@@ -91,15 +94,31 @@
                     android:textColor="@color/accent_text"
                     android:textSize="13sp" />
 
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
                     android:layout_weight="1"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:text="@string/about_create_countdown"
-                    android:textColor="@color/foreground"
-                    android:textSize="14sp" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="start"
+                        android:text="@string/about_create_countdown"
+                        android:textColor="@color/foreground"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="start"
+                        android:text="@string/about_create_countdown_note"
+                        android:textColor="@color/secondary_text"
+                        android:textSize="12sp" />
+                </LinearLayout>
 
                 <ImageView
                     android:layout_width="28dp"
@@ -112,7 +131,7 @@
             <LinearLayout
                 android:id="@+id/addWidgetAction"
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/control_surface"
                 android:clickable="true"
@@ -120,9 +139,12 @@
                 android:focusable="true"
                 android:foreground="?android:attr/selectableItemBackground"
                 android:gravity="center_vertical"
+                android:minHeight="64dp"
                 android:orientation="horizontal"
                 android:paddingStart="12dp"
-                android:paddingEnd="12dp">
+                android:paddingTop="8dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="8dp">
 
                 <TextView
                     android:layout_width="28dp"
@@ -134,15 +156,31 @@
                     android:textColor="@color/accent_text"
                     android:textSize="13sp" />
 
-                <TextView
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
                     android:layout_weight="1"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:text="@string/about_add_widget"
-                    android:textColor="@color/foreground"
-                    android:textSize="14sp" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="start"
+                        android:text="@string/about_add_widget"
+                        android:textColor="@color/foreground"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="start"
+                        android:text="@string/about_add_widget_note"
+                        android:textColor="@color/secondary_text"
+                        android:textSize="12sp" />
+                </LinearLayout>
 
                 <ImageView
                     android:layout_width="28dp"
@@ -188,15 +226,15 @@
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
                         android:layout_weight="1"
-                        android:gravity="center"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-medium"
-                            android:gravity="center"
+                            android:gravity="start"
                             android:text="@string/about_stop_checking"
                             android:textColor="@color/foreground"
                             android:textSize="14sp" />
@@ -205,7 +243,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:gravity="center"
+                            android:gravity="start"
                             android:text="@string/about_stop_checking_note"
                             android:textColor="@color/secondary_text"
                             android:textSize="12sp" />
@@ -226,7 +264,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="40dp"
                     android:layout_marginTop="6dp"
-                    android:gravity="center"
+                    android:gravity="start"
                     android:text="@string/about_calendar_reaction"
                     android:textColor="@color/accent_text"
                     android:textSize="12sp"

@@ -57,17 +57,16 @@ class CountdownEventAdapter(
             contentDescription = context.getString(EventIconPresentation.labelRes(displayedIcon))
         }
         view.findViewById<TextView>(R.id.eventTitle).text = event.title
-        val meta = if (event.repeatRule == RepeatRule.YEARLY) {
-            context.getString(
-                R.string.event_meta_yearly,
-                context.getString(EventTypePresentation.labelRes(event.type)),
-                displayDate.format(dateFormatter),
-            )
+        val eventType = context.getString(EventTypePresentation.labelRes(event.type))
+        val formattedDate = displayDate.format(dateFormatter)
+        val meta = if (event.repeatRule == RepeatRule.NONE) {
+            context.getString(R.string.event_meta, eventType, formattedDate)
         } else {
             context.getString(
-                R.string.event_meta,
-                context.getString(EventTypePresentation.labelRes(event.type)),
-                displayDate.format(dateFormatter),
+                R.string.event_meta_repeating,
+                eventType,
+                formattedDate,
+                context.getString(repeatLabelRes(event.repeatRule)),
             )
         }
         view.findViewById<TextView>(R.id.eventMeta).text = meta
@@ -156,6 +155,13 @@ class CountdownEventAdapter(
     private fun elapsedStatus(elapsedDays: Long): String {
         val quantity = elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
         return context.resources.getQuantityString(R.plurals.status_days_ago, quantity, elapsedDays)
+    }
+
+    private fun repeatLabelRes(repeatRule: RepeatRule): Int = when (repeatRule) {
+        RepeatRule.NONE -> R.string.repeat_never
+        RepeatRule.WEEKLY -> R.string.repeat_weekly
+        RepeatRule.MONTHLY -> R.string.repeat_monthly
+        RepeatRule.YEARLY -> R.string.repeat_yearly
     }
 
     private companion object {

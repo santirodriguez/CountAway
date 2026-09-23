@@ -1,1 +1,1 @@
-Mantené apretada una cuenta para elegir entre los nueve estilos, apariencia Sistema/Claro/Oscuro y una vista previa antes de agregarla. El pinning directo ahora conserva la cuenta exacta elegida en launchers compatibles, y los estilos tienen nuevos detalles visuales livianos.
+Mantené apretada una cuenta para elegir y previsualizar el estilo del widget antes de agregarlo. Sumamos repetición semanal y mensual junto con la anual, con próximas fechas visibles, meses cortos bien resueltos y recordatorios que siguen avanzando.

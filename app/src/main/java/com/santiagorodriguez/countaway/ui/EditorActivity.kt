@@ -279,6 +279,8 @@ class EditorActivity : BaseActivity() {
 
     private fun repeatLabel(repeatRule: RepeatRule): String = when (repeatRule) {
         RepeatRule.NONE -> getString(R.string.repeat_never)
+        RepeatRule.WEEKLY -> getString(R.string.repeat_weekly)
+        RepeatRule.MONTHLY -> getString(R.string.repeat_monthly)
         RepeatRule.YEARLY -> getString(R.string.repeat_yearly)
     }
 
@@ -722,7 +724,7 @@ class EditorActivity : BaseActivity() {
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
-        if (selectedRepeatRule == RepeatRule.YEARLY) {
+        if (selectedRepeatRule != RepeatRule.NONE) {
             val occurrence = CountdownOccurrenceResolver.displayDate(
                 selectedDate,
                 selectedRepeatRule,
@@ -731,6 +733,7 @@ class EditorActivity : BaseActivity() {
             lines += getString(
                 R.string.schedule_next_occurrence,
                 occurrence.format(formatter),
+                repeatLabel(selectedRepeatRule),
             )
         }
 
@@ -744,6 +747,13 @@ class EditorActivity : BaseActivity() {
                 R.string.schedule_next_reminder,
                 reminderDate.format(formatter),
             )
+        }
+
+        if (
+            selectedRepeatRule == RepeatRule.MONTHLY &&
+            selectedDate.dayOfMonth >= 29
+        ) {
+            lines += getString(R.string.schedule_month_end_note)
         }
 
         if (

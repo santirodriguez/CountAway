@@ -149,6 +149,35 @@ class ReminderEditorPolicyTest {
         assertEquals(ReminderSelectionEffect.CHECK_NOTIFICATIONS, effect)
     }
 
+    @Test
+    fun weeklyAndMonthlyEventsKeepReminderChoicesAvailableForHistoricalAnchors() {
+        listOf(RepeatRule.WEEKLY, RepeatRule.MONTHLY).forEach { repeatRule ->
+            assertEquals(
+                ReminderOption.entries.toList(),
+                ReminderEditorPolicy.availableOptions(
+                    existingEvent = null,
+                    selectedDate = today.minusDays(40),
+                    selectedReminder = ReminderOption.OFF,
+                    today = today,
+                    selectedRepeatRule = repeatRule,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun changingToMonthlyMakesHistoricalReminderSchedulable() {
+        val effect = ReminderEditorPolicy.repeatChangeEffect(
+            existingEvent = null,
+            selectedDate = LocalDate.of(2026, 1, 31),
+            selectedReminder = ReminderOption.SEVEN_DAYS,
+            selectedRepeatRule = RepeatRule.MONTHLY,
+            today = today,
+        )
+
+        assertEquals(ReminderSelectionEffect.CHECK_NOTIFICATIONS, effect)
+    }
+
     private fun event(date: LocalDate, reminder: ReminderOption): CountdownEvent = CountdownEvent(
         id = "event",
         title = "Event",

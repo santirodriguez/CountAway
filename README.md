@@ -28,7 +28,7 @@ Or download the signed APK directly from [GitHub Releases](https://github.com/sa
 
 ## What it does
 
-- Multiple local countdowns with custom icons and optional yearly recurrence
+- Multiple local countdowns with custom icons and optional weekly, monthly, or yearly recurrence
 - Responsive home-screen widgets, from compact 1×1 to wide layouts
 - Fixed-event widgets or an automatic **Next countdown** mode
 - Optional local reminders before or on the event day

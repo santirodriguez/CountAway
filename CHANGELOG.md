@@ -7,7 +7,8 @@
 - Remember the last successfully used style for a new widget while keeping existing widget configurations independent; canceled setup does not change it.
 - Keep the countdown editor focused on countdown editing and rely on Android's reconfigurable-widget path for existing placed widgets.
 - Refresh Horizon, Forest, Pulse, Breeze, Ember, and Ridge with lightweight style-specific artwork rendered natively without adding runtime image dependencies; Ridge keeps its subtle blue-and-white chevron identity.
-- Polish Help with a clearer three-step flow and a small interactive calendar easter egg.
+- Add weekly and monthly recurrence alongside yearly recurrence, with correct short-month handling, visible recurrence metadata, next-occurrence feedback, and recurring reminders that continue rolling forward.
+- Polish Help with flexible large-text-safe step cards, shorter title/subtitle copy, and the existing interactive calendar easter egg.
 - Make widget setup, generic picker configuration, pin previews, and installed widgets share the same production layouts and presentation rules across Compact, Short, Standard, and Large sizes.
 - Improve large-text behavior by prioritizing the countdown value and dropping optional widget detail when space is constrained.
 - Keep CountAway lightweight and local-only with the existing permissions, signing identity, JSON schema, SDK baseline, and no new runtime dependencies or Internet permission.

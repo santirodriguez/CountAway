@@ -76,6 +76,31 @@ class WidgetEventContentTest {
     }
 
     @Test
+    fun weeklyAndMonthlyContentUseResolvedNextOccurrences() {
+        val weekly = event(
+            id = "weekly",
+            title = "Weekly",
+            date = LocalDate.of(2026, 8, 6),
+            repeatRule = RepeatRule.WEEKLY,
+        )
+        val monthly = event(
+            id = "monthly",
+            title = "Monthly",
+            date = LocalDate.of(2026, 1, 31),
+            repeatRule = RepeatRule.MONTHLY,
+        )
+
+        assertEquals(
+            LocalDate.of(2026, 8, 27),
+            WidgetEventContentFactory.from(weekly, today).date,
+        )
+        assertEquals(
+            LocalDate.of(2026, 8, 31),
+            WidgetEventContentFactory.from(monthly, today).date,
+        )
+    }
+
+    @Test
     fun compactElapsedContentKeepsCompletedMarker() {
         val future = WidgetEventContentFactory.from(event("future", "Future", today.plusDays(6)), today)
         val elapsed = WidgetEventContentFactory.from(event("elapsed", "Elapsed", today.minusDays(6)), today)

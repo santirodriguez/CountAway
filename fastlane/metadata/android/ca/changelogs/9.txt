@@ -1,1 +1,1 @@
-Mantén premut un compte per triar entre els nou estils, aparença Sistema/Clar/Fosc i una previsualització abans d’afegir-lo. L’afegit directe ara conserva el compte exacte triat en llançadors compatibles, i els estils tenen nous detalls visuals lleugers.
+Mantén premut un compte per triar i previsualitzar l’estil del giny abans d’afegir-lo. Afegim repetició setmanal i mensual juntament amb l’anual, amb properes dates visibles, mesos curts ben resolts i recordatoris que continuen avançant.
