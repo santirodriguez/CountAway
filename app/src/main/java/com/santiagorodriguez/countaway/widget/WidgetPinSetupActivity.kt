@@ -12,6 +12,7 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
@@ -29,6 +30,7 @@ class WidgetPinSetupActivity : BaseActivity() {
     private lateinit var backgroundRows: LinearLayout
     private lateinit var previewController: WidgetPreviewController
     private lateinit var addButton: Button
+    private lateinit var eventId: String
     private var event: CountdownEvent? = null
     private var selectedBackground = WidgetBackground.CLASSIC
     private var loadGeneration = 0
@@ -43,11 +45,12 @@ class WidgetPinSetupActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val eventId = intent.getStringExtra(EXTRA_EVENT_ID)
-        if (eventId.isNullOrBlank()) {
+        val requestedEventId = intent.getStringExtra(EXTRA_EVENT_ID)
+        if (requestedEventId.isNullOrBlank()) {
             finish()
             return
         }
+        eventId = requestedEventId
 
         setContentView(R.layout.activity_widget_pin_setup)
         InsetUtils.applySystemBarPadding(findViewById(R.id.widgetPinSetupRoot))
@@ -87,13 +90,15 @@ class WidgetPinSetupActivity : BaseActivity() {
         findViewById<Button>(R.id.widgetPinSetupCancelButton).setOnClickListener { finish() }
         addButton.setOnClickListener { requestPin() }
 
-        setAddEnabled(!awaitingPinResult)
+        setAddEnabled(false)
         renderBackgroundChoices()
-        loadEvent(eventId)
     }
 
     override fun onResume() {
         super.onResume()
+        if (event == null) {
+            loadEvent(eventId)
+        }
         if (awaitingPinResult && pinUiWasShown) {
             scheduleReconcile()
         }
@@ -165,7 +170,11 @@ class WidgetPinSetupActivity : BaseActivity() {
                 }
                 findViewById<TextView>(R.id.widgetPinSetupEventTitle).text = loaded.title
                 val locale = resources.configuration.locales[0]
-                findViewById<TextView>(R.id.widgetPinSetupEventDate).text = loaded.date.format(
+                val displayDate = CountdownOccurrenceResolver.displayDate(
+                    loaded,
+                    CountdownTime.snapshot().today,
+                )
+                findViewById<TextView>(R.id.widgetPinSetupEventDate).text = displayDate.format(
                     DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
                 )
                 setAddEnabled(!awaitingPinResult)

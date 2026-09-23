@@ -7,7 +7,7 @@
 - Improve widget reliability with safer direct pinning and reconfiguration, plus a fix for daily refreshes so placed widgets keep advancing without reopening the app.
 - Refresh widget visuals and previews across supported sizes, with clearer style/appearance feedback and better large-text behavior.
 - Simplify Help and improve layout/readability while preserving the existing lightweight interaction model.
-- Keep CountAway local-only and lightweight with the existing data schema, permissions, signing identity, SDK baseline, and no new runtime dependencies or Internet permission.
+- Keep CountAway local-only and lightweight with backward-compatible data migration, the existing permissions/signing/SDK baseline, and no new runtime dependencies or Internet permission.
 
 ## 1.1.8
 
