@@ -74,7 +74,7 @@ class CountdownStorageContractInstrumentedTest {
         val restored = CountdownStorageCodec.decodeForImport(payload)
 
         assertEquals(events, restored)
-        assertTrue(payload.contains("\"schemaVersion\":5"))
+        assertTrue(payload.contains("\"schemaVersion\":${CountdownStorageSchema.CURRENT_VERSION}"))
         assertTrue(payload.contains("\"repeatRule\":\"weekly\""))
         assertTrue(payload.contains("\"repeatRule\":\"monthly\""))
     }
@@ -421,7 +421,7 @@ class CountdownStorageContractInstrumentedTest {
 
         val FUTURE_SCHEMA_FIXTURE = """
             {
-              "schemaVersion": 6,
+              "schemaVersion": ${CountdownStorageSchema.CURRENT_VERSION + 1},
               "events": []
             }
         """.trimIndent()
