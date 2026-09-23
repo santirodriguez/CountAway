@@ -155,10 +155,24 @@ After the exact release candidate is accepted, Gate A is satisfied, and the rele
 3. confirm the accepted release candidate was built from the exact intended source SHA and review its retained validation report, checksum, APK size/delta, signing identity, permissions, runtime-dependency report, R8 mapping, and independent rebuild result;
 4. confirm blocking emulator acceptance on API 26/33/36, review the API 37 emulator diagnostic, record successful physical Android 17/API 37 acceptance, and verify real upgrade preservation from the previous public release;
 5. confirm Gate A, including the maintainer's F-Droid APK installation check;
-6. keep the exact `release/<version>` branch present and frozen through draft/tag/publication verification;
-7. run **CountAway Release** manually from either the current `main` head or the exact current `release/<version>` head, choose `prepare-draft-release`, and enter that exact selected-branch SHA.
+6. merge the reviewed `release/<version>` pull request into `main` with a normal merge commit unless a different merge strategy has been explicitly reviewed and approved;
+7. verify the merged `main` tree exactly matches the reviewed release-branch tree and wait for Android CI to pass on that exact `main` head;
+8. keep the `release/<version>` branch present through draft/tag/publication verification;
+9. run **CountAway Release** manually from the exact current `main` head, choose `prepare-draft-release`, and enter that exact `main` SHA.
 
-For branch-first releases, the normal path is the exact version-matched `release/<version>` branch. The workflow re-fetches the selected remote branch, rejects stale or mismatched SHAs, validates release metadata/screenshots and F-Droid Gate A, and creates or updates a draft GitHub Release with tag name `v<version>` and `target_commitish` set to that exact commit.
+The normal release path is therefore:
+
+```text
+accepted release candidate
+-> reviewed release branch
+-> merge to main
+-> verify identical tree + green main CI
+-> prepare draft from exact main head
+-> review draft
+-> publish
+```
+
+The workflow still supports the exact version-derived `release/<version>` branch as a recovery/exception path, but routine releases should prepare the draft from the reviewed merged `main` head. The workflow re-fetches the selected remote branch, rejects stale or mismatched SHAs, validates release metadata/screenshots and F-Droid Gate A, and creates or updates a draft GitHub Release with tag name `v<version>` and `target_commitish` set to that exact commit.
 
 At this stage the tag name is reserved by the draft release, but the Git ref does not yet exist. GitHub can expose the draft through an `untagged-...` URL, and resolving `v<version>` as a repository ref can return not found. Both are expected until publication.
 
@@ -189,7 +203,7 @@ Publishing is intentionally separate from preparation. Before publishing the Git
 - confirm Gate A remains satisfied;
 - confirm the release is still a draft and targets the intended commit.
 
-Only then publish the prepared GitHub Release. In the normal web path, publication creates the stable `v<version>` Git ref on the draft's configured target commit. Immediately after publication, verify that the tag resolves to that exact commit and that the public APK and checksum URLs resolve before continuing to F-Droid. Only after publication should integration of the same reviewed release branch into `main` be proposed and separately approved.
+Only then publish the prepared GitHub Release. In the normal web path, publication creates the stable `v<version>` Git ref on the draft's configured target commit. Immediately after publication, verify that the tag resolves to that exact commit, that the tagged commit is in `main` history, and that the public APK and checksum URLs resolve before continuing to F-Droid.
 
 Never move an existing stable tag after publication. Keep the release branch until release/tag/distribution verification is complete.
 
