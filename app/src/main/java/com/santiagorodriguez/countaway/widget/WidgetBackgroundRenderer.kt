@@ -130,7 +130,7 @@ object WidgetBackgroundRenderer {
         height: Float,
         density: Float,
     ) {
-        val horizonColor = if (dark) Color.rgb(173, 211, 238) else Color.rgb(49, 91, 126)
+        val horizonColor = if (dark) Color.rgb(173, 211, 238) else Color.rgb(113, 149, 173)
         val celestialColor = if (dark) Color.rgb(220, 234, 255) else Color.rgb(226, 155, 65)
         val stroke = accentStroke(width, height, density)
         val horizonY = height * 0.76f
@@ -140,14 +140,14 @@ object WidgetBackgroundRenderer {
             width * 0.79f,
             height * 0.63f,
             discRadius,
-            fillPaint(celestialColor, if (dark) 26 else 22),
+            fillPaint(celestialColor, if (dark) 26 else 18),
         )
         canvas.drawLine(
             -width * 0.03f,
             horizonY,
             width * 1.03f,
             horizonY,
-            accentPaint(horizonColor, if (dark) 29 else 22, stroke * 1.12f),
+            accentPaint(horizonColor, if (dark) 29 else 18, stroke * 1.12f),
         )
         canvas.drawPath(
             Path().apply {
@@ -163,7 +163,7 @@ object WidgetBackgroundRenderer {
                     width * 1.04f, height * 0.82f,
                 )
             },
-            accentPaint(horizonColor, if (dark) 17 else 14, stroke * 0.78f),
+            accentPaint(horizonColor, if (dark) 17 else 12, stroke * 0.78f),
         )
     }
 
