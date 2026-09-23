@@ -1,45 +1,68 @@
 # CountAway
 
 <p align="center">
-  <img src="docs/assets/branding/countaway.png" alt="CountAway" width="190" />
+  <img src="docs/assets/branding/countaway.png" alt="CountAway" width="220" />
+</p>
+
+<h3 align="center">Countdowns that live where you actually need them.</h3>
+
+<p align="center">
+  A lightweight, local-first Android countdown app built around the home screen.<br />
+  Pick a date. Put it where you can see it. Get on with your life.
 </p>
 
 <p align="center">
-  <strong>A lightweight Android countdown for the things worth waiting for.</strong>
+  <a href="https://f-droid.org/packages/com.santiagorodriguez.countaway/"><img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="54" /></a>
+  &nbsp;&nbsp;
+  <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/santirodriguez/CountAway"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54" /></a>
 </p>
 
-CountAway keeps countdowns local, simple, and visible where they are actually useful: on your home screen.
+<p align="center">
+  <a href="https://github.com/santirodriguez/CountAway/releases"><img src="https://img.shields.io/badge/GitHub-signed%20APK%20releases-181717?style=for-the-badge&logo=github&logoColor=white" alt="Signed APK releases on GitHub" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-4C9A73?style=for-the-badge" alt="Apache 2.0 license" /></a>
+</p>
 
-## Why
+<p align="center">
+  <sub>No accounts · no ads · no analytics · no cloud sync · no Internet permission</sub>
+</p>
+
+---
+
+## The idea
 
 I wanted a home-screen widget that simply showed how many days were left until something important.
 
 Somehow, “count the days” often turns into an account, a subscription, a dashboard, and a minor career change.
 
-CountAway skips all that. Pick a date, put it on your home screen, and get on with your life.
+CountAway skips all that.
 
-## Installation
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <strong>Count what matters</strong><br /><br />
+      Multiple countdowns, custom icons, reminders, and optional weekly, monthly, or yearly recurrence.
+    </td>
+    <td width="33%" valign="top">
+      <strong>Keep it on Home</strong><br /><br />
+      Responsive widgets from compact 1×1 to wide layouts, fixed events or an automatic <strong>Next countdown</strong>.
+    </td>
+    <td width="33%" valign="top">
+      <strong>Keep it yours</strong><br /><br />
+      Everything stays local. Backup and restore with JSON when <em>you</em> want portability.
+    </td>
+  </tr>
+</table>
 
-[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="72">](https://f-droid.org/packages/com.santiagorodriguez.countaway/)
+## Highlights
 
-[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="72">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/santirodriguez/CountAway)
-
-Or download the signed APK directly from [GitHub Releases](https://github.com/santirodriguez/CountAway/releases).
-
-## What it does
-
-- Multiple local countdowns with custom icons and optional weekly, monthly, or yearly recurrence
-- Responsive home-screen widgets, from compact 1×1 to wide layouts
-- Fixed-event widgets or an automatic **Next countdown** mode
-- Optional local reminders before or on the event day
-- System, Light, and Dark appearance for both the app and widgets
-- Native sharing plus local JSON backup and restore
-- Long-press widget setup with a visual style picker and live preview on supported launchers
-- Reliable fixed-countdown pinning with remembered last-used style for the next new widget
-- Lightweight style-specific widget artwork rendered natively
-- English, Spanish, and Catalan
-
-Everything stays local, with no accounts, ads, analytics, or cloud sync.
+- **Widget-first:** long-press a countdown, choose a style, preview it, and add it directly on supported launchers.
+- **Flexible recurrence:** weekly, monthly, or yearly countdowns with sensible short-month handling.
+- **Nine widget backgrounds:** from clean Classic to Mist, Horizon, Sunset, Ember, Ridge, and more.
+- **Three appearance modes:** System, Light, and Dark for both the app and widgets.
+- **Useful reminders:** optional local notifications before or on the event day.
+- **Smart widget behavior:** fixed-event widgets stay fixed; **Next countdown** follows the nearest event automatically.
+- **Local portability:** native sharing plus JSON export/import.
+- **Multilingual:** English, Spanish, and Catalan.
 
 ## Screenshots
 
@@ -58,13 +81,7 @@ Everything stays local, with no accounts, ads, analytics, or cloud sync.
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" alt="CountAway home-screen widgets" width="46%" />
 </p>
 
-## Author
-
-[Santiago Rodriguez](https://santiagorodriguez.com)
-
-<a href="https://santiagorodriguez.com/donate"><img src="docs/assets/badges/donate.svg" alt="Donate" height="52" /></a>
-
-## Privacy
+## Privacy, by design
 
 CountAway has no Internet permission, accounts, ads, analytics, or cloud sync.
 
@@ -72,14 +89,20 @@ Your countdowns stay on your device. Revolutionary stuff, apparently.
 
 ## Build
 
-Requires JDK 17 and Android SDK 36.
+Requires **JDK 17** and **Android SDK 36**.
 
 ```bash
 ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease
 ```
 
-Maintainer signing and release steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md). F-Droid preparation and submission notes are in [`docs/FDROID.md`](docs/FDROID.md).
+Maintainer signing and release steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md). F-Droid preparation and update notes are in [`docs/FDROID.md`](docs/FDROID.md).
+
+## Author
+
+Created by [Santiago Rodriguez](https://santiagorodriguez.com).
+
+<a href="https://santiagorodriguez.com/donate"><img src="docs/assets/badges/donate.svg" alt="Donate" height="46" /></a>
 
 ## License
 
-Licensed under the Apache License 2.0. See [LICENSE](LICENSE).
+Licensed under the [Apache License 2.0](LICENSE).
