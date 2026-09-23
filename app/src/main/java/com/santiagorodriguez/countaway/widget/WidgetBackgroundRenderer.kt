@@ -323,9 +323,63 @@ object WidgetBackgroundRenderer {
         height: Float,
         density: Float,
     ) {
-        val primary = if (dark) Color.rgb(255, 177, 90) else Color.rgb(124, 65, 0)
-        val secondary = if (dark) Color.rgb(244, 102, 67) else Color.rgb(151, 76, 17)
         val stroke = accentStroke(width, height, density)
+
+        if (!dark) {
+            val color = Color.rgb(124, 65, 0)
+            canvas.drawPath(
+                Path().apply {
+                    moveTo(width * 0.46f, height * 1.04f)
+                    cubicTo(
+                        width * 0.68f, height * 0.89f,
+                        width * 0.76f, height * 0.62f,
+                        width * 0.89f, height * 0.47f,
+                    )
+                    cubicTo(
+                        width * 0.97f, height * 0.38f,
+                        width * 0.96f, height * 0.23f,
+                        width * 0.90f, height * 0.06f,
+                    )
+                },
+                accentPaint(color, 24, stroke),
+            )
+            canvas.drawPath(
+                Path().apply {
+                    moveTo(width * 0.57f, height * 1.03f)
+                    cubicTo(
+                        width * 0.70f, height * 0.82f,
+                        width * 0.68f, height * 0.69f,
+                        width * 0.78f, height * 0.53f,
+                    )
+                },
+                accentPaint(color, 18, stroke * 0.76f),
+            )
+            arrayOf(
+                0.69f to 0.74f,
+                0.79f to 0.58f,
+                0.86f to 0.43f,
+                0.91f to 0.27f,
+            ).forEachIndexed { index, (x, y) ->
+                canvas.drawCircle(
+                    width * x,
+                    height * y,
+                    maxOf(1.2f * density, minOf(width, height) * (0.009f + index * 0.0015f)),
+                    fillPaint(color, 21),
+                )
+            }
+            drawSpark(
+                canvas = canvas,
+                centerX = width * 0.86f,
+                centerY = height * 0.19f,
+                radius = minOf(width, height) * 0.037f,
+                color = color,
+                alpha = 23,
+            )
+            return
+        }
+
+        val primary = Color.rgb(255, 177, 90)
+        val secondary = Color.rgb(244, 102, 67)
         val embers = arrayOf(
             floatArrayOf(0.73f, 0.80f, 0.014f),
             floatArrayOf(0.80f, 0.69f, 0.010f),
@@ -339,10 +393,7 @@ object WidgetBackgroundRenderer {
                 width * ember[0],
                 height * ember[1],
                 maxOf(1.1f * density, minOf(width, height) * ember[2]),
-                fillPaint(
-                    if (index % 2 == 0) primary else secondary,
-                    if (dark) 34 - index * 3 else 23 - index * 2,
-                ),
+                fillPaint(if (index % 2 == 0) primary else secondary, 34 - index * 3),
             )
         }
 
@@ -355,7 +406,7 @@ object WidgetBackgroundRenderer {
                     width * 0.83f, height * 0.65f,
                 )
             },
-            accentPaint(primary, if (dark) 19 else 14, stroke * 0.72f),
+            accentPaint(primary, 19, stroke * 0.72f),
         )
         drawSpark(
             canvas = canvas,
@@ -363,7 +414,7 @@ object WidgetBackgroundRenderer {
             centerY = height * 0.31f,
             radius = minOf(width, height) * 0.031f,
             color = secondary,
-            alpha = if (dark) 25 else 18,
+            alpha = 25,
         )
     }
 
