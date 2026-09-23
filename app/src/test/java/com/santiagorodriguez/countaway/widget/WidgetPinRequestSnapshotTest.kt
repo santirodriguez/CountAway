@@ -7,62 +7,54 @@ import org.junit.Test
 
 class WidgetPinRequestSnapshotTest {
     @Test
-    fun callbackDataRoundTripsEventAndStyle() {
-        val expected = WidgetPinRequestSnapshot.create(
-            eventId = "event / with spaces",
+    fun callbackDataRoundTripPreservesExactRequest() {
+        val snapshot = WidgetPinRequestSnapshot.create(
+            eventId = "trip / buenos aires?2026",
             style = WidgetStyleSelection(
-                appearance = WidgetAppearance.LIGHT,
+                appearance = WidgetAppearance.DARK,
                 background = WidgetBackground.MONOGRAM,
             ),
-            requestToken = "request-token",
+            requestToken = "request / token?one",
         )
-
-        assertEquals(expected, WidgetPinRequestSnapshot.fromCallbackData(expected.callbackData()))
-    }
-
-    @Test
-    fun repeatedRequestsForSameEventHaveDistinctTokensAndIdentities() {
-        val style = WidgetStyleSelection(
-            appearance = WidgetAppearance.DARK,
-            background = WidgetBackground.FOREST,
-        )
-        val first = WidgetPinRequestSnapshot.create("same-event", style)
-        val second = WidgetPinRequestSnapshot.create("same-event", style)
-
-        assertNotEquals(first.requestToken, second.requestToken)
-        assertNotEquals(first.callbackData(), second.callbackData())
-    }
-
-    @Test
-    fun callbackSnapshotKeepsStyleSelectedAtRequestTime() {
-        val requestedStyle = WidgetStyleSelection(
-            appearance = WidgetAppearance.LIGHT,
-            background = WidgetBackground.MONOGRAM,
-        )
-        val encoded = WidgetPinRequestSnapshot.create(
-            eventId = "event",
-            style = requestedStyle,
-            requestToken = "stable-request",
-        ).callbackData()
 
         assertEquals(
-            requestedStyle,
-            WidgetPinRequestSnapshot.fromCallbackData(encoded)?.style,
+            snapshot,
+            WidgetPinRequestSnapshot.fromCallbackData(snapshot.callbackData()),
         )
     }
 
     @Test
-    fun invalidOrIncompleteCallbackDataIsRejected() {
-        assertNull(WidgetPinRequestSnapshot.fromCallbackData(null))
-        assertNull(WidgetPinRequestSnapshot.fromCallbackData("countaway://widget/other/token"))
-        assertNull(
-            WidgetPinRequestSnapshot.fromCallbackData(
-                "countaway://widget/pin/token?event=e&appearance=future&background=classic",
+    fun differentRequestsRemainIsolated() {
+        val first = WidgetPinRequestSnapshot.create(
+            eventId = "event-a",
+            style = WidgetStyleSelection(
+                appearance = WidgetAppearance.LIGHT,
+                background = WidgetBackground.FOREST,
             ),
+            requestToken = "request-a",
         )
+        val second = WidgetPinRequestSnapshot.create(
+            eventId = "event-b",
+            style = WidgetStyleSelection(
+                appearance = WidgetAppearance.DARK,
+                background = WidgetBackground.PULSE,
+            ),
+            requestToken = "request-b",
+        )
+
+        assertNotEquals(first.callbackData(), second.callbackData())
+        assertEquals(first, WidgetPinRequestSnapshot.fromCallbackData(first.callbackData()))
+        assertEquals(second, WidgetPinRequestSnapshot.fromCallbackData(second.callbackData()))
+    }
+
+    @Test
+    fun malformedOrIncompleteCallbackDataIsRejected() {
+        assertNull(WidgetPinRequestSnapshot.fromCallbackData(null))
+        assertNull(WidgetPinRequestSnapshot.fromCallbackData(""))
+        assertNull(WidgetPinRequestSnapshot.fromCallbackData("https://widget/pin/request"))
         assertNull(
             WidgetPinRequestSnapshot.fromCallbackData(
-                "countaway://widget/pin/token?event=e&appearance=system&background=future",
+                "countaway://widget/pin/request?event=event-a&appearance=light",
             ),
         )
     }

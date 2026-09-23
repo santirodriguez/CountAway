@@ -71,4 +71,50 @@ class WidgetPinResultPolicyTest {
 
         assertTrue(WidgetPinResultPolicy.matchesSnapshot(existing, snapshot))
     }
+
+    @Test
+    fun differentEventStyleOrSelectionIsNotTreatedAsTheSameSnapshot() {
+        val snapshot = WidgetPinRequestSnapshot.create(
+            eventId = "event-a",
+            style = WidgetStyleSelection(
+                appearance = WidgetAppearance.LIGHT,
+                background = WidgetBackground.HORIZON,
+            ),
+            requestToken = "token",
+        )
+
+        assertFalse(
+            WidgetPinResultPolicy.matchesSnapshot(
+                WidgetConfiguration(
+                    eventId = "event-b",
+                    appearance = WidgetAppearance.LIGHT,
+                    background = WidgetBackground.HORIZON,
+                    eventSelection = WidgetEventSelection.FIXED,
+                ),
+                snapshot,
+            ),
+        )
+        assertFalse(
+            WidgetPinResultPolicy.matchesSnapshot(
+                WidgetConfiguration(
+                    eventId = "event-a",
+                    appearance = WidgetAppearance.DARK,
+                    background = WidgetBackground.HORIZON,
+                    eventSelection = WidgetEventSelection.FIXED,
+                ),
+                snapshot,
+            ),
+        )
+        assertFalse(
+            WidgetPinResultPolicy.matchesSnapshot(
+                WidgetConfiguration(
+                    eventId = "event-a",
+                    appearance = WidgetAppearance.LIGHT,
+                    background = WidgetBackground.HORIZON,
+                    eventSelection = WidgetEventSelection.NEXT,
+                ),
+                snapshot,
+            ),
+        )
+    }
 }

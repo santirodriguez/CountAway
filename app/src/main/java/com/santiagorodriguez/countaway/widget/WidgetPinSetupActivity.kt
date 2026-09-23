@@ -18,6 +18,7 @@ import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.BaseActivity
+import com.santiagorodriguez.countaway.ui.EventIconPresentation
 import com.santiagorodriguez.countaway.ui.InsetUtils
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -158,6 +159,10 @@ class WidgetPinSetupActivity : BaseActivity() {
                 }
 
                 event = loaded
+                findViewById<ImageView>(R.id.widgetPinSetupEventIcon).apply {
+                    setImageResource(EventIconPresentation.drawableRes(loaded.icon))
+                    contentDescription = getString(EventIconPresentation.labelRes(loaded.icon))
+                }
                 findViewById<TextView>(R.id.widgetPinSetupEventTitle).text = loaded.title
                 val locale = resources.configuration.locales[0]
                 findViewById<TextView>(R.id.widgetPinSetupEventDate).text = loaded.date.format(

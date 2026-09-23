@@ -88,9 +88,6 @@ internal data class WidgetPinRequestSnapshot(
 }
 
 object WidgetPinning {
-    fun request(activity: Activity): Boolean =
-        requestInternal(activity = activity, event = null, snapshot = null)
-
     fun request(
         activity: Activity,
         event: CountdownEvent,
@@ -120,31 +117,27 @@ object WidgetPinning {
 
     private fun requestInternal(
         activity: Activity,
-        event: CountdownEvent?,
-        snapshot: WidgetPinRequestSnapshot?,
+        event: CountdownEvent,
+        snapshot: WidgetPinRequestSnapshot,
     ): Boolean {
         val manager = AppWidgetManager.getInstance(activity)
         if (!manager.isRequestPinAppWidgetSupported) return false
 
         val provider = ComponentName(activity, CountdownWidgetProvider::class.java)
-        val preview = if (event != null && snapshot != null) {
-            WidgetPreviewFactory.remoteViews(
-                context = activity,
-                event = event,
-                style = snapshot.style,
-            )
-        } else {
-            WidgetPreviewFactory.remoteViews(activity)
-        }
+        val preview = WidgetPreviewFactory.remoteViews(
+            context = activity,
+            event = event,
+            style = snapshot.style,
+        )
         val extras = Bundle().apply {
             putParcelable(AppWidgetManager.EXTRA_APPWIDGET_PREVIEW, preview)
         }
-        val callback = snapshot?.let { callbackPendingIntent(activity, it) }
+        val callback = callbackPendingIntent(activity, snapshot)
 
         val requested = runCatching {
             manager.requestPinAppWidget(provider, extras, callback)
         }.getOrDefault(false)
-        if (!requested) callback?.cancel()
+        if (!requested) callback.cancel()
         return requested
     }
 }

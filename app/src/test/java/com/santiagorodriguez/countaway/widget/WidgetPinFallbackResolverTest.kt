@@ -27,6 +27,17 @@ class WidgetPinFallbackResolverTest {
     }
 
     @Test
+    fun removedBaselineWidgetDoesNotHideTheSingleNewWidget() {
+        assertEquals(
+            WidgetPinFallbackOutcome.Single(3),
+            WidgetPinFallbackResolver.resolve(
+                baselineIds = setOf(1, 2),
+                currentIds = setOf(2, 3),
+            ),
+        )
+    }
+
+    @Test
     fun multipleNewWidgetsAreNeverGuessed() {
         val outcome = WidgetPinFallbackResolver.resolve(
             baselineIds = setOf(1),
