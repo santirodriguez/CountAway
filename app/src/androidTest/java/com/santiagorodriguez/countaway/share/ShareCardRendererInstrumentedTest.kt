@@ -31,12 +31,14 @@ class ShareCardRendererInstrumentedTest {
 
         val light = ShareCardRenderer.render(context, content, dark = false)
         val dark = ShareCardRenderer.render(context, content, dark = true)
+        val center = ShareCardRenderer.SIZE_PX / 2
         try {
+            assertEquals(768, ShareCardRenderer.SIZE_PX)
             assertEquals(ShareCardRenderer.SIZE_PX, light.width)
             assertEquals(ShareCardRenderer.SIZE_PX, light.height)
             assertEquals(ShareCardRenderer.SIZE_PX, dark.width)
             assertEquals(ShareCardRenderer.SIZE_PX, dark.height)
-            assertNotEquals(light.getPixel(540, 540), dark.getPixel(540, 540))
+            assertNotEquals(light.getPixel(center, center), dark.getPixel(center, center))
         } finally {
             light.recycle()
             dark.recycle()
