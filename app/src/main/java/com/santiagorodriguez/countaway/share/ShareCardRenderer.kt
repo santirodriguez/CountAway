@@ -24,7 +24,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 internal data class ShareCardContent(
-    val brand: String,
     val iconRes: Int,
     val title: String,
     val primaryText: String,
@@ -73,7 +72,6 @@ internal object ShareCardContentFactory {
         val recurrenceText = repeatLabelRes(repeatRule)?.let(context::getString)
 
         return ShareCardContent(
-            brand = context.getString(R.string.app_name),
             iconRes = EventIconPresentation.drawableRes(icon),
             title = title,
             primaryText = primaryText,
@@ -93,7 +91,8 @@ internal object ShareCardContentFactory {
 }
 
 internal object ShareCardRenderer {
-    const val SIZE_PX = 1080
+    private const val DESIGN_SIZE_PX = 1080f
+    const val SIZE_PX = 768
 
     fun render(
         context: Context,
@@ -108,9 +107,20 @@ internal object ShareCardRenderer {
         val palette = WidgetPaletteResolver.resolve(WidgetBackground.MONOGRAM, dark)
         val medium = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         val bold = Typeface.create("sans-serif", Typeface.BOLD)
+        val scale = SIZE_PX / DESIGN_SIZE_PX
 
-        val brandPaint = textPaint(palette.secondaryTextColor, 38f, medium)
-        canvas.drawText(content.brand, 76f, 92f, brandPaint)
+        canvas.save()
+        canvas.scale(scale, scale)
+
+        drawIcon(
+            context = context,
+            canvas = canvas,
+            iconRes = R.drawable.ic_launcher_monochrome,
+            tint = palette.secondaryTextColor,
+            left = 40,
+            top = 28,
+            size = 118,
+        )
 
         drawIcon(
             context = context,
@@ -152,6 +162,7 @@ internal object ShareCardRenderer {
             canvas.drawText(ellipsize(recurrence, recurrencePaint, 760f), 78f, 828f, recurrencePaint)
         }
 
+        canvas.restore()
         return bitmap
     }
 
