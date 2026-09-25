@@ -11,6 +11,20 @@ import android.graphics.RectF
 import kotlin.math.roundToInt
 
 object WidgetBackgroundRenderer {
+    internal fun renderShareRidge(
+        dark: Boolean,
+        sizePx: Int,
+    ): Bitmap {
+        require(sizePx > 0)
+        return renderRidge(
+            width = sizePx,
+            height = sizePx,
+            scaledDensity = sizePx / 360f,
+            dark = dark,
+            shareComposition = true,
+        )
+    }
+
     fun render(
         context: Context,
         background: WidgetBackground,
@@ -387,6 +401,7 @@ object WidgetBackgroundRenderer {
         height: Int,
         scaledDensity: Float,
         dark: Boolean,
+        shareComposition: Boolean = false,
     ): Bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
         val canvas = Canvas(bitmap)
         val radius = 20f * scaledDensity
@@ -428,8 +443,16 @@ object WidgetBackgroundRenderer {
                 Color.rgb(20, 55, 112),
             )
         }
-        val startYs = floatArrayOf(0.39f, 0.50f, 0.61f)
-        val centerYs = floatArrayOf(0.72f, 0.81f, 0.89f)
+        val startYs = if (shareComposition) {
+            floatArrayOf(0.79f, 0.86f, 0.93f)
+        } else {
+            floatArrayOf(0.39f, 0.50f, 0.61f)
+        }
+        val centerYs = if (shareComposition) {
+            floatArrayOf(0.91f, 0.96f, 1.00f)
+        } else {
+            floatArrayOf(0.72f, 0.81f, 0.89f)
+        }
 
         startYs.forEachIndexed { index, startY ->
             val path = Path().apply {

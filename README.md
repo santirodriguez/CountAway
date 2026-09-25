@@ -4,11 +4,12 @@
   <img src="docs/assets/branding/countaway.png" alt="CountAway" width="220" />
 </p>
 
-<h3 align="center">Countdowns that live where you actually need them.</h3>
+<p align="center">
+  <strong>A lightweight Android countdown for the things worth waiting for.</strong>
+</p>
 
 <p align="center">
-  A lightweight, local-first Android countdown app built around the home screen.<br />
-  Pick a date. Put it where you can see it. Get on with your life.
+  Pick a date. Put it on your home screen. Get on with your life.
 </p>
 
 <p align="center">
@@ -34,7 +35,7 @@ I wanted a home-screen widget that simply showed how many days were left until s
 
 Somehow, “count the days” often turns into an account, a subscription, a dashboard, and a minor career change.
 
-CountAway skips all that.
+CountAway skips all that. It counts the days and leaves you alone.
 
 <table>
   <tr>
@@ -48,7 +49,7 @@ CountAway skips all that.
     </td>
     <td width="33%" valign="top">
       <strong>Keep it yours</strong><br /><br />
-      Everything stays local. Backup and restore with JSON when <em>you</em> want portability.
+      Everything stays local. Backup and restore with JSON when <em>you</em> want portability. No dashboard required.
     </td>
   </tr>
 </table>
@@ -61,7 +62,8 @@ CountAway skips all that.
 - **Three appearance modes:** System, Light, and Dark for both the app and widgets.
 - **Useful reminders:** optional local notifications before or on the event day.
 - **Smart widget behavior:** fixed-event widgets stay fixed; **Next countdown** follows the nearest event automatically.
-- **Local portability:** native sharing plus JSON export/import.
+- **Share without the screenshot ritual:** Share turns a countdown into a Ridge-style PNG card that follows your current Light/Dark appearance.
+- **Local portability:** JSON export/import stays entirely under your control.
 - **Multilingual:** English, Spanish, and Catalan.
 
 ## Screenshots

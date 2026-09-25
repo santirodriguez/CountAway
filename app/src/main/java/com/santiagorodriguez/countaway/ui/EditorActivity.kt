@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.NotificationManager
+import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
@@ -49,6 +50,9 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotificationPolicy
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
+import com.santiagorodriguez.countaway.share.ShareCardContentFactory
+import com.santiagorodriguez.countaway.share.ShareCardRenderer
+import com.santiagorodriguez.countaway.share.ShareImageStore
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
@@ -456,12 +460,53 @@ class EditorActivity : BaseActivity() {
         }
 
         val snapshot = CountdownTime.snapshot()
+        val text = buildShareText(title, snapshot.today)
+        val cardContent = ShareCardContentFactory.create(
+            context = this,
+            title = title,
+            date = selectedDate,
+            icon = selectedIcon,
+            repeatRule = selectedRepeatRule,
+            today = snapshot.today,
+        )
+        val dark = ShareCardRenderer.resolveDark(this)
+        shareButton.isEnabled = false
+
+        CountdownIo.submit(
+            task = {
+                val bitmap = ShareCardRenderer.render(
+                    context = applicationContext,
+                    content = cardContent,
+                    dark = dark,
+                )
+                try {
+                    ShareImageStore.write(applicationContext, bitmap)
+                } finally {
+                    bitmap.recycle()
+                }
+            },
+            onComplete = { result ->
+                if (isFinishing || isDestroyed) return@submit
+                shareButton.isEnabled = true
+
+                val imageUri = result.getOrNull()
+                if (imageUri != null && launchShare(imageShareIntent(title, text, imageUri))) {
+                    return@submit
+                }
+                if (!launchShare(textShareIntent(text))) {
+                    Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
+                }
+            },
+        )
+    }
+
+    private fun buildShareText(title: String, today: LocalDate): String {
         val displayDate = CountdownOccurrenceResolver.displayDate(
             selectedDate,
             selectedRepeatRule,
-            snapshot.today,
+            today,
         )
-        val countdown = CountdownCalculator.value(snapshot.today, displayDate)
+        val countdown = CountdownCalculator.value(today, displayDate)
         val status = when (countdown.status) {
             CountdownStatus.FUTURE,
             CountdownStatus.THREE_DAYS,
@@ -476,17 +521,32 @@ class EditorActivity : BaseActivity() {
             CountdownStatus.DONE -> elapsedStatus(countdown.elapsedDays)
         }
         val locale = resources.configuration.locales[0]
-        val date = displayDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale))
-        val text = getString(R.string.share_countdown_format, title, status, date)
-        val sendIntent = Intent(Intent.ACTION_SEND)
-            .setType("text/plain")
-            .putExtra(Intent.EXTRA_TEXT, text)
-        runCatching {
-            startActivity(Intent.createChooser(sendIntent, null))
-        }.onFailure {
-            Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
-        }
+        val date = displayDate.format(
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale),
+        )
+        return getString(R.string.share_countdown_format, title, status, date)
     }
+
+    private fun imageShareIntent(
+        title: String,
+        text: String,
+        imageUri: Uri,
+    ): Intent = Intent(Intent.ACTION_SEND)
+        .setType("image/png")
+        .putExtra(Intent.EXTRA_STREAM, imageUri)
+        .putExtra(Intent.EXTRA_TEXT, text)
+        .putExtra(Intent.EXTRA_TITLE, title)
+        .setClipData(ClipData.newUri(contentResolver, title, imageUri))
+        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+    private fun textShareIntent(text: String): Intent = Intent(Intent.ACTION_SEND)
+        .setType("text/plain")
+        .putExtra(Intent.EXTRA_TEXT, text)
+
+    private fun launchShare(sendIntent: Intent): Boolean = runCatching {
+        startActivity(Intent.createChooser(sendIntent, getString(R.string.action_share)))
+        true
+    }.getOrDefault(false)
 
     private fun elapsedStatus(elapsedDays: Long): String {
         val quantity = elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()

@@ -1,1 +1,1 @@
-Configuració de ginys més directa, amb previsualització i afegit a l’inici. Afegim repetició setmanal i mensual, recordatoris recurrents i millor gestió dels mesos curts. També millorem l’aspecte, el text gran, la reconfiguració i l’actualització diària dels ginys.
+Configuració de ginys més directa, amb previsualització i afegit a l’inici. Afegim repetició setmanal i mensual, recordatoris recurrents i millor gestió dels mesos curts. També millorem l’aspecte, el text gran, la reconfiguració i l’actualització diària. Compartir ara crea una targeta visual estil Carena.
