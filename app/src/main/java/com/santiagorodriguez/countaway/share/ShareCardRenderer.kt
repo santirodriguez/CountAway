@@ -5,8 +5,6 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.RectF
 import android.graphics.Typeface
 import android.text.TextPaint
 import android.text.TextUtils
@@ -114,14 +112,9 @@ internal object ShareCardRenderer {
         canvas.save()
         canvas.scale(scale, scale)
 
-        drawRoundedIcon(
+        drawBrandWordmark(
             context = context,
             canvas = canvas,
-            iconRes = R.drawable.countaway_brand,
-            left = 34,
-            top = 22,
-            size = 116,
-            cornerRadius = 26f,
         )
 
         drawIcon(
@@ -178,32 +171,18 @@ internal object ShareCardRenderer {
         }
     }
 
-    private fun drawRoundedIcon(
+    private fun drawBrandWordmark(
         context: Context,
         canvas: Canvas,
-        iconRes: Int,
-        left: Int,
-        top: Int,
-        size: Int,
-        cornerRadius: Float,
     ) {
-        val drawable = context.getDrawable(iconRes)?.mutate() ?: return
-        val right = left + size
-        val bottom = top + size
-        val bounds = RectF(
-            left.toFloat(),
-            top.toFloat(),
-            right.toFloat(),
-            bottom.toFloat(),
+        val drawable = context.getDrawable(R.drawable.brand_logo)?.mutate() ?: return
+        drawable.setBounds(
+            28,
+            0,
+            348,
+            200,
         )
-        val clipPath = Path().apply {
-            addRoundRect(bounds, cornerRadius, cornerRadius, Path.Direction.CW)
-        }
-        canvas.save()
-        canvas.clipPath(clipPath)
-        drawable.setBounds(left, top, right, bottom)
         drawable.draw(canvas)
-        canvas.restore()
     }
 
     private fun drawIcon(
