@@ -115,11 +115,11 @@ internal object ShareCardRenderer {
         drawIcon(
             context = context,
             canvas = canvas,
-            iconRes = R.drawable.ic_launcher_monochrome,
-            tint = palette.secondaryTextColor,
-            left = 40,
-            top = 28,
-            size = 118,
+            iconRes = R.drawable.countaway_symbol_master,
+            tint = null,
+            left = 30,
+            top = 18,
+            size = 132,
         )
 
         drawIcon(
@@ -180,13 +180,13 @@ internal object ShareCardRenderer {
         context: Context,
         canvas: Canvas,
         iconRes: Int,
-        tint: Int,
+        tint: Int?,
         left: Int,
         top: Int,
         size: Int,
     ) {
         val drawable = context.getDrawable(iconRes)?.mutate() ?: return
-        drawable.setTint(tint)
+        tint?.let(drawable::setTint)
         drawable.setBounds(left, top, left + size, top + size)
         drawable.draw(canvas)
     }
