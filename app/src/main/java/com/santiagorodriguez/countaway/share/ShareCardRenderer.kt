@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.text.TextPaint
@@ -189,12 +190,17 @@ internal object ShareCardRenderer {
         val drawable = context.getDrawable(iconRes)?.mutate() ?: return
         val right = left + size
         val bottom = top + size
-        canvas.save()
-        canvas.clipRoundRect(
-            RectF(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat()),
-            cornerRadius,
-            cornerRadius,
+        val bounds = RectF(
+            left.toFloat(),
+            top.toFloat(),
+            right.toFloat(),
+            bottom.toFloat(),
         )
+        val clipPath = Path().apply {
+            addRoundRect(bounds, cornerRadius, cornerRadius, Path.Direction.CW)
+        }
+        canvas.save()
+        canvas.clipPath(clipPath)
         drawable.setBounds(left, top, right, bottom)
         drawable.draw(canvas)
         canvas.restore()
