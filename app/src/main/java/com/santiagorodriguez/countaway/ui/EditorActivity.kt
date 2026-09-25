@@ -531,13 +531,14 @@ class EditorActivity : BaseActivity() {
         title: String,
         text: String,
         imageUri: Uri,
-    ): Intent = Intent(Intent.ACTION_SEND)
-        .setType("image/png")
-        .putExtra(Intent.EXTRA_STREAM, imageUri)
-        .putExtra(Intent.EXTRA_TEXT, text)
-        .putExtra(Intent.EXTRA_TITLE, title)
-        .setClipData(ClipData.newUri(contentResolver, title, imageUri))
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    ): Intent = Intent(Intent.ACTION_SEND).apply {
+        type = "image/png"
+        putExtra(Intent.EXTRA_STREAM, imageUri)
+        putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_TITLE, title)
+        clipData = ClipData.newUri(contentResolver, title, imageUri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
 
     private fun textShareIntent(text: String): Intent = Intent(Intent.ACTION_SEND)
         .setType("text/plain")
