@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.text.TextPaint
 import android.text.TextUtils
@@ -112,14 +113,14 @@ internal object ShareCardRenderer {
         canvas.save()
         canvas.scale(scale, scale)
 
-        drawIcon(
+        drawRoundedIcon(
             context = context,
             canvas = canvas,
-            iconRes = R.drawable.countaway_symbol_master,
-            tint = null,
-            left = 30,
-            top = 18,
-            size = 132,
+            iconRes = R.drawable.countaway_brand,
+            left = 34,
+            top = 22,
+            size = 116,
+            cornerRadius = 26f,
         )
 
         drawIcon(
@@ -174,6 +175,29 @@ internal object ShareCardRenderer {
             ThemeManager.AppTheme.LIGHT -> false
             ThemeManager.AppTheme.DARK -> true
         }
+    }
+
+    private fun drawRoundedIcon(
+        context: Context,
+        canvas: Canvas,
+        iconRes: Int,
+        left: Int,
+        top: Int,
+        size: Int,
+        cornerRadius: Float,
+    ) {
+        val drawable = context.getDrawable(iconRes)?.mutate() ?: return
+        val right = left + size
+        val bottom = top + size
+        canvas.save()
+        canvas.clipRoundRect(
+            RectF(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat()),
+            cornerRadius,
+            cornerRadius,
+        )
+        drawable.setBounds(left, top, right, bottom)
+        drawable.draw(canvas)
+        canvas.restore()
     }
 
     private fun drawIcon(
