@@ -32,10 +32,11 @@ jobs:
       contents: read
     env:
       ANDROID_BUILD_TOOLS_VERSION: "34.0.0"
+      BUNDLETOOL_VERSION: "1.18.3"
+      BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
       EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
       PACKAGE_ID: "com.santiagorodriguez.countaway"
-      PREVIOUS_PUBLIC_APK_BYTES: "377945"
-      FIRST_CURRENT_RC_APK_BYTES: "382041"
+      PREVIOUS_PUBLIC_APK_BYTES: "402801"
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
@@ -98,14 +99,23 @@ jobs:
                 exit 1
               fi
 
+              SELECTED_BRANCH="${GITHUB_REF_NAME}"
+              git fetch --no-tags origin "+refs/heads/${SELECTED_BRANCH}:refs/remotes/origin/${SELECTED_BRANCH}"
+              REMOTE_SELECTED_SHA="$(git rev-parse "refs/remotes/origin/${SELECTED_BRANCH}")"
+              if [[ "${GITHUB_SHA}" != "${REMOTE_SELECTED_SHA}" ]]; then
+                echo "Selected branch ${SELECTED_BRANCH} moved to ${REMOTE_SELECTED_SHA}; expected current run SHA ${GITHUB_SHA}" >&2
+                exit 1
+              fi
+
               VERSION="${APP_VERSION}"
+              EXPECTED_RELEASE_BRANCH="release/${VERSION}"
               case "${REQUESTED_MODE}" in
                 release-candidate)
                   PREPARE_RELEASE="false"
                   ;;
                 prepare-draft-release)
-                  if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
-                    echo "Draft release preparation must run from main, got: ${GITHUB_REF}" >&2
+                  if [[ "${SELECTED_BRANCH}" != "main" && "${SELECTED_BRANCH}" != "${EXPECTED_RELEASE_BRANCH}" ]]; then
+                    echo "Draft release preparation must run from main or ${EXPECTED_RELEASE_BRANCH}, got: ${SELECTED_BRANCH}" >&2
                     exit 1
                   fi
                   PREPARE_RELEASE="true"
@@ -288,6 +298,14 @@ jobs:
 
           if [[ "${PREPARE_RELEASE}" == "true" ]]; then
             grep -Fqx "## ${VERSION}" CHANGELOG.md
+            test -s PRIVACY.md
+            PRIVACY_URL="https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md"
+            PRIVACY_RAW_URL="https://raw.githubusercontent.com/santirodriguez/CountAway/main/PRIVACY.md"
+            grep -Fq "${PRIVACY_URL}" app/src/main/res/values/about_polish_strings.xml
+            curl --fail --location --silent --show-error --retry 2               "${PRIVACY_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            test -s "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            curl --fail --location --silent --show-error --retry 2               "${PRIVACY_RAW_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.md"
+            grep -Fqx '# CountAway Privacy Policy' "${RUNNER_TEMP}/countaway-privacy-policy.md"
             test -s "docs/releases/${VERSION}.md"
             test ! -d "fastlane/metadata/android/en"
             for locale in en-US es ca; do
@@ -299,21 +317,89 @@ jobs:
               "fastlane/metadata/android/en-US/images/phoneScreenshots/2.png"
               "fastlane/metadata/android/en-US/images/phoneScreenshots/3.png"
               "fastlane/metadata/android/en-US/images/phoneScreenshots/4.png"
+              "fastlane/metadata/android/en-US/images/phoneScreenshots/5.png"
+              "fastlane/metadata/android/en-US/images/phoneScreenshots/6.png"
             )
             for screenshot in "${SCREENSHOTS[@]}"; do
               test -s "${screenshot}"
               file "${screenshot}" | grep -Fq "PNG image data"
             done
-            sha256sum "${SCREENSHOTS[@]}"               > "release-evidence/CountAway-v${VERSION}-screenshots.sha256"
+            sha256sum "${SCREENSHOTS[@]}" > "release-evidence/CountAway-v${VERSION}-screenshots.sha256"
 
-            grep -Fq 'phoneScreenshots/1.png" alt="CountAway home screen"' README.md
-            grep -Fq 'phoneScreenshots/2.png" alt="CountAway countdown editor"' README.md
-            grep -Fq 'phoneScreenshots/3.png" alt="CountAway widget configuration"' README.md
-            grep -Fq 'phoneScreenshots/4.png" alt="CountAway home-screen widget"' README.md
+            grep -Fq 'phoneScreenshots/1.png" alt="CountAway home screen in dark mode"' README.md
+            grep -Fq 'phoneScreenshots/2.png" alt="CountAway countdown editor with recurrence"' README.md
+            grep -Fq 'phoneScreenshots/3.png" alt="CountAway home screen in light mode"' README.md
+            grep -Fq 'phoneScreenshots/4.png" alt="CountAway Help and local backup"' README.md
+            grep -Fq 'phoneScreenshots/5.png" alt="CountAway widget configuration"' README.md
+            grep -Fq 'phoneScreenshots/6.png" alt="CountAway home-screen widgets"' README.md
           fi
 
       - name: Build optimized release
-        run: ./gradlew clean test lint assembleDebugAndroidTest assembleRelease --stacktrace
+        run: ./gradlew clean test lint assembleDebugAndroidTest assembleRelease bundleRelease --stacktrace
+
+      - name: Validate Play-readiness bundle
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          set -euo pipefail
+
+          AAB="app/build/outputs/bundle/release/app-release.aab"
+          BUNDLETOOL_JAR="${RUNNER_TEMP}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          test -s "${AAB}"
+          unzip -Z1 "${AAB}" > "${RUNNER_TEMP}/countaway-aab-files.txt"
+          grep -Fxq "BundleConfig.pb" "${RUNNER_TEMP}/countaway-aab-files.txt"
+          grep -Fxq "base/manifest/AndroidManifest.xml" "${RUNNER_TEMP}/countaway-aab-files.txt"
+          grep -Eq '^base/dex/classes([0-9]*)?\.dex$' "${RUNNER_TEMP}/countaway-aab-files.txt"
+
+          curl --fail --location --silent --show-error --retry 2 \
+            "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar" \
+            --output "${BUNDLETOOL_JAR}"
+          echo "${BUNDLETOOL_SHA256}  ${BUNDLETOOL_JAR}" | sha256sum --check -
+          java -jar "${BUNDLETOOL_JAR}" validate --bundle="${AAB}"
+
+          ACTUAL_PACKAGE_ID="$(
+            java -jar "${BUNDLETOOL_JAR}" dump manifest --bundle="${AAB}" --module=base --xpath=/manifest/@package | tr -d '\r\n'
+          )"
+          ACTUAL_VERSION_NAME="$(
+            java -jar "${BUNDLETOOL_JAR}" dump manifest --bundle="${AAB}" --module=base --xpath=/manifest/@android:versionName | tr -d '\r\n'
+          )"
+          ACTUAL_VERSION_CODE="$(
+            java -jar "${BUNDLETOOL_JAR}" dump manifest --bundle="${AAB}" --module=base --xpath=/manifest/@android:versionCode | tr -d '\r\n'
+          )"
+
+          [[ "${ACTUAL_PACKAGE_ID}" == "${PACKAGE_ID}" ]] || {
+            echo "AAB package mismatch: ${ACTUAL_PACKAGE_ID} != ${PACKAGE_ID}" >&2
+            exit 1
+          }
+          [[ "${ACTUAL_VERSION_NAME}" == "${VERSION}" ]] || {
+            echo "AAB versionName mismatch: ${ACTUAL_VERSION_NAME} != ${VERSION}" >&2
+            exit 1
+          }
+          [[ "${ACTUAL_VERSION_CODE}" == "${VERSION_CODE}" ]] || {
+            echo "AAB versionCode mismatch: ${ACTUAL_VERSION_CODE} != ${VERSION_CODE}" >&2
+            exit 1
+          }
+
+          mkdir -p play-readiness
+          cp "${AAB}" "play-readiness/CountAway-v${VERSION}-play-readiness.aab"
+          (
+            cd play-readiness
+            sha256sum "CountAway-v${VERSION}-play-readiness.aab"               > "CountAway-v${VERSION}-play-readiness.aab.sha256"
+          )
+          {
+            echo "source_sha=${GITHUB_SHA}"
+            echo "application_id=${ACTUAL_PACKAGE_ID}"
+            echo "version=${ACTUAL_VERSION_NAME}"
+            echo "version_code=${ACTUAL_VERSION_CODE}"
+            echo "bundletool_version=${BUNDLETOOL_VERSION}"
+            echo "bundletool_sha256=${BUNDLETOOL_SHA256}"
+            echo "aab_sha256=$(sha256sum "${AAB}" | awk '{print $1}')"
+            echo "aab_bytes=$(stat -c%s "${AAB}")"
+            echo "purpose=play-readiness-validation"
+            echo "public_release_asset=false"
+            echo "play_upload_signing=deferred"
+          } > "play-readiness/CountAway-v${VERSION}-play-readiness.txt"
 
       - name: Sign and verify APK
         id: apk
@@ -415,12 +501,8 @@ jobs:
           APK_BYTES="$(stat -c%s "${FINAL_APK}")"
           APKSIGNER_VERSION="$("${APKSIGNER}" version | tr -d '\r')"
           DELTA_PREVIOUS="$((APK_BYTES - PREVIOUS_PUBLIC_APK_BYTES))"
-          DELTA_FIRST_RC="$((APK_BYTES - FIRST_CURRENT_RC_APK_BYTES))"
           PERCENT_PREVIOUS="$(
             awk -v current="${APK_BYTES}" -v base="${PREVIOUS_PUBLIC_APK_BYTES}"               'BEGIN { printf "%.2f", ((current - base) * 100) / base }'
-          )"
-          PERCENT_FIRST_RC="$(
-            awk -v current="${APK_BYTES}" -v base="${FIRST_CURRENT_RC_APK_BYTES}"               'BEGIN { printf "%.2f", ((current - base) * 100) / base }'
           )"
 
           (
@@ -430,12 +512,9 @@ jobs:
 
           {
             echo "current_apk_bytes=${APK_BYTES}"
-            echo "previous_public_1_1_7_apk_bytes=${PREVIOUS_PUBLIC_APK_BYTES}"
+            echo "previous_public_1_1_8_apk_bytes=${PREVIOUS_PUBLIC_APK_BYTES}"
             echo "delta_from_previous_public_bytes=${DELTA_PREVIOUS}"
             echo "delta_from_previous_public_percent=${PERCENT_PREVIOUS}"
-            echo "first_current_rc_apk_bytes=${FIRST_CURRENT_RC_APK_BYTES}"
-            echo "delta_from_first_current_rc_bytes=${DELTA_FIRST_RC}"
-            echo "delta_from_first_current_rc_percent=${PERCENT_FIRST_RC}"
             echo "review=Explain material growth by changed files/resources/dependencies before publication."
           } > "${SIZE_REPORT}"
 
@@ -496,6 +575,13 @@ jobs:
           path: |
             dist/CountAway-v${{ steps.version.outputs.version }}.apk
             dist/CountAway-v${{ steps.version.outputs.version }}.apk.sha256
+          if-no-files-found: error
+
+      - name: Upload Play-readiness bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CountAway-v${{ steps.version.outputs.version }}-play-readiness-${{ steps.version.outputs.source_sha }}
+          path: play-readiness/
           if-no-files-found: error
 
       - name: Upload R8 mapping
@@ -630,6 +716,7 @@ jobs:
       API_LEVEL: ${{ matrix.api }}
       PACKAGE_ID: "com.santiagorodriguez.countaway"
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
+      VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
 
     steps:
@@ -721,33 +808,35 @@ jobs:
           adb shell getprop ro.build.version.sdk             > "acceptance-evidence/android-sdk-api-${API_LEVEL}.txt"
 
           if [[ "${API_LEVEL}" == "33" ]]; then
-            PREVIOUS_APK="candidate/CountAway-v1.1.7.apk"
-            PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v1.1.7/CountAway-v1.1.7.apk"
-            PREVIOUS_APK_SHA256="fb777e14db0c58d111d0556b7e6d1101083a304e83a14adfd1b86d40852c90fc"
+            PREVIOUS_APK="candidate/CountAway-v1.1.8.apk"
+            PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v1.1.8/CountAway-v1.1.8.apk"
+            PREVIOUS_APK_SHA256="c6ddc3d1774174ecef6c692b7e8e618ccc94bae6571d9c63a06c9ec319e4e7ed"
+            PREVIOUS_APK_BYTES="402801"
             CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
 
             curl --fail --location --silent --show-error --retry 2               "${PREVIOUS_APK_URL}"               --output "${PREVIOUS_APK}"
             echo "${PREVIOUS_APK_SHA256}  ${PREVIOUS_APK}" | sha256sum -c -
+            test "$(stat -c%s "${PREVIOUS_APK}")" = "${PREVIOUS_APK_BYTES}"
 
             adb install "${PREVIOUS_APK}"
-            adb shell am start -W               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"               > "acceptance-evidence/upgrade-1.1.7-launch-api-${API_LEVEL}.txt"
+            adb shell am start -W               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"               > "acceptance-evidence/upgrade-1.1.8-launch-api-${API_LEVEL}.txt"
             sleep 1
             adb shell dumpsys package "${PACKAGE_ID}"               > "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
 
             adb install -r "${CANDIDATE_APK}"
-            adb shell am start -W               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"               > "acceptance-evidence/upgrade-1.1.8-launch-api-${API_LEVEL}.txt"
+            adb shell am start -W               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"               > "acceptance-evidence/upgrade-candidate-launch-api-${API_LEVEL}.txt"
             sleep 2
 
             PID="$(adb shell pidof "${PACKAGE_ID}" | tr -d '\r')"
             if [[ -z "${PID}" ]]; then
               adb logcat -d > "acceptance-evidence/upgrade-logcat-api-${API_LEVEL}.txt" || true
-              echo "CountAway did not remain alive after 1.1.7 -> ${VERSION} signed upgrade" >&2
+              echo "CountAway did not remain alive after 1.1.8 -> ${VERSION} signed upgrade" >&2
               exit 1
             fi
 
             adb shell dumpsys package "${PACKAGE_ID}"               > "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
             grep -Fq "versionName=${VERSION}"               "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
-            grep -Eq 'versionCode=8([[:space:]]|$)'               "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
+            grep -Eq "versionCode=${VERSION_CODE}([[:space:]]|$)"               "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
             adb uninstall "${PACKAGE_ID}"
           fi
 
@@ -854,15 +943,20 @@ jobs:
 
           case "${GITHUB_EVENT_NAME}" in
             workflow_dispatch)
-              if [[ "${GITHUB_REF_TYPE}" != "branch" || "${GITHUB_REF}" != "refs/heads/main" ]]; then
-                echo "Manual draft release preparation must run from main, got: ${GITHUB_REF}" >&2
+              EXPECTED_RELEASE_BRANCH="release/${VERSION}"
+              if [[ "${GITHUB_REF_TYPE}" != "branch" ]]; then
+                echo "Manual draft release preparation must run from a branch, got: ${GITHUB_REF}" >&2
+                exit 1
+              fi
+              if [[ "${GITHUB_REF_NAME}" != "main" && "${GITHUB_REF_NAME}" != "${EXPECTED_RELEASE_BRANCH}" ]]; then
+                echo "Manual draft release preparation must run from main or ${EXPECTED_RELEASE_BRANCH}, got: ${GITHUB_REF_NAME}" >&2
                 exit 1
               fi
 
-              git rev-parse "refs/remotes/origin/main" >/dev/null
-              MAIN_SHA="$(git rev-parse "refs/remotes/origin/main")"
-              if [[ "${SOURCE_SHA}" != "${MAIN_SHA}" ]]; then
-                echo "Manual draft release must use the current main head ${MAIN_SHA}, got ${SOURCE_SHA}" >&2
+              git fetch --no-tags origin "+refs/heads/${GITHUB_REF_NAME}:refs/remotes/origin/${GITHUB_REF_NAME}"
+              SELECTED_BRANCH_SHA="$(git rev-parse "refs/remotes/origin/${GITHUB_REF_NAME}")"
+              if [[ "${SOURCE_SHA}" != "${SELECTED_BRANCH_SHA}" || "${SOURCE_SHA}" != "${{ inputs.expected_sha }}" ]]; then
+                echo "Manual draft release must use the current selected-branch head and expected_sha; branch=${SELECTED_BRANCH_SHA}, source=${SOURCE_SHA}, expected=${{ inputs.expected_sha }}" >&2
                 exit 1
               fi
 
@@ -887,9 +981,20 @@ jobs:
                 exit 1
               fi
 
-              git rev-parse "refs/remotes/origin/main" >/dev/null
-              if ! git merge-base --is-ancestor "${SOURCE_SHA}" "refs/remotes/origin/main"; then
-                echo "${TAG} does not point to a commit in main history" >&2
+              git fetch --no-tags origin "+refs/heads/main:refs/remotes/origin/main"
+              EXPECTED_RELEASE_BRANCH="release/${VERSION}"
+              RELEASE_BRANCH_SHA=""
+              if git ls-remote --exit-code --heads origin "refs/heads/${EXPECTED_RELEASE_BRANCH}" >/dev/null 2>&1; then
+                git fetch --no-tags origin "+refs/heads/${EXPECTED_RELEASE_BRANCH}:refs/remotes/origin/${EXPECTED_RELEASE_BRANCH}"
+                RELEASE_BRANCH_SHA="$(git rev-parse "refs/remotes/origin/${EXPECTED_RELEASE_BRANCH}")"
+              fi
+
+              if git merge-base --is-ancestor "${SOURCE_SHA}" "refs/remotes/origin/main"; then
+                :
+              elif [[ -n "${RELEASE_BRANCH_SHA}" && "${SOURCE_SHA}" == "${RELEASE_BRANCH_SHA}" ]]; then
+                :
+              else
+                echo "${TAG} must point to main history or the current ${EXPECTED_RELEASE_BRANCH} head" >&2
                 exit 1
               fi
               ;;

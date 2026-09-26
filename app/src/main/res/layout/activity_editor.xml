@@ -181,14 +181,9 @@
             android:layout_marginTop="10dp"
             android:text="@string/action_share" />
 
-        <Button
-            android:id="@+id/addWidgetButton"
-            style="@style/Widget.CountAway.Button.Secondary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="@string/widget_add_from_event"
-            android:visibility="gone" />
+
+
+
 
         <Button
             android:id="@+id/deleteButton"

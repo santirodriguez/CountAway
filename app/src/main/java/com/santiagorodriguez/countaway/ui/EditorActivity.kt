@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.NotificationManager
+import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
@@ -49,8 +50,10 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotificationPolicy
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
+import com.santiagorodriguez.countaway.share.ShareCardContentFactory
+import com.santiagorodriguez.countaway.share.ShareCardRenderer
+import com.santiagorodriguez.countaway.share.ShareImageStore
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
-import com.santiagorodriguez.countaway.widget.WidgetPinning
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -69,7 +72,6 @@ class EditorActivity : BaseActivity() {
     private lateinit var dateButton: Button
     private lateinit var saveButton: Button
     private lateinit var shareButton: Button
-    private lateinit var addWidgetButton: Button
     private lateinit var deleteButton: Button
     private lateinit var repeatSpinner: Spinner
     private lateinit var reminderSpinner: Spinner
@@ -103,7 +105,6 @@ class EditorActivity : BaseActivity() {
         dateButton = findViewById(R.id.dateButton)
         saveButton = findViewById(R.id.saveButton)
         shareButton = findViewById(R.id.shareButton)
-        addWidgetButton = findViewById(R.id.addWidgetButton)
         deleteButton = findViewById(R.id.deleteButton)
         repeatSpinner = findViewById(R.id.repeatSpinner)
         reminderSpinner = findViewById(R.id.reminderSpinner)
@@ -182,8 +183,6 @@ class EditorActivity : BaseActivity() {
         saveButton.setOnClickListener { save() }
         shareButton.setOnClickListener { share() }
 
-        addWidgetButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
-        addWidgetButton.setOnClickListener { addWidgetForSavedEvent() }
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
         editorInitialized = true
@@ -284,6 +283,8 @@ class EditorActivity : BaseActivity() {
 
     private fun repeatLabel(repeatRule: RepeatRule): String = when (repeatRule) {
         RepeatRule.NONE -> getString(R.string.repeat_never)
+        RepeatRule.WEEKLY -> getString(R.string.repeat_weekly)
+        RepeatRule.MONTHLY -> getString(R.string.repeat_monthly)
         RepeatRule.YEARLY -> getString(R.string.repeat_yearly)
     }
 
@@ -459,12 +460,53 @@ class EditorActivity : BaseActivity() {
         }
 
         val snapshot = CountdownTime.snapshot()
+        val text = buildShareText(title, snapshot.today)
+        val cardContent = ShareCardContentFactory.create(
+            context = this,
+            title = title,
+            date = selectedDate,
+            icon = selectedIcon,
+            repeatRule = selectedRepeatRule,
+            today = snapshot.today,
+        )
+        val dark = ShareCardRenderer.resolveDark(this)
+        shareButton.isEnabled = false
+
+        CountdownIo.submit(
+            task = {
+                val bitmap = ShareCardRenderer.render(
+                    context = applicationContext,
+                    content = cardContent,
+                    dark = dark,
+                )
+                try {
+                    ShareImageStore.write(applicationContext, bitmap)
+                } finally {
+                    bitmap.recycle()
+                }
+            },
+            onComplete = { result ->
+                if (isFinishing || isDestroyed) return@submit
+                shareButton.isEnabled = true
+
+                val imageUri = result.getOrNull()
+                if (imageUri != null && launchShare(imageShareIntent(title, text, imageUri))) {
+                    return@submit
+                }
+                if (!launchShare(textShareIntent(text))) {
+                    Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
+                }
+            },
+        )
+    }
+
+    private fun buildShareText(title: String, today: LocalDate): String {
         val displayDate = CountdownOccurrenceResolver.displayDate(
             selectedDate,
             selectedRepeatRule,
-            snapshot.today,
+            today,
         )
-        val countdown = CountdownCalculator.value(snapshot.today, displayDate)
+        val countdown = CountdownCalculator.value(today, displayDate)
         val status = when (countdown.status) {
             CountdownStatus.FUTURE,
             CountdownStatus.THREE_DAYS,
@@ -479,28 +521,33 @@ class EditorActivity : BaseActivity() {
             CountdownStatus.DONE -> elapsedStatus(countdown.elapsedDays)
         }
         val locale = resources.configuration.locales[0]
-        val date = displayDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale))
-        val text = getString(R.string.share_countdown_format, title, status, date)
-        val sendIntent = Intent(Intent.ACTION_SEND)
-            .setType("text/plain")
-            .putExtra(Intent.EXTRA_TEXT, text)
-        runCatching {
-            startActivity(Intent.createChooser(sendIntent, null))
-        }.onFailure {
-            Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
-        }
+        val date = displayDate.format(
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale),
+        )
+        return getString(R.string.share_countdown_format, title, status, date)
     }
 
-    private fun addWidgetForSavedEvent() {
-        val event = existingEvent ?: return
-        if (baselineDraft != currentDraft()) {
-            Toast.makeText(this, R.string.widget_save_before_pin, Toast.LENGTH_LONG).show()
-            return
-        }
-        if (!WidgetPinning.request(this, event.id)) {
-            Toast.makeText(this, R.string.about_widget_pin_unavailable, Toast.LENGTH_SHORT).show()
-        }
+    private fun imageShareIntent(
+        title: String,
+        text: String,
+        imageUri: Uri,
+    ): Intent = Intent(Intent.ACTION_SEND).apply {
+        type = "image/png"
+        putExtra(Intent.EXTRA_STREAM, imageUri)
+        putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_TITLE, title)
+        clipData = ClipData.newUri(contentResolver, title, imageUri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
+
+    private fun textShareIntent(text: String): Intent = Intent(Intent.ACTION_SEND)
+        .setType("text/plain")
+        .putExtra(Intent.EXTRA_TEXT, text)
+
+    private fun launchShare(sendIntent: Intent): Boolean = runCatching {
+        startActivity(Intent.createChooser(sendIntent, getString(R.string.action_share)))
+        true
+    }.getOrDefault(false)
 
     private fun elapsedStatus(elapsedDays: Long): String {
         val quantity = elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
@@ -738,7 +785,7 @@ class EditorActivity : BaseActivity() {
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
-        if (selectedRepeatRule == RepeatRule.YEARLY) {
+        if (selectedRepeatRule != RepeatRule.NONE) {
             val occurrence = CountdownOccurrenceResolver.displayDate(
                 selectedDate,
                 selectedRepeatRule,
@@ -747,6 +794,7 @@ class EditorActivity : BaseActivity() {
             lines += getString(
                 R.string.schedule_next_occurrence,
                 occurrence.format(formatter),
+                repeatLabel(selectedRepeatRule).lowercase(locale),
             )
         }
 
@@ -760,6 +808,13 @@ class EditorActivity : BaseActivity() {
                 R.string.schedule_next_reminder,
                 reminderDate.format(formatter),
             )
+        }
+
+        if (
+            selectedRepeatRule == RepeatRule.MONTHLY &&
+            selectedDate.dayOfMonth >= 29
+        ) {
+            lines += getString(R.string.schedule_month_end_note)
         }
 
         if (

@@ -16,9 +16,11 @@ import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
+import com.santiagorodriguez.countaway.widget.WidgetPinSetupActivity
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
 
@@ -40,7 +42,7 @@ class MainActivity : BaseActivity() {
         InsetUtils.applySystemBarPadding(findViewById(R.id.mainRoot))
 
         repository = CountdownRepository(this)
-        adapter = CountdownEventAdapter(this)
+        adapter = CountdownEventAdapter(this, ::openWidgetPinSetup)
         countdownList = findViewById(R.id.countdownList)
         emptyState = findViewById(R.id.emptyState)
         emptyStateIcon = findViewById(R.id.emptyStateIcon)
@@ -54,6 +56,10 @@ class MainActivity : BaseActivity() {
         countdownList.setOnItemClickListener { _, _, position, _ ->
             val event = adapter.getItem(position)
             startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
+        }
+        countdownList.setOnItemLongClickListener { _, _, position, _ ->
+            openWidgetPinSetup(adapter.getItem(position))
+            true
         }
 
         addCountdownButton.setOnClickListener {
@@ -146,6 +152,13 @@ class MainActivity : BaseActivity() {
                 setAddEnabled(false)
             }
         }
+    }
+
+    private fun openWidgetPinSetup(event: CountdownEvent) {
+        startActivity(
+            Intent(this, WidgetPinSetupActivity::class.java)
+                .putExtra(WidgetPinSetupActivity.EXTRA_EVENT_ID, event.id),
+        )
     }
 
     private fun setAddEnabled(enabled: Boolean) {

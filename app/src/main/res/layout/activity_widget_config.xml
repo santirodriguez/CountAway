@@ -116,69 +116,27 @@
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
 
-        <FrameLayout
+        <TextView
+            android:id="@+id/widgetStyleSummary"
             android:layout_width="match_parent"
-            android:layout_height="132dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:textColor="@color/secondary_text"
+            android:textSize="12sp" />
+
+        <FrameLayout
+            android:id="@+id/widgetPreviewContainer"
+            android:layout_width="match_parent"
+            android:layout_height="176dp"
             android:layout_marginTop="6dp"
             android:importantForAccessibility="no">
 
-            <ImageView
-                android:id="@+id/widgetPreviewBackground"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="fitXY" />
-
-            <LinearLayout
-                android:id="@+id/widgetPreviewContent"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <TextView
-                    android:id="@+id/widgetPreviewTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:maxLines="2"
-                    android:text="@string/widget_select_countdown"
-                    android:textSize="13sp" />
-
-                <ImageView
-                    android:id="@+id/widgetPreviewIcon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginTop="4dp"
-                    android:contentDescription="@null"
-                    android:scaleType="centerInside"
-                    android:src="@drawable/ic_event_calendar" />
-
-                <TextView
-                    android:id="@+id/widgetPreviewCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-condensed"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:text="@string/widget_preview_value"
-                    android:textSize="32sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/widgetPreviewUnit"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:maxLines="2"
-                    android:text="@string/widget_tap_to_configure"
-                    android:textSize="11sp" />
-            </LinearLayout>
+            <FrameLayout
+                android:id="@+id/widgetPreviewFrame"
+                android:layout_width="160dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center" />
         </FrameLayout>
 
         <Button

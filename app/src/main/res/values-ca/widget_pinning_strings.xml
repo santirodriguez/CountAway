@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_add_accessibility_action">Afegeix el widget</string>
+    <string name="widget_pin_setup_title">Afegeix a la pantalla d’inici</string>
+    <string name="widget_pin_setup_description">Tria un estil per a aquest compte enrere. L’últim estil afegit correctament serà el punt de partida la pròxima vegada.</string>
+    <string name="widget_pin_setup_add">Afegeix a la pantalla d’inici</string>
+    <string name="widget_pin_setup_system_hint">Sistema segueix l’aparença Clara o Fosca del dispositiu.</string>
+    <string name="widget_pin_setup_style_selected">%1$s, seleccionat</string>
+    <string name="widget_pin_event_unavailable">Aquest compte enrere ja no està disponible.</string>
+    <string name="widget_pin_unavailable_guidance">El llançador no ha pogut iniciar l’afegit del widget. Afegeix Ja Queda Poc des del selector de widgets de la pantalla d’inici i comprova si el disseny de la pantalla està bloquejat.</string>
+    <string name="widget_pin_not_added">El widget no s’ha afegit. Les teves opcions continuen aquí.</string>
+    <string name="widget_pin_multiple_detected">Ja Queda Poc no ha pogut identificar amb seguretat el widget nou. Obre’l des de la pantalla d’inici per configurar-lo.</string>
+    <string name="widget_pin_conflict">Aquest widget ja estava configurat, així que Ja Queda Poc l’ha deixat sense canvis.</string>
+    <string name="widget_instance_unavailable">Aquest widget ja no està disponible.</string>
+    <string name="widget_style_summary">Estil: %1$s · Aparença: %2$s</string>
+</resources>

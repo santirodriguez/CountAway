@@ -2,7 +2,9 @@
 <resources>
     <string name="about_version_compact">v%1$s</string>
     <string name="about_create_countdown">Crea un compte enrere</string>
-    <string name="about_add_widget">Afegeix el widget</string>
+    <string name="about_create_countdown_note">Tria què importa i posa-hi la data.</string>
+    <string name="about_add_widget">Mantén premut un compte</string>
+    <string name="about_add_widget_note">Tria un estil i afegeix-lo a l’inici.</string>
     <string name="about_stop_checking">Deixa de mirar el calendari</string>
     <string name="about_stop_checking_note">Era una mica la idea.</string>
     <string name="about_widget_pin_unavailable">Afegeix el widget des de la pantalla d’inici.</string>
@@ -12,4 +14,13 @@
     <string name="about_support_project">Dona suport al projecte</string>
     <string name="about_author_name">Creada per Santiago Rodriguez</string>
     <string name="about_website">santiagorodriguez.com</string>
+    <string name="about_privacy_policy">Privacitat</string>
+    <string name="about_widget_long_press_hint">Mantén premut un compte enrere per triar l’estil del giny.</string>
+    <string name="about_calendar_reaction_1">Fet, crac. Ja no queda res per fer.</string>
+    <string name="about_calendar_reaction_3">Encara ets aquí. No sé per què, però aquí continues.</string>
+    <string name="about_calendar_reaction_7">Enhorabona, has desbloquejat les opcions de desenvolu... Ah, no. Aquí no en tenim.</string>
+    <string name="about_calendar_reaction_10">Si posessis aquesta constància a recordar dates, avui mateix podríem tancar l’app.</string>
+    <string name="about_calendar_reaction_20">20 tocs. 6 hores, 19 minuts d’ascensió recta; 14 graus, 22 minuts de declinació... Res a la vista.</string>
+    <string name="about_calendar_reaction_50">Això ja no fa gràcia. Una més i s’acaba, eh?</string>
+    <string name="about_calendar_reaction_100">100 tocs. Fins aquí hem arribat. No pensem ser còmplices d’un túnel carpià per prémer un botó que ja t’havíem dit que no feia res.</string>
 </resources>

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+- Add a focused long-press widget setup flow with live preview, all nine widget styles, System/Light/Dark appearance, and direct Home-screen pinning.
+- Add weekly and monthly recurrence alongside yearly recurrence, with short-month handling, next-occurrence details, and reminders that continue across recurrences.
+- Improve widget reliability with safer direct pinning and reconfiguration, plus a fix for daily refreshes so placed widgets keep advancing without reopening the app.
+- Refresh widget visuals and previews across supported sizes, with clearer style/appearance feedback and better large-text behavior.
+- Share countdowns as Ridge-style PNG cards that follow the current Light/Dark appearance, with the existing text share kept as a fallback.
+- Simplify Help and improve layout/readability while preserving the existing lightweight interaction model.
+- Keep CountAway local-only and lightweight with backward-compatible data migration, the existing permissions/signing/SDK baseline, and no new runtime dependencies or Internet permission.
+
 ## 1.1.8
 
 - Add optional yearly recurrence across the app, widgets, sharing, backups, and reminders, including February 29 fallback behavior.

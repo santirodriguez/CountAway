@@ -1,0 +1,1 @@
+Configuración de widgets más directa, con vista previa y agregado al inicio. Sumamos repetición semanal y mensual, recordatorios recurrentes y mejor manejo de meses cortos. También mejoramos la estética, el texto grande, la reconfiguración y el refresco diario. Compartir ahora crea una tarjeta visual estilo Cresta.

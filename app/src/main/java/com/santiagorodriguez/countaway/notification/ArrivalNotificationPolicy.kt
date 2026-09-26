@@ -75,7 +75,7 @@ object ArrivalNotificationPolicy {
     ): LocalDate? {
         val first = scheduledDate(event, today) ?: return null
         if (!wasDelivered(event, first) && canAttempt(event, first)) return first
-        if (event.repeatRule != RepeatRule.YEARLY) return null
+        if (event.repeatRule == RepeatRule.NONE) return null
         return scheduledDate(event, first.plusDays(1))
     }
 

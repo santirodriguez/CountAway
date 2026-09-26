@@ -1,0 +1,1 @@
+Faster widget setup with live previews and direct Home-screen pinning. Adds weekly and monthly recurrence with recurring reminders and short-month handling. Improves widget visuals, large-text layouts, reconfiguration reliability, and daily refresh behavior. Share now creates a Ridge-style countdown image card.
