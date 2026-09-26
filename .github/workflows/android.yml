@@ -56,19 +56,7 @@ jobs:
           unzip -Z1 "${AAB}" > "${RUNNER_TEMP}/countaway-aab-files.txt"
           grep -Fxq "BundleConfig.pb" "${RUNNER_TEMP}/countaway-aab-files.txt"
           grep -Fxq "base/manifest/AndroidManifest.xml" "${RUNNER_TEMP}/countaway-aab-files.txt"
-          grep -Eq '^base/dex/classes([0-9]*)?\.dex
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: CountAway-android-ci-${{ github.sha }}
-          path: |
-            ci-evidence/
-            app/build/reports/
-            app/build/test-results/
-            app/build/outputs/apk/androidTest/debug/
-            app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: warn
- "${RUNNER_TEMP}/countaway-aab-files.txt"
+          grep -Eq '^base/dex/classes([0-9]*)?\.dex$' "${RUNNER_TEMP}/countaway-aab-files.txt"
 
           VERSION="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' app/build.gradle.kts)"
           VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' app/build.gradle.kts)"
@@ -94,4 +82,5 @@ jobs:
             app/build/reports/
             app/build/test-results/
             app/build/outputs/apk/androidTest/debug/
+            app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: warn
