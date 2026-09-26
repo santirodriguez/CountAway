@@ -17,6 +17,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      BUNDLETOOL_VERSION: "1.18.3"
+      BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
+      PACKAGE_ID: "com.santiagorodriguez.countaway"
 
     steps:
       - name: Checkout
@@ -52,8 +56,7 @@ jobs:
           set -euo pipefail
 
           AAB="app/build/outputs/bundle/release/app-release.aab"
-          AAB_MANIFEST="${RUNNER_TEMP}/countaway-aab-AndroidManifest.xml"
-          PACKAGE_ID="com.santiagorodriguez.countaway"
+          BUNDLETOOL_JAR="${RUNNER_TEMP}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
           VERSION="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' app/build.gradle.kts)"
           VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' app/build.gradle.kts)"
           test -s "${AAB}"
@@ -61,19 +64,43 @@ jobs:
           grep -Fxq "BundleConfig.pb" "${RUNNER_TEMP}/countaway-aab-files.txt"
           grep -Fxq "base/manifest/AndroidManifest.xml" "${RUNNER_TEMP}/countaway-aab-files.txt"
           grep -Eq '^base/dex/classes([0-9]*)?\.dex$' "${RUNNER_TEMP}/countaway-aab-files.txt"
-          unzip -p "${AAB}" base/manifest/AndroidManifest.xml > "${AAB_MANIFEST}"
-          test -s "${AAB_MANIFEST}"
-          grep -aFq "package" "${AAB_MANIFEST}"
-          grep -aFq "${PACKAGE_ID}" "${AAB_MANIFEST}"
-          grep -aFq "versionName" "${AAB_MANIFEST}"
-          grep -aFq "${VERSION}" "${AAB_MANIFEST}"
-          grep -aFq "versionCode" "${AAB_MANIFEST}"
+
+          curl --fail --location --silent --show-error --retry 2 \
+            "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar" \
+            --output "${BUNDLETOOL_JAR}"
+          echo "${BUNDLETOOL_SHA256}  ${BUNDLETOOL_JAR}" | sha256sum --check -
+          java -jar "${BUNDLETOOL_JAR}" validate --bundle="${AAB}"
+
+          ACTUAL_PACKAGE_ID="$(
+            java -jar "${BUNDLETOOL_JAR}" dump manifest --bundle="${AAB}" --module=base --xpath=/manifest/@package | tr -d '\r\n'
+          )"
+          ACTUAL_VERSION_NAME="$(
+            java -jar "${BUNDLETOOL_JAR}" dump manifest --bundle="${AAB}" --module=base --xpath=/manifest/@android:versionName | tr -d '\r\n'
+          )"
+          ACTUAL_VERSION_CODE="$(
+            java -jar "${BUNDLETOOL_JAR}" dump manifest --bundle="${AAB}" --module=base --xpath=/manifest/@android:versionCode | tr -d '\r\n'
+          )"
+
+          [[ "${ACTUAL_PACKAGE_ID}" == "${PACKAGE_ID}" ]] || {
+            echo "AAB package mismatch: ${ACTUAL_PACKAGE_ID} != ${PACKAGE_ID}" >&2
+            exit 1
+          }
+          [[ "${ACTUAL_VERSION_NAME}" == "${VERSION}" ]] || {
+            echo "AAB versionName mismatch: ${ACTUAL_VERSION_NAME} != ${VERSION}" >&2
+            exit 1
+          }
+          [[ "${ACTUAL_VERSION_CODE}" == "${VERSION_CODE}" ]] || {
+            echo "AAB versionCode mismatch: ${ACTUAL_VERSION_CODE} != ${VERSION_CODE}" >&2
+            exit 1
+          }
 
           {
             echo "source_sha=${GITHUB_SHA}"
-            echo "application_id=${PACKAGE_ID}"
-            echo "version=${VERSION}"
-            echo "version_code=${VERSION_CODE}"
+            echo "application_id=${ACTUAL_PACKAGE_ID}"
+            echo "version=${ACTUAL_VERSION_NAME}"
+            echo "version_code=${ACTUAL_VERSION_CODE}"
+            echo "bundletool_version=${BUNDLETOOL_VERSION}"
+            echo "bundletool_sha256=${BUNDLETOOL_SHA256}"
             echo "aab_sha256=$(sha256sum "${AAB}" | awk '{print $1}')"
             echo "aab_bytes=$(stat -c%s "${AAB}")"
             echo "purpose=play-readiness-validation"

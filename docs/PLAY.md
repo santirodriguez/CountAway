@@ -50,7 +50,7 @@ It contains:
 - its SHA-256 checksum;
 - source/version/package/size evidence.
 
-This artifact proves that the exact reviewed source can be packaged as an Android App Bundle. It is not attached to the public GitHub Release.
+This artifact proves that the exact reviewed source can be packaged as an Android App Bundle. CI validates the bundle with Google's official bundletool, pinned by version and SHA-256, and compares the package, versionName, and versionCode read structurally from the packaged base manifest against the expected release identity. It is not attached to the public GitHub Release.
 
 Until a dedicated Play upload key is configured, do not describe this readiness artifact as the final upload-signed Play bundle.
 
