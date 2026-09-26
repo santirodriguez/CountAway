@@ -45,7 +45,44 @@ jobs:
           } > ci-evidence/source.txt
 
       - name: Validate
-        run: ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease --stacktrace
+        run: ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease bundleRelease --stacktrace
+
+      - name: Validate Play-readiness bundle
+        run: |
+          set -euo pipefail
+
+          AAB="app/build/outputs/bundle/release/app-release.aab"
+          test -s "${AAB}"
+          unzip -Z1 "${AAB}" > "${RUNNER_TEMP}/countaway-aab-files.txt"
+          grep -Fxq "BundleConfig.pb" "${RUNNER_TEMP}/countaway-aab-files.txt"
+          grep -Fxq "base/manifest/AndroidManifest.xml" "${RUNNER_TEMP}/countaway-aab-files.txt"
+          grep -Eq '^base/dex/classes([0-9]*)?\.dex
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CountAway-android-ci-${{ github.sha }}
+          path: |
+            ci-evidence/
+            app/build/reports/
+            app/build/test-results/
+            app/build/outputs/apk/androidTest/debug/
+            app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: warn
+ "${RUNNER_TEMP}/countaway-aab-files.txt"
+
+          VERSION="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' app/build.gradle.kts)"
+          VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' app/build.gradle.kts)"
+          {
+            echo "source_sha=${GITHUB_SHA}"
+            echo "application_id=com.santiagorodriguez.countaway"
+            echo "version=${VERSION}"
+            echo "version_code=${VERSION_CODE}"
+            echo "aab_sha256=$(sha256sum "${AAB}" | awk '{print $1}')"
+            echo "aab_bytes=$(stat -c%s "${AAB}")"
+            echo "purpose=play-readiness-validation"
+            echo "public_release_asset=false"
+            echo "play_upload_signing=deferred"
+          } > ci-evidence/play-readiness.txt
 
       - name: Upload validation evidence
         if: always()

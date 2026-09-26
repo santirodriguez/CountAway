@@ -84,6 +84,7 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 - release runtime dependency report, no app-declared runtime libraries, the expected Kotlin/annotations baseline, and absence of native libraries;
 - presence of R8 mapping and resource shrinking;
 - current APK-size delta against the previous public 1.1.8 APK (402,801 bytes);
+- Play-readiness AAB SHA-256/byte size and basic bundle structure, retained only as internal Actions evidence;
 - compiled instrumentation-test APK and ordinary test/lint reports;
 - screenshot SHA-256s during stable preparation;
 - F-Droid Gate A evidence when preparing a stable draft.
@@ -128,6 +129,8 @@ CountAway-v<version>.apk.sha256
 ```
 
 The signing, verification, test/lint, dependency, size, reproducibility, and R8 artifacts are verification/debug evidence and do not need to be attached to the public release.
+
+Play-readiness validation also builds `bundleRelease` and retains an Android App Bundle plus checksum/evidence as a GitHub Actions artifact. This AAB is **not** a public GitHub release asset and does not replace the signed APK used by GitHub/Obtainium or the existing F-Droid flow. Until a future Play upload key is deliberately configured, treat it as packaging/readiness evidence rather than an upload-ready Play artifact.
 
 ## F-Droid Gate A
 
