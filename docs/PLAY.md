@@ -97,7 +97,7 @@ The policy is store-neutral and covers CountAway / Ya Estamos / Ja Queda Poc.
 
 CountAway itself has no Internet permission. The About/Help link delegates the URL to an external browser through Android.
 
-During normal main-first release preparation, the release workflow verifies that the public main-branch policy URL resolves before preparing the draft. The release-branch recovery path validates the repository policy/link contract but leaves the public-main URL check for the final publication review.
+Every actual release-preparation path verifies that the public main-branch policy URL resolves and that the raw main-branch policy has the expected CountAway policy title. This includes the release-branch recovery path: recovery must not prepare a releasable artifact while the app's user-facing privacy URL would still be broken. Release-candidate mode does not require the public URL because it does not prepare or publish a release.
 
 If the policy is later moved to a dedicated HTTPS page on `santiagorodriguez.com`, first inspect the actual hosting architecture, then update the in-app URL, this document, and the release gate atomically. Do not invent an undocumented Hostinger path.
 

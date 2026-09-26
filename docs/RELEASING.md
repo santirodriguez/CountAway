@@ -130,7 +130,7 @@ CountAway-v<version>.apk.sha256
 
 The signing, verification, test/lint, dependency, size, reproducibility, and R8 artifacts are verification/debug evidence and do not need to be attached to the public release.
 
-Play-readiness validation also builds `bundleRelease` and retains an Android App Bundle plus checksum/evidence as a GitHub Actions artifact. This AAB is **not** a public GitHub release asset and does not replace the signed APK used by GitHub/Obtainium or the existing F-Droid flow. Until a future Play upload key is deliberately configured, treat it as packaging/readiness evidence rather than an upload-ready Play artifact.
+Play-readiness validation also builds `bundleRelease` and retains an Android App Bundle plus checksum/evidence as a GitHub Actions artifact. This AAB is **not** a public GitHub release asset and does not replace the signed APK used by GitHub/Obtainium or the existing F-Droid flow. Until a future Play upload key is deliberately configured, treat it as packaging/readiness evidence rather than an upload-ready Play artifact. The AAB gate also inspects the packaged base manifest and requires the expected CountAway package ID and versionName markers.
 
 ## F-Droid Gate A
 
@@ -148,6 +148,8 @@ The workflow independently verifies items 1–3 during draft preparation. A 404,
 For CountAway 1.1.8, Gate A was completed on September 22, 2026. Keep these checks enabled during draft preparation as a regression guard.
 
 This gate applies even if a release is prepared manually outside the normal checklist. The app itself performs no network check and receives no Internet permission.
+
+Before any actual draft/tag release preparation, the public `main` privacy-policy URL must resolve and the raw policy must match the repository's CountAway policy title. This gate also applies to the documented release-branch recovery path; recovery is not allowed to ship a build with a broken in-app privacy URL.
 
 ## Prepare a draft release
 

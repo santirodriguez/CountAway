@@ -297,13 +297,13 @@ jobs:
           if [[ "${PREPARE_RELEASE}" == "true" ]]; then
             grep -Fqx "## ${VERSION}" CHANGELOG.md
             test -s PRIVACY.md
-            grep -Fq 'https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md'               app/src/main/res/values/about_polish_strings.xml
-            if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-              curl --fail --location --silent --show-error --retry 2                 "https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md"                 --output "${RUNNER_TEMP}/countaway-privacy-policy.html"
-              test -s "${RUNNER_TEMP}/countaway-privacy-policy.html"
-            else
-              echo "::warning::Public main-branch privacy URL validation is deferred on the release-branch recovery path."
-            fi
+            PRIVACY_URL="https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md"
+            PRIVACY_RAW_URL="https://raw.githubusercontent.com/santirodriguez/CountAway/main/PRIVACY.md"
+            grep -Fq "${PRIVACY_URL}" app/src/main/res/values/about_polish_strings.xml
+            curl --fail --location --silent --show-error --retry 2               "${PRIVACY_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            test -s "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            curl --fail --location --silent --show-error --retry 2               "${PRIVACY_RAW_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.md"
+            grep -Fqx '# CountAway Privacy Policy' "${RUNNER_TEMP}/countaway-privacy-policy.md"
             test -s "docs/releases/${VERSION}.md"
             test ! -d "fastlane/metadata/android/en"
             for locale in en-US es ca; do
@@ -343,11 +343,19 @@ jobs:
           set -euo pipefail
 
           AAB="app/build/outputs/bundle/release/app-release.aab"
+          AAB_MANIFEST="${RUNNER_TEMP}/countaway-aab-AndroidManifest.xml"
           test -s "${AAB}"
           unzip -Z1 "${AAB}" > "${RUNNER_TEMP}/countaway-aab-files.txt"
           grep -Fxq "BundleConfig.pb" "${RUNNER_TEMP}/countaway-aab-files.txt"
           grep -Fxq "base/manifest/AndroidManifest.xml" "${RUNNER_TEMP}/countaway-aab-files.txt"
           grep -Eq '^base/dex/classes([0-9]*)?\.dex$' "${RUNNER_TEMP}/countaway-aab-files.txt"
+          unzip -p "${AAB}" base/manifest/AndroidManifest.xml > "${AAB_MANIFEST}"
+          test -s "${AAB_MANIFEST}"
+          grep -aFq "package" "${AAB_MANIFEST}"
+          grep -aFq "${PACKAGE_ID}" "${AAB_MANIFEST}"
+          grep -aFq "versionName" "${AAB_MANIFEST}"
+          grep -aFq "${VERSION}" "${AAB_MANIFEST}"
+          grep -aFq "versionCode" "${AAB_MANIFEST}"
 
           mkdir -p play-readiness
           cp "${AAB}" "play-readiness/CountAway-v${VERSION}-play-readiness.aab"
