@@ -55,6 +55,9 @@ class AboutActivity : BaseActivity() {
         findViewById<View>(R.id.websiteButton).setOnClickListener {
             openExternal(PERSONAL_WEBSITE)
         }
+        findViewById<View>(R.id.privacyButton).setOnClickListener {
+            openExternal(getString(R.string.privacy_policy_url))
+        }
         exportButton = findViewById(R.id.exportButton)
         importButton = findViewById(R.id.importButton)
         exportButton.setOnClickListener { exportBackup() }

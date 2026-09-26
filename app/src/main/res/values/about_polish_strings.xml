@@ -17,6 +17,8 @@
     <string name="about_support_project">Support the project</string>
     <string name="about_author_name">Created by Santiago Rodriguez</string>
     <string name="about_website">santiagorodriguez.com</string>
+    <string name="about_privacy_policy">Privacy</string>
+    <string name="privacy_policy_url" translatable="false">https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md</string>
     <string name="about_widget_long_press_hint">Long-press a countdown to choose its widget style.</string>
     <string name="about_calendar_reaction_1">All set, champ. Nothing else to do.</string>
     <string name="about_calendar_reaction_3">You\'re still here. No idea why, but you\'re still here.</string>
