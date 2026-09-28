@@ -1,9 +1,12 @@
 package com.santiagorodriguez.countaway.ui
 
 import android.content.Intent
-import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.EditText
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.matcher.RootMatchers.isDialog
+import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.runner.lifecycle.ActivityLifecycleCallback
@@ -162,18 +165,8 @@ class EditorLifecycleInstrumentedTest {
     }
 
     private fun clickDialog(text: Int) {
-        instrumentation.waitForIdleSync()
-        val automation = instrumentation.uiAutomation
-        val deadline = android.os.SystemClock.uptimeMillis() + 5_000
-        var clicked = false
-        while (!clicked && android.os.SystemClock.uptimeMillis() < deadline) {
-            automation.waitForIdle(100, 5_000)
-            val action = automation.rootInActiveWindow
-                ?.findAccessibilityNodeInfosByText(context.getString(text))
-                ?.firstOrNull { it.isClickable }
-            clicked = action?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
-        }
-        assertTrue("Expected dialog action to become accessible", clicked)
+        val buttonId = if (text == R.string.data_conflict_keep_editing) android.R.id.button2 else android.R.id.button1
+        onView(withId(buttonId)).inRoot(isDialog()).perform(click())
         instrumentation.waitForIdleSync()
     }
 
