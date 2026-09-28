@@ -105,13 +105,13 @@ After publishing a new upstream release:
 
 Manual fdroiddata intervention is appropriate only if a maintainer requests it or the configured update path demonstrably fails.
 
-## Gate B — 1.1.8 on F-Droid
+## Gate B — released version on F-Droid
 
-Gate B happens after the upstream CountAway 1.1.8 release is public. It must not be used to create a circular dependency that blocks the upstream release before a public binary exists.
+Gate B happens after the upstream version under review is public. It must not be used to create a circular dependency that blocks the upstream release before a public binary exists.
 
 Gate B is complete when F-Droid:
 
-- detects versionName 1.1.8 / versionCode 8 from the stable tag;
+- detects the released versionName/versionCode from its stable tag (1.2.0 / 9 for this candidate; historical 1.1.8 / 8 evidence remains separate);
 - builds/reproduces it successfully;
 - indexes it;
 - exposes its official APK publicly.

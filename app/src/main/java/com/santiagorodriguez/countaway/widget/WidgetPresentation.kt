@@ -14,9 +14,30 @@ internal data class WidgetPresentation(
     val showUnit: Boolean,
     val showMilestone: Boolean,
     val showDate: Boolean,
+    val showIcon: Boolean,
+    val showTitle: Boolean,
+    val titleMaxLines: Int,
+)
+
+internal data class WidgetPlaceholderPresentation(
+    val showIcon: Boolean,
+    val showTitle: Boolean,
+    val showUnit: Boolean,
+    val titleMaxLines: Int,
 )
 
 internal object WidgetPresentationResolver {
+    fun placeholder(size: WidgetSize, fontScale: Float) = WidgetPlaceholderPresentation(
+        showIcon = size == WidgetSize.SHORT || (size == WidgetSize.LARGE && fontScale < 1.3f),
+        showTitle = size != WidgetSize.COMPACT || fontScale < 1.3f,
+        showUnit = when (size) {
+            WidgetSize.STANDARD -> fontScale < 1.3f
+            WidgetSize.LARGE -> fontScale < 1.75f
+            else -> false
+        },
+        titleMaxLines = if (size == WidgetSize.SHORT) 2 else 1,
+    )
+
     fun resolve(
         content: WidgetEventContent,
         size: WidgetSize,
@@ -38,9 +59,13 @@ internal object WidgetPresentationResolver {
                 -> false
             },
             showMilestone = milestone != null &&
-                size != WidgetSize.SHORT &&
-                !largeFont,
+                size != WidgetSize.SHORT && size != WidgetSize.COMPACT &&
+                fontScale < 1.3f,
             showDate = size == WidgetSize.LARGE && fontScale < DATE_HIDE_FONT_SCALE,
+            showIcon = size == WidgetSize.SHORT ||
+                (size != WidgetSize.COMPACT && fontScale < 1.3f && milestone == null),
+            showTitle = size != WidgetSize.COMPACT || fontScale < 1.3f,
+            titleMaxLines = if (size == WidgetSize.SHORT) 2 else 1,
         )
     }
 
@@ -58,6 +83,29 @@ internal object WidgetLayoutResolver {
 }
 
 internal object WidgetRemoteViewsPresentation {
+    fun applyPlaceholder(
+        views: RemoteViews,
+        size: WidgetSize,
+        fontScale: Float,
+        title: String,
+        action: String,
+        countText: String,
+    ) {
+        val presentation = WidgetPresentationResolver.placeholder(size, fontScale)
+        views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
+        views.setTextViewText(R.id.widgetTitle, title)
+        views.setTextViewText(R.id.widgetCount, countText)
+        views.setTextViewText(R.id.widgetUnit, action)
+        views.setTextViewText(R.id.widgetDate, "")
+        views.setTextViewText(R.id.widgetMilestone, "")
+        views.setInt(R.id.widgetTitle, "setMaxLines", presentation.titleMaxLines)
+        views.setViewVisibility(R.id.widgetIcon, if (presentation.showIcon) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widgetTitle, if (presentation.showTitle) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widgetUnit, if (presentation.showUnit) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widgetDate, View.GONE)
+        views.setViewVisibility(R.id.widgetMilestone, View.GONE)
+    }
+
     fun applyEvent(
         context: android.content.Context,
         views: RemoteViews,
@@ -71,6 +119,9 @@ internal object WidgetRemoteViewsPresentation {
             DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
         )
 
+        views.setViewVisibility(R.id.widgetIcon, if (presentation.showIcon) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widgetTitle, if (presentation.showTitle) View.VISIBLE else View.GONE)
+        views.setInt(R.id.widgetTitle, "setMaxLines", presentation.titleMaxLines)
         views.setImageViewResource(R.id.widgetIcon, content.iconRes)
         views.setTextViewText(R.id.widgetTitle, content.title)
         views.setTextViewText(R.id.widgetCount, presentation.countText)

@@ -5,7 +5,7 @@
     <string name="widget_pin_setup_description">Choose a style for this countdown. Your last successfully added style becomes the starting point next time.</string>
     <string name="widget_pin_setup_add">Add to Home screen</string>
     <string name="widget_pin_setup_system_hint">System follows your device’s Light or Dark appearance.</string>
-    <string name="widget_pin_setup_style_selected">%1$s, selected</string>
+
     <string name="widget_pin_event_unavailable">This countdown is no longer available.</string>
     <string name="widget_pin_unavailable_guidance">Your launcher couldn’t start widget pinning. Add CountAway from the home-screen widget picker and check whether the home-screen layout is locked.</string>
     <string name="widget_pin_not_added">Widget wasn’t added. Your choices are still here.</string>

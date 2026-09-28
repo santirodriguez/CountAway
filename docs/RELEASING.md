@@ -213,3 +213,7 @@ Only then publish the prepared GitHub Release. In the normal web path, publicati
 Never move an existing stable tag after publication. Keep the release branch until release/tag/distribution verification is complete.
 
 For post-publication F-Droid verification, continue with [`FDROID.md`](FDROID.md).
+
+## Controlled 1.2.0 expansion
+
+The expansion is reviewed on `release/1.2.0-expansion`, based on `release/1.2.0`. Freeze and automatically validate the child before the final human RC/device checks and improvement decision. Integrating the child into its parent requires separate approval. Revalidate the resulting parent at its exact SHA before reconsidering PR #28 into main. Neither a green child RC nor this procedure authorizes either merge or publication.

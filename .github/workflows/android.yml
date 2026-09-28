@@ -70,6 +70,7 @@ jobs:
             --output "${BUNDLETOOL_JAR}"
           echo "${BUNDLETOOL_SHA256}  ${BUNDLETOOL_JAR}" | sha256sum --check -
           java -jar "${BUNDLETOOL_JAR}" validate --bundle="${AAB}"
+          bash scripts/verify-bundle-languages.sh "${AAB}" "${BUNDLETOOL_JAR}" "ci-evidence/bundle-languages"
 
           ACTUAL_PACKAGE_ID="$(
             java -jar "${BUNDLETOOL_JAR}" dump manifest --bundle="${AAB}" --module=base --xpath=/manifest/@package | tr -d '\r\n'

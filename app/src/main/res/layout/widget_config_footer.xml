@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:paddingTop="24dp" android:paddingBottom="24dp">
+        <Button
+            android:id="@+id/widgetCreateButton"
+            style="@style/Widget.CountAway.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/widget_create_countdown" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/widget_appearance_label"
+            android:labelFor="@id/widgetAppearanceSpinner"
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/control_surface">
+
+            <Spinner
+                android:id="@+id/widgetAppearanceSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@android:color/transparent"
+                android:paddingStart="14dp"
+                android:paddingEnd="8dp"
+                android:spinnerMode="dropdown" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/widget_background_label"
+            android:labelFor="@id/widgetBackgroundSpinner"
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/control_surface">
+
+            <Spinner
+                android:id="@+id/widgetBackgroundSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@android:color/transparent"
+                android:paddingStart="14dp"
+                android:paddingEnd="8dp"
+                android:spinnerMode="dropdown" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/widget_preview_label"
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/widgetStyleSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:textColor="@color/secondary_text"
+            android:textSize="12sp" />
+
+        <FrameLayout
+            android:id="@+id/widgetPreviewContainer"
+            android:layout_width="match_parent"
+            android:layout_height="176dp"
+            android:layout_marginTop="6dp"
+            android:importantForAccessibility="no">
+
+            <FrameLayout
+                android:id="@+id/widgetPreviewFrame"
+                android:layout_width="160dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center" />
+        </FrameLayout>
+
+        <Button
+            android:id="@+id/widgetSaveButton"
+            style="@style/Widget.CountAway.Button.Primary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:enabled="false"
+            android:text="@string/widget_add_to_home" />
+
+</LinearLayout>

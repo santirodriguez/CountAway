@@ -13,14 +13,17 @@ import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.ui.ChoiceAccessibility
 import com.santiagorodriguez.countaway.ui.BaseActivity
 import com.santiagorodriguez.countaway.ui.EventIconPresentation
 import com.santiagorodriguez.countaway.ui.InsetUtils
+import com.santiagorodriguez.countaway.ui.TemporalInvalidationController
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -34,6 +37,7 @@ class WidgetPinSetupActivity : BaseActivity() {
     private var event: CountdownEvent? = null
     private var selectedBackground = WidgetBackground.CLASSIC
     private var loadGeneration = 0
+    private lateinit var temporalInvalidation: TemporalInvalidationController
 
     private var pendingSnapshot: WidgetPinRequestSnapshot? = null
     private var baselineWidgetIds: Set<Int> = emptySet()
@@ -55,7 +59,11 @@ class WidgetPinSetupActivity : BaseActivity() {
         setContentView(R.layout.activity_widget_pin_setup)
         InsetUtils.applySystemBarPadding(findViewById(R.id.widgetPinSetupRoot))
 
-        repository = CountdownRepository(this)
+        repository = CountdownRepository(applicationContext)
+        temporalInvalidation = TemporalInvalidationController(this) { snapshot ->
+            updatePreview(snapshot)
+            loadEvent(eventId)
+        }
         appearanceGroup = findViewById(R.id.widgetPinSetupAppearanceGroup)
         backgroundRows = findViewById(R.id.widgetPinSetupBackgroundRows)
         previewController = WidgetPreviewController(
@@ -92,19 +100,23 @@ class WidgetPinSetupActivity : BaseActivity() {
 
         setAddEnabled(false)
         renderBackgroundChoices()
+        setStyleEnabled(!awaitingPinResult)
     }
 
     override fun onResume() {
         super.onResume()
-        if (event == null) {
-            loadEvent(eventId)
-        }
+        if (!::eventId.isInitialized) return
+        val snapshot = CountdownTime.snapshot()
+        temporalInvalidation.start(snapshot)
+        updatePreview(snapshot)
+        loadEvent(eventId)
         if (awaitingPinResult && pinUiWasShown) {
             scheduleReconcile()
         }
     }
 
     override fun onPause() {
+        if (::temporalInvalidation.isInitialized) temporalInvalidation.stop()
         if (awaitingPinResult) {
             pinUiWasShown = true
         }
@@ -139,6 +151,7 @@ class WidgetPinSetupActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
+        if (::temporalInvalidation.isInitialized) temporalInvalidation.stop()
         loadGeneration += 1
         reconcileGeneration += 1
         super.onDestroy()
@@ -146,6 +159,8 @@ class WidgetPinSetupActivity : BaseActivity() {
 
     private fun loadEvent(eventId: String) {
         val generation = ++loadGeneration
+        val repository = repository
+        setAddEnabled(false)
         CountdownIo.submit(
             task = { repository.loadResult() },
             onComplete = { result ->
@@ -169,22 +184,14 @@ class WidgetPinSetupActivity : BaseActivity() {
                     contentDescription = getString(EventIconPresentation.labelRes(loaded.icon))
                 }
                 findViewById<TextView>(R.id.widgetPinSetupEventTitle).text = loaded.title
-                val locale = resources.configuration.locales[0]
-                val displayDate = CountdownOccurrenceResolver.displayDate(
-                    loaded,
-                    CountdownTime.snapshot().today,
-                )
-                findViewById<TextView>(R.id.widgetPinSetupEventDate).text = displayDate.format(
-                    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
-                )
                 setAddEnabled(!awaitingPinResult)
-                renderBackgroundChoices()
-                updatePreview()
+                updatePreview(CountdownTime.snapshot())
             },
         )
     }
 
     private fun requestPin() {
+        if (awaitingPinResult || !addButton.isEnabled) return
         val currentEvent = event ?: return
         val style = currentSelection()
         val snapshot = WidgetPinRequestSnapshot.create(currentEvent.id, style)
@@ -195,6 +202,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         reconcileAttempt = 0
         reconcileGeneration += 1
         setAddEnabled(false)
+        setStyleEnabled(false)
 
         if (!WidgetPinning.request(this, currentEvent, snapshot)) {
             clearPendingPin()
@@ -302,6 +310,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         reconcileGeneration += 1
         reconcileScheduled = false
         setAddEnabled(event != null)
+        setStyleEnabled(true)
     }
 
     private fun providerWidgetIds(): Set<Int> {
@@ -382,20 +391,28 @@ class WidgetPinSetupActivity : BaseActivity() {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
+            tag = background
+            isSelected = selected
+            ChoiceAccessibility.apply(this)
+            descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
             isClickable = true
             isFocusable = true
             setPadding(dp(6), dp(6), dp(6), dp(7))
             setBackgroundResource(
                 if (selected) R.drawable.language_chip_active else R.drawable.language_chip_inactive,
             )
-            contentDescription = if (selected) {
-                getString(R.string.widget_pin_setup_style_selected, label)
-            } else {
-                label
-            }
+            contentDescription = label
             setOnClickListener {
                 selectedBackground = background
-                renderBackgroundChoices()
+                for (i in 0 until backgroundRows.childCount) {
+                    val row = backgroundRows.getChildAt(i) as android.view.ViewGroup
+                    for (j in 0 until row.childCount) {
+                        row.getChildAt(j).apply {
+                            isSelected = tag == selectedBackground
+                            setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.language_chip_inactive)
+                        }
+                    }
+                }
                 updatePreview()
             }
 
@@ -412,6 +429,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                         ),
                     )
                     contentDescription = null
+                    importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 },
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -420,6 +438,7 @@ class WidgetPinSetupActivity : BaseActivity() {
             )
             addView(
                 TextView(this@WidgetPinSetupActivity).apply {
+                    importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO
                     text = label
                     gravity = Gravity.CENTER
                     setTextColor(getColor(R.color.foreground))
@@ -446,7 +465,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         WidgetBackground.MONOGRAM -> R.string.widget_background_six
     }
 
-    private fun updatePreview() {
+    private fun updatePreview(snapshot: CountdownTimeSnapshot = CountdownTime.snapshot()) {
         val selection = currentSelection()
         findViewById<TextView>(R.id.widgetPinSetupStyleSummary).text = getString(
             R.string.widget_style_summary,
@@ -454,12 +473,17 @@ class WidgetPinSetupActivity : BaseActivity() {
             getString(appearanceLabel(selection.appearance)),
         )
         val currentEvent = event ?: return
+        val locale = resources.configuration.locales[0]
+        val displayDate = CountdownOccurrenceResolver.displayDate(currentEvent, snapshot.today)
+        findViewById<TextView>(R.id.widgetPinSetupEventDate).text = displayDate.format(
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
+        )
         previewController.renderStyle(
             selection = selection,
             dimensions = WidgetPreviewSizing.representative(WidgetSize.STANDARD),
         )
         previewController.renderEvent(
-            WidgetEventContentFactory.from(currentEvent, CountdownTime.snapshot().today),
+            WidgetEventContentFactory.from(currentEvent, snapshot.today),
         )
     }
 
@@ -467,6 +491,17 @@ class WidgetPinSetupActivity : BaseActivity() {
         WidgetAppearance.SYSTEM -> R.string.widget_appearance_system
         WidgetAppearance.LIGHT -> R.string.widget_appearance_light
         WidgetAppearance.DARK -> R.string.widget_appearance_dark
+    }
+
+    private fun setStyleEnabled(enabled: Boolean) {
+        fun enable(view: android.view.View) {
+            view.isEnabled = enabled
+            if (view is android.view.ViewGroup) {
+                for (index in 0 until view.childCount) enable(view.getChildAt(index))
+            }
+        }
+        enable(appearanceGroup)
+        enable(backgroundRows)
     }
 
     private fun setAddEnabled(enabled: Boolean) {

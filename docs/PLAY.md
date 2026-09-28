@@ -155,3 +155,7 @@ When the maintainer actually decides to publish:
 10. test Play-delivered APKs and cross-store update behavior before production rollout.
 
 No step above is authorized merely by this document. Play Console mutations, signing-key operations, testing-track publication, and production release remain separate explicit actions.
+
+## Offline language delivery
+
+Language configuration splits are disabled so an EN-only device installation also contains Spanish and Catalan. Density/ABI delivery and generated locale configuration remain unchanged. Existing CI and exact-source RC validation inspect BundleConfig, build an EN-only device-specific APK set with ordinary debug test signing, and verify its packaged language resources. The API 33 RC installs that set and switches to Spanish/Catalan with networking disabled. This test package is not a public release asset or a Play upload artifact.

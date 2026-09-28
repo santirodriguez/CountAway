@@ -27,6 +27,10 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
                 }
                 CountdownWidgetProvider.updateAllWidgets(appContext, snapshot)
                 WidgetUpdateScheduler.ensureScheduled(appContext, snapshot)
+                if (intent?.action in setOf(Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED,
+                        Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED)) {
+                    ArrivalNotificationScheduler.invalidatePlan()
+                }
                 ArrivalNotificationScheduler.ensureScheduled(appContext, snapshot)
             } finally {
                 pending.finish()

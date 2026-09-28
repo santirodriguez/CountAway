@@ -67,6 +67,9 @@ internal class WidgetPreviewController(
             DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
         )
 
+        iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
+        titleView.visibility = if (presentation.showTitle) View.VISIBLE else View.GONE
+        titleView.maxLines = presentation.titleMaxLines
         iconView.setImageResource(content.iconRes)
         titleView.text = content.title
         countView.text = presentation.countText
@@ -85,6 +88,10 @@ internal class WidgetPreviewController(
         iconRes: Int = R.drawable.ic_event_calendar,
     ) {
         val size = requireNotNull(currentSize)
+        val presentation = WidgetPresentationResolver.placeholder(size, context.resources.configuration.fontScale)
+        iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
+        titleView.visibility = if (presentation.showTitle) View.VISIBLE else View.GONE
+        titleView.maxLines = presentation.titleMaxLines
         iconView.setImageResource(iconRes)
         titleView.text = title
         countView.text = countText
@@ -93,13 +100,7 @@ internal class WidgetPreviewController(
         dateView.text = ""
         milestoneView.visibility = View.GONE
         dateView.visibility = View.GONE
-        unitView.visibility = if (
-            size == WidgetSize.STANDARD || size == WidgetSize.LARGE
-        ) {
-            View.VISIBLE
-        } else {
-            View.GONE
-        }
+        unitView.visibility = if (presentation.showUnit) View.VISIBLE else View.GONE
     }
 
     private fun ensureLayout(size: WidgetSize) {
@@ -116,6 +117,13 @@ internal class WidgetPreviewController(
         titleView = frame.findViewById(R.id.widgetTitle)
         milestoneView = frame.findViewById(R.id.widgetMilestone)
         countView = frame.findViewById(R.id.widgetCount)
+        if (size != WidgetSize.SHORT) {
+            // The attached preview resizes after inflation. Give autosizing the final
+            // row width instead of retaining a wrap-content width from its small frame.
+            countView.layoutParams = countView.layoutParams.apply {
+                width = android.view.ViewGroup.LayoutParams.MATCH_PARENT
+            }
+        }
         unitView = frame.findViewById(R.id.widgetUnit)
         dateView = frame.findViewById(R.id.widgetDate)
         currentSize = size
