@@ -215,6 +215,9 @@ class WidgetConfigActivity : BaseActivity() {
     }
 
     private fun reloadEvents(snapshot: CountdownTimeSnapshot = CountdownTime.snapshot()) {
+        if (restoredListState == null && eventList.adapter != null) {
+            restoredListState = eventList.onSaveInstanceState()
+        }
         val generation = ++loadGeneration
         loading = true
         setSaveEnabled(false)

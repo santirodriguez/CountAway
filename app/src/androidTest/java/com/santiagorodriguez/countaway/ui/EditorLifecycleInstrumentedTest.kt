@@ -34,6 +34,26 @@ class EditorLifecycleInstrumentedTest {
     private val context = instrumentation.targetContext
     private val repository = CountdownRepository(context)
 
+    @Test fun choiceSelectionKeepsKeyboardFocusAndExposesCheckedRole() {
+        val scenario = ActivityScenario.launch<EditorActivity>(Intent(context, EditorActivity::class.java))
+        try {
+            drain()
+            scenario.onActivity { activity ->
+                val grid = activity.findViewById<android.widget.GridLayout>(R.id.typeGrid)
+                val target = grid.getChildAt(grid.childCount - 1)
+                target.isFocusableInTouchMode = true
+                assertTrue(target.requestFocus())
+                target.performClick()
+                assertSame(target, grid.getChildAt(grid.childCount - 1))
+                assertTrue(target.hasFocus())
+                val node = target.createAccessibilityNodeInfo()
+                assertEquals(android.widget.RadioButton::class.java.name, node.className)
+                assertTrue(node.isCheckable)
+                assertTrue(node.isChecked)
+            }
+        } finally { scenario.close() }
+    }
+
     @Test fun newSaveHeldAcrossTwoRecreationsCreatesOnlyOneEvent() = withFixture { original ->
         val title = "Lifecycle-${UUID.randomUUID()}"
         val scenario = ActivityScenario.launch<EditorActivity>(Intent(context, EditorActivity::class.java))

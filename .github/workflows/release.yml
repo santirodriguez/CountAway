@@ -872,7 +872,7 @@ jobs:
             com.santiagorodriguez.countaway.share.ShareCardLayoutInstrumentedTest,com.santiagorodriguez.countaway.widget.ExpansionLayoutInstrumentedTest \
             "${PACKAGE_ID}.test/androidx.test.runner.AndroidJUnitRunner" \
             | tee acceptance-evidence/render-tests.txt
-          grep -Fq 'OK (4 tests)' acceptance-evidence/render-tests.txt
+          grep -Fq 'OK (5 tests)' acceptance-evidence/render-tests.txt
           adb exec-out run-as "${PACKAGE_ID}" tar -C files -cf - share-evidence layout-evidence \
             > "acceptance-evidence/render-images-api-${API_LEVEL}.tar"
           if [[ "${API_LEVEL}" == "33" ]]; then
