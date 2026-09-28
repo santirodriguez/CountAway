@@ -80,6 +80,7 @@
             android:layout_marginTop="20dp"
             android:fontFamily="sans-serif-medium"
             android:text="@string/widget_background_label"
+            android:labelFor="@id/widgetPinSetupBackgroundRows"
             android:textColor="@color/foreground"
             android:textSize="14sp" />
 
@@ -96,6 +97,7 @@
             android:layout_marginTop="18dp"
             android:fontFamily="sans-serif-medium"
             android:text="@string/widget_appearance_label"
+            android:labelFor="@id/widgetPinSetupAppearanceGroup"
             android:textColor="@color/foreground"
             android:textSize="14sp" />
 

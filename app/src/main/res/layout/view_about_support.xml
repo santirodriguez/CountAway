@@ -46,7 +46,8 @@
     <TextView
         android:id="@+id/websiteButton"
         android:layout_width="wrap_content"
-        android:layout_height="36dp"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
         android:layout_marginTop="2dp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:clickable="true"
@@ -62,7 +63,8 @@
     <TextView
         android:id="@+id/privacyButton"
         android:layout_width="wrap_content"
-        android:layout_height="36dp"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:clickable="true"
         android:focusable="true"

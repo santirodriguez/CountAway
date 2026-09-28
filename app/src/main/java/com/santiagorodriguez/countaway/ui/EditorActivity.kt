@@ -363,9 +363,18 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun renderTypeGrid() {
-        typeGrid.removeAllViews()
+        if (typeGrid.childCount > 0) {
+            eventTypes.forEachIndexed { index, type ->
+                typeGrid.getChildAt(index).apply {
+                    isSelected = type == selectedType
+                    setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface)
+                }
+            }
+            return
+        }
         eventTypes.forEach { type ->
             val button = TextView(this).apply {
+                ChoiceAccessibility.apply(this)
                 text = getString(EventTypePresentation.labelRes(type))
                 contentDescription = text
                 isSelected = type == selectedType
@@ -401,11 +410,20 @@ class EditorActivity : BaseActivity() {
 
     private fun renderCustomIconGrid() {
         customIconSection.visibility = if (selectedType == EventType.CUSTOM) View.VISIBLE else View.GONE
-        iconGrid.removeAllViews()
         if (selectedType != EventType.CUSTOM) return
+        if (iconGrid.childCount > 0) {
+            EventIcon.customChoices.forEachIndexed { index, icon ->
+                iconGrid.getChildAt(index).apply {
+                    isSelected = icon == selectedIcon
+                    setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface)
+                }
+            }
+            return
+        }
 
         EventIcon.customChoices.forEach { icon ->
             val button = ImageButton(this).apply {
+                ChoiceAccessibility.apply(this)
                 setImageResource(EventIconPresentation.drawableRes(icon))
                 imageTintList = ColorStateList.valueOf(getColor(R.color.accent))
                 backgroundTintList = null

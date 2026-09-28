@@ -32,6 +32,9 @@ import java.time.format.FormatStyle
 
 class WidgetConfigActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
+    private lateinit var header: View
+    private lateinit var footer: View
+    private var restoredListState: android.os.Parcelable? = null
     private lateinit var eventList: ListView
     private lateinit var emptyState: TextView
     private lateinit var appearanceSpinner: Spinner
@@ -45,6 +48,7 @@ class WidgetConfigActivity : BaseActivity() {
     private var isNewWidget = false
     private lateinit var temporalInvalidationController: TemporalInvalidationController
     private var loadGeneration = 0
+    private var loading = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,15 +73,22 @@ class WidgetConfigActivity : BaseActivity() {
             reloadEvents(snapshot)
         }
         eventList = findViewById(R.id.widgetEventList)
-        emptyState = findViewById(R.id.widgetEmptyState)
-        appearanceSpinner = findViewById(R.id.widgetAppearanceSpinner)
-        backgroundSpinner = findViewById(R.id.widgetBackgroundSpinner)
+        header = layoutInflater.inflate(R.layout.widget_config_header, eventList, false)
+        footer = layoutInflater.inflate(R.layout.widget_config_footer, eventList, false)
+        eventList.addHeaderView(header, null, false)
+        eventList.addFooterView(footer, null, false)
+        @Suppress("DEPRECATION")
+        val listState: android.os.Parcelable? = savedInstanceState?.getParcelable(STATE_LIST)
+        restoredListState = listState
+        emptyState = control(R.id.widgetEmptyState)
+        appearanceSpinner = control(R.id.widgetAppearanceSpinner)
+        backgroundSpinner = control(R.id.widgetBackgroundSpinner)
         previewController = WidgetPreviewController(
             context = this,
-            container = findViewById(R.id.widgetPreviewContainer),
-            frame = findViewById(R.id.widgetPreviewFrame),
+            container = control(R.id.widgetPreviewContainer),
+            frame = control(R.id.widgetPreviewFrame),
         )
-        saveButton = findViewById(R.id.widgetSaveButton)
+        saveButton = control(R.id.widgetSaveButton)
         setSaveEnabled(false)
 
         appearanceSpinner.adapter = ArrayAdapter(
@@ -151,18 +162,21 @@ class WidgetConfigActivity : BaseActivity() {
 
         eventList.choiceMode = ListView.CHOICE_MODE_SINGLE
         eventList.setOnItemClickListener { _, _, position, _ ->
-            if (position == 0) {
+            if (loading) return@setOnItemClickListener
+            val index = position - eventList.headerViewsCount
+            if (index !in 0..events.size) return@setOnItemClickListener
+            if (index == 0) {
                 selectedMode = WidgetEventSelection.NEXT
                 selectedEventId = null
             } else {
                 selectedMode = WidgetEventSelection.FIXED
-                selectedEventId = events[position - 1].id
+                selectedEventId = events[index - 1].id
             }
             updateContentPreview(CountdownTime.snapshot().today)
             setSaveEnabled(true)
         }
 
-        findViewById<Button>(R.id.widgetCreateButton).setOnClickListener {
+        control<Button>(R.id.widgetCreateButton).setOnClickListener {
             startActivity(Intent(this, EditorActivity::class.java))
         }
         saveButton.setOnClickListener { saveConfiguration() }
@@ -186,6 +200,8 @@ class WidgetConfigActivity : BaseActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        if (!::appearanceSpinner.isInitialized) { super.onSaveInstanceState(outState); return }
+        outState.putParcelable(STATE_LIST, eventList.onSaveInstanceState())
         outState.putString(STATE_EVENT_ID, selectedEventId)
         outState.putString(STATE_SELECTION_MODE, selectedMode.name)
         WidgetAppearance.entries.getOrNull(appearanceSpinner.selectedItemPosition)?.let {
@@ -199,7 +215,7 @@ class WidgetConfigActivity : BaseActivity() {
 
     private fun reloadEvents(snapshot: CountdownTimeSnapshot = CountdownTime.snapshot()) {
         val generation = ++loadGeneration
-        eventList.isEnabled = false
+        loading = true
         setSaveEnabled(false)
 
         CountdownIo.submit(
@@ -215,10 +231,10 @@ class WidgetConfigActivity : BaseActivity() {
     }
 
     private fun renderEvents(result: CountdownLoadResult, today: LocalDate) {
+        loading = false
         if (result is CountdownLoadResult.Failure) {
             events = emptyList()
-            eventList.isEnabled = false
-            eventList.visibility = View.GONE
+            eventList.adapter = ArrayAdapter<String>(this, R.layout.item_widget_event, android.R.id.text1, emptyList())
             emptyState.setText(
                 if (result.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
                     R.string.widget_data_newer_version
@@ -254,14 +270,18 @@ class WidgetConfigActivity : BaseActivity() {
             }
         }
         if (selectedIndex >= 0) {
-            eventList.setItemChecked(selectedIndex, true)
+            eventList.setItemChecked(selectedIndex + eventList.headerViewsCount, true)
             setSaveEnabled(true)
         } else {
             selectedEventId = null
             setSaveEnabled(false)
         }
+        restoredListState?.let { eventList.onRestoreInstanceState(it) }
+        restoredListState = null
         updateContentPreview(today)
     }
+
+    private fun <T : View> control(id: Int): T = header.findViewById<T>(id) ?: footer.findViewById(id)
 
     private fun updateStylePreview() {
         if (!::previewController.isInitialized) return
@@ -273,7 +293,7 @@ class WidgetConfigActivity : BaseActivity() {
                 WidgetBackground.CLASSIC
             },
         )
-        findViewById<TextView>(R.id.widgetStyleSummary).text = getString(
+        control<TextView>(R.id.widgetStyleSummary).text = getString(
             R.string.widget_style_summary,
             getString(backgroundLabel(selection.background)),
             getString(appearanceLabel(selection.appearance)),
@@ -386,6 +406,7 @@ class WidgetConfigActivity : BaseActivity() {
         values.firstOrNull { it.name == name } ?: default
 
     private companion object {
+        const val STATE_LIST = "event_list_state"
         const val STATE_EVENT_ID = "selected_event_id"
         const val STATE_SELECTION_MODE = "selected_mode"
         const val STATE_APPEARANCE = "selected_appearance"

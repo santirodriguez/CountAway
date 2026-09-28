@@ -108,6 +108,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:text="@string/field_repeat"
+            android:labelFor="@id/repeatSpinner"
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
 
@@ -132,6 +133,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:text="@string/field_reminder"
+            android:labelFor="@id/reminderSpinner"
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
 

@@ -19,6 +19,7 @@ import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.ui.ChoiceAccessibility
 import com.santiagorodriguez.countaway.ui.BaseActivity
 import com.santiagorodriguez.countaway.ui.EventIconPresentation
 import com.santiagorodriguez.countaway.ui.InsetUtils
@@ -390,20 +391,28 @@ class WidgetPinSetupActivity : BaseActivity() {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
+            tag = background
+            isSelected = selected
+            ChoiceAccessibility.apply(this)
+            descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
             isClickable = true
             isFocusable = true
             setPadding(dp(6), dp(6), dp(6), dp(7))
             setBackgroundResource(
                 if (selected) R.drawable.language_chip_active else R.drawable.language_chip_inactive,
             )
-            contentDescription = if (selected) {
-                getString(R.string.widget_pin_setup_style_selected, label)
-            } else {
-                label
-            }
+            contentDescription = label
             setOnClickListener {
                 selectedBackground = background
-                renderBackgroundChoices()
+                for (i in 0 until backgroundRows.childCount) {
+                    val row = backgroundRows.getChildAt(i) as android.view.ViewGroup
+                    for (j in 0 until row.childCount) {
+                        row.getChildAt(j).apply {
+                            isSelected = tag == selectedBackground
+                            setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.language_chip_inactive)
+                        }
+                    }
+                }
                 updatePreview()
             }
 
@@ -420,6 +429,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                         ),
                     )
                     contentDescription = null
+                    importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 },
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -428,6 +438,7 @@ class WidgetPinSetupActivity : BaseActivity() {
             )
             addView(
                 TextView(this@WidgetPinSetupActivity).apply {
+                    importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO
                     text = label
                     gravity = Gravity.CENTER
                     setTextColor(getColor(R.color.foreground))
