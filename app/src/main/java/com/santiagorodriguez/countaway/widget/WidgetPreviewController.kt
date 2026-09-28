@@ -88,9 +88,10 @@ internal class WidgetPreviewController(
         iconRes: Int = R.drawable.ic_event_calendar,
     ) {
         val size = requireNotNull(currentSize)
-        iconView.visibility = if (size == WidgetSize.COMPACT || context.resources.configuration.fontScale >= 1.3f) View.GONE else View.VISIBLE
-        titleView.visibility = if (size == WidgetSize.COMPACT && context.resources.configuration.fontScale >= 1.3f) View.GONE else View.VISIBLE
-        titleView.maxLines = if (size == WidgetSize.SHORT) 2 else 1
+        val presentation = WidgetPresentationResolver.placeholder(size, context.resources.configuration.fontScale)
+        iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
+        titleView.visibility = if (presentation.showTitle) View.VISIBLE else View.GONE
+        titleView.maxLines = presentation.titleMaxLines
         iconView.setImageResource(iconRes)
         titleView.text = title
         countView.text = countText
@@ -99,13 +100,7 @@ internal class WidgetPreviewController(
         dateView.text = ""
         milestoneView.visibility = View.GONE
         dateView.visibility = View.GONE
-        unitView.visibility = if (
-            size == WidgetSize.STANDARD || size == WidgetSize.LARGE
-        ) {
-            View.VISIBLE
-        } else {
-            View.GONE
-        }
+        unitView.visibility = if (presentation.showUnit) View.VISIBLE else View.GONE
     }
 
     private fun ensureLayout(size: WidgetSize) {

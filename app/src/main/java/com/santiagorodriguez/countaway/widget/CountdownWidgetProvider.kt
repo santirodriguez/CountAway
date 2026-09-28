@@ -12,7 +12,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.SizeF
-import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
@@ -272,6 +271,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                     views,
                     appWidgetId,
                     renderData.problem,
+                    size,
                 )
                 is WidgetRenderData.Ready -> {
                     val event = renderData.resolve(configuration)
@@ -280,6 +280,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                             displayContext,
                             views,
                             appWidgetId,
+                            size = size,
                             noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
                         )
                     } else {
@@ -344,18 +345,15 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views: RemoteViews,
             appWidgetId: Int,
             noUpcoming: Boolean,
+            size: WidgetSize,
         ) {
             val title = context.getString(
                 if (noUpcoming) R.string.widget_no_upcoming else R.string.widget_select_countdown,
             )
             val action = context.getString(R.string.widget_tap_to_configure)
-            views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
-            views.setTextViewText(R.id.widgetTitle, title)
-            views.setTextViewText(R.id.widgetCount, "—")
-            views.setTextViewText(R.id.widgetUnit, action)
-            views.setTextViewText(R.id.widgetDate, "")
-            views.setTextViewText(R.id.widgetMilestone, "")
-            views.setViewVisibility(R.id.widgetMilestone, View.GONE)
+            WidgetRemoteViewsPresentation.applyPlaceholder(
+                views, size, context.resources.configuration.fontScale, title, action, "—",
+            )
             views.setContentDescription(R.id.widgetRoot, "$title, $action")
             views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
         }
@@ -365,6 +363,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views: RemoteViews,
             appWidgetId: Int,
             problem: com.santiagorodriguez.countaway.data.CountdownDataProblem,
+            size: WidgetSize,
         ) {
             val title = context.getString(
                 if (problem == com.santiagorodriguez.countaway.data.CountdownDataProblem.UNSUPPORTED_SCHEMA) {
@@ -374,13 +373,9 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                 },
             )
             val action = context.getString(R.string.widget_open_app)
-            views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
-            views.setTextViewText(R.id.widgetTitle, title)
-            views.setTextViewText(R.id.widgetCount, "!")
-            views.setTextViewText(R.id.widgetUnit, action)
-            views.setTextViewText(R.id.widgetDate, "")
-            views.setTextViewText(R.id.widgetMilestone, "")
-            views.setViewVisibility(R.id.widgetMilestone, View.GONE)
+            WidgetRemoteViewsPresentation.applyPlaceholder(
+                views, size, context.resources.configuration.fontScale, title, action, "!",
+            )
             views.setContentDescription(R.id.widgetRoot, "$title, $action")
             views.setOnClickPendingIntent(R.id.widgetRoot, openAppPendingIntent(context, appWidgetId))
         }

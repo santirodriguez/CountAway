@@ -106,6 +106,85 @@ class ExpansionLayoutInstrumentedTest {
         }
     }
 
+    @Test fun placeholderCountsFitAndMatchPreviewPresentation() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.runOnMainSync {
+            val problems = mutableListOf<String>()
+            var legacyClipped = 0
+            for (language in listOf("en", "es", "ca")) for (scale in listOf(1f, 1.3f, 2f))
+                for (size in WidgetPreviewSizing.orderedSizes) for (error in listOf(false, true)) {
+                val config = Configuration(instrumentation.targetContext.resources.configuration).apply {
+                    fontScale = scale
+                    setLocale(Locale.forLanguageTag(language))
+                }
+                val context = instrumentation.targetContext.createConfigurationContext(config)
+                val dimensions = WidgetPreviewSizing.representative(size)
+                val title = context.getString(if (error) R.string.widget_data_newer_version else R.string.widget_no_upcoming)
+                val action = context.getString(if (error) R.string.widget_open_app else R.string.widget_tap_to_configure)
+                val marker = if (error) "!" else "—"
+                val density = context.resources.displayMetrics.density
+                for (legacy in listOf(true, false)) {
+                    val views = android.widget.RemoteViews(context.packageName, WidgetLayoutResolver.layoutRes(size))
+                    if (legacy) {
+                        // Reproduce the previous production placeholder actions on unchanged XML.
+                        views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
+                        views.setTextViewText(R.id.widgetTitle, title)
+                        views.setTextViewText(R.id.widgetCount, marker)
+                        views.setTextViewText(R.id.widgetUnit, action)
+                        views.setTextViewText(R.id.widgetDate, "")
+                        views.setTextViewText(R.id.widgetMilestone, "")
+                        views.setViewVisibility(R.id.widgetMilestone, View.GONE)
+                    } else {
+                        WidgetRemoteViewsPresentation.applyPlaceholder(views, size, scale, title, action, marker)
+                    }
+                    val root = views.apply(context, android.widget.FrameLayout(context))
+                    fun layout() {
+                        root.measure(View.MeasureSpec.makeMeasureSpec((dimensions.widthDp * density).toInt(), View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec((dimensions.heightDp * density).toInt(), View.MeasureSpec.EXACTLY))
+                        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+                    }
+                    layout()
+                    repeat(3) { if (root.isLayoutRequested) layout() }
+                    val count = root.findViewById<android.widget.TextView>(R.id.widgetCount)
+                    val needed = count.layout?.height ?: 0
+                    val rect = android.graphics.Rect(0, 0, count.width, count.height)
+                    (root as android.view.ViewGroup).offsetDescendantRectToMyCoords(count, rect)
+                    val summary = "placeholder legacy=$legacy $language $size scale=$scale error=$error height=${count.height} needed=$needed rect=$rect"
+                    android.util.Log.i("LayoutMeasurement", summary)
+                    val clipped = needed == 0 || count.height < needed || rect.top < 0 || rect.bottom > root.height
+                    if (legacy) {
+                        if (clipped) legacyClipped++
+                    } else {
+                        if (clipped) problems += summary
+                        val container = android.widget.FrameLayout(context)
+                        val frame = android.widget.FrameLayout(context)
+                        container.addView(frame)
+                        val preview = WidgetPreviewController(context, container, frame)
+                        preview.renderStyle(WidgetStyleSelection(WidgetAppearance.LIGHT, WidgetBackground.CLASSIC), dimensions)
+                        preview.renderPlaceholder(title, action, marker)
+                        for (id in listOf(R.id.widgetTitle, R.id.widgetIcon, R.id.widgetUnit, R.id.widgetDate, R.id.widgetMilestone)) {
+                            assertEquals("Preview/production visibility: $summary id=$id",
+                                frame.findViewById<View>(id).visibility, root.findViewById<View>(id).visibility)
+                        }
+                        assertEquals(frame.findViewById<android.widget.TextView>(R.id.widgetTitle).maxLines,
+                            root.findViewById<android.widget.TextView>(R.id.widgetTitle).maxLines)
+                        if (language == "en") {
+                            val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+                            root.draw(Canvas(bitmap))
+                            val file = File(context.filesDir, "layout-evidence/placeholder-$size-$scale-$error.png")
+                            file.parentFile!!.mkdirs()
+                            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                            bitmap.recycle()
+                        }
+                    }
+                }
+            }
+            android.util.Log.i("LayoutMeasurement", "Legacy placeholder clipped cases=$legacyClipped")
+            assertTrue("Previous placeholder clipping must be reproduced", legacyClipped > 0)
+            assertTrue(problems.joinToString("\n"), problems.isEmpty())
+        }
+    }
+
     @Test fun editorSpinnerMeasurementsAtNarrowWidthAndLargeText() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.runOnMainSync {
