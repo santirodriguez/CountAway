@@ -13,13 +13,16 @@ import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import java.time.LocalDate
-import java.time.LocalTime
+import java.time.Instant
 import java.time.ZonedDateTime
 
 object ArrivalNotificationScheduler {
     const val ACTION_ARRIVAL_CHECK = "com.santiagorodriguez.countaway.notification.ARRIVAL_CHECK"
     const val CHANNEL_ID = "countdown_arrivals"
 
+    private var planned: ArrivalReminderTiming.Plan? = null
+
+    @Synchronized
     fun ensureScheduled(
         context: Context,
         snapshot: CountdownTimeSnapshot = CountdownTime.snapshot(),
@@ -34,33 +37,39 @@ object ArrivalNotificationScheduler {
             is CountdownLoadResult.Failure -> return
         }
         val state = ArrivalNotificationState(context)
-        val nextDate = ArrivalNotificationPolicy.nextPendingDate(
-            events = events,
-            today = snapshot.today,
-            wasDelivered = state::wasDelivered,
-            canAttempt = state::canAttempt,
-        ) ?: run {
+        val next = events.mapNotNull { event ->
+            val date = ArrivalNotificationPolicy.nextPendingDate(
+                event, snapshot.today, state::wasDelivered, state::canAttempt,
+            ) ?: return@mapNotNull null
+            val millis = triggerMillis(snapshot.now, date, state.lastFailure(event, date))
+                ?: return@mapNotNull null
+            ArrivalReminderTiming.Plan(millis, date, snapshot.now.zone.id)
+        }.minByOrNull { it.triggerMillis } ?: run {
             cancel(context)
             return
         }
-
-        val triggerMillis = triggerMillis(snapshot.now, nextDate) ?: run {
-            cancel(context)
-            return
-        }
+        if (ArrivalReminderTiming.keepEarlier(planned, next)) return
         val alarmManager = context.getSystemService(AlarmManager::class.java)
         runCatching {
             alarmManager.setAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
-                triggerMillis,
+                next.triggerMillis,
                 pendingIntent(context),
             )
+            planned = next
         }.onFailure {
             cancel(context)
         }
     }
 
+    @Synchronized
+    fun invalidatePlan() {
+        planned = null
+    }
+
+    @Synchronized
     fun cancel(context: Context) {
+        planned = null
         runCatching {
             context.getSystemService(AlarmManager::class.java).cancel(pendingIntent(context))
         }
@@ -80,17 +89,11 @@ object ArrivalNotificationScheduler {
         return channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE
     }
 
-    internal fun triggerMillis(now: ZonedDateTime, eventDate: LocalDate): Long? =
-        runCatching { triggerTime(now, eventDate).toInstant().toEpochMilli() }.getOrNull()
+    internal fun triggerMillis(now: ZonedDateTime, eventDate: LocalDate, lastFailure: Instant? = null): Long? =
+        runCatching { ArrivalReminderTiming.triggerTime(now, eventDate, lastFailure).toInstant().toEpochMilli() }.getOrNull()
 
-    internal fun triggerTime(now: ZonedDateTime, eventDate: LocalDate): ZonedDateTime {
-        val scheduled = eventDate.atTime(REMINDER_TIME).atZone(now.zone)
-        return if (!scheduled.isAfter(now) && eventDate == now.toLocalDate()) {
-            now.plusMinutes(RETRY_DELAY_MINUTES)
-        } else {
-            scheduled
-        }
-    }
+    internal fun triggerTime(now: ZonedDateTime, eventDate: LocalDate): ZonedDateTime =
+        ArrivalReminderTiming.triggerTime(now, eventDate)
 
     private fun pendingIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
         context,
@@ -99,7 +102,5 @@ object ArrivalNotificationScheduler {
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
-    private val REMINDER_TIME: LocalTime = LocalTime.of(9, 0)
-    private const val RETRY_DELAY_MINUTES = 15L
     private const val REQUEST_CODE = 41_900
 }

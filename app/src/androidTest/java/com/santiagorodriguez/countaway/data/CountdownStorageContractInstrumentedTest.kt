@@ -226,11 +226,17 @@ class CountdownStorageContractInstrumentedTest {
         try {
             repeat(ArrivalNotificationState.MAX_DELIVERY_ATTEMPTS) {
                 assertTrue(state.canAttempt(event, scheduledDate))
-                state.recordFailure(event, scheduledDate)
+                val failedAt = scheduledDate.atTime(12, it).toInstant(java.time.ZoneOffset.UTC)
+                state.recordFailure(event, scheduledDate, failedAt)
+                assertEquals(failedAt, ArrivalNotificationState(context).lastFailure(event, scheduledDate))
+                assertEquals(null, state.lastFailure(event, scheduledDate.plusDays(1)))
             }
 
             assertFalse(state.canAttempt(event, scheduledDate))
             assertFalse(state.wasDelivered(event, scheduledDate))
+            state.markDelivered(event, scheduledDate)
+            assertEquals(null, state.lastFailure(event, scheduledDate))
+            assertTrue(state.wasDelivered(event, scheduledDate))
         } finally {
             state.remove(event.id)
         }

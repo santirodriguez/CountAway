@@ -25,6 +25,7 @@ class ArrivalNotificationReceiver : BroadcastReceiver() {
         val snapshot = CountdownTime.snapshot()
         CountdownIo.execute {
             try {
+                ArrivalNotificationScheduler.invalidatePlan()
                 ArrivalNotifier.notifyDueEvents(appContext, snapshot)
                 ArrivalNotificationScheduler.ensureScheduled(appContext, snapshot)
             } finally {
@@ -66,7 +67,9 @@ object ArrivalNotifier {
                     snapshot.today,
                     state.deliveredDate(event.id),
                 ) &&
-                state.canAttempt(event, scheduledDate)
+                state.canAttempt(event, scheduledDate) &&
+                !ArrivalReminderTiming.triggerTime(snapshot.now, scheduledDate,
+                    state.lastFailure(event, scheduledDate)).isAfter(snapshot.now)
             ) {
                 event to scheduledDate
             } else {
@@ -114,10 +117,10 @@ object ArrivalNotifier {
                 if (ArrivalNotificationScheduler.canPostNotifications(context)) {
                     state.markDelivered(event, scheduledDate)
                 } else {
-                    state.recordFailure(event, scheduledDate)
+                    state.recordFailure(event, scheduledDate, snapshot.now.toInstant())
                 }
             }.onFailure {
-                state.recordFailure(event, scheduledDate)
+                state.recordFailure(event, scheduledDate, snapshot.now.toInstant())
             }
         }
     }

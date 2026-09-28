@@ -67,7 +67,7 @@ object ArrivalNotificationPolicy {
             previous.reminder != updated.reminder ||
             previous.repeatRule != updated.repeatRule
 
-    private fun nextPendingDate(
+    internal fun nextPendingDate(
         event: CountdownEvent,
         today: LocalDate,
         wasDelivered: (CountdownEvent, LocalDate) -> Boolean,
