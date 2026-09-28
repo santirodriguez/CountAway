@@ -99,4 +99,33 @@ class ExpansionLayoutInstrumentedTest {
         }
     }
 
+    @Test fun editorSpinnerMeasurementsAtNarrowWidthAndLargeText() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.runOnMainSync {
+            val config = Configuration(instrumentation.targetContext.resources.configuration).apply {
+                fontScale = 2f
+                setLocale(Locale.forLanguageTag("ca"))
+            }
+            val context = ContextThemeWrapper(instrumentation.targetContext.createConfigurationContext(config), R.style.Theme_CountAway)
+            val root = LayoutInflater.from(context).inflate(R.layout.activity_editor, null)
+            for ((id, label) in listOf(R.id.repeatSpinner to R.string.repeat_monthly,
+                    R.id.reminderSpinner to R.string.reminder_seven_days)) {
+                val spinner = root.findViewById<android.widget.Spinner>(id)
+                spinner.adapter = ArrayAdapter(context, android.R.layout.simple_spinner_item, listOf(context.getString(label)))
+            }
+            val density = context.resources.displayMetrics.density
+            root.measure(View.MeasureSpec.makeMeasureSpec((320 * density).toInt(), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec((640 * density).toInt(), View.MeasureSpec.EXACTLY))
+            root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+            for (id in listOf(R.id.repeatSpinner, R.id.reminderSpinner)) {
+                val spinner = root.findViewById<android.widget.Spinner>(id)
+                val text = spinner.selectedView as android.widget.TextView
+                val summary = "spinner=$id frame=${spinner.width}x${spinner.height} text=${text.text} textFrame=${text.width}x${text.height} needed=${text.layout.height} ellipsis=${text.layout.getEllipsisCount(0)}"
+                android.util.Log.i("LayoutMeasurement", summary)
+                assertTrue(summary, text.height >= text.layout.height)
+                assertEquals(summary, 0, text.layout.getEllipsisCount(0))
+            }
+        }
+    }
+
 }
