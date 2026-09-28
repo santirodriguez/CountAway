@@ -480,8 +480,10 @@ class EditorActivity : BaseActivity() {
 
         val snapshot = CountdownTime.snapshot()
         val text = buildShareText(title, snapshot.today)
+        val renderContext = ShareCardRenderer.captureContext(this)
+        val appContext = applicationContext
         val cardContent = ShareCardContentFactory.create(
-            context = this,
+            context = renderContext,
             title = title,
             date = selectedDate,
             icon = selectedIcon,
@@ -494,12 +496,12 @@ class EditorActivity : BaseActivity() {
         CountdownIo.submit(
             task = {
                 val bitmap = ShareCardRenderer.render(
-                    context = applicationContext,
+                    context = renderContext,
                     content = cardContent,
                     dark = dark,
                 )
                 try {
-                    ShareImageStore.write(applicationContext, bitmap)
+                    ShareImageStore.write(appContext, bitmap)
                 } finally {
                     bitmap.recycle()
                 }

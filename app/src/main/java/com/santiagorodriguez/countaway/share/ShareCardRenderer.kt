@@ -6,6 +6,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextDirectionHeuristics
 import android.text.TextPaint
 import android.text.TextUtils
 import com.santiagorodriguez.countaway.R
@@ -93,6 +96,10 @@ internal object ShareCardContentFactory {
 internal object ShareCardRenderer {
     private const val DESIGN_SIZE_PX = 1080f
     const val SIZE_PX = 768
+
+    /** Freeze the effective Activity configuration without retaining the Activity. */
+    fun captureContext(context: Context): Context = context.applicationContext
+        .createConfigurationContext(Configuration(context.resources.configuration))
 
     fun render(
         context: Context,
@@ -209,25 +216,32 @@ internal object ShareCardRenderer {
         maxWidth: Float,
         lineHeight: Float,
     ) {
-        if (paint.measureText(text) <= maxWidth) {
+        if (!text.contains('\n') && !text.contains('\r') &&
+            !java.text.Bidi.requiresBidi(text.toCharArray(), 0, text.length) &&
+            paint.measureText(text) <= maxWidth) {
             canvas.drawText(text, x, firstBaseline, paint)
             return
         }
 
-        val rawBreak = paint.breakText(text, true, maxWidth, null).coerceAtLeast(1)
-        val preferredBreak = text.lastIndexOf(' ', startIndex = rawBreak - 1)
-            .takeIf { it > 0 }
-            ?: rawBreak
-        val first = text.substring(0, preferredBreak).trimEnd()
-        val rest = text.substring(preferredBreak).trimStart()
-        canvas.drawText(first, x, firstBaseline, paint)
-        canvas.drawText(
-            ellipsize(rest, paint, maxWidth),
-            x,
-            firstBaseline + lineHeight,
-            paint,
-        )
+        val layout = titleLayout(text, paint, maxWidth.toInt(), lineHeight)
+        canvas.save()
+        canvas.translate(x, firstBaseline - layout.getLineBaseline(0))
+        layout.draw(canvas)
+        canvas.restore()
     }
+
+    internal fun titleLayout(text: String, paint: TextPaint, width: Int, lineHeight: Float): StaticLayout =
+        StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_LTR)
+            .setIncludePad(false)
+            .setLineSpacing(lineHeight - paint.fontSpacing, 1f)
+            .setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE)
+            .setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE)
+            .setMaxLines(2)
+            .setEllipsize(TextUtils.TruncateAt.END)
+            .setEllipsizedWidth(width)
+            .build()
 
     private fun fitText(
         paint: TextPaint,

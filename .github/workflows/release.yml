@@ -799,6 +799,10 @@ jobs:
             set +e
             adb shell dumpsys alarm > "acceptance-evidence/alarm-api-${API_LEVEL}.txt"
             adb logcat -d > "acceptance-evidence/logcat-api-${API_LEVEL}.txt"
+            if adb shell run-as "${PACKAGE_ID}" test -d files/share-evidence; then
+              adb exec-out run-as "${PACKAGE_ID}" tar -C files -cf - share-evidence \
+                > "acceptance-evidence/share-cards-api-${API_LEVEL}.tar"
+            fi
             adb shell dumpsys package "${PACKAGE_ID}"               > "acceptance-evidence/debug-package-api-${API_LEVEL}.txt"
             set -e
           }
