@@ -6,6 +6,9 @@ import android.widget.Button
 import android.widget.EditText
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.runner.lifecycle.ActivityLifecycleCallback
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownIo
@@ -39,12 +42,13 @@ class EditorLifecycleInstrumentedTest {
             scenario.onActivity { it.findViewById<Button>(R.id.saveButton).performClick() }
             scenario.recreate()
             scenario.recreate()
+            val awaitDestroyed = watchDestruction(scenario)
             release.countDown()
             drain()
             val created = events().filter { it.title == title }
             assertEquals(1, created.size)
             assertEquals(original.size + 1, events().size)
-            assertEquals(androidx.lifecycle.Lifecycle.State.DESTROYED, scenario.state)
+            awaitDestroyed()
         } finally {
             release.countDown()
             drain()
@@ -87,15 +91,19 @@ class EditorLifecycleInstrumentedTest {
         repository.save(original + event)
         val scenario = ActivityScenario.launch<EditorActivity>(Intent(context, EditorActivity::class.java)
             .putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
+        val release = CountDownLatch(1)
         try {
             drain()
             scenario.onActivity { it.findViewById<EditText>(R.id.titleInput).setText("Stale") }
             repository.save(original)
+            blockWorker(release)
             scenario.recreate()
+            val awaitDestroyed = watchDestruction(scenario)
+            release.countDown()
             drain()
             assertEquals(original, events())
-            assertEquals(androidx.lifecycle.Lifecycle.State.DESTROYED, scenario.state)
-        } finally { scenario.close() }
+            awaitDestroyed()
+        } finally { release.countDown(); drain(); scenario.close() }
     }
 
     @Test fun editAndDeleteFinishTheirNotificationCleanupAfterRecreation() = withFixture { original ->
@@ -133,12 +141,39 @@ class EditorLifecycleInstrumentedTest {
         }
     }
 
+    private fun watchDestruction(scenario: ActivityScenario<EditorActivity>): () -> Unit {
+        val destroyed = CountDownLatch(1)
+        lateinit var target: EditorActivity
+        val callback = ActivityLifecycleCallback { activity, stage ->
+            if (activity === target && stage == Stage.DESTROYED) destroyed.countDown()
+        }
+        scenario.onActivity {
+            target = it
+            ActivityLifecycleMonitorRegistry.getInstance().addLifecycleCallback(callback)
+        }
+        return {
+            try { assertTrue("Editor should finish after storage reconciliation", destroyed.await(15, TimeUnit.SECONDS)) }
+            finally {
+                instrumentation.runOnMainSync {
+                    ActivityLifecycleMonitorRegistry.getInstance().removeLifecycleCallback(callback)
+                }
+            }
+        }
+    }
+
     private fun clickDialog(text: Int) {
         instrumentation.waitForIdleSync()
-        val nodes = instrumentation.uiAutomation.rootInActiveWindow
-            .findAccessibilityNodeInfosByText(context.getString(text))
-        assertTrue("Expected dialog action", nodes.isNotEmpty())
-        assertTrue(nodes.first { it.isClickable }.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+        val automation = instrumentation.uiAutomation
+        val deadline = android.os.SystemClock.uptimeMillis() + 5_000
+        var clicked = false
+        while (!clicked && android.os.SystemClock.uptimeMillis() < deadline) {
+            automation.waitForIdle(100, 5_000)
+            val action = automation.rootInActiveWindow
+                ?.findAccessibilityNodeInfosByText(context.getString(text))
+                ?.firstOrNull { it.isClickable }
+            clicked = action?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
+        }
+        assertTrue("Expected dialog action to become accessible", clicked)
         instrumentation.waitForIdleSync()
     }
 
