@@ -30,7 +30,11 @@ internal object WidgetPresentationResolver {
     fun placeholder(size: WidgetSize, fontScale: Float) = WidgetPlaceholderPresentation(
         showIcon = size == WidgetSize.SHORT || (size == WidgetSize.LARGE && fontScale < 1.3f),
         showTitle = size != WidgetSize.COMPACT || fontScale < 1.3f,
-        showUnit = (size == WidgetSize.STANDARD || size == WidgetSize.LARGE) && fontScale < 1.75f,
+        showUnit = when (size) {
+            WidgetSize.STANDARD -> fontScale < 1.3f
+            WidgetSize.LARGE -> fontScale < 1.75f
+            else -> false
+        },
         titleMaxLines = if (size == WidgetSize.SHORT) 2 else 1,
     )
 
