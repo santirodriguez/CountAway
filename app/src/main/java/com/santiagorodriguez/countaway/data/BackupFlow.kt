@@ -42,7 +42,10 @@ class BackupFlow(context: Context, state: Bundle? = null) {
         stage = stage.afterProcessDeath(snapshot?.exists() == true)
         if (stage == Stage.IDLE && snapshot != null) clearSnapshot()
         notice = when (interrupted) {
-            Stage.VALIDATING, Stage.APPLYING -> R.string.backup_import_failed
+            Stage.VALIDATING -> R.string.backup_import_failed
+            // Atomic storage may already contain the import. Do not report an unobserved
+            // write failure or replay it; normal entry reconciles the actual stored data.
+            Stage.APPLYING -> null
             Stage.EXPORTING, Stage.EXPORTING_FIRST -> R.string.backup_export_failed
             Stage.CONFIRM, Stage.PICK_EXPORT_FIRST -> if (stage == Stage.IDLE) R.string.backup_import_failed else null
             else -> null

@@ -131,6 +131,17 @@ class BackupFlowInstrumentedTest {
         assertEquals(original.date, delivery.deliveredDate(original.id))
     }
 
+    @Test fun interruptedApplyReopensStorageWithoutReplayOrInventingFailure() = isolated { context ->
+        val repository = CountdownRepository(context)
+        repository.importPayload(payload())
+        val state = Bundle().apply { putString("backup_stage", BackupFlow.Stage.APPLYING.name) }
+        val restored = BackupFlow(context, state)
+        assertEquals(BackupFlow.Stage.IDLE, restored.stage)
+        assertNull(restored.takeNotice())
+        main { restored.confirmImport() }
+        assertEquals("Approved", events(context).single().title)
+    }
+
     private fun validated(context: Context): BackupFlow {
         val source = File(context.cacheDir, "source.json").apply { writeText(payload()) }
         val flow = BackupFlow(context)

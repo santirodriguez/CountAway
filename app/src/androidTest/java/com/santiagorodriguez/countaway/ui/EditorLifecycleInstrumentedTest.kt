@@ -138,7 +138,7 @@ class EditorLifecycleInstrumentedTest {
         val nodes = instrumentation.uiAutomation.rootInActiveWindow
             .findAccessibilityNodeInfosByText(context.getString(text))
         assertTrue("Expected dialog action", nodes.isNotEmpty())
-        assertTrue(nodes.first().performAction(AccessibilityNodeInfo.ACTION_CLICK))
+        assertTrue(nodes.first { it.isClickable }.performAction(AccessibilityNodeInfo.ACTION_CLICK))
         instrumentation.waitForIdleSync()
     }
 
