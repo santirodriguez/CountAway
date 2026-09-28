@@ -5,7 +5,7 @@
     <string name="widget_pin_setup_description">Tria un estil per a aquest compte enrere. L’últim estil afegit correctament serà el punt de partida la pròxima vegada.</string>
     <string name="widget_pin_setup_add">Afegeix a la pantalla d’inici</string>
     <string name="widget_pin_setup_system_hint">Sistema segueix l’aparença Clara o Fosca del dispositiu.</string>
-    <string name="widget_pin_setup_style_selected">%1$s, seleccionat</string>
+
     <string name="widget_pin_event_unavailable">Aquest compte enrere ja no està disponible.</string>
     <string name="widget_pin_unavailable_guidance">El llançador no ha pogut iniciar l’afegit del widget. Afegeix Ja Queda Poc des del selector de widgets de la pantalla d’inici i comprova si el disseny de la pantalla està bloquejat.</string>
     <string name="widget_pin_not_added">El widget no s’ha afegit. Les teves opcions continuen aquí.</string>
