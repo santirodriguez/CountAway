@@ -117,6 +117,13 @@ internal class WidgetPreviewController(
         titleView = frame.findViewById(R.id.widgetTitle)
         milestoneView = frame.findViewById(R.id.widgetMilestone)
         countView = frame.findViewById(R.id.widgetCount)
+        if (size != WidgetSize.SHORT) {
+            // The attached preview resizes after inflation. Give autosizing the final
+            // row width instead of retaining a wrap-content width from its small frame.
+            countView.layoutParams = countView.layoutParams.apply {
+                width = android.view.ViewGroup.LayoutParams.MATCH_PARENT
+            }
+        }
         unitView = frame.findViewById(R.id.widgetUnit)
         dateView = frame.findViewById(R.id.widgetDate)
         currentSize = size

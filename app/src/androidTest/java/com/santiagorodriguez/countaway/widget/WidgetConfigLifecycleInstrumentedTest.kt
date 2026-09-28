@@ -65,6 +65,18 @@ class WidgetConfigLifecycleInstrumentedTest {
                     assertTrue(save.isEnabled)
                 }
                 capture("activity-config-$count")
+                scenario.onActivity { activity ->
+                    val value = activity.findViewById<android.widget.TextView>(R.id.widgetCount)
+                    val layout = requireNotNull(value.layout)
+                    val available = value.width - value.compoundPaddingLeft - value.compoundPaddingRight
+                    val textWidth = value.paint.measureText(value.text.toString())
+                    val summary = "Activity preview events=$count text=${value.text} width=$available needed=$textWidth height=${value.height} neededHeight=${layout.height} ellipsis=${layout.getEllipsisCount(0)}"
+                    android.util.Log.i("LayoutMeasurement", summary)
+                    if (count == 0) assertEquals("—", value.text.toString())
+                    assertEquals(summary, 0, layout.getEllipsisCount(0))
+                    assertTrue(summary, textWidth <= available)
+                    assertTrue(summary, layout.height <= value.height)
+                }
             }
         }
     }
