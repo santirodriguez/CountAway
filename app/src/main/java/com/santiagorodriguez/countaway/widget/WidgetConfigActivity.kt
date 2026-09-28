@@ -73,6 +73,7 @@ class WidgetConfigActivity : BaseActivity() {
             reloadEvents(snapshot)
         }
         eventList = findViewById(R.id.widgetEventList)
+        eventList.setItemsCanFocus(true)
         header = layoutInflater.inflate(R.layout.widget_config_header, eventList, false)
         footer = layoutInflater.inflate(R.layout.widget_config_footer, eventList, false)
         eventList.addHeaderView(header, null, false)

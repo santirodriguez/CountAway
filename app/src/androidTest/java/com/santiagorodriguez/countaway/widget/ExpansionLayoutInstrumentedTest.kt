@@ -28,6 +28,7 @@ class ExpansionLayoutInstrumentedTest {
                 val inflater = LayoutInflater.from(context)
                 val root = inflater.inflate(R.layout.activity_widget_config, null)
                 val list = root.findViewById<ListView>(R.id.widgetEventList)
+                list.setItemsCanFocus(true)
                 val header = inflater.inflate(R.layout.widget_config_header, list, false)
                 val footer = inflater.inflate(R.layout.widget_config_footer, list, false)
                 list.addHeaderView(header, null, false)
@@ -51,8 +52,7 @@ class ExpansionLayoutInstrumentedTest {
                 layout()
                 assertTrue("Footer must be reachable", footer.parent != null)
                 assertTrue("Save target remains present", footer.findViewById<View>(R.id.widgetSaveButton).measuredHeight > 0)
-                val out = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
-                    ?: context.getExternalFilesDir(null)!!.absolutePath
+                val out = context.filesDir.absolutePath
                 val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
                 root.draw(Canvas(bitmap))
                 val file = File(out, "layout-evidence/config-$width-$scale-$language.png")

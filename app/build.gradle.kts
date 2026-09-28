@@ -31,6 +31,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    bundle {
+        language { enableSplit = false }
+    }
+
     androidResources {
         generateLocaleConfig = true
     }

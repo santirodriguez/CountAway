@@ -2,6 +2,11 @@
 
 ## 1.2.0
 
+- Preserve editor drafts and backup confirmations across screen recreation, refresh widget setup after returning, and keep overdue reminder attempts within the same day.
+- Keep shared card text and artwork in the selected language, with safer multiline and Unicode titles.
+- Improve small action targets, selection focus and scrolling through long widget event lists.
+- Include English, Spanish and Catalan in device-specific app-bundle delivery for offline language switching.
+
 - Add a focused long-press widget setup flow with live preview, all nine widget styles, System/Light/Dark appearance, and direct Home-screen pinning.
 - Add weekly and monthly recurrence alongside yearly recurrence, with short-month handling, next-occurrence details, and reminders that continue across recurrences.
 - Improve widget reliability with safer direct pinning and reconfiguration, plus a fix for daily refreshes so placed widgets keep advancing without reopening the app.

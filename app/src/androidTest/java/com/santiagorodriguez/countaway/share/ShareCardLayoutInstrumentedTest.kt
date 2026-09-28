@@ -116,8 +116,7 @@ class ShareCardLayoutInstrumentedTest {
         return bitmap
     }
     private fun save(bitmap: Bitmap, name: String) {
-        val directory = File(InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
-            ?: context.getExternalFilesDir(null)!!.absolutePath, "share-evidence").apply { mkdirs() }
+        val directory = File(context.filesDir, "share-evidence").apply { mkdirs() }
         File(directory, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 }

@@ -7,6 +7,5 @@
         android:id="@+id/widgetEventList"
         android:layout_width="match_parent" android:layout_height="match_parent"
         android:choiceMode="singleChoice" android:clipToPadding="false"
-        android:divider="@android:color/transparent" android:dividerHeight="8dp"
-        android:itemsCanFocus="true" />
+        android:divider="@android:color/transparent" android:dividerHeight="8dp" />
 </FrameLayout>
