@@ -266,6 +266,10 @@ class WidgetConfigActivity : BaseActivity() {
         eventList.isEnabled = true
         emptyState.visibility = View.GONE
         eventList.visibility = View.VISIBLE
+        restoredListState?.let { eventList.onRestoreInstanceState(it) }
+        restoredListState = null
+        // Restored row indices may refer to different events after a reload.
+        eventList.clearChoices()
 
         val selectedIndex = when (selectedMode) {
             WidgetEventSelection.NEXT -> 0
@@ -280,8 +284,6 @@ class WidgetConfigActivity : BaseActivity() {
             selectedEventId = null
             setSaveEnabled(false)
         }
-        restoredListState?.let { eventList.onRestoreInstanceState(it) }
-        restoredListState = null
         updateContentPreview(today)
     }
 

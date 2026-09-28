@@ -871,7 +871,7 @@ jobs:
           adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           RENDER_STATUS=0
           adb shell am instrument -w -e class \
-            com.santiagorodriguez.countaway.share.ShareCardLayoutInstrumentedTest,com.santiagorodriguez.countaway.widget.ExpansionLayoutInstrumentedTest \
+            com.santiagorodriguez.countaway.share.ShareCardLayoutInstrumentedTest,com.santiagorodriguez.countaway.widget.ExpansionLayoutInstrumentedTest,com.santiagorodriguez.countaway.widget.WidgetConfigLifecycleInstrumentedTest \
             "${PACKAGE_ID}.test/androidx.test.runner.AndroidJUnitRunner" \
             | tee acceptance-evidence/render-tests.txt || RENDER_STATUS=$?
           adb exec-out run-as "${PACKAGE_ID}" tar -C files -cf - share-evidence layout-evidence \
@@ -879,7 +879,7 @@ jobs:
           # Preserve failing renders as evidence without turning a failed suite green.
           test "${TEST_STATUS}" -eq 0
           test "${RENDER_STATUS}" -eq 0
-          grep -Fq 'OK (6 tests)' acceptance-evidence/render-tests.txt
+          grep -Fq 'OK (8 tests)' acceptance-evidence/render-tests.txt
           if [[ "${API_LEVEL}" == "33" ]]; then
             # Disposable emulator: install the EN-only device set, then switch languages offline.
             adb uninstall "${PACKAGE_ID}" || true
