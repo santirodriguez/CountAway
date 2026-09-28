@@ -66,13 +66,13 @@ class ExpansionLayoutInstrumentedTest {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.runOnMainSync {
             val problems = mutableListOf<String>()
-            for (scale in listOf(1f, 1.3f, 2f)) for (size in WidgetPreviewSizing.orderedSizes) {
+            for (scale in listOf(1f, 1.3f, 2f)) for (size in WidgetPreviewSizing.orderedSizes) for (days in listOf(-6L, 0L, 1L, 123L)) {
                 val config = Configuration(instrumentation.targetContext.resources.configuration).apply { fontScale = scale }
                 val context = instrumentation.targetContext.createConfigurationContext(config)
                 val dimensions = WidgetPreviewSizing.representative(size)
                 val today = java.time.LocalDate.of(2026, 9, 28)
-                val event = com.santiagorodriguez.countaway.model.CountdownEvent("layout", "A long countdown title",
-                    today.plusDays(123), com.santiagorodriguez.countaway.model.EventType.CUSTOM,
+                val event = com.santiagorodriguez.countaway.model.CountdownEvent("layout", "A deliberately very long countdown title for measured layout",
+                    today.plusDays(days), com.santiagorodriguez.countaway.model.EventType.CUSTOM,
                     createdAt = java.time.Instant.EPOCH)
                 val views = android.widget.RemoteViews(context.packageName, WidgetLayoutResolver.layoutRes(size))
                 WidgetRemoteViewsPresentation.applyEvent(context, views, WidgetEventContentFactory.from(event, today), size, scale)
@@ -81,16 +81,23 @@ class ExpansionLayoutInstrumentedTest {
                 root.measure(View.MeasureSpec.makeMeasureSpec((dimensions.widthDp * density).toInt(), View.MeasureSpec.EXACTLY),
                     View.MeasureSpec.makeMeasureSpec((dimensions.heightDp * density).toInt(), View.MeasureSpec.EXACTLY))
                 root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+                repeat(3) {
+                    if (root.isLayoutRequested) {
+                        root.measure(View.MeasureSpec.makeMeasureSpec(root.width, View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(root.height, View.MeasureSpec.EXACTLY))
+                        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+                    }
+                }
                 val count = root.findViewById<android.widget.TextView>(R.id.widgetCount)
                 val needed = count.layout?.height ?: 0
                 val rect = android.graphics.Rect(0, 0, count.width, count.height)
                 (root as android.view.ViewGroup).offsetDescendantRectToMyCoords(count, rect)
-                val summary = "$size scale=$scale count=${count.width}x${count.height} needed=$needed rect=$rect root=${root.width}x${root.height}"
+                val summary = "$size scale=$scale days=$days count=${count.width}x${count.height} needed=$needed rect=$rect root=${root.width}x${root.height}"
                 android.util.Log.i("LayoutMeasurement", summary)
                 if (count.height < needed || needed == 0 || rect.top < 0 || rect.bottom > root.height) problems += summary
                 val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
                 root.draw(Canvas(bitmap))
-                val file = File(context.filesDir, "layout-evidence/widget-$size-$scale.png")
+                val file = File(context.filesDir, "layout-evidence/widget-$size-$scale-$days.png")
                 file.parentFile!!.mkdirs()
                 file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
                 bitmap.recycle()

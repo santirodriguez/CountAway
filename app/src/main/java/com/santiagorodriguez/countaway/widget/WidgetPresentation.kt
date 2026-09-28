@@ -14,6 +14,9 @@ internal data class WidgetPresentation(
     val showUnit: Boolean,
     val showMilestone: Boolean,
     val showDate: Boolean,
+    val showIcon: Boolean,
+    val showTitle: Boolean,
+    val titleMaxLines: Int,
 )
 
 internal object WidgetPresentationResolver {
@@ -38,9 +41,13 @@ internal object WidgetPresentationResolver {
                 -> false
             },
             showMilestone = milestone != null &&
-                size != WidgetSize.SHORT &&
+                size != WidgetSize.SHORT && size != WidgetSize.COMPACT &&
                 !largeFont,
             showDate = size == WidgetSize.LARGE && fontScale < DATE_HIDE_FONT_SCALE,
+            showIcon = size == WidgetSize.SHORT ||
+                (size != WidgetSize.COMPACT && fontScale < 1.3f && milestone == null),
+            showTitle = size != WidgetSize.COMPACT || fontScale < 1.3f,
+            titleMaxLines = if (size == WidgetSize.COMPACT || size == WidgetSize.STANDARD) 1 else 2,
         )
     }
 
@@ -71,6 +78,9 @@ internal object WidgetRemoteViewsPresentation {
             DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
         )
 
+        views.setViewVisibility(R.id.widgetIcon, if (presentation.showIcon) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widgetTitle, if (presentation.showTitle) View.VISIBLE else View.GONE)
+        views.setInt(R.id.widgetTitle, "setMaxLines", presentation.titleMaxLines)
         views.setImageViewResource(R.id.widgetIcon, content.iconRes)
         views.setTextViewText(R.id.widgetTitle, content.title)
         views.setTextViewText(R.id.widgetCount, presentation.countText)

@@ -67,6 +67,9 @@ internal class WidgetPreviewController(
             DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
         )
 
+        iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
+        titleView.visibility = if (presentation.showTitle) View.VISIBLE else View.GONE
+        titleView.maxLines = presentation.titleMaxLines
         iconView.setImageResource(content.iconRes)
         titleView.text = content.title
         countView.text = presentation.countText
@@ -85,6 +88,9 @@ internal class WidgetPreviewController(
         iconRes: Int = R.drawable.ic_event_calendar,
     ) {
         val size = requireNotNull(currentSize)
+        iconView.visibility = if (size == WidgetSize.COMPACT || context.resources.configuration.fontScale >= 1.3f) View.GONE else View.VISIBLE
+        titleView.visibility = if (size == WidgetSize.COMPACT && context.resources.configuration.fontScale >= 1.3f) View.GONE else View.VISIBLE
+        titleView.maxLines = if (size == WidgetSize.COMPACT || size == WidgetSize.STANDARD) 1 else 2
         iconView.setImageResource(iconRes)
         titleView.text = title
         countView.text = countText
