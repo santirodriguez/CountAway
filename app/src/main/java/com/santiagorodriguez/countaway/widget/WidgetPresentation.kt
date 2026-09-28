@@ -42,7 +42,7 @@ internal object WidgetPresentationResolver {
             },
             showMilestone = milestone != null &&
                 size != WidgetSize.SHORT && size != WidgetSize.COMPACT &&
-                !largeFont,
+                fontScale < 1.3f,
             showDate = size == WidgetSize.LARGE && fontScale < DATE_HIDE_FONT_SCALE,
             showIcon = size == WidgetSize.SHORT ||
                 (size != WidgetSize.COMPACT && fontScale < 1.3f && milestone == null),
