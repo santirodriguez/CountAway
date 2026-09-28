@@ -22,9 +22,9 @@ class ArrivalNotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val pending = goAsync()
         val appContext = context.applicationContext
-        val snapshot = CountdownTime.snapshot()
         CountdownIo.execute {
             try {
+                val snapshot = CountdownTime.snapshot()
                 ArrivalNotificationScheduler.invalidatePlan()
                 ArrivalNotifier.notifyDueEvents(appContext, snapshot)
                 ArrivalNotificationScheduler.ensureScheduled(appContext, snapshot)

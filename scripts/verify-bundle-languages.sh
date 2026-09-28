@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Device-specific delivery evidence; uses the existing CI debug key only for test installation.
+# Device-specific delivery evidence; uses the ephemeral CI test key only for test installation.
 set -euo pipefail
 bundle=$1
 bundletool=$2
@@ -15,9 +15,15 @@ PYCODE
 cat > "$output/device-en.json" <<'JSON'
 {"supportedAbis":["x86_64"],"supportedLocales":["en"],"screenDensity":420,"sdkVersion":33}
 JSON
+test_keystore="${RUNNER_TEMP:-/tmp}/countaway-bundle-test.jks"
+if [[ ! -f "$test_keystore" ]]; then
+  keytool -genkeypair -keystore "$test_keystore" -storepass android -keypass android \
+    -alias androiddebugkey -dname 'CN=Android Debug,O=Android,C=US' \
+    -keyalg RSA -keysize 2048 -validity 2 -noprompt
+fi
 java -jar "$bundletool" build-apks --bundle="$bundle" --output="$output/device-en.apks" \
   --device-spec="$output/device-en.json" --overwrite \
-  --ks="$HOME/.android/debug.keystore" --ks-key-alias=androiddebugkey \
+  --ks="$test_keystore" --ks-key-alias=androiddebugkey \
   --ks-pass=pass:android --key-pass=pass:android
 unzip -q -o "$output/device-en.apks" -d "$output/device-en"
 aapt=$(find "${ANDROID_HOME}/build-tools" -mindepth 2 -maxdepth 2 -name aapt | sort -V | tail -1)
