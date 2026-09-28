@@ -47,7 +47,7 @@ internal object WidgetPresentationResolver {
             showIcon = size == WidgetSize.SHORT ||
                 (size != WidgetSize.COMPACT && fontScale < 1.3f && milestone == null),
             showTitle = size != WidgetSize.COMPACT || fontScale < 1.3f,
-            titleMaxLines = if (size == WidgetSize.COMPACT || size == WidgetSize.STANDARD) 1 else 2,
+            titleMaxLines = if (size == WidgetSize.SHORT) 2 else 1,
         )
     }
 
