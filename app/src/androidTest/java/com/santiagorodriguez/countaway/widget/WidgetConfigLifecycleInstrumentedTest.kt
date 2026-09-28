@@ -93,7 +93,7 @@ class WidgetConfigLifecycleInstrumentedTest {
         val host = AppWidgetHost(context, 120023)
         val manager = AppWidgetManager.getInstance(context)
         val id = host.allocateAppWidgetId()
-        val userId = android.os.Process.myUserHandle().identifier
+        val userId = shell("am get-current-user").toInt()
         try {
             // The widget service needs a concrete user ID, not the shell's USER_CURRENT sentinel.
             val output = shell("appwidget grantbind --package ${context.packageName} --user $userId")
