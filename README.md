@@ -74,12 +74,13 @@ CountAway skips all that. It counts the days and leaves you alone.
 </p>
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="CountAway home screen in light mode" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway Help and local backup" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="CountAway widget configuration" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway home screen in light mode" width="46%" />
 </p>
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" alt="CountAway home-screen widgets" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" alt="CountAway Help and local backup" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" alt="CountAway home-screen widgets" width="46%" />
 </p>
 
 ## Privacy, by design
