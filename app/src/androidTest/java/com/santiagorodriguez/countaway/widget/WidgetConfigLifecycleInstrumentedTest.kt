@@ -93,10 +93,12 @@ class WidgetConfigLifecycleInstrumentedTest {
         val host = AppWidgetHost(context, 120023)
         val manager = AppWidgetManager.getInstance(context)
         val id = host.allocateAppWidgetId()
+        val userId = android.os.Process.myUserHandle().identifier
         try {
-            // Only the disposable instrumentation device grants this host permission.
-            shell("appwidget grantbind --package ${context.packageName} --user current")
-            assertTrue(manager.bindAppWidgetIdIfAllowed(id,
+            // The widget service needs a concrete user ID, not the shell's USER_CURRENT sentinel.
+            val output = shell("appwidget grantbind --package ${context.packageName} --user $userId")
+            assertTrue("Widget binding setup failed: $output", output.isBlank())
+            assertTrue("Cannot bind widget $id for user $userId", manager.bindAppWidgetIdIfAllowed(id,
                 ComponentName(context, CountdownWidgetProvider::class.java), Bundle().apply {
                     putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 160)
                     putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 100)
@@ -107,7 +109,7 @@ class WidgetConfigLifecycleInstrumentedTest {
             drain()
             host.deleteAppWidgetId(id)
             WidgetPreferences(context).remove(id)
-            shell("appwidget revokebind --package ${context.packageName} --user current")
+            shell("appwidget revokebind --package ${context.packageName} --user $userId")
             repository.save(original)
         }
     }
@@ -118,10 +120,9 @@ class WidgetConfigLifecycleInstrumentedTest {
     private fun event(index: Int) = CountdownEvent("config-$index", "Journey ${index + 1}",
         LocalDate.now().plusDays(index.toLong() + 20), EventType.CUSTOM, createdAt = Instant.EPOCH)
 
-    private fun shell(command: String) {
+    private fun shell(command: String): String =
         ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand(command))
-            .use { it.readBytes() }
-    }
+            .use { it.readBytes().toString(Charsets.UTF_8).trim() }
 
     private fun drain() {
         val done = CountDownLatch(1)
