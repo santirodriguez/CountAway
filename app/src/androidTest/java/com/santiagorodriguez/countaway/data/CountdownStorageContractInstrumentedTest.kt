@@ -192,6 +192,30 @@ class CountdownStorageContractInstrumentedTest {
     }
 
     @Test
+    fun invalidOrFutureImportLeavesExistingFileBytesUntouched() {
+        withIsolatedRepository { filesDir, repository ->
+            val original = listOf(event("preserved", "Preserved"))
+            repository.save(original)
+            val storageFile = File(filesDir, "countaways.json")
+            val originalBytes = storageFile.readBytes()
+
+            listOf(
+                CountdownDataProblem.CORRUPT to SCHEMA_7_INVALID_COUNT_UP_FIXTURE,
+                CountdownDataProblem.UNSUPPORTED_SCHEMA to FUTURE_SCHEMA_FIXTURE,
+            ).forEach { (expectedProblem, payload) ->
+                try {
+                    repository.importPayload(payload)
+                    throw AssertionError("Expected CountdownDataException")
+                } catch (error: CountdownDataException) {
+                    assertEquals(expectedProblem, error.problem)
+                }
+                assertTrue(originalBytes.contentEquals(storageFile.readBytes()))
+                assertEquals(original, successfulEvents(repository.loadResult()))
+            }
+        }
+    }
+
+    @Test
     fun staleEditorSaveCannotOverwriteNewerEventState() {
         withIsolatedRepository { _, repository ->
             val original = event("shared", "Original")
@@ -199,6 +223,23 @@ class CountdownStorageContractInstrumentedTest {
             val stale = original.copy(title = "Stale")
             repository.save(listOf(original))
             repository.save(listOf(newer))
+
+            assertEquals(
+                CountdownMutationResult.CONFLICT,
+                repository.saveEvent(original, stale),
+            )
+            assertEquals(listOf(newer), successfulEvents(repository.loadResult()))
+        }
+    }
+
+    @Test
+    fun staleEditorSaveCannotOverwriteConcurrentModeChange() {
+        withIsolatedRepository { _, repository ->
+            val original = event("mode-shared", "Original")
+            val newer = original.copy(countMode = CountMode.COUNT_UP)
+            val stale = original.copy(title = "Stale")
+            repository.save(listOf(original))
+            assertEquals(CountdownMutationResult.APPLIED, repository.saveEvent(original, newer))
 
             assertEquals(
                 CountdownMutationResult.CONFLICT,
@@ -446,6 +487,25 @@ class CountdownStorageContractInstrumentedTest {
                   "iconKey": "calendar",
                   "reminderKey": "three_days",
                   "repeatRule": "monthly",
+                  "createdAt": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val SCHEMA_7_INVALID_COUNT_UP_FIXTURE = """
+            {
+              "schemaVersion": 7,
+              "events": [
+                {
+                  "id": "invalid-count-up",
+                  "title": "Invalid",
+                  "date": "2026-10-31",
+                  "type": "event",
+                  "iconKey": "calendar",
+                  "reminderKey": "one_day",
+                  "repeatRule": "none",
+                  "countMode": "count_up",
                   "createdAt": "2020-01-01T00:00:00Z"
                 }
               ]
