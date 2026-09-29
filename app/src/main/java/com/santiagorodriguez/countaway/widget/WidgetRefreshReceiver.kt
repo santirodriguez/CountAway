@@ -12,7 +12,7 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 
 class WidgetRefreshReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        if (intent?.action !in REFRESH_ACTIONS) return
+        if (!WidgetRefreshActionPolicy.shouldRefresh(intent?.action)) return
 
         val pending = goAsync()
         val appContext = context.applicationContext
@@ -27,21 +27,28 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
                 }
                 CountdownWidgetProvider.updateAllWidgets(appContext, snapshot)
                 WidgetUpdateScheduler.ensureScheduled(appContext, snapshot)
+                if (intent?.action in setOf(Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED,
+                        Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED)) {
+                    ArrivalNotificationScheduler.invalidatePlan()
+                }
                 ArrivalNotificationScheduler.ensureScheduled(appContext, snapshot)
             } finally {
                 pending.finish()
             }
         }
     }
+}
 
-    private companion object {
-        val REFRESH_ACTIONS = setOf(
-            Intent.ACTION_BOOT_COMPLETED,
-            Intent.ACTION_MY_PACKAGE_REPLACED,
-            Intent.ACTION_TIME_CHANGED,
-            Intent.ACTION_TIMEZONE_CHANGED,
-            Intent.ACTION_DATE_CHANGED,
-            Intent.ACTION_LOCALE_CHANGED,
-        )
-    }
+internal object WidgetRefreshActionPolicy {
+    private val refreshActions = setOf(
+        WidgetUpdateScheduler.ACTION_DAILY_REFRESH,
+        Intent.ACTION_BOOT_COMPLETED,
+        Intent.ACTION_MY_PACKAGE_REPLACED,
+        Intent.ACTION_TIME_CHANGED,
+        Intent.ACTION_TIMEZONE_CHANGED,
+        Intent.ACTION_DATE_CHANGED,
+        Intent.ACTION_LOCALE_CHANGED,
+    )
+
+    fun shouldRefresh(action: String?): Boolean = action in refreshActions
 }

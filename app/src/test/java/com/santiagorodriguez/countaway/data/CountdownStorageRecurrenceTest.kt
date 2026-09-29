@@ -22,16 +22,37 @@ class CountdownStorageRecurrenceTest {
     }
 
     @Test
+    fun schema5RemainsReadableForExistingAndPrereleaseRecurrencePayloads() {
+        assertEquals(5, CountdownStorageSchema.REPEAT_RULE_VERSION)
+
+        RepeatRule.entries.forEach { repeatRule ->
+            assertEquals(
+                repeatRule,
+                CountdownStorageSchema.repeatRuleFor(
+                    CountdownStorageSchema.REPEAT_RULE_VERSION,
+                    repeatRule.storageKey,
+                ),
+            )
+        }
+    }
+
+    @Test
     fun currentSchemaUsesStableRecurrenceStorageKeys() {
+        assertEquals(6, CountdownStorageSchema.CURRENT_VERSION)
         assertEquals("none", RepeatRule.NONE.storageKey)
+        assertEquals("weekly", RepeatRule.WEEKLY.storageKey)
+        assertEquals("monthly", RepeatRule.MONTHLY.storageKey)
         assertEquals("yearly", RepeatRule.YEARLY.storageKey)
-        assertEquals(
-            RepeatRule.YEARLY,
-            CountdownStorageSchema.repeatRuleFor(
-                CountdownStorageSchema.CURRENT_VERSION,
-                RepeatRule.YEARLY.storageKey,
-            ),
-        )
+
+        RepeatRule.entries.forEach { repeatRule ->
+            assertEquals(
+                repeatRule,
+                CountdownStorageSchema.repeatRuleFor(
+                    CountdownStorageSchema.CURRENT_VERSION,
+                    repeatRule.storageKey,
+                ),
+            )
+        }
         assertNull(
             CountdownStorageSchema.repeatRuleFor(
                 CountdownStorageSchema.CURRENT_VERSION,

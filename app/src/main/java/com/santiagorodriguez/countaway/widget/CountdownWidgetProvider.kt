@@ -12,10 +12,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.SizeF
-import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
-import com.santiagorodriguez.countaway.countdown.ArrivalMood
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
@@ -25,8 +23,6 @@ import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.LanguageManager
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import kotlin.math.roundToInt
 
 class CountdownWidgetProvider : AppWidgetProvider() {
@@ -253,16 +249,11 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             backgroundCache: MutableMap<BackgroundKey, Bitmap>,
         ): RemoteViews {
             val size = WidgetSize.fromDimensions(widthDp, heightDp)
-            val layoutId = when (size) {
-                WidgetSize.COMPACT -> R.layout.widget_countdown_compact
-                WidgetSize.SHORT -> R.layout.widget_countdown_short
-                WidgetSize.STANDARD -> R.layout.widget_countdown_standard
-                WidgetSize.LARGE -> R.layout.widget_countdown_large
-            }
+            val layoutId = WidgetLayoutResolver.layoutRes(size)
             val views = RemoteViews(context.packageName, layoutId)
             val appearance = configuration?.appearance ?: WidgetAppearance.SYSTEM
-            val theme = WidgetThemeResolver.resolve(context, appearance)
             val background = configuration?.background ?: WidgetBackground.CLASSIC
+            val theme = WidgetThemeResolver.resolve(context, appearance, background)
 
             applyTheme(
                 context,
@@ -280,6 +271,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                     views,
                     appWidgetId,
                     renderData.problem,
+                    size,
                 )
                 is WidgetRenderData.Ready -> {
                     val event = renderData.resolve(configuration)
@@ -288,6 +280,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                             displayContext,
                             views,
                             appWidgetId,
+                            size = size,
                             noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
                         )
                     } else {
@@ -307,18 +300,19 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             size: WidgetSize,
         ) {
             val content = WidgetEventContentFactory.from(event, today)
-            val mood = ArrivalMood.marker(content.status)
+            WidgetRemoteViewsPresentation.applyEvent(
+                context = context,
+                views = views,
+                content = content,
+                size = size,
+                fontScale = context.resources.configuration.fontScale,
+            )
             val locale = context.resources.configuration.locales[0]
-            val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
-            val formattedDate = content.date.format(dateFormatter)
-
-            views.setImageViewResource(R.id.widgetIcon, content.iconRes)
-            views.setTextViewText(R.id.widgetTitle, content.title)
-            views.setTextViewText(R.id.widgetCount, content.countTextFor(size))
-            views.setTextViewText(R.id.widgetUnit, content.unitRes?.let(context::getString).orEmpty())
-            views.setTextViewText(R.id.widgetDate, formattedDate)
-            views.setTextViewText(R.id.widgetMilestone, mood ?: "")
-            views.setViewVisibility(R.id.widgetMilestone, if (mood == null) View.GONE else View.VISIBLE)
+            val formattedDate = content.date.format(
+                java.time.format.DateTimeFormatter
+                    .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
+                    .withLocale(locale),
+            )
             views.setContentDescription(
                 R.id.widgetRoot,
                 listOf(
@@ -351,18 +345,15 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views: RemoteViews,
             appWidgetId: Int,
             noUpcoming: Boolean,
+            size: WidgetSize,
         ) {
             val title = context.getString(
                 if (noUpcoming) R.string.widget_no_upcoming else R.string.widget_select_countdown,
             )
             val action = context.getString(R.string.widget_tap_to_configure)
-            views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
-            views.setTextViewText(R.id.widgetTitle, title)
-            views.setTextViewText(R.id.widgetCount, "—")
-            views.setTextViewText(R.id.widgetUnit, action)
-            views.setTextViewText(R.id.widgetDate, "")
-            views.setTextViewText(R.id.widgetMilestone, "")
-            views.setViewVisibility(R.id.widgetMilestone, View.GONE)
+            WidgetRemoteViewsPresentation.applyPlaceholder(
+                views, size, context.resources.configuration.fontScale, title, action, "—",
+            )
             views.setContentDescription(R.id.widgetRoot, "$title, $action")
             views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
         }
@@ -372,6 +363,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             views: RemoteViews,
             appWidgetId: Int,
             problem: com.santiagorodriguez.countaway.data.CountdownDataProblem,
+            size: WidgetSize,
         ) {
             val title = context.getString(
                 if (problem == com.santiagorodriguez.countaway.data.CountdownDataProblem.UNSUPPORTED_SCHEMA) {
@@ -381,13 +373,9 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                 },
             )
             val action = context.getString(R.string.widget_open_app)
-            views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
-            views.setTextViewText(R.id.widgetTitle, title)
-            views.setTextViewText(R.id.widgetCount, "!")
-            views.setTextViewText(R.id.widgetUnit, action)
-            views.setTextViewText(R.id.widgetDate, "")
-            views.setTextViewText(R.id.widgetMilestone, "")
-            views.setViewVisibility(R.id.widgetMilestone, View.GONE)
+            WidgetRemoteViewsPresentation.applyPlaceholder(
+                views, size, context.resources.configuration.fontScale, title, action, "!",
+            )
             views.setContentDescription(R.id.widgetRoot, "$title, $action")
             views.setOnClickPendingIntent(R.id.widgetRoot, openAppPendingIntent(context, appWidgetId))
         }

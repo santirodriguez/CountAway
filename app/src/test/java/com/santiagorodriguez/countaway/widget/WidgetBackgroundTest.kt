@@ -17,5 +17,6 @@ class WidgetBackgroundTest {
     fun backgroundOrderKeepsSpecialStyleLast() {
         assertEquals(9, WidgetBackground.entries.size)
         assertEquals(WidgetBackground.MONOGRAM, WidgetBackground.entries.last())
+        assertEquals("monogram", WidgetBackground.MONOGRAM.storageKey)
     }
 }

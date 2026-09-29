@@ -19,9 +19,10 @@
     <string name="data_conflict_reload">Torna a carregar</string>
     <string name="data_conflict_keep_editing">Continua editant</string>
     <string name="language_follow_system_enabled">Seguint l’idioma del sistema.</string>
-    <string name="event_meta_yearly">%1$s · %2$s · Anual</string>
-    <string name="schedule_next_occurrence">Propera data: %1$s · Es repeteix cada any.</string>
+    <string name="event_meta_repeating">%1$s · %2$s · %3$s</string>
+    <string name="schedule_next_occurrence">Propera data: %1$s · Repetició: %2$s.</string>
     <string name="schedule_next_reminder">Proper recordatori: %1$s · cap a les 09:00.</string>
+    <string name="schedule_month_end_note">Als mesos més curts, es repeteix l’últim dia.</string>
     <string name="schedule_leap_day_note">Els anys no bixests, el 29 de febrer es repeteix el 28 de febrer.</string>
     <string name="unsaved_changes_title">Vols descartar els canvis sense desar?</string>
     <string name="unsaved_changes_message">Aquest esborrany té canvis que encara no has desat.</string>

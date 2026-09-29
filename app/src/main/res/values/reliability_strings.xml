@@ -19,9 +19,10 @@
     <string name="data_conflict_reload">Reload</string>
     <string name="data_conflict_keep_editing">Keep editing</string>
     <string name="language_follow_system_enabled">Following the system language.</string>
-    <string name="event_meta_yearly">%1$s · %2$s · Yearly</string>
-    <string name="schedule_next_occurrence">Next occurrence: %1$s · Repeats yearly.</string>
+    <string name="event_meta_repeating">%1$s · %2$s · %3$s</string>
+    <string name="schedule_next_occurrence">Next occurrence: %1$s · Repeats %2$s.</string>
     <string name="schedule_next_reminder">Next reminder: %1$s · around 09:00.</string>
+    <string name="schedule_month_end_note">In shorter months, it repeats on the last day.</string>
     <string name="schedule_leap_day_note">On non-leap years, February 29 repeats on February 28.</string>
     <string name="unsaved_changes_title">Discard unsaved changes?</string>
     <string name="unsaved_changes_message">Your draft has changes that haven’t been saved.</string>

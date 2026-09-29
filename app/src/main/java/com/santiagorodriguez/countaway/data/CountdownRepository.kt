@@ -43,15 +43,20 @@ class CountdownRepository(context: Context) {
     fun saveEvent(
         expectedEvent: CountdownEvent?,
         replacement: CountdownEvent,
+    ): CountdownMutationResult = saveEventRevision(expectedEvent?.let(EventRevision::of), replacement)
+
+    fun saveEventRevision(
+        expectedRevision: String?,
+        replacement: CountdownEvent,
     ): CountdownMutationResult = synchronized(FILE_LOCK) {
         val events = loadEventsOrThrowLocked().toMutableList()
         val currentIndex = events.indexOfFirst { it.id == replacement.id }
 
-        if (expectedEvent == null) {
+        if (expectedRevision == null) {
             if (currentIndex >= 0) return@synchronized CountdownMutationResult.CONFLICT
             events.add(replacement)
         } else {
-            if (currentIndex < 0 || events[currentIndex] != expectedEvent) {
+            if (currentIndex < 0 || EventRevision.of(events[currentIndex]) != expectedRevision) {
                 return@synchronized CountdownMutationResult.CONFLICT
             }
             events[currentIndex] = replacement
@@ -61,10 +66,13 @@ class CountdownRepository(context: Context) {
         CountdownMutationResult.APPLIED
     }
 
-    fun deleteEvent(expectedEvent: CountdownEvent): CountdownMutationResult = synchronized(FILE_LOCK) {
+    fun deleteEvent(expectedEvent: CountdownEvent): CountdownMutationResult =
+        deleteEventRevision(expectedEvent.id, EventRevision.of(expectedEvent))
+
+    fun deleteEventRevision(id: String, expectedRevision: String): CountdownMutationResult = synchronized(FILE_LOCK) {
         val events = loadEventsOrThrowLocked().toMutableList()
-        val currentIndex = events.indexOfFirst { it.id == expectedEvent.id }
-        if (currentIndex < 0 || events[currentIndex] != expectedEvent) {
+        val currentIndex = events.indexOfFirst { it.id == id }
+        if (currentIndex < 0 || EventRevision.of(events[currentIndex]) != expectedRevision) {
             return@synchronized CountdownMutationResult.CONFLICT
         }
 

@@ -30,7 +30,8 @@ object CountdownStorageSchema {
     const val PREVIOUS_VERSION = 2
     const val NOTIFICATION_VERSION = 3
     const val REMINDER_VERSION = 4
-    const val CURRENT_VERSION = 5
+    const val REPEAT_RULE_VERSION = 5
+    const val CURRENT_VERSION = 6
 
     fun isSupported(version: Int): Boolean = version in LEGACY_VERSION..CURRENT_VERSION
 
@@ -46,7 +47,9 @@ object CountdownStorageSchema {
         NOTIFICATION_VERSION,
         REMINDER_VERSION,
         -> RepeatRule.NONE
-        CURRENT_VERSION -> rawStorageKey?.let(RepeatRule::fromStorageKey)
+        REPEAT_RULE_VERSION,
+        CURRENT_VERSION,
+        -> rawStorageKey?.let(RepeatRule::fromStorageKey)
         else -> null
     }
 }
@@ -145,6 +148,7 @@ object CountdownStorageCodec {
             CountdownStorageSchema.PREVIOUS_VERSION,
             CountdownStorageSchema.NOTIFICATION_VERSION,
             CountdownStorageSchema.REMINDER_VERSION,
+            CountdownStorageSchema.REPEAT_RULE_VERSION,
             CountdownStorageSchema.CURRENT_VERSION,
             -> EventType.fromStorageKey(rawType)
             else -> null
@@ -157,6 +161,7 @@ object CountdownStorageCodec {
             CountdownStorageSchema.NOTIFICATION_VERSION ->
                 EventIcon.fromStorageKey(json.optString(KEY_ICON)) ?: EventIcon.defaultFor(type)
             CountdownStorageSchema.REMINDER_VERSION,
+            CountdownStorageSchema.REPEAT_RULE_VERSION,
             CountdownStorageSchema.CURRENT_VERSION,
             -> EventIcon.fromStorageKey(json.getString(KEY_ICON))
                 ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
@@ -174,6 +179,7 @@ object CountdownStorageCodec {
                     ReminderOption.OFF
                 }
             CountdownStorageSchema.REMINDER_VERSION,
+            CountdownStorageSchema.REPEAT_RULE_VERSION,
             CountdownStorageSchema.CURRENT_VERSION,
             -> ReminderOption.fromStorageKey(json.getString(KEY_REMINDER))
                 ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
@@ -182,7 +188,7 @@ object CountdownStorageCodec {
 
         val repeatRule = CountdownStorageSchema.repeatRuleFor(
             schemaVersion,
-            if (schemaVersion == CountdownStorageSchema.CURRENT_VERSION) {
+            if (schemaVersion >= CountdownStorageSchema.REPEAT_RULE_VERSION) {
                 json.getString(KEY_REPEAT_RULE)
             } else {
                 null

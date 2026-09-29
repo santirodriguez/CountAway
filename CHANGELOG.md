@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+- Set up widgets with a long press, a live preview, nine styles, and direct Home-screen pinning.
+- Repeat countdowns weekly, monthly, or yearly, including shorter months and recurring reminders.
+- Share a Ridge-style image card in the selected language, with better handling of long titles, emoji, and line breaks.
+- Keep edits and backup steps on track when the screen rotates or you leave and return.
+- Make widgets easier to configure, scroll, and read with larger text; keep previews and daily counts up to date.
+- Improve reminder timing, tidy up Help, and keep all three languages available offline.
+- Keep existing data and backups compatible. Still local, lightweight, and account-free.
+
 ## 1.1.8
 
 - Add optional yearly recurrence across the app, widgets, sharing, backups, and reminders, including February 29 fallback behavior.

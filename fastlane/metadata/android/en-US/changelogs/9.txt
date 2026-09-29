@@ -1,0 +1,1 @@
+Less widget fiddling, more looking forward to things. Long-press a countdown to preview and add a widget. Weekly and monthly repeats join yearly ones, and sharing gets a Ridge-style image card. We also tidied up Help, made larger text easier to read, and fixed a few bumps with edits, backups, reminders, and widget refreshes. All three languages work offline.

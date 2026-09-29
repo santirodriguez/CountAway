@@ -132,7 +132,7 @@ class ArrivalNotificationPolicyTest {
             ZonedDateTime.of(2026, 8, 7, 9, 0, 0, 0, zone),
             ArrivalNotificationScheduler.triggerTime(before, today),
         )
-        assertEquals(after.plusMinutes(15), ArrivalNotificationScheduler.triggerTime(after, today))
+        assertEquals(after, ArrivalNotificationScheduler.triggerTime(after, today))
     }
 
     @Test

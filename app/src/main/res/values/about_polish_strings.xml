@@ -5,7 +5,9 @@
     <string name="about_step_three" translatable="false">3</string>
     <string name="about_version_compact">v%1$s</string>
     <string name="about_create_countdown">Create a countdown</string>
-    <string name="about_add_widget">Add the widget</string>
+    <string name="about_create_countdown_note">Pick what matters and set the date.</string>
+    <string name="about_add_widget">Long-press a countdown</string>
+    <string name="about_add_widget_note">Choose a style, then add it to Home.</string>
     <string name="about_stop_checking">Stop checking the calendar</string>
     <string name="about_stop_checking_note">That\'s kind of the point.</string>
     <string name="about_widget_pin_unavailable">Add the widget from your home screen instead.</string>
@@ -15,4 +17,14 @@
     <string name="about_support_project">Support the project</string>
     <string name="about_author_name">Created by Santiago Rodriguez</string>
     <string name="about_website">santiagorodriguez.com</string>
+    <string name="about_privacy_policy">Privacy</string>
+    <string name="privacy_policy_url" translatable="false">https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md</string>
+    <string name="about_widget_long_press_hint">Long-press a countdown to choose its widget style.</string>
+    <string name="about_calendar_reaction_1">All set, champ. Nothing else to do.</string>
+    <string name="about_calendar_reaction_3">You\'re still here. No idea why, but you\'re still here.</string>
+    <string name="about_calendar_reaction_7">Congrats, you\'ve unlocked Developer opti— oh. Right. We don\'t do that here.</string>
+    <string name="about_calendar_reaction_10">If you put this much persistence into remembering dates, we\'d shut the app down today.</string>
+    <string name="about_calendar_reaction_20">20 taps. 6 hours, 19 minutes right ascension, 14 degrees, 22 minutes declination... No sighting.</string>
+    <string name="about_calendar_reaction_50">This isn\'t funny anymore. One more and that\'s it, okay?</string>
+    <string name="about_calendar_reaction_100">100 taps. That\'s as far as we go. We\'re not helping you get carpal tunnel from tapping a button we already told you did nothing.</string>
 </resources>

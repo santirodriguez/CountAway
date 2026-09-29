@@ -2,5 +2,7 @@
 <resources>
     <string name="field_repeat">Repeat</string>
     <string name="repeat_never">Never</string>
+    <string name="repeat_weekly">Weekly</string>
+    <string name="repeat_monthly">Monthly</string>
     <string name="repeat_yearly">Yearly</string>
 </resources>

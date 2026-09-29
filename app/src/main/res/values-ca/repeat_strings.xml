@@ -2,5 +2,7 @@
 <resources>
     <string name="field_repeat">Repeteix</string>
     <string name="repeat_never">Mai</string>
+    <string name="repeat_weekly">Setmanal</string>
+    <string name="repeat_monthly">Mensual</string>
     <string name="repeat_yearly">Cada any</string>
 </resources>

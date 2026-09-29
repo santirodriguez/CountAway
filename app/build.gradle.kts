@@ -10,8 +10,8 @@ android {
         applicationId = "com.santiagorodriguez.countaway"
         minSdk = 26
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.1.8"
+        versionCode = 9
+        versionName = "1.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -31,6 +31,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    bundle {
+        language { enableSplit = false }
+    }
+
     androidResources {
         generateLocaleConfig = true
     }
@@ -42,4 +46,5 @@ dependencies {
     androidTestImplementation("androidx.test:core:1.7.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 }

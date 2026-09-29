@@ -19,9 +19,10 @@
     <string name="data_conflict_reload">Recargar</string>
     <string name="data_conflict_keep_editing">Seguir editando</string>
     <string name="language_follow_system_enabled">Siguiendo el idioma del sistema.</string>
-    <string name="event_meta_yearly">%1$s · %2$s · Anual</string>
-    <string name="schedule_next_occurrence">Próxima fecha: %1$s · Se repite cada año.</string>
+    <string name="event_meta_repeating">%1$s · %2$s · %3$s</string>
+    <string name="schedule_next_occurrence">Próxima fecha: %1$s · Repetición: %2$s.</string>
     <string name="schedule_next_reminder">Próximo recordatorio: %1$s · alrededor de las 09:00.</string>
+    <string name="schedule_month_end_note">En los meses más cortos, se repite el último día.</string>
     <string name="schedule_leap_day_note">En los años no bisiestos, el 29 de febrero se repite el 28 de febrero.</string>
     <string name="unsaved_changes_title">¿Descartar cambios sin guardar?</string>
     <string name="unsaved_changes_message">Este borrador tiene cambios que todavía no guardaste.</string>

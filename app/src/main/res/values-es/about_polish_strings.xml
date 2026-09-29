@@ -2,7 +2,9 @@
 <resources>
     <string name="about_version_compact">v%1$s</string>
     <string name="about_create_countdown">Creá una cuenta regresiva</string>
-    <string name="about_add_widget">Agregá el widget</string>
+    <string name="about_create_countdown_note">Elegí qué importa y poné la fecha.</string>
+    <string name="about_add_widget">Mantené apretada una cuenta</string>
+    <string name="about_add_widget_note">Elegí un estilo y agregala al inicio.</string>
     <string name="about_stop_checking">Dejá de mirar el calendario</string>
     <string name="about_stop_checking_note">Era un poco la idea.</string>
     <string name="about_widget_pin_unavailable">Agregá el widget desde la pantalla de inicio.</string>
@@ -12,4 +14,13 @@
     <string name="about_support_project">Apoyá el proyecto</string>
     <string name="about_author_name">Creada por Santiago Rodriguez</string>
     <string name="about_website">santiagorodriguez.com</string>
+    <string name="about_privacy_policy">Privacidad</string>
+    <string name="about_widget_long_press_hint">Mantené apretada una cuenta regresiva para elegir el estilo del widget.</string>
+    <string name="about_calendar_reaction_1">Listo, crack. Nada más por hacer.</string>
+    <string name="about_calendar_reaction_3">Seguís acá. No sé por qué, pero seguís acá.</string>
+    <string name="about_calendar_reaction_7">Felicitaciones, ya tenés opciones de desa... Ah, no. Acá no ofrecemos eso.</string>
+    <string name="about_calendar_reaction_10">Si aplicabas esta constancia a recordar fechas, la app cerraba hoy.</string>
+    <string name="about_calendar_reaction_20">20 toques. 6 horas, 1 minuto; ascensión derecha, 14 grados; declinación, 22 minutos... No hay cuerpos.</string>
+    <string name="about_calendar_reaction_50">Esto ya no es gracioso. Una más y se termina, ¿eh?</string>
+    <string name="about_calendar_reaction_100">100 toques. Hasta acá llegamos. No vamos a ser cómplices de un túnel carpiano por apretar un botón que ya te avisamos que no hacía nada.</string>
 </resources>

@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.NotificationManager
+import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
@@ -47,11 +48,13 @@ import com.santiagorodriguez.countaway.model.ReminderOption
 import com.santiagorodriguez.countaway.model.RepeatRule
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationPolicy
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
-import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
-import com.santiagorodriguez.countaway.notification.ArrivalNotifier
-import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
-import com.santiagorodriguez.countaway.widget.WidgetPinning
-import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
+import com.santiagorodriguez.countaway.share.ShareCardContentFactory
+import com.santiagorodriguez.countaway.share.ShareCardRenderer
+import com.santiagorodriguez.countaway.share.ShareImageStore
+import com.santiagorodriguez.countaway.data.CountdownMutations
+import com.santiagorodriguez.countaway.data.EventRevision
+import com.santiagorodriguez.countaway.data.RetainedOperation
+import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -69,7 +72,6 @@ class EditorActivity : BaseActivity() {
     private lateinit var dateButton: Button
     private lateinit var saveButton: Button
     private lateinit var shareButton: Button
-    private lateinit var addWidgetButton: Button
     private lateinit var deleteButton: Button
     private lateinit var repeatSpinner: Spinner
     private lateinit var reminderSpinner: Spinner
@@ -85,9 +87,10 @@ class EditorActivity : BaseActivity() {
     private var suppressReminderSelection = false
     private var editorInitialized = false
     private var editorBusy = true
-    private var baselineDraft: EditorDraft? = null
+    private lateinit var session: EditorSession
     private var backCallback: OnBackInvokedCallback? = null
     private var loadGeneration = 0
+    private var pendingEditorState: Bundle? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,7 +98,9 @@ class EditorActivity : BaseActivity() {
         editorRoot = findViewById(R.id.editorRoot)
         InsetUtils.applySystemBarPadding(editorRoot)
 
-        repository = CountdownRepository(this)
+        repository = CountdownRepository(applicationContext)
+        session = lastNonConfigurationInstance as? EditorSession ?: EditorSession(savedInstanceState)
+        session.operation.onChanged = { consumeOperation() }
         titleInput = findViewById(R.id.titleInput)
         typeGrid = findViewById(R.id.typeGrid)
         customIconSection = findViewById(R.id.customIconSection)
@@ -103,7 +108,6 @@ class EditorActivity : BaseActivity() {
         dateButton = findViewById(R.id.dateButton)
         saveButton = findViewById(R.id.saveButton)
         shareButton = findViewById(R.id.shareButton)
-        addWidgetButton = findViewById(R.id.addWidgetButton)
         deleteButton = findViewById(R.id.deleteButton)
         repeatSpinner = findViewById(R.id.repeatSpinner)
         reminderSpinner = findViewById(R.id.reminderSpinner)
@@ -115,12 +119,14 @@ class EditorActivity : BaseActivity() {
             }
         }
 
+        pendingEditorState = savedInstanceState
         setEditorBusy(true)
         loadEditorData(savedInstanceState)
     }
 
     private fun loadEditorData(savedInstanceState: Bundle?) {
         val generation = ++loadGeneration
+        val repository = repository
         CountdownIo.submit(
             task = { repository.loadResult() },
             onComplete = { result ->
@@ -149,6 +155,10 @@ class EditorActivity : BaseActivity() {
         savedInstanceState: Bundle?,
     ) {
         val requestedEventId = intent.getStringExtra(EXTRA_EVENT_ID)
+        if (requestedEventId == null && loadedEvents.any { it.id == session.id }) {
+            finish()
+            return
+        }
         existingEvent = requestedEventId?.let { id -> loadedEvents.firstOrNull { it.id == id } }
         if (requestedEventId != null && existingEvent == null) {
             finish()
@@ -167,7 +177,11 @@ class EditorActivity : BaseActivity() {
             selectedRepeatRule = event.repeatRule
             selectedReminder = event.reminder
         }
-        baselineDraft = currentDraft()
+        if (!session.initialized) {
+            session.originalRevision = existingEvent?.let(EventRevision::of)
+            session.baselineRevision = currentDraft().revision()
+            session.initialized = true
+        }
         savedInstanceState?.let(::restoreEditorState)
         titleInput.filters = titleInput.filters + InputFilter.LengthFilter(CountdownValidation.MAX_TITLE_LENGTH)
 
@@ -182,13 +196,14 @@ class EditorActivity : BaseActivity() {
         saveButton.setOnClickListener { save() }
         shareButton.setOnClickListener { share() }
 
-        addWidgetButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
-        addWidgetButton.setOnClickListener { addWidgetForSavedEvent() }
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
+        pendingEditorState = null
         editorInitialized = true
-        setEditorBusy(false)
+        consumeOperation()
     }
+
+    override fun onRetainNonConfigurationInstance(): Any = session
 
     override fun onResume() {
         super.onResume()
@@ -205,6 +220,7 @@ class EditorActivity : BaseActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        if (!editorInitialized) pendingEditorState?.let(outState::putAll)
         if (editorInitialized) {
             outState.putString(STATE_TITLE, titleInput.text.toString())
             outState.putString(STATE_DATE, selectedDate.toString())
@@ -213,6 +229,7 @@ class EditorActivity : BaseActivity() {
             outState.putString(STATE_REPEAT_RULE, selectedRepeatRule.name)
             outState.putString(STATE_REMINDER, selectedReminder.name)
         }
+        session.writeState(outState)
         super.onSaveInstanceState(outState)
     }
 
@@ -227,6 +244,7 @@ class EditorActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
+        session.operation.onChanged = null
         temporalInvalidationController.stop()
         unregisterBackCallback()
         loadGeneration += 1
@@ -284,6 +302,8 @@ class EditorActivity : BaseActivity() {
 
     private fun repeatLabel(repeatRule: RepeatRule): String = when (repeatRule) {
         RepeatRule.NONE -> getString(R.string.repeat_never)
+        RepeatRule.WEEKLY -> getString(R.string.repeat_weekly)
+        RepeatRule.MONTHLY -> getString(R.string.repeat_monthly)
         RepeatRule.YEARLY -> getString(R.string.repeat_yearly)
     }
 
@@ -343,9 +363,18 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun renderTypeGrid() {
-        typeGrid.removeAllViews()
+        if (typeGrid.childCount > 0) {
+            eventTypes.forEachIndexed { index, type ->
+                typeGrid.getChildAt(index).apply {
+                    isSelected = type == selectedType
+                    setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface)
+                }
+            }
+            return
+        }
         eventTypes.forEach { type ->
             val button = TextView(this).apply {
+                ChoiceAccessibility.apply(this)
                 text = getString(EventTypePresentation.labelRes(type))
                 contentDescription = text
                 isSelected = type == selectedType
@@ -381,11 +410,20 @@ class EditorActivity : BaseActivity() {
 
     private fun renderCustomIconGrid() {
         customIconSection.visibility = if (selectedType == EventType.CUSTOM) View.VISIBLE else View.GONE
-        iconGrid.removeAllViews()
         if (selectedType != EventType.CUSTOM) return
+        if (iconGrid.childCount > 0) {
+            EventIcon.customChoices.forEachIndexed { index, icon ->
+                iconGrid.getChildAt(index).apply {
+                    isSelected = icon == selectedIcon
+                    setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface)
+                }
+            }
+            return
+        }
 
         EventIcon.customChoices.forEach { icon ->
             val button = ImageButton(this).apply {
+                ChoiceAccessibility.apply(this)
                 setImageResource(EventIconPresentation.drawableRes(icon))
                 imageTintList = ColorStateList.valueOf(getColor(R.color.accent))
                 backgroundTintList = null
@@ -459,12 +497,55 @@ class EditorActivity : BaseActivity() {
         }
 
         val snapshot = CountdownTime.snapshot()
+        val text = buildShareText(title, snapshot.today)
+        val renderContext = ShareCardRenderer.captureContext(this)
+        val appContext = applicationContext
+        val cardContent = ShareCardContentFactory.create(
+            context = renderContext,
+            title = title,
+            date = selectedDate,
+            icon = selectedIcon,
+            repeatRule = selectedRepeatRule,
+            today = snapshot.today,
+        )
+        val dark = ShareCardRenderer.resolveDark(this)
+        shareButton.isEnabled = false
+
+        CountdownIo.submit(
+            task = {
+                val bitmap = ShareCardRenderer.render(
+                    context = renderContext,
+                    content = cardContent,
+                    dark = dark,
+                )
+                try {
+                    ShareImageStore.write(appContext, bitmap)
+                } finally {
+                    bitmap.recycle()
+                }
+            },
+            onComplete = { result ->
+                if (isFinishing || isDestroyed) return@submit
+                shareButton.isEnabled = true
+
+                val imageUri = result.getOrNull()
+                if (imageUri != null && launchShare(imageShareIntent(title, text, imageUri))) {
+                    return@submit
+                }
+                if (!launchShare(textShareIntent(text))) {
+                    Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
+                }
+            },
+        )
+    }
+
+    private fun buildShareText(title: String, today: LocalDate): String {
         val displayDate = CountdownOccurrenceResolver.displayDate(
             selectedDate,
             selectedRepeatRule,
-            snapshot.today,
+            today,
         )
-        val countdown = CountdownCalculator.value(snapshot.today, displayDate)
+        val countdown = CountdownCalculator.value(today, displayDate)
         val status = when (countdown.status) {
             CountdownStatus.FUTURE,
             CountdownStatus.THREE_DAYS,
@@ -479,28 +560,33 @@ class EditorActivity : BaseActivity() {
             CountdownStatus.DONE -> elapsedStatus(countdown.elapsedDays)
         }
         val locale = resources.configuration.locales[0]
-        val date = displayDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale))
-        val text = getString(R.string.share_countdown_format, title, status, date)
-        val sendIntent = Intent(Intent.ACTION_SEND)
-            .setType("text/plain")
-            .putExtra(Intent.EXTRA_TEXT, text)
-        runCatching {
-            startActivity(Intent.createChooser(sendIntent, null))
-        }.onFailure {
-            Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
-        }
+        val date = displayDate.format(
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale),
+        )
+        return getString(R.string.share_countdown_format, title, status, date)
     }
 
-    private fun addWidgetForSavedEvent() {
-        val event = existingEvent ?: return
-        if (baselineDraft != currentDraft()) {
-            Toast.makeText(this, R.string.widget_save_before_pin, Toast.LENGTH_LONG).show()
-            return
-        }
-        if (!WidgetPinning.request(this, event.id)) {
-            Toast.makeText(this, R.string.about_widget_pin_unavailable, Toast.LENGTH_SHORT).show()
-        }
+    private fun imageShareIntent(
+        title: String,
+        text: String,
+        imageUri: Uri,
+    ): Intent = Intent(Intent.ACTION_SEND).apply {
+        type = "image/png"
+        putExtra(Intent.EXTRA_STREAM, imageUri)
+        putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_TITLE, title)
+        clipData = ClipData.newUri(contentResolver, title, imageUri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
+
+    private fun textShareIntent(text: String): Intent = Intent(Intent.ACTION_SEND)
+        .setType("text/plain")
+        .putExtra(Intent.EXTRA_TEXT, text)
+
+    private fun launchShare(sendIntent: Intent): Boolean = runCatching {
+        startActivity(Intent.createChooser(sendIntent, getString(R.string.action_share)))
+        true
+    }.getOrDefault(false)
 
     private fun elapsedStatus(elapsedDays: Long): String {
         val quantity = elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
@@ -588,6 +674,11 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun save() {
+        if (editorBusy) return
+        if (existingEvent?.let(EventRevision::of) != session.originalRevision) {
+            showDataConflict()
+            return
+        }
         val snapshot = CountdownTime.snapshot()
         val title = titleInput.text.toString().trim()
         if (title.isEmpty()) {
@@ -605,80 +696,53 @@ class EditorActivity : BaseActivity() {
         }
 
         val event = CountdownEvent(
-            id = existingEvent?.id ?: UUID.randomUUID().toString(),
+            id = existingEvent?.id ?: session.id,
             title = title,
             date = selectedDate,
             type = selectedType,
             icon = selectedIcon,
             reminder = selectedReminder,
-            createdAt = existingEvent?.createdAt ?: snapshot.now.toInstant(),
+            createdAt = existingEvent?.createdAt ?: session.createdAt,
             repeatRule = selectedRepeatRule,
         )
-        val expectedEvent = existingEvent
+        val previous = existingEvent
+        val revision = session.originalRevision
+        val mutations = CountdownMutations(applicationContext)
+        session.deleting = false
         setEditorBusy(true)
-
-        CountdownIo.submit(
-            task = { repository.saveEvent(expectedEvent, event) },
-            onComplete = { result ->
-                if (isFinishing || isDestroyed) return@submit
-                setEditorBusy(false)
-
-                val mutation = result.getOrElse {
-                    Toast.makeText(this, R.string.data_save_failed, Toast.LENGTH_LONG).show()
-                    return@submit
-                }
-                when (mutation) {
-                    CountdownMutationResult.APPLIED -> {
-                        if (ArrivalNotificationPolicy.shouldResetDeliveryState(expectedEvent, event)) {
-                            ArrivalNotificationState(this).remove(event.id)
-                        }
-                        ArrivalNotifier.cancelEvent(this, event.id)
-                        refreshBackgroundStateInBackground()
-                        finish()
-                    }
-                    CountdownMutationResult.CONFLICT -> {
-                        if (expectedEvent == null) {
-                            Toast.makeText(this, R.string.data_save_failed, Toast.LENGTH_LONG).show()
-                        } else {
-                            showDataConflict()
-                        }
-                    }
-                }
-            },
-        )
+        session.operation.start { mutations.save(revision, previous, event) }
     }
 
     private fun confirmDelete() {
+        if (editorBusy) return
         val event = existingEvent ?: return
+        val revision = session.originalRevision ?: return
         AlertDialog.Builder(this)
             .setTitle(R.string.delete_title)
             .setMessage(getString(R.string.delete_message, event.title))
             .setNegativeButton(R.string.action_cancel, null)
             .setPositiveButton(R.string.action_delete) { _, _ ->
+                val mutations = CountdownMutations(applicationContext)
+                session.deleting = true
                 setEditorBusy(true)
-                CountdownIo.submit(
-                    task = { repository.deleteEvent(event) },
-                    onComplete = { result ->
-                        if (isFinishing || isDestroyed) return@submit
-                        setEditorBusy(false)
-
-                        val mutation = result.getOrElse {
-                            Toast.makeText(this, R.string.data_delete_failed, Toast.LENGTH_LONG).show()
-                            return@submit
-                        }
-                        when (mutation) {
-                            CountdownMutationResult.APPLIED -> {
-                                ArrivalNotificationState(this).remove(event.id)
-                                ArrivalNotifier.cancelEvent(this, event.id)
-                                refreshBackgroundStateInBackground()
-                                finish()
-                            }
-                            CountdownMutationResult.CONFLICT -> showDataConflict()
-                        }
-                    },
-                )
+                session.operation.start { mutations.delete(event.id, revision) }
             }
             .show()
+    }
+
+    private fun consumeOperation() {
+        if (!editorInitialized || isFinishing || isDestroyed) return
+        setEditorBusy(session.operation.running)
+        val result = session.operation.takeResult() ?: return
+        result.onSuccess { mutation ->
+            when (mutation) {
+                CountdownMutationResult.APPLIED -> finish()
+                CountdownMutationResult.CONFLICT -> showDataConflict()
+            }
+        }.onFailure {
+            Toast.makeText(this, if (session.deleting) R.string.data_delete_failed else R.string.data_save_failed,
+                Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun restoreEditorState(state: Bundle) {
@@ -705,7 +769,14 @@ class EditorActivity : BaseActivity() {
             .setTitle(R.string.data_conflict_title)
             .setMessage(R.string.data_conflict_message)
             .setNegativeButton(R.string.data_conflict_keep_editing, null)
-            .setPositiveButton(R.string.data_conflict_reload) { _, _ -> recreate() }
+            .setPositiveButton(R.string.data_conflict_reload) { _, _ ->
+                pendingEditorState = null
+                session.initialized = false
+                editorInitialized = false
+                titleInput.filters = emptyArray()
+                setEditorBusy(true)
+                loadEditorData(null)
+            }
             .show()
     }
 
@@ -723,22 +794,12 @@ class EditorActivity : BaseActivity() {
         }
     }
 
-    private fun refreshBackgroundStateInBackground() {
-        val context = applicationContext
-        CountdownIo.execute {
-            val snapshot = CountdownTime.snapshot()
-            runCatching { CountdownWidgetProvider.updateAllWidgets(context, snapshot) }
-            runCatching { WidgetUpdateScheduler.ensureScheduled(context, snapshot) }
-            runCatching { ArrivalNotificationScheduler.ensureScheduled(context, snapshot) }
-        }
-    }
-
     private fun renderScheduleSummary(today: LocalDate) {
         val lines = mutableListOf<String>()
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
-        if (selectedRepeatRule == RepeatRule.YEARLY) {
+        if (selectedRepeatRule != RepeatRule.NONE) {
             val occurrence = CountdownOccurrenceResolver.displayDate(
                 selectedDate,
                 selectedRepeatRule,
@@ -747,6 +808,7 @@ class EditorActivity : BaseActivity() {
             lines += getString(
                 R.string.schedule_next_occurrence,
                 occurrence.format(formatter),
+                repeatLabel(selectedRepeatRule).lowercase(locale),
             )
         }
 
@@ -760,6 +822,13 @@ class EditorActivity : BaseActivity() {
                 R.string.schedule_next_reminder,
                 reminderDate.format(formatter),
             )
+        }
+
+        if (
+            selectedRepeatRule == RepeatRule.MONTHLY &&
+            selectedDate.dayOfMonth >= 29
+        ) {
+            lines += getString(R.string.schedule_month_end_note)
         }
 
         if (
@@ -792,7 +861,7 @@ class EditorActivity : BaseActivity() {
 
     private fun handleBackRequest() {
         if (editorBusy) return
-        if (!editorInitialized || baselineDraft == currentDraft()) {
+        if (!editorInitialized || session.baselineRevision == currentDraft().revision()) {
             finish()
             return
         }
@@ -821,7 +890,29 @@ class EditorActivity : BaseActivity() {
         val icon: EventIcon,
         val repeatRule: RepeatRule,
         val reminder: ReminderOption,
-    )
+    ) {
+        fun revision(): String = EventRevision.ofFields(title, date.toString(), type.name,
+            icon.name, repeatRule.name, reminder.name)
+    }
+
+    private class EditorSession(state: Bundle?) {
+        val id: String = state?.getString("draft_id") ?: UUID.randomUUID().toString()
+        val createdAt: Instant = state?.getString("draft_created")?.let(Instant::parse) ?: Instant.now()
+        var initialized = state?.getBoolean("basis_initialized") ?: false
+        var originalRevision = state?.getString("original_revision")
+        var baselineRevision = state?.getString("baseline_revision")
+        var deleting = state?.getBoolean("deleting") ?: false
+        val operation = RetainedOperation<CountdownMutationResult>()
+
+        fun writeState(state: Bundle) {
+            state.putString("draft_id", id)
+            state.putString("draft_created", createdAt.toString())
+            state.putBoolean("basis_initialized", initialized)
+            state.putString("original_revision", originalRevision)
+            state.putString("baseline_revision", baselineRevision)
+            state.putBoolean("deleting", deleting)
+        }
+    }
 
     private fun gridParams(): GridLayout.LayoutParams = GridLayout.LayoutParams().apply {
         width = 0

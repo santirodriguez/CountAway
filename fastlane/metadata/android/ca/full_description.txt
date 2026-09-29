@@ -1,6 +1,6 @@
 Ja Queda Poc manté les dates importants simples i visibles a la pantalla d’inici.
 
-Crea diversos comptes enrere, tria un tipus d’esdeveniment o una icona personalitzada i afegeix ginys compactes o redimensionables. Cada giny pot seguir un esdeveniment fix o mostrar automàticament el proper compte enrere, amb aparença i fons independents. Els comptes enrere es poden repetir cada any, perquè dates recurrents com aniversaris i celebracions s'actualitzin soles.
+Crea diversos comptes enrere, tria un tipus d’esdeveniment o una icona personalitzada i afegeix ginys compactes o redimensionables. Cada giny pot seguir un esdeveniment fix o mostrar automàticament el proper compte enrere, amb aparença i fons independents. Els comptes enrere es poden repetir cada setmana, cada mes o cada any. Les repeticions mensuals mantenen el dia original quan existeix i fan servir l’últim dia vàlid als mesos més curts.
 
 Els recordatoris locals opcionals poden avisar-te el mateix dia o 1, 3 o 7 dies abans. També pots exportar i restaurar els comptes enrere mitjançant una còpia local en format JSON.
 

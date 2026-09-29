@@ -52,14 +52,23 @@ class CountdownImportSnapshot private constructor(
 
     fun readPayload(): String = file.inputStream().use(CountdownStorageCodec::readUtf8Payload)
 
+    /** Consume approval before replacing data, so stale saved UI cannot offer it again. */
+    fun claimPayload(): String {
+        val payload = readPayload()
+        Files.move(file.toPath(), claimedFile().toPath(), StandardCopyOption.REPLACE_EXISTING)
+        return payload
+    }
+
     fun exists(): Boolean = file.isFile
 
     fun clear() {
         file.delete()
         temporaryFile().delete()
+        claimedFile().delete()
     }
 
     private fun temporaryFile(): File = File(file.parentFile, "${file.name}.tmp")
+    private fun claimedFile(): File = File(file.parentFile, "${file.name}.applying")
 
     companion object {
         fun create(context: Context): CountdownImportSnapshot {
