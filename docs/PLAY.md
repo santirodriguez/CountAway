@@ -5,7 +5,7 @@ CountAway is **not currently published or configured for Google Play**. This doc
 ## Current readiness baseline
 
 - applicationId: `com.santiagorodriguez.countaway`
-- current release line: 1.2.0 / versionCode 9
+- target release: 1.2.1 / versionCode 10 (from `app/build.gradle.kts`)
 - minSdk: 26
 - targetSdk / compileSdk: 36
 - no Internet permission
@@ -125,7 +125,7 @@ Keep one global version sequence across every store.
 
 ## Store assets and console setup — deferred
 
-The following are intentionally **not** part of CountAway 1.2.0 readiness work:
+The following remain intentionally **outside** CountAway's current Play-readiness scope:
 
 - Play-specific screenshots;
 - Play-specific store icon or listing artwork changes;
