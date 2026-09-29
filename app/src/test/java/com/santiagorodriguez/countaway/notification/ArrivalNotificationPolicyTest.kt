@@ -1,5 +1,6 @@
 package com.santiagorodriguez.countaway.notification
 
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
@@ -120,6 +121,30 @@ class ArrivalNotificationPolicyTest {
             ),
         )
         assertTrue(ArrivalNotificationPolicy.shouldResetDeliveryState(null, previous))
+    }
+
+    @Test
+    fun countUpNeverSchedulesOrDeliversArrivalReminders() {
+        val countUp = event("up", today, ReminderOption.ON_DAY).copy(countMode = CountMode.COUNT_UP)
+
+        assertNull(ArrivalNotificationPolicy.scheduledDate(countUp))
+        assertNull(ArrivalNotificationPolicy.scheduledDate(countUp, today))
+        assertFalse(ArrivalNotificationPolicy.isDue(countUp, today, null))
+        assertNull(ArrivalNotificationPolicy.nextPendingDate(listOf(countUp), today) { _, _ -> false })
+    }
+
+    @Test
+    fun changingModeResetsDeliveryState() {
+        val previous = event("mode", today.plusDays(2), ReminderOption.ONE_DAY)
+        assertTrue(
+            ArrivalNotificationPolicy.shouldResetDeliveryState(
+                previous,
+                previous.copy(
+                    countMode = CountMode.COUNT_UP,
+                    reminder = ReminderOption.OFF,
+                ),
+            ),
+        )
     }
 
     @Test

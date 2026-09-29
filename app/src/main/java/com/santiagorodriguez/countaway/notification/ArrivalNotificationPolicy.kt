@@ -1,6 +1,7 @@
 package com.santiagorodriguez.countaway.notification
 
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.ReminderOption
 import com.santiagorodriguez.countaway.model.RepeatRule
@@ -8,10 +9,12 @@ import java.time.LocalDate
 
 object ArrivalNotificationPolicy {
     fun scheduledDate(event: CountdownEvent): LocalDate? =
-        scheduledDate(event.date, event.reminder)
+        if (event.countMode == CountMode.COUNT_UP) null else
+            scheduledDate(event.date, event.reminder)
 
     fun scheduledDate(event: CountdownEvent, today: LocalDate): LocalDate? =
-        scheduledDate(event.date, event.repeatRule, event.reminder, today)
+        if (event.countMode == CountMode.COUNT_UP) null else
+            scheduledDate(event.date, event.repeatRule, event.reminder, today)
 
     fun scheduledDate(
         targetDate: LocalDate,
@@ -65,7 +68,8 @@ object ArrivalNotificationPolicy {
         previous == null ||
             previous.date != updated.date ||
             previous.reminder != updated.reminder ||
-            previous.repeatRule != updated.repeatRule
+            previous.repeatRule != updated.repeatRule ||
+            previous.countMode != updated.countMode
 
     internal fun nextPendingDate(
         event: CountdownEvent,

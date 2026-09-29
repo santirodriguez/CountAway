@@ -3,6 +3,7 @@ package com.santiagorodriguez.countaway.data
 import android.content.ContextWrapper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
@@ -28,6 +29,7 @@ class CountdownStorageContractInstrumentedTest {
             SCHEMA_3_FIXTURE,
             SCHEMA_4_FIXTURE,
             SCHEMA_5_FIXTURE,
+            SCHEMA_6_FIXTURE,
         )
 
         fixtures.forEach { payload ->
@@ -48,13 +50,20 @@ class CountdownStorageContractInstrumentedTest {
     }
 
     @Test
-    fun currentSchemaKeepsYearlyLeapDayAndRoundTripsSemantically() {
+    fun schema5KeepsYearlyLeapDayAndRoundTripsSemantically() {
         val decoded = CountdownStorageCodec.decode(SCHEMA_5_FIXTURE)
         val event = decoded.single()
 
         assertEquals(RepeatRule.YEARLY, event.repeatRule)
         assertEquals("2024-02-29", event.date.toString())
         assertEquals(decoded, CountdownStorageCodec.decode(CountdownStorageCodec.encode(decoded)))
+    }
+
+    @Test
+    fun schema6RemainsReadableAsCountdownWithExpandedRecurrence() {
+        val decoded = CountdownStorageCodec.decode(SCHEMA_6_FIXTURE).single()
+        assertEquals(RepeatRule.MONTHLY, decoded.repeatRule)
+        assertEquals(CountMode.COUNT_DOWN, decoded.countMode)
     }
 
     @Test
@@ -419,6 +428,24 @@ class CountdownStorageContractInstrumentedTest {
                   "iconKey": "cake",
                   "reminderKey": "seven_days",
                   "repeatRule": "yearly",
+                  "createdAt": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val SCHEMA_6_FIXTURE = """
+            {
+              "schemaVersion": 6,
+              "events": [
+                {
+                  "id": "schema-6",
+                  "title": "Monthly recurrence",
+                  "date": "2026-10-31",
+                  "type": "event",
+                  "iconKey": "calendar",
+                  "reminderKey": "three_days",
+                  "repeatRule": "monthly",
                   "createdAt": "2020-01-01T00:00:00Z"
                 }
               ]

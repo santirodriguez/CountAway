@@ -41,6 +41,7 @@ import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownMutationResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.data.CountdownValidation
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
@@ -83,6 +84,7 @@ class EditorActivity : BaseActivity() {
     private var selectedIcon: EventIcon = EventIcon.defaultFor(EventType.TRIP)
     private var selectedRepeatRule: RepeatRule = RepeatRule.NONE
     private var selectedReminder: ReminderOption = ReminderOption.OFF
+    private var selectedCountMode: CountMode = CountMode.COUNT_DOWN
     private var suppressRepeatSelection = false
     private var suppressReminderSelection = false
     private var editorInitialized = false
@@ -176,6 +178,7 @@ class EditorActivity : BaseActivity() {
             selectedIcon = event.icon
             selectedRepeatRule = event.repeatRule
             selectedReminder = event.reminder
+            selectedCountMode = event.countMode
         }
         if (!session.initialized) {
             session.originalRevision = existingEvent?.let(EventRevision::of)
@@ -228,6 +231,7 @@ class EditorActivity : BaseActivity() {
             outState.putString(STATE_ICON, selectedIcon.name)
             outState.putString(STATE_REPEAT_RULE, selectedRepeatRule.name)
             outState.putString(STATE_REMINDER, selectedReminder.name)
+            outState.putString(STATE_COUNT_MODE, selectedCountMode.name)
         }
         session.writeState(outState)
         super.onSaveInstanceState(outState)
@@ -704,6 +708,7 @@ class EditorActivity : BaseActivity() {
             reminder = selectedReminder,
             createdAt = existingEvent?.createdAt ?: session.createdAt,
             repeatRule = selectedRepeatRule,
+            countMode = selectedCountMode,
         )
         val previous = existingEvent
         val revision = session.originalRevision
@@ -761,6 +766,9 @@ class EditorActivity : BaseActivity() {
         }
         state.getString(STATE_REMINDER)?.let { raw ->
             ReminderOption.entries.firstOrNull { it.name == raw }?.let { selectedReminder = it }
+        }
+        state.getString(STATE_COUNT_MODE)?.let { raw ->
+            CountMode.entries.firstOrNull { it.name == raw }?.let { selectedCountMode = it }
         }
     }
 
@@ -881,6 +889,7 @@ class EditorActivity : BaseActivity() {
         icon = selectedIcon,
         repeatRule = selectedRepeatRule,
         reminder = selectedReminder,
+        countMode = selectedCountMode,
     )
 
     private data class EditorDraft(
@@ -890,9 +899,10 @@ class EditorActivity : BaseActivity() {
         val icon: EventIcon,
         val repeatRule: RepeatRule,
         val reminder: ReminderOption,
+        val countMode: CountMode,
     ) {
         fun revision(): String = EventRevision.ofFields(title, date.toString(), type.name,
-            icon.name, repeatRule.name, reminder.name)
+            icon.name, repeatRule.name, reminder.name, countMode.name)
     }
 
     private class EditorSession(state: Bundle?) {
@@ -932,5 +942,6 @@ class EditorActivity : BaseActivity() {
         private const val STATE_ICON = "editor_icon"
         private const val STATE_REPEAT_RULE = "editor_repeat_rule"
         private const val STATE_REMINDER = "editor_reminder"
+        private const val STATE_COUNT_MODE = "editor_count_mode"
     }
 }
