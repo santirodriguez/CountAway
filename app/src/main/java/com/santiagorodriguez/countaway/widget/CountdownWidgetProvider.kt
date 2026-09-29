@@ -284,7 +284,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                             noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
                         )
                     } else {
-                        renderEvent(displayContext, views, appWidgetId, event, today, size)
+                        renderEvent(displayContext, views, appWidgetId, event, today, size, heightDp)
                     }
                 }
             }
@@ -298,6 +298,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             event: CountdownEvent,
             today: LocalDate,
             size: WidgetSize,
+            heightDp: Int,
         ) {
             val content = WidgetEventContentFactory.from(event, today)
             WidgetRemoteViewsPresentation.applyEvent(
@@ -306,6 +307,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                 content = content,
                 size = size,
                 fontScale = context.resources.configuration.fontScale,
+                heightDp = heightDp,
             )
             val locale = context.resources.configuration.locales[0]
             val formattedDate = content.date.format(

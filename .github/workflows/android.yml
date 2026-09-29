@@ -14,6 +14,65 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  widget-layout:
+    name: Widget layout (API ${{ matrix.api }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [26, 36]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Set up JDK
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - name: Build layout tests
+        run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
+      - name: Prepare rendered regression checks
+        run: |
+          set -euo pipefail
+          test -e /dev/kvm
+          sudo chmod 666 /dev/kvm
+          mkdir -p layout-evidence
+          git rev-parse HEAD > layout-evidence/source-sha.txt
+          cat > .widget-layout-check.sh <<'SCRIPT'
+          set -euo pipefail
+          PACKAGE=com.santiagorodriguez.countaway
+          adb install -r app/build/outputs/apk/debug/app-debug.apk
+          adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          collect() {
+            adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence > layout-evidence/renders.tar || true
+            adb logcat -d > layout-evidence/logcat.txt || true
+          }
+          trap collect EXIT
+          adb shell am instrument -w -e class "$PACKAGE.widget.WidgetTitleLayoutInstrumentedTest" \
+            "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
+          grep -Eq '^OK \([1-9][0-9]* tests?\)' layout-evidence/instrumentation.txt
+          SCRIPT
+      - name: Render and verify widget content
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: bash .widget-layout-check.sh
+      - name: Upload layout evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CountAway-widget-layout-api-${{ matrix.api }}-${{ github.sha }}
+          path: layout-evidence/
+          if-no-files-found: warn
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20

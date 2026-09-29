@@ -10,6 +10,40 @@ import org.junit.Test
 
 class WidgetPresentationTest {
     @Test
+    fun narrowTallWidgetUsesItsHeightForTitleAndIcon() {
+        val result = WidgetPresentationResolver.resolve(
+            content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 1f, heightDp = 102,
+        )
+        assertEquals(2, result.titleMaxLines)
+        assertTrue(result.showTitle)
+        assertTrue(result.showIcon)
+    }
+
+    @Test
+    fun minimumWidgetStillReservesItsCountSpace() {
+        val normal = WidgetPresentationResolver.resolve(
+            content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 1f, heightDp = 50,
+        )
+        assertEquals(1, normal.titleMaxLines)
+        assertFalse(normal.showIcon)
+        val enlarged = WidgetPresentationResolver.resolve(
+            content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 2f, heightDp = 50,
+        )
+        assertFalse(enlarged.showTitle)
+        assertFalse(enlarged.showIcon)
+    }
+
+    @Test
+    fun extraHeightRestoresDetailsEvenAtLargeFontScale() {
+        val result = WidgetPresentationResolver.resolve(
+            content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 2f, heightDp = 180,
+        )
+        assertEquals(2, result.titleMaxLines)
+        assertTrue(result.showTitle)
+        assertTrue(result.showIcon)
+    }
+
+    @Test
     fun compactElapsedKeepsMarkerAndDropsOptionalDetail() {
         val result = WidgetPresentationResolver.resolve(
             content = content(CountdownStatus.DONE, "6"),
