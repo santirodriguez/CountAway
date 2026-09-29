@@ -43,6 +43,7 @@ class WidgetTitleLayoutInstrumentedTest {
             val root = WidgetPreviewFactory.remoteViews(context, birthday, style, today, dimensions)
                 .apply(context, FrameLayout(context))
             layout(context, root, dimensions)
+            capture(root, "title-after-$appearance")
             val title = root.findViewById<TextView>(R.id.widgetTitle)
             assertEquals(birthday.title, title.text.toString())
             assertFalse("The full birthday title and emoji should fit", hasEllipsis(title))
@@ -51,7 +52,6 @@ class WidgetTitleLayoutInstrumentedTest {
             assertFits(root, title)
             assertFits(root, root.findViewById(R.id.widgetIcon))
             assertCountFits(root)
-            capture(root, "title-after-$appearance")
 
             val container = FrameLayout(context)
             val frame = FrameLayout(context)
@@ -65,6 +65,7 @@ class WidgetTitleLayoutInstrumentedTest {
     }
 
     @Test fun responsiveTitlesNeverPushCountsOutsideTheWidget() = instrumentation.runOnMainSync {
+        val problems = mutableListOf<String>()
         val dimensions = listOf(WidgetPreviewDimensions(56, 50), WidgetPreviewDimensions(57, 102),
             WidgetPreviewDimensions(90, 180), WidgetPreviewDimensions(180, 50),
             WidgetPreviewDimensions(160, 100), WidgetPreviewDimensions(160, 144),
@@ -86,9 +87,10 @@ class WidgetTitleLayoutInstrumentedTest {
                     }
                 } catch (error: AssertionError) {
                     capture(root, "failure-${size.widthDp}-${size.heightDp}-$scale-$days")
-                    throw AssertionError("${size.widthDp}x${size.heightDp}, font=$scale, days=$days: ${error.message}", error)
+                    problems += "${size.widthDp}x${size.heightDp}, font=$scale, days=$days: ${error.message}"
                 }
             }
+        assertTrue(problems.joinToString("\n"), problems.isEmpty())
     }
 
     private fun context(scale: Float): Context {

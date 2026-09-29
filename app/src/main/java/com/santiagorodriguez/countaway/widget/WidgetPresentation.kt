@@ -51,12 +51,13 @@ internal object WidgetPresentationResolver {
         val showMilestone = milestone != null &&
             size != WidgetSize.SHORT && size != WidgetSize.COMPACT && fontScale < 1.3f
         val showDate = size == WidgetSize.LARGE && fontScale < DATE_HIDE_FONT_SCALE
-        val compactTitleLines = ((heightDp - 8 - ceil(28 * fontScale).toInt()) /
-            ceil(14 * fontScale).toInt()).coerceIn(0, 2)
+        val compactCountHeight = ceil(28 * fontScale).toInt()
+        val compactLineHeight = ceil(14 * fontScale).toInt()
+        val compactIconFits = heightDp >= 8 + compactCountHeight + compactLineHeight + 16
+        val compactTitleLines = ((heightDp - 8 - compactCountHeight -
+            if (compactIconFits) 16 else 0) / compactLineHeight).coerceIn(0, 3)
         val showIcon = when (size) {
-            WidgetSize.COMPACT -> compactTitleLines > 0 && heightDp >=
-                8 + ceil(28 * fontScale).toInt() +
-                compactTitleLines * ceil(14 * fontScale).toInt() + 16
+            WidgetSize.COMPACT -> compactIconFits
             WidgetSize.SHORT -> true
             else -> fontScale < 1.3f && milestone == null
         }

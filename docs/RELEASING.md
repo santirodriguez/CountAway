@@ -83,17 +83,17 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 - package, min/target/compile SDKs, and exact manifest permission surface;
 - release runtime dependency report, no app-declared runtime libraries, the expected Kotlin/annotations baseline, and absence of native libraries;
 - presence of R8 mapping and resource shrinking;
-- current APK-size delta against the previous public 1.1.8 APK (402,801 bytes);
+- current APK-size delta against the previous public 1.2.0 APK (443,929 bytes);
 - Play-readiness AAB SHA-256/byte size and basic bundle structure, retained only as internal Actions evidence;
 - compiled instrumentation-test APK and ordinary test/lint reports;
 - screenshot SHA-256s during stable preparation;
 - F-Droid Gate A evidence when preparing a stable draft.
 
-Normal CI only compiles instrumentation tests. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.1.8 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
+Normal CI runs focused widget title/icon/count layout checks on API 26 and 36, retaining before/after renders and measurements. It also compiles the complete instrumentation suite. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.2.0 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
 
 API 37 remains an acceptance target, but its hosted-emulator job is explicitly diagnostic and non-gating. Current Android 17 `google_apis_ps16k` images can abort in `SurfaceFlinger`/`mapper.ranchu` on the host-advertised `ReadColorBufferDMA` path, tearing down framework services before CountAway starts; this reproduced with both canary/default-graphics and stable/`swangle_indirect` configurations. The diagnostic retains the best-known stable configuration—platform/system image 37.0, emulator 37.1.11 build 15917651, `swangle_indirect`, 4 GB RAM, and a 420-second boot timeout—and records its outcome without treating it as product acceptance. Reinstate it as a blocking automated gate only after an updated system image/emulator no longer exhibits the framework abort. Until then, a successful physical Android 17/API 37 run is mandatory before release readiness.
 
-API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. The package-level upgrade smoke does not create user data inside 1.1.8, so data-preservation upgrade acceptance, physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
+API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. The package-level upgrade smoke does not create user data inside 1.2.0, so data-preservation upgrade acceptance, physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
 
 ## Independent rebuild comparison
 
@@ -118,7 +118,7 @@ A release-candidate run:
 7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
 8. records APK checksum/size, size deltas, and validation reports;
 9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
-10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs the signed package-level 1.1.8 -> candidate upgrade smoke on API 33 using the immutable public 1.1.8 APK digest, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
+10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs the signed package-level 1.2.0 -> candidate upgrade smoke on API 33 using the immutable public 1.2.0 APK digest, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
 11. uploads the release candidate, validation evidence, reproducibility evidence, per-API acceptance evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:
@@ -203,7 +203,7 @@ Publishing is intentionally separate from preparation. Before publishing the Git
 - verify an upgrade from the previous public CountAway release preserves countdowns and existing widgets;
 - verify the SHA-256 checksum;
 - verify the signing certificate SHA-256 matches the expected fingerprint above;
-- review APK size against the previous public 1.1.8 release and explain material growth;
+- review APK size against the previous public 1.2.0 release and explain material growth;
 - confirm final release notes, Fastlane metadata, screenshots, and public assets;
 - confirm Gate A remains satisfied;
 - confirm the release is still a draft and targets the intended commit.
@@ -213,7 +213,3 @@ Only then publish the prepared GitHub Release. In the normal web path, publicati
 Never move an existing stable tag after publication. Keep the release branch until release/tag/distribution verification is complete.
 
 For post-publication F-Droid verification, continue with [`FDROID.md`](FDROID.md).
-
-## Controlled 1.2.0 expansion
-
-The expansion is reviewed on `release/1.2.0-expansion`, based on `release/1.2.0`. Freeze and automatically validate the child before the final human RC/device checks and improvement decision. Integrating the child into its parent requires separate approval. Revalidate the resulting parent at its exact SHA before reconsidering PR #28 into main. Neither a green child RC nor this procedure authorizes either merge or publication.

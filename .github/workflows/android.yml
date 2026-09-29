@@ -51,7 +51,7 @@ jobs:
             adb logcat -d > layout-evidence/logcat.txt || true
           }
           trap collect EXIT
-          adb shell am instrument -w -e class "$PACKAGE.widget.WidgetTitleLayoutInstrumentedTest" \
+          adb shell am instrument -w -e class "$PACKAGE.widget.WidgetTitleLayoutInstrumentedTest,$PACKAGE.widget.ExpansionLayoutInstrumentedTest" \
             "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
           grep -Eq '^OK \([1-9][0-9]* tests?\)' layout-evidence/instrumentation.txt
           SCRIPT

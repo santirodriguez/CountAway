@@ -14,7 +14,7 @@ class WidgetPresentationTest {
         val result = WidgetPresentationResolver.resolve(
             content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 1f, heightDp = 102,
         )
-        assertEquals(2, result.titleMaxLines)
+        assertEquals(3, result.titleMaxLines)
         assertTrue(result.showTitle)
         assertTrue(result.showIcon)
     }
@@ -38,7 +38,7 @@ class WidgetPresentationTest {
         val result = WidgetPresentationResolver.resolve(
             content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 2f, heightDp = 180,
         )
-        assertEquals(2, result.titleMaxLines)
+        assertEquals(3, result.titleMaxLines)
         assertTrue(result.showTitle)
         assertTrue(result.showIcon)
     }
