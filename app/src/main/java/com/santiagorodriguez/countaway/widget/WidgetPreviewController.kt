@@ -91,7 +91,7 @@ internal class WidgetPreviewController(
         iconRes: Int = R.drawable.ic_event_calendar,
     ) {
         val size = requireNotNull(currentSize)
-        val presentation = WidgetPresentationResolver.placeholder(size, context.resources.configuration.fontScale)
+        val presentation = WidgetPresentationResolver.placeholder(size, context.resources.configuration.fontScale, currentHeightDp)
         iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
         titleView.visibility = if (presentation.showTitle) View.VISIBLE else View.GONE
         titleView.maxLines = presentation.titleMaxLines

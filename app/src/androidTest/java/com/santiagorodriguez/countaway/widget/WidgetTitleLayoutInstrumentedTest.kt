@@ -67,7 +67,7 @@ class WidgetTitleLayoutInstrumentedTest {
     @Test fun responsiveTitlesNeverPushCountsOutsideTheWidget() = instrumentation.runOnMainSync {
         val problems = mutableListOf<String>()
         val dimensions = listOf(WidgetPreviewDimensions(56, 50), WidgetPreviewDimensions(57, 102),
-            WidgetPreviewDimensions(90, 180), WidgetPreviewDimensions(180, 50),
+            WidgetPreviewDimensions(90, 180), WidgetPreviewDimensions(180, 50), WidgetPreviewDimensions(180, 65),
             WidgetPreviewDimensions(160, 100), WidgetPreviewDimensions(160, 144),
             WidgetPreviewDimensions(240, 160), WidgetPreviewDimensions(240, 220))
         for (scale in listOf(1f, 1.3f, 2f)) for (size in dimensions)

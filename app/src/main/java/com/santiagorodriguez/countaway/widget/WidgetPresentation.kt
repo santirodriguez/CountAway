@@ -28,7 +28,11 @@ internal data class WidgetPlaceholderPresentation(
 )
 
 internal object WidgetPresentationResolver {
-    fun placeholder(size: WidgetSize, fontScale: Float) = WidgetPlaceholderPresentation(
+    fun placeholder(
+        size: WidgetSize,
+        fontScale: Float,
+        heightDp: Int = WidgetPreviewSizing.representative(size).heightDp,
+    ) = WidgetPlaceholderPresentation(
         showIcon = size == WidgetSize.SHORT || (size == WidgetSize.LARGE && fontScale < 1.3f),
         showTitle = size != WidgetSize.COMPACT || fontScale < 1.3f,
         showUnit = when (size) {
@@ -36,7 +40,7 @@ internal object WidgetPresentationResolver {
             WidgetSize.LARGE -> fontScale < 1.75f
             else -> false
         },
-        titleMaxLines = if (size == WidgetSize.SHORT) 2 else 1,
+        titleMaxLines = if (size == WidgetSize.SHORT) shortTitleLines(heightDp, fontScale) else 1,
     )
 
     fun resolve(
@@ -65,7 +69,7 @@ internal object WidgetPresentationResolver {
         // Width alone cannot tell a minimum-size widget from a narrow, tall launcher cell.
         val titleMaxLines = when (size) {
             WidgetSize.COMPACT -> compactTitleLines.coerceAtLeast(1)
-            WidgetSize.SHORT -> 2
+            WidgetSize.SHORT -> shortTitleLines(heightDp, fontScale)
             WidgetSize.STANDARD, WidgetSize.LARGE -> {
                 val isLarge = size == WidgetSize.LARGE
                 val padding = if (isLarge) 28 else 20
@@ -94,6 +98,9 @@ internal object WidgetPresentationResolver {
 
     private const val LARGE_FONT_SCALE = 1.75f
     private const val DATE_HIDE_FONT_SCALE = 1.50f
+
+    private fun shortTitleLines(heightDp: Int, fontScale: Float): Int =
+        ((heightDp - 6) / ceil(14 * fontScale).toInt()).coerceIn(1, 2)
 }
 
 internal object WidgetLayoutResolver {
@@ -113,8 +120,9 @@ internal object WidgetRemoteViewsPresentation {
         title: String,
         action: String,
         countText: String,
+        heightDp: Int = WidgetPreviewSizing.representative(size).heightDp,
     ) {
-        val presentation = WidgetPresentationResolver.placeholder(size, fontScale)
+        val presentation = WidgetPresentationResolver.placeholder(size, fontScale, heightDp)
         views.setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
         views.setTextViewText(R.id.widgetTitle, title)
         views.setTextViewText(R.id.widgetCount, countText)

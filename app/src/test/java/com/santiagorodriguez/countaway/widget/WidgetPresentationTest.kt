@@ -10,6 +10,15 @@ import org.junit.Test
 
 class WidgetPresentationTest {
     @Test
+    fun shortWidgetUsesOnlyTitleLinesThatFitAtLargeFontScale() {
+        val event = content(CountdownStatus.FUTURE, "91")
+        assertEquals(1, WidgetPresentationResolver.resolve(event, WidgetSize.SHORT, 2f, 50).titleMaxLines)
+        assertEquals(2, WidgetPresentationResolver.resolve(event, WidgetSize.SHORT, 2f, 65).titleMaxLines)
+        assertEquals(1, WidgetPresentationResolver.placeholder(WidgetSize.SHORT, 2f, 50).titleMaxLines)
+        assertEquals(2, WidgetPresentationResolver.placeholder(WidgetSize.SHORT, 2f, 65).titleMaxLines)
+    }
+
+    @Test
     fun narrowTallWidgetUsesItsHeightForTitleAndIcon() {
         val result = WidgetPresentationResolver.resolve(
             content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 1f, heightDp = 102,
