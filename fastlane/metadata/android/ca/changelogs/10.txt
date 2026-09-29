@@ -1,0 +1,1 @@
+Una petita correcció dels ginys: els estrets i alts tornen a aprofitar l’espai per mostrar el títol en diverses línies i la icona de l’esdeveniment. La previsualització segueix el mateix disseny i el nombre continua sent llegible amb text gran. Sense funcions ni permisos nous; els comptes enrere i les còpies de seguretat funcionen com abans.

@@ -1,0 +1,1 @@
+Un pequeño arreglo para los widgets: los angostos y altos vuelven a aprovechar el espacio para mostrar el título en varias líneas y el ícono del evento. La vista previa usa el mismo diseño y el número sigue siendo legible con texto grande. Sin funciones ni permisos nuevos; tus cuentas regresivas y copias de seguridad siguen como antes.

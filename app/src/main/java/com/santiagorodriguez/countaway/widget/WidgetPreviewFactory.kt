@@ -40,8 +40,8 @@ internal object WidgetPreviewFactory {
         event: CountdownEvent,
         style: WidgetStyleSelection,
         today: LocalDate = CountdownTime.snapshot().today,
+        dimensions: WidgetPreviewDimensions = WidgetPreviewSizing.representative(WidgetSize.STANDARD),
     ): RemoteViews {
-        val dimensions = WidgetPreviewSizing.representative(WidgetSize.STANDARD)
         val size = dimensions.size
         val content = WidgetEventContentFactory.from(event, today)
         val theme = WidgetThemeResolver.resolve(context, style.appearance, style.background)
@@ -54,6 +54,7 @@ internal object WidgetPreviewFactory {
             content = content,
             size = size,
             fontScale = context.resources.configuration.fontScale,
+            heightDp = dimensions.heightDp,
         )
 
         val locale = context.resources.configuration.locales[0]

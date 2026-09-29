@@ -10,6 +10,58 @@ import org.junit.Test
 
 class WidgetPresentationTest {
     @Test
+    fun wrappedDetailsKeepTheirSpaceBeforeTitleExpansion() {
+        val event = content(CountdownStatus.FUTURE, "365")
+        assertEquals(1, WidgetPresentationResolver.resolve(event, WidgetSize.STANDARD, 1.7f, 144).titleMaxLines)
+        assertEquals(2, WidgetPresentationResolver.resolve(event, WidgetSize.STANDARD, 1.7f, 172).titleMaxLines)
+        assertEquals(1, WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1.4f, 180).titleMaxLines)
+        assertEquals(2, WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1.4f, 237).titleMaxLines)
+    }
+
+    @Test
+    fun shortWidgetUsesOnlyTitleLinesThatFitAtLargeFontScale() {
+        val event = content(CountdownStatus.FUTURE, "91")
+        assertEquals(1, WidgetPresentationResolver.resolve(event, WidgetSize.SHORT, 2f, 50).titleMaxLines)
+        assertEquals(2, WidgetPresentationResolver.resolve(event, WidgetSize.SHORT, 2f, 65).titleMaxLines)
+        assertEquals(1, WidgetPresentationResolver.placeholder(WidgetSize.SHORT, 2f, 50).titleMaxLines)
+        assertEquals(2, WidgetPresentationResolver.placeholder(WidgetSize.SHORT, 2f, 65).titleMaxLines)
+    }
+
+    @Test
+    fun narrowTallWidgetUsesItsHeightForTitleAndIcon() {
+        val result = WidgetPresentationResolver.resolve(
+            content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 1f, heightDp = 102,
+        )
+        assertEquals(3, result.titleMaxLines)
+        assertTrue(result.showTitle)
+        assertTrue(result.showIcon)
+    }
+
+    @Test
+    fun minimumWidgetStillReservesItsCountSpace() {
+        val normal = WidgetPresentationResolver.resolve(
+            content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 1f, heightDp = 50,
+        )
+        assertEquals(1, normal.titleMaxLines)
+        assertFalse(normal.showIcon)
+        val enlarged = WidgetPresentationResolver.resolve(
+            content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 2f, heightDp = 50,
+        )
+        assertFalse(enlarged.showTitle)
+        assertFalse(enlarged.showIcon)
+    }
+
+    @Test
+    fun extraHeightRestoresDetailsEvenAtLargeFontScale() {
+        val result = WidgetPresentationResolver.resolve(
+            content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 2f, heightDp = 180,
+        )
+        assertEquals(3, result.titleMaxLines)
+        assertTrue(result.showTitle)
+        assertTrue(result.showIcon)
+    }
+
+    @Test
     fun compactElapsedKeepsMarkerAndDropsOptionalDetail() {
         val result = WidgetPresentationResolver.resolve(
             content = content(CountdownStatus.DONE, "6"),

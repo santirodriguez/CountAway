@@ -1,0 +1,1 @@
+A small widget fix: narrow, tall widgets use their available space for wrapped titles and event icons again. The preview follows the same layout, and counts stay legible with larger text. No new features or permissions; your countdowns and backups keep working as before.

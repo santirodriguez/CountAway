@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.1
+
+- Restore wrapped titles and event icons in narrow, tall widgets when space permits.
+- Prevent long counts from clipping in minimum-size widgets with enlarged text.
+- Keep enlarged titles inside wide, short widgets instead of clipping their second line.
+- Use the available height consistently in widgets and configuration previews while protecting count legibility.
+- Add rendered regression checks for title, emoji, icon and count together, including enlarged text.
+- Update release upgrade and APK-size checks to use the published 1.2.0 baseline.
+- No new features, permissions, dependencies or data-format changes.
+
 ## 1.2.0
 
 - Set up widgets with a long press, a live preview, nine styles, and direct Home-screen pinning.

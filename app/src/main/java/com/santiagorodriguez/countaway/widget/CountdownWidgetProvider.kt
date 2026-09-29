@@ -272,6 +272,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                     appWidgetId,
                     renderData.problem,
                     size,
+                    heightDp,
                 )
                 is WidgetRenderData.Ready -> {
                     val event = renderData.resolve(configuration)
@@ -281,10 +282,11 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                             views,
                             appWidgetId,
                             size = size,
+                            heightDp = heightDp,
                             noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
                         )
                     } else {
-                        renderEvent(displayContext, views, appWidgetId, event, today, size)
+                        renderEvent(displayContext, views, appWidgetId, event, today, size, heightDp)
                     }
                 }
             }
@@ -298,6 +300,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             event: CountdownEvent,
             today: LocalDate,
             size: WidgetSize,
+            heightDp: Int,
         ) {
             val content = WidgetEventContentFactory.from(event, today)
             WidgetRemoteViewsPresentation.applyEvent(
@@ -306,6 +309,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                 content = content,
                 size = size,
                 fontScale = context.resources.configuration.fontScale,
+                heightDp = heightDp,
             )
             val locale = context.resources.configuration.locales[0]
             val formattedDate = content.date.format(
@@ -346,13 +350,14 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             appWidgetId: Int,
             noUpcoming: Boolean,
             size: WidgetSize,
+            heightDp: Int,
         ) {
             val title = context.getString(
                 if (noUpcoming) R.string.widget_no_upcoming else R.string.widget_select_countdown,
             )
             val action = context.getString(R.string.widget_tap_to_configure)
             WidgetRemoteViewsPresentation.applyPlaceholder(
-                views, size, context.resources.configuration.fontScale, title, action, "—",
+                views, size, context.resources.configuration.fontScale, title, action, "—", heightDp,
             )
             views.setContentDescription(R.id.widgetRoot, "$title, $action")
             views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
@@ -364,6 +369,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             appWidgetId: Int,
             problem: com.santiagorodriguez.countaway.data.CountdownDataProblem,
             size: WidgetSize,
+            heightDp: Int,
         ) {
             val title = context.getString(
                 if (problem == com.santiagorodriguez.countaway.data.CountdownDataProblem.UNSUPPORTED_SCHEMA) {
@@ -374,7 +380,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             )
             val action = context.getString(R.string.widget_open_app)
             WidgetRemoteViewsPresentation.applyPlaceholder(
-                views, size, context.resources.configuration.fontScale, title, action, "!",
+                views, size, context.resources.configuration.fontScale, title, action, "!", heightDp,
             )
             views.setContentDescription(R.id.widgetRoot, "$title, $action")
             views.setOnClickPendingIntent(R.id.widgetRoot, openAppPendingIntent(context, appWidgetId))

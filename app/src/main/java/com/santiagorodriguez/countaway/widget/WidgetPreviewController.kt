@@ -17,6 +17,7 @@ internal class WidgetPreviewController(
     private val frame: FrameLayout,
 ) {
     private var currentSize: WidgetSize? = null
+    private var currentHeightDp: Int = 0
     private lateinit var backgroundView: ImageView
     private lateinit var iconView: ImageView
     private lateinit var titleView: TextView
@@ -30,6 +31,7 @@ internal class WidgetPreviewController(
         dimensions: WidgetPreviewDimensions,
     ) {
         val size = dimensions.size
+        currentHeightDp = dimensions.heightDp
         ensureLayout(size)
         applyFrame(dimensions)
 
@@ -61,6 +63,7 @@ internal class WidgetPreviewController(
             content = content,
             size = size,
             fontScale = context.resources.configuration.fontScale,
+            heightDp = currentHeightDp,
         )
         val locale = context.resources.configuration.locales[0]
         val formattedDate = content.date.format(
@@ -88,7 +91,7 @@ internal class WidgetPreviewController(
         iconRes: Int = R.drawable.ic_event_calendar,
     ) {
         val size = requireNotNull(currentSize)
-        val presentation = WidgetPresentationResolver.placeholder(size, context.resources.configuration.fontScale)
+        val presentation = WidgetPresentationResolver.placeholder(size, context.resources.configuration.fontScale, currentHeightDp)
         iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
         titleView.visibility = if (presentation.showTitle) View.VISIBLE else View.GONE
         titleView.maxLines = presentation.titleMaxLines
