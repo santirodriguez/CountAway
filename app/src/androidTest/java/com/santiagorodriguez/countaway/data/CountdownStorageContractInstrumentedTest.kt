@@ -67,6 +67,36 @@ class CountdownStorageContractInstrumentedTest {
     }
 
     @Test
+    fun schema7MixedModesRoundTripLosslesslyOnAndroidRuntime() {
+        val events = listOf(
+            event("schema-7-down", "Countdown").copy(
+                reminder = ReminderOption.ONE_DAY,
+                repeatRule = RepeatRule.WEEKLY,
+            ),
+            event("schema-7-up", "Count up").copy(countMode = CountMode.COUNT_UP),
+        )
+
+        val payload = CountdownStorageCodec.encode(events)
+        val restored = CountdownStorageCodec.decodeForImport(payload)
+
+        assertEquals(events, restored)
+        assertTrue(payload.contains("\"schemaVersion\":7"))
+        assertTrue(payload.contains("\"countMode\":\"count_down\""))
+        assertTrue(payload.contains("\"countMode\":\"count_up\""))
+    }
+
+    @Test
+    fun schema7RequiresKnownStringCountModeOnAndroidRuntime() {
+        listOf(
+            SCHEMA_7_MISSING_MODE_FIXTURE,
+            SCHEMA_7_UNKNOWN_MODE_FIXTURE,
+            SCHEMA_7_NON_STRING_MODE_FIXTURE,
+        ).forEach { payload ->
+            assertDataProblem(CountdownDataProblem.CORRUPT, payload)
+        }
+    }
+
+    @Test
     fun currentSchemaWeeklyAndMonthlyRoundTripThroughAndroidImport() {
         val events = listOf(
             event("weekly-schema-5", "Weekly").copy(
@@ -511,6 +541,30 @@ class CountdownStorageContractInstrumentedTest {
               ]
             }
         """.trimIndent()
+
+        val SCHEMA_7_MISSING_MODE_FIXTURE = """
+            {
+              "schemaVersion": 7,
+              "events": [
+                {
+                  "id": "missing-mode",
+                  "title": "Missing mode",
+                  "date": "2026-10-31",
+                  "type": "event",
+                  "iconKey": "calendar",
+                  "reminderKey": "off",
+                  "repeatRule": "none",
+                  "createdAt": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val SCHEMA_7_UNKNOWN_MODE_FIXTURE = SCHEMA_7_MISSING_MODE_FIXTURE
+            .replace("\"createdAt\"", "\"countMode\": \"sideways\",\n                  \"createdAt\"")
+
+        val SCHEMA_7_NON_STRING_MODE_FIXTURE = SCHEMA_7_MISSING_MODE_FIXTURE
+            .replace("\"createdAt\"", "\"countMode\": 7,\n                  \"createdAt\"")
 
         val FUTURE_SCHEMA_FIXTURE = """
             {
