@@ -19,6 +19,7 @@ import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.util.Locale
+import kotlin.math.ceil
 
 class WidgetTitleLayoutInstrumentedTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -93,10 +94,65 @@ class WidgetTitleLayoutInstrumentedTest {
         assertTrue(problems.joinToString("\n"), problems.isEmpty())
     }
 
-    private fun context(scale: Float): Context {
+    @Test fun localizedTwoLineDetailsDoNotClipTheCount() = instrumentation.runOnMainSync {
+        val problems = mutableListOf<String>()
+        var wrappedUnits = 0
+        var wrappedDates = 0
+        var legacyClipped = 0
+        val event = birthday.copy(date = LocalDate.of(2027, 9, 29),
+            title = "Un cumpleaños molt especial 🥳 amb un títol llarg")
+        for (language in listOf("en", "es", "ca")) for (scale in listOf(1.3f, 1.4f, 1.5f, 1.6f, 1.7f)) {
+            val context = context(scale, language)
+            for (large in listOf(false, true)) {
+                // Height where the previous single-line detail budget allowed two title lines.
+                val oldThreshold = (if (large) 28 else 20) +
+                    ceil((if (large) 22 else 20) * scale).toInt() +
+                    ceil((if (large) 20 else 16) * scale).toInt() +
+                    (if (large && scale < 1.5f) ceil(20 * scale).toInt() + 4 else 0) +
+                    2 * ceil((if (large) 22 else 18) * scale).toInt()
+                for (extra in listOf(0, 8, 64)) {
+                    val size = WidgetPreviewDimensions(if (large) 180 else 110, oldThreshold + extra)
+                    val style = WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.MONOGRAM)
+                    val legacyViews = WidgetPreviewFactory.remoteViews(context, event, style, today, size)
+                    legacyViews.setInt(R.id.widgetTitle, "setMaxLines", 2)
+                    val legacy = legacyViews.apply(context, FrameLayout(context))
+                    layout(context, legacy, size)
+                    try { assertCountFits(legacy) } catch (_: AssertionError) { legacyClipped++ }
+
+                    val root = WidgetPreviewFactory.remoteViews(context, event, style, today, size)
+                        .apply(context, FrameLayout(context))
+                    layout(context, root, size)
+                    val unit = root.findViewById<TextView>(R.id.widgetUnit)
+                    val date = root.findViewById<TextView>(R.id.widgetDate)
+                    if (unit.visibility == View.VISIBLE && unit.lineCount == 2) wrappedUnits++
+                    if (date.visibility == View.VISIBLE && date.lineCount == 2) wrappedDates++
+                    try {
+                        assertCountFits(root)
+                        for (id in listOf(R.id.widgetTitle, R.id.widgetUnit, R.id.widgetDate)) {
+                            val view = root.findViewById<View>(id)
+                            if (view.visibility == View.VISIBLE) assertFits(root, view)
+                        }
+                    } catch (error: AssertionError) {
+                        problems += "$language $scale ${size.widthDp}x${size.heightDp}: ${error.message}"
+                        capture(root, "wrapped-failure-$language-$scale-$large-$extra")
+                    }
+                    if (language != "en" && extra == 0) {
+                        capture(legacy, "wrapped-before-$language-$scale-$large")
+                        capture(root, "wrapped-after-$language-$scale-$large")
+                    }
+                }
+            }
+        }
+        assertTrue("Localized unit labels must actually wrap", wrappedUnits > 0)
+        assertTrue("Localized dates must actually wrap", wrappedDates > 0)
+        assertTrue("The previous budget must reproduce count clipping", legacyClipped > 0)
+        assertTrue(problems.joinToString("\n"), problems.isEmpty())
+    }
+
+    private fun context(scale: Float, language: String = "en"): Context {
         val config = Configuration(instrumentation.targetContext.resources.configuration).apply {
             fontScale = scale
-            setLocale(Locale.ENGLISH)
+            setLocale(Locale.forLanguageTag(language))
         }
         return instrumentation.targetContext.createConfigurationContext(config)
     }

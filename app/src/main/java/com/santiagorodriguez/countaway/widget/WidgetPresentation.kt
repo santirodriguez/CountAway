@@ -75,9 +75,11 @@ internal object WidgetPresentationResolver {
                 val padding = if (isLarge) 28 else 20
                 val count = ceil((if (isLarge) 22 else 20) * fontScale).toInt()
                 val icon = if (showIcon) { if (isLarge) 35 else 25 } else 0
-                val unit = if (showUnit) ceil((if (isLarge) 20 else 16) * fontScale).toInt() else 0
+                // Both detail TextViews allow two lines (including localized labels/dates).
+                // Reserve their full height before giving the title another line.
+                val unit = if (showUnit) 2 * ceil((if (isLarge) 20 else 16) * fontScale).toInt() else 0
                 val marker = if (showMilestone) ceil((if (isLarge) 17 else 14) * fontScale).toInt() else 0
-                val date = if (showDate) ceil(20 * fontScale).toInt() + 4 else 0
+                val date = if (showDate) 2 * ceil(20 * fontScale).toInt() + 4 else 0
                 val line = ceil((if (isLarge) 22 else 18) * fontScale).toInt()
                 ((heightDp - padding - count - icon - unit - marker - date) / line).coerceIn(1, 2)
             }

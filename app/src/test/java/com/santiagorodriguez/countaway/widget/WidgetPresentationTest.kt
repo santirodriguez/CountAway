@@ -10,6 +10,15 @@ import org.junit.Test
 
 class WidgetPresentationTest {
     @Test
+    fun wrappedDetailsKeepTheirSpaceBeforeTitleExpansion() {
+        val event = content(CountdownStatus.FUTURE, "365")
+        assertEquals(1, WidgetPresentationResolver.resolve(event, WidgetSize.STANDARD, 1.7f, 144).titleMaxLines)
+        assertEquals(2, WidgetPresentationResolver.resolve(event, WidgetSize.STANDARD, 1.7f, 172).titleMaxLines)
+        assertEquals(1, WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1.4f, 180).titleMaxLines)
+        assertEquals(2, WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1.4f, 237).titleMaxLines)
+    }
+
+    @Test
     fun shortWidgetUsesOnlyTitleLinesThatFitAtLargeFontScale() {
         val event = content(CountdownStatus.FUTURE, "91")
         assertEquals(1, WidgetPresentationResolver.resolve(event, WidgetSize.SHORT, 2f, 50).titleMaxLines)
