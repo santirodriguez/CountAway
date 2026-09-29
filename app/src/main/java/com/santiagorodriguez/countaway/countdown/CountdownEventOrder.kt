@@ -16,8 +16,7 @@ object CountdownEventOrder {
             .filter { (_, displayDate) -> !displayDate.isBefore(today) }
             .sortedWith(
                 compareBy<Pair<CountdownEvent, LocalDate>> { (_, displayDate) -> displayDate }
-                    .thenBy { (event, _) -> event.createdAt }
-                    .thenBy { (event, _) -> event.id },
+                    .thenBy { (event, _) -> event.createdAt },
             )
             .map { (event, _) -> event }
 
@@ -33,8 +32,7 @@ object CountdownEventOrder {
             .filter { (_, displayDate) -> displayDate.isBefore(today) }
             .sortedWith(
                 compareByDescending<Pair<CountdownEvent, LocalDate>> { (_, displayDate) -> displayDate }
-                    .thenByDescending { (event, _) -> event.createdAt }
-                    .thenBy { (event, _) -> event.id },
+                    .thenByDescending { (event, _) -> event.createdAt },
             )
             .map { (event, _) -> event }
 
