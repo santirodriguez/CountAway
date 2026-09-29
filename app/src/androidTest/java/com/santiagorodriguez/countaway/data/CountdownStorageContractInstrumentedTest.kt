@@ -33,7 +33,9 @@ class CountdownStorageContractInstrumentedTest {
         )
 
         fixtures.forEach { payload ->
-            assertEquals(1, CountdownStorageCodec.decode(payload).size)
+            val decoded = CountdownStorageCodec.decode(payload)
+            assertEquals(1, decoded.size)
+            assertEquals(CountMode.COUNT_DOWN, decoded.single().countMode)
         }
     }
 
@@ -61,9 +63,14 @@ class CountdownStorageContractInstrumentedTest {
 
     @Test
     fun schema6RemainsReadableAsCountdownWithExpandedRecurrence() {
-        val decoded = CountdownStorageCodec.decode(SCHEMA_6_FIXTURE).single()
-        assertEquals(RepeatRule.MONTHLY, decoded.repeatRule)
-        assertEquals(CountMode.COUNT_DOWN, decoded.countMode)
+        listOf(
+            SCHEMA_6_WEEKLY_FIXTURE to RepeatRule.WEEKLY,
+            SCHEMA_6_FIXTURE to RepeatRule.MONTHLY,
+        ).forEach { (payload, expectedRule) ->
+            val decoded = CountdownStorageCodec.decode(payload).single()
+            assertEquals(expectedRule, decoded.repeatRule)
+            assertEquals(CountMode.COUNT_DOWN, decoded.countMode)
+        }
     }
 
     @Test
@@ -73,7 +80,7 @@ class CountdownStorageContractInstrumentedTest {
                 reminder = ReminderOption.ONE_DAY,
                 repeatRule = RepeatRule.WEEKLY,
             ),
-            event("schema-7-up", "Count up").copy(countMode = CountMode.COUNT_UP),
+            event("schema-7-up", "Since launch 🚀").copy(countMode = CountMode.COUNT_UP),
         )
 
         val payload = CountdownStorageCodec.encode(events)
@@ -499,6 +506,24 @@ class CountdownStorageContractInstrumentedTest {
                   "iconKey": "cake",
                   "reminderKey": "seven_days",
                   "repeatRule": "yearly",
+                  "createdAt": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val SCHEMA_6_WEEKLY_FIXTURE = """
+            {
+              "schemaVersion": 6,
+              "events": [
+                {
+                  "id": "schema-6-weekly",
+                  "title": "Weekly recurrence",
+                  "date": "2026-10-31",
+                  "type": "event",
+                  "iconKey": "calendar",
+                  "reminderKey": "one_day",
+                  "repeatRule": "weekly",
                   "createdAt": "2020-01-01T00:00:00Z"
                 }
               ]
