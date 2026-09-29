@@ -101,12 +101,12 @@ class CountdownStorageCountModeTest {
         """.trimIndent()
 
         val SCHEMA_7_MISSING_MODE = SCHEMA_6_FIXTURE
-            .replace(""schemaVersion": 6", ""schemaVersion": 7")
+            .replace("\"schemaVersion\": 6", "\"schemaVersion\": 7")
         val SCHEMA_7_UNKNOWN_MODE = SCHEMA_7_MISSING_MODE
-            .replace(""createdAt"", ""countMode": "sideways",\n                "createdAt"")
+            .replace("\"createdAt\"", "\"countMode\": \"sideways\",\n                \"createdAt\"")
         val SCHEMA_7_NON_STRING_MODE = SCHEMA_7_MISSING_MODE
-            .replace(""createdAt"", ""countMode": 7,\n                "createdAt"")
+            .replace("\"createdAt\"", "\"countMode\": 7,\n                \"createdAt\"")
         val SCHEMA_7_INVALID_COMBINATION = SCHEMA_7_MISSING_MODE
-            .replace(""createdAt"", ""countMode": "count_up",\n                "createdAt"")
+            .replace("\"createdAt\"", "\"countMode\": \"count_up\",\n                \"createdAt\"")
     }
 }
