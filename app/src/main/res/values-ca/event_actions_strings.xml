@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="event_action_edit">Edita</string>
+    <string name="event_action_duplicate">Duplica</string>
+    <string name="event_action_widget">Afegeix un widget</string>
+    <string name="event_actions_description">Opcions de %1$s</string>
+    <string name="event_copy_title">Nova còpia</string>
+    <string name="copy_source_changed">Aquest esdeveniment ha canviat o s\'ha eliminat. Torna a la llista i tria Duplica de nou.</string>
+    <string name="event_action_stale">Aquest esdeveniment ha canviat o s\'ha eliminat. Revisa la llista actualitzada i torna-ho a provar.</string>
+</resources>

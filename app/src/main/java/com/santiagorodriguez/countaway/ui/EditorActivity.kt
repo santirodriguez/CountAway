@@ -174,6 +174,11 @@ class EditorActivity : BaseActivity() {
 
     private fun initializeEditor(loadedEvents: List<CountdownEvent>, savedInstanceState: Bundle?) {
         val requestedEventId = intent.getStringExtra(EXTRA_EVENT_ID)
+        val duplicateEventId = intent.getStringExtra(EXTRA_DUPLICATE_EVENT_ID)
+        if (requestedEventId != null && duplicateEventId != null) {
+            finish()
+            return
+        }
         if (requestedEventId == null && loadedEvents.any { it.id == session.id }) {
             finish()
             return
@@ -183,14 +188,28 @@ class EditorActivity : BaseActivity() {
             finish()
             return
         }
+        // Validate the selected saved snapshot once. A restored copy owns its own draft.
+        val copy = if (duplicateEventId != null && !session.initialized) {
+            val source = loadedEvents.firstOrNull { it.id == duplicateEventId }
+            if (source == null || EventRevision.of(source) != intent.getStringExtra(EXTRA_SOURCE_REVISION)) {
+                Toast.makeText(this, R.string.copy_source_changed, Toast.LENGTH_LONG).show()
+                finish()
+                return
+            }
+            EventCopyDraft.create(source, session.id, session.createdAt)
+        } else null
         findViewById<TextView>(R.id.editorHeading).setText(
-            if (existingEvent == null) R.string.event_new_title else R.string.event_edit_title,
+            when {
+                existingEvent != null -> R.string.event_edit_title
+                duplicateEventId != null -> R.string.event_copy_title
+                else -> R.string.event_new_title
+            },
         )
-        dateChosen = existingEvent != null
-        typeChosen = existingEvent != null
+        dateChosen = existingEvent != null || duplicateEventId != null
+        typeChosen = existingEvent != null || duplicateEventId != null
         selectedPreset = null
         autoSuggestedTitle = null
-        existingEvent?.let { event ->
+        (existingEvent ?: copy)?.let { event ->
             titleInput.setText(event.title)
             selectedDate = event.date
             selectedType = event.type
@@ -202,7 +221,8 @@ class EditorActivity : BaseActivity() {
         if (selectedCountMode == CountMode.COUNT_UP) selectedPreset = CountUpPreset.forStoredType(selectedType)
         if (!session.initialized) {
             session.originalRevision = existingEvent?.let(EventRevision::of)
-            session.baselineRevision = currentDraft().revision()
+            // An unsaved copy is already meaningful content, even before the first edit.
+            session.baselineRevision = if (duplicateEventId == null) currentDraft().revision() else null
             session.initialized = true
         }
         savedInstanceState?.let(::restoreEditorState)
@@ -958,6 +978,8 @@ class EditorActivity : BaseActivity() {
 
     companion object {
         const val EXTRA_EVENT_ID = "event_id"
+        const val EXTRA_DUPLICATE_EVENT_ID = "duplicate_event_id"
+        const val EXTRA_SOURCE_REVISION = "source_revision"
         private const val REQUEST_NOTIFICATIONS = 2401
         private const val STATE_TITLE = "editor_title"
         private const val STATE_TITLE_SELECTION_START = "editor_title_selection_start"

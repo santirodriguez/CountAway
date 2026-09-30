@@ -27,6 +27,7 @@ import java.time.LocalDate
 class MainActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
     private lateinit var adapter: CountdownEventAdapter
+    private lateinit var eventActions: HomeEventActions
     private lateinit var countdownList: ListView
     private lateinit var emptyState: View
     private lateinit var emptyStateIcon: View
@@ -47,7 +48,11 @@ class MainActivity : BaseActivity() {
         InsetUtils.applySystemBarPadding(findViewById(R.id.mainRoot))
 
         repository = CountdownRepository(this)
-        adapter = CountdownEventAdapter(this, ::openWidgetPinSetup)
+        eventActions = HomeEventActions(this,
+            lastNonConfigurationInstance as? HomeEventActions.Session ?: HomeEventActions.Session(),
+            ::openEditor, ::openWidgetPinSetup,
+        ) { refreshTemporalState(CountdownTime.snapshot()) }
+        adapter = CountdownEventAdapter(this, ::openWidgetPinSetup, ::openEditor, eventActions::show)
         countdownList = findViewById(R.id.countdownList)
         emptyState = findViewById(R.id.emptyState)
         emptyStateIcon = findViewById(R.id.emptyStateIcon)
@@ -63,10 +68,7 @@ class MainActivity : BaseActivity() {
 
         countdownList.adapter = adapter
         countdownList.emptyView = emptyState
-        countdownList.setOnItemClickListener { _, _, position, _ ->
-            val event = adapter.getItem(position)
-            startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
-        }
+        countdownList.setOnItemClickListener { _, _, position, _ -> openEditor(adapter.getItem(position)) }
         countdownList.setOnItemLongClickListener { _, _, position, _ ->
             openWidgetPinSetup(adapter.getItem(position))
             true
@@ -81,6 +83,8 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    override fun onRetainNonConfigurationInstance(): Any = eventActions.session
+
     override fun onResume() {
         super.onResume()
         if (LanguageManager.currentLanguageTag(this) != renderedLanguage) {
@@ -90,6 +94,7 @@ class MainActivity : BaseActivity() {
         val snapshot = CountdownTime.snapshot()
         temporalInvalidationController.start(snapshot)
         refreshTemporalState(snapshot)
+        eventActions.resume()
         languageChooser.render()
         renderThemeButton()
         if (restoreLanguageFocus || restoreLanguageAccessibilityFocus) {
@@ -109,12 +114,14 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onPause() {
+        eventActions.pause()
         temporalInvalidationController.stop()
         loadGeneration += 1
         super.onPause()
     }
 
     override fun onDestroy() {
+        eventActions.close()
         languageChooser.dismiss()
         super.onDestroy()
     }
@@ -173,6 +180,10 @@ class MainActivity : BaseActivity() {
                 setAddEnabled(false)
             }
         }
+    }
+
+    private fun openEditor(event: CountdownEvent) {
+        startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
     }
 
     private fun openWidgetPinSetup(event: CountdownEvent) {

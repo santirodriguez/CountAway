@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/home_event_edit" android:title="@string/event_action_edit" />
+    <item android:id="@+id/home_event_duplicate" android:title="@string/event_action_duplicate" />
+    <item android:id="@+id/home_event_widget" android:title="@string/event_action_widget" />
+    <item android:id="@+id/home_event_delete" android:title="@string/action_delete" />
+</menu>

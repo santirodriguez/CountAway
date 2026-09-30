@@ -25,6 +25,8 @@ import java.time.format.FormatStyle
 class CountdownEventAdapter(
     private val context: Context,
     private val onAddWidget: ((CountdownEvent) -> Unit)? = null,
+    private val onOpenEvent: ((CountdownEvent) -> Unit)? = null,
+    private val onEventActions: ((CountdownEvent, View) -> Unit)? = null,
 ) : BaseAdapter() {
     private val inflater = LayoutInflater.from(context)
     private val animatedMilestones = mutableSetOf<String>()
@@ -106,7 +108,20 @@ class CountdownEventAdapter(
         }
         view.contentDescription = listOf(event.title, meta, statusView.contentDescription).joinToString(", ")
         bindAddWidgetAction(view, event)
+        bindRowActions(view, event)
         return view
+    }
+
+    private fun bindRowActions(view: View, event: CountdownEvent) {
+        view.setOnClickListener(onOpenEvent?.let { open -> View.OnClickListener { open(event) } })
+        view.isFocusable = onOpenEvent != null
+        view.setOnLongClickListener(onAddWidget?.let { add -> View.OnLongClickListener { add(event); true } })
+        view.findViewById<View>(R.id.eventActions).apply {
+            tag = event.id
+            visibility = if (onEventActions == null) View.GONE else View.VISIBLE
+            contentDescription = context.getString(R.string.event_actions_description, event.title)
+            setOnClickListener { onEventActions?.invoke(event, this) }
+        }
     }
 
     private fun bindAddWidgetAction(view: View, event: CountdownEvent) {
