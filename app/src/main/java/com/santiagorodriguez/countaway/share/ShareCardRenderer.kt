@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
-import android.graphics.text.LineBreaker
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextDirectionHeuristics
@@ -173,7 +172,7 @@ internal object ShareCardRenderer {
             .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_LTR)
             .setIncludePad(false)
             .setLineSpacing(lineHeight - paint.fontSpacing, 1f)
-            .setBreakStrategy(LineBreaker.BREAK_STRATEGY_SIMPLE)
+            .setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE)
             .setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE)
             .setMaxLines(2)
             .setEllipsize(TextUtils.TruncateAt.END)

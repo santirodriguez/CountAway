@@ -16,10 +16,12 @@
     <plurals name="count_up_elapsed">
         <item quantity="one">%1$d dia transcorregut</item>
         <item quantity="other">%1$d dies transcorreguts</item>
+        <item quantity="many">%1$d dies transcorreguts</item>
     </plurals>
     <plurals name="count_up_starts_in">
         <item quantity="one">Comença d\'aquí a %1$d dia</item>
         <item quantity="other">Comença d\'aquí a %1$d dies</item>
+        <item quantity="many">Comença d\'aquí a %1$d dies</item>
     </plurals>
     <string name="event_new_title">Nou esdeveniment</string>
     <string name="event_edit_title">Edita l\'esdeveniment</string>

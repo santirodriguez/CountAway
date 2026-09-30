@@ -16,10 +16,12 @@
     <plurals name="count_up_elapsed">
         <item quantity="one">%1$d día transcurrido</item>
         <item quantity="other">%1$d días transcurridos</item>
+        <item quantity="many">%1$d días transcurridos</item>
     </plurals>
     <plurals name="count_up_starts_in">
         <item quantity="one">Empieza en %1$d día</item>
         <item quantity="other">Empieza en %1$d días</item>
+        <item quantity="many">Empieza en %1$d días</item>
     </plurals>
     <string name="event_new_title">Nuevo evento</string>
     <string name="event_edit_title">Editar evento</string>
