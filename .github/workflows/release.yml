@@ -621,10 +621,6 @@ jobs:
         env:
           EXPECTED_UNSIGNED_APK_SHA256: ${{ needs.build-signed-apk.outputs.unsigned_apk_sha256 }}
           SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
-      PREVIOUS_PUBLIC_VERSION: "1.2.1"
-      PREVIOUS_PUBLIC_VERSION_CODE: "10"
-      PREVIOUS_PUBLIC_APK_SHA256: "43e45ddee319c9ee6161988d4f681d13f14d8e93bad4d28a3c28bda1cfbeeffb"
-      PREVIOUS_PUBLIC_APK_BYTES: "443929"
           VERSION: ${{ needs.build-signed-apk.outputs.version }}
         run: |
           set -euo pipefail
@@ -725,6 +721,10 @@ jobs:
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
+      PREVIOUS_PUBLIC_VERSION: "1.2.1"
+      PREVIOUS_PUBLIC_VERSION_CODE: "10"
+      PREVIOUS_PUBLIC_APK_SHA256: "43e45ddee319c9ee6161988d4f681d13f14d8e93bad4d28a3c28bda1cfbeeffb"
+      PREVIOUS_PUBLIC_APK_BYTES: "443929"
 
     steps:
       - name: Checkout exact candidate source
