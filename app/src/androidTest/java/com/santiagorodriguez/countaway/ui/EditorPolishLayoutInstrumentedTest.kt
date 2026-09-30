@@ -11,6 +11,7 @@ import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.provider.Settings
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.GridLayout
 import android.widget.LinearLayout
@@ -164,9 +165,17 @@ class EditorPolishLayoutInstrumentedTest {
 
     private fun measure(context: Context, root: View) {
         repeat(3) {
+            forceLayoutTree(root)
             root.measure(View.MeasureSpec.makeMeasureSpec(dp(context, 320), View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(dp(context, 800), View.MeasureSpec.EXACTLY))
             root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+        }
+    }
+
+    private fun forceLayoutTree(view: View) {
+        view.forceLayout()
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) forceLayoutTree(view.getChildAt(index))
         }
     }
 

@@ -288,7 +288,7 @@ class EditorActivity : BaseActivity() {
         listOf(modeButton, countUpModeButton).forEachIndexed { index, button ->
             button.layoutParams = (button.layoutParams as LinearLayout.LayoutParams).apply {
                 width = if (vertical) ViewGroup.LayoutParams.MATCH_PARENT else 0
-                height = if (vertical) ViewGroup.LayoutParams.WRAP_CONTENT else ViewGroup.LayoutParams.MATCH_PARENT
+                height = ViewGroup.LayoutParams.WRAP_CONTENT
                 weight = if (vertical) 0f else 1f
                 marginEnd = if (!vertical && index == 0) dp(4) else 0
                 bottomMargin = if (vertical && index == 0) dp(4) else 0
