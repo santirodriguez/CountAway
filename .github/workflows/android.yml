@@ -34,7 +34,7 @@ jobs:
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
       - name: Build layout tests
         run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
-      - name: Prepare rendered regression checks
+      - name: Prepare rendered and behavioral regression checks
         run: |
           set -euo pipefail
           test -e /dev/kvm
@@ -51,11 +51,16 @@ jobs:
             adb logcat -d > layout-evidence/logcat.txt || true
           }
           trap collect EXIT
-          adb shell am instrument -w -e class "$PACKAGE.widget.WidgetTitleLayoutInstrumentedTest,$PACKAGE.widget.ExpansionLayoutInstrumentedTest" \
+          CLASSES="$PACKAGE.widget.WidgetTitleLayoutInstrumentedTest,$PACKAGE.widget.ExpansionLayoutInstrumentedTest"
+          CLASSES+=",$PACKAGE.widget.WidgetPinCallbackInstrumentedTest,$PACKAGE.ui.LanguageChooserInstrumentedTest"
+          CLASSES+=",$PACKAGE.data.CountdownStorageContractInstrumentedTest,$PACKAGE.data.CountdownStorageSchemaInstrumentedTest"
+          printf '%s\n' "$CLASSES" > layout-evidence/test-classes.txt
+          adb shell am instrument -w -e class "$CLASSES" \
             "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
           grep -Eq '^OK \([1-9][0-9]* tests?\)' layout-evidence/instrumentation.txt
+          ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' layout-evidence/instrumentation.txt
           SCRIPT
-      - name: Render and verify widget content
+      - name: Render and verify Android contracts
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: ${{ matrix.api }}

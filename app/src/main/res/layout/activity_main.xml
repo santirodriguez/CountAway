@@ -13,53 +13,23 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageButton
-                android:id="@+id/languageEnglishButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/language_chip_inactive"
-                android:contentDescription="@string/language_english"
-                android:padding="12dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/flag_us" />
-
-            <ImageButton
-                android:id="@+id/languageSpanishButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/language_chip_inactive"
-                android:contentDescription="@string/language_spanish"
-                android:padding="12dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/flag_ar" />
-
-            <ImageButton
-                android:id="@+id/languageCatalanButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="6dp"
-                android:background="@drawable/language_chip_inactive"
-                android:contentDescription="@string/language_catalan"
-                android:padding="12dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/flag_catalonia" />
-        </LinearLayout>
-
-        <Space
+        <Button
+            android:id="@+id/languageButton"
+            style="@style/Widget.CountAway.Button.Secondary"
             android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:minHeight="48dp"
+            android:foreground="?android:attr/selectableItemBackground"
+            android:text="@string/language_label"
+            android:textAllCaps="false"
+            android:textSize="14sp" />
 
         <TextView
             android:id="@+id/themeButton"
@@ -68,6 +38,7 @@
             android:layout_marginEnd="8dp"
             android:background="@drawable/icon_button"
             android:contentDescription="@string/theme_switch_to_light"
+            android:focusable="true"
             android:fontFamily="sans-serif"
             android:gravity="center"
             android:text="☀"
@@ -80,6 +51,7 @@
             android:layout_height="48dp"
             android:background="@drawable/icon_button"
             android:contentDescription="@string/action_about"
+            android:focusable="true"
             android:fontFamily="sans-serif-medium"
             android:gravity="center"
             android:text="i"

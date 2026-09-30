@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.LocaleManager
 import android.content.Context
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import android.os.LocaleList
 import java.util.Locale
@@ -24,25 +25,23 @@ object LanguageManager {
     fun localizedContext(context: Context): Context =
         localizedContext(context, currentLanguageTag(context))
 
-    fun currentLanguageTag(context: Context): String {
-        explicitLanguageTag(context)?.let { return it }
-        return SupportedLanguagePolicy.firstSupportedTag(systemLocales(context))
-            ?: ENGLISH
-    }
+    fun currentLanguageTag(context: Context): String =
+        explicitLanguageTag(context) ?: systemLanguageTag(context)
+
+    fun systemLanguageTag(context: Context): String =
+        firstSupportedTag(systemLocales(context)) ?: ENGLISH
 
     fun isFollowingSystem(context: Context): Boolean = explicitLanguageTag(context) == null
 
     fun setLanguage(activity: Activity, languageTag: String) {
         val canonical = SupportedLanguagePolicy.canonicalSupportedTag(Locale.forLanguageTag(languageTag))
             ?: ENGLISH
+        if (explicitLanguageTag(activity) == canonical) return
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .edit()
-                .remove(KEY_LANGUAGE)
-                .apply()
             activity.getSystemService(LocaleManager::class.java).applicationLocales =
                 LocaleList.forLanguageTags(canonical)
+            clearLegacyLanguage(activity)
         } else {
             activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .edit()
@@ -53,15 +52,13 @@ object LanguageManager {
     }
 
     fun useSystemLanguage(activity: Activity) {
-        activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .remove(KEY_LANGUAGE)
-            .apply()
-
+        if (isFollowingSystem(activity)) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             activity.getSystemService(LocaleManager::class.java).applicationLocales =
                 LocaleList.getEmptyLocaleList()
+            clearLegacyLanguage(activity)
         } else {
+            clearLegacyLanguage(activity)
             activity.recreate()
         }
     }
@@ -72,26 +69,31 @@ object LanguageManager {
         val localeManager = context.getSystemService(LocaleManager::class.java)
         if (!localeManager.applicationLocales.isEmpty) {
             val canonical = firstSupportedTag(localeManager.applicationLocales)
-            if (canonical != null && localeManager.applicationLocales.toLanguageTags() != canonical) {
-                localeManager.applicationLocales = LocaleList.forLanguageTags(canonical)
+            if (canonical != null) {
+                if (localeManager.applicationLocales.toLanguageTags() != canonical) {
+                    localeManager.applicationLocales = LocaleList.forLanguageTags(canonical)
+                }
+                // A platform selection owns the choice, including a later reset to System.
+                clearLegacyLanguage(context)
             }
             return
         }
 
         val stored = storedLanguageTag(context) ?: return
         localeManager.applicationLocales = LocaleList.forLanguageTags(stored)
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .remove(KEY_LANGUAGE)
-            .apply()
+        // Retain the legacy preference if platform assignment throws.
+        clearLegacyLanguage(context)
+    }
+
+    private fun clearLegacyLanguage(context: Context) {
+        val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (preferences.contains(KEY_LANGUAGE)) preferences.edit().remove(KEY_LANGUAGE).apply()
     }
 
     private fun explicitLanguageTag(context: Context): String? {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val platformLocales = context.getSystemService(LocaleManager::class.java).applicationLocales
-            if (!platformLocales.isEmpty) {
-                return firstSupportedTag(platformLocales)
-            }
+            if (!platformLocales.isEmpty) return firstSupportedTag(platformLocales)
         }
         return storedLanguageTag(context)
     }
@@ -116,18 +118,14 @@ object LanguageManager {
         return context.createConfigurationContext(configuration)
     }
 
-    private fun systemLocales(context: Context): List<Locale> {
-        val locales = context.resources.configuration.locales
-        return buildList {
-            for (index in 0 until locales.size()) {
-                add(locales[index])
-            }
+    private fun systemLocales(context: Context): LocaleList =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.getSystemService(LocaleManager::class.java).systemLocales
+        } else {
+            Resources.getSystem().configuration.locales
         }
-    }
 
     private fun firstSupportedTag(locales: LocaleList): String? = buildList {
-        for (index in 0 until locales.size()) {
-            add(locales[index])
-        }
+        for (index in 0 until locales.size()) add(locales[index])
     }.let(SupportedLanguagePolicy::firstSupportedTag)
 }

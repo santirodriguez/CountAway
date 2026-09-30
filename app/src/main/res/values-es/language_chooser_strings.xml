@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="language_label">Idioma</string>
+    <string name="language_choose">Elegí el idioma</string>
+    <string name="language_in_use">%1$s · En uso</string>
+    <string name="language_system_choice">Usar el idioma del sistema · %1$s</string>
+    <string name="language_state_system">Siguiendo al sistema</string>
+    <string name="language_state_explicit">Elegido para esta app</string>
+    <string name="language_control_description">Idioma: %1$s. %2$s. Elegí el idioma.</string>
+    <string name="language_change_failed">No se pudo cambiar el idioma. Volvé a intentar.</string>
+</resources>
