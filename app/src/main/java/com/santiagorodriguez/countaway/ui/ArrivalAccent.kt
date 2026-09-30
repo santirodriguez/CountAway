@@ -37,8 +37,12 @@ internal object ArrivalAccent {
         val save = canvas.save()
         canvas.clipPath(Path().apply { addRoundRect(RectF(0f, 0f, width, height), radius, radius, Path.Direction.CW) })
         canvas.clipOutRect(band, band, width - band, height - band)
-        canvas.drawRoundRect(RectF(inset, inset, width - inset, height - inset),
-            (radius - inset).coerceAtLeast(0f), (radius - inset).coerceAtLeast(0f), paint)
+        // Small rounded corners extend into the protected content rectangle. Prefer
+        // a clean edge highlight to drawing a clipped, discontinuous outline there.
+        if (shortSide >= 128f * density) {
+            canvas.drawRoundRect(RectF(inset, inset, width - inset, height - inset),
+                (radius - inset).coerceAtLeast(0f), (radius - inset).coerceAtLeast(0f), paint)
+        }
 
         // One, two, then three small highlights, without pretending to show a percentage.
         val highlights = when (stage) {
@@ -56,6 +60,10 @@ internal object ArrivalAccent {
         for (index in 0 until highlights) {
             val x = (width - total) / 2f + index * (length + gap)
             canvas.drawLine(x, band * 0.55f, x + length, band * 0.55f, paint)
+        }
+        if (stage == ArrivalStage.TODAY) {
+            canvas.drawLine((width - total) / 2f, height - band * 0.55f,
+                (width + total) / 2f, height - band * 0.55f, paint)
         }
         if (stage == ArrivalStage.TODAY && shortSide >= 72f * density) {
             // Fixed positions avoid flicker across refreshes; details remain outside the content.
