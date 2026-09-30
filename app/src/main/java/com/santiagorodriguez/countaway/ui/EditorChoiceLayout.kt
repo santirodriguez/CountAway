@@ -59,7 +59,11 @@ internal class EditorChoiceLayout(private val grid: GridLayout) {
             view.gravity = if (columns == 3) Gravity.CENTER else Gravity.START or Gravity.CENTER_VERTICAL
             view.setPaddingRelative(dp(if (columns == 3) 4 else 12), dp(8),
                 dp(if (columns == 3) 4 else 12), dp(8))
-            val glyph = context.getDrawable(choice.glyphRes)!!.mutate().apply { setBounds(0, 0, dp(24), dp(24)) }
+            val glyph = context.getDrawable(choice.glyphRes)!!.mutate().apply {
+                setBounds(0, 0, dp(24), dp(24))
+                // Tint each replacement drawable, not only the TextView's previously assigned set.
+                setTint(context.getColor(R.color.accent_text))
+            }
             if (columns == 3) view.setCompoundDrawablesRelative(null, glyph, null, null)
             else view.setCompoundDrawablesRelative(glyph, null, null, null)
             view.compoundDrawablePadding = dp(if (columns == 3) 6 else 12)

@@ -6,11 +6,14 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.os.Build
 import android.os.LocaleList
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.provider.Settings
+import android.text.TextUtils
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -20,9 +23,11 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.Espresso.pressBack
+import androidx.test.espresso.action.ViewActions.pressKey
 import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.RootMatchers.isDialog
 import androidx.test.espresso.matcher.ViewMatchers.hasFocus
+import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -35,6 +40,7 @@ import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 @RunWith(AndroidJUnit4::class)
@@ -52,6 +58,7 @@ class EditorPolishLayoutInstrumentedTest {
         } else null
         val originalScale = Settings.System.getString(context.contentResolver, Settings.System.FONT_SCALE)
         val effectiveScale = context.resources.configuration.fontScale
+        val problems = mutableListOf<String>()
         var captures = 0
         try {
             for (scale in listOf(1f, 1.3f, 2f)) {
@@ -84,10 +91,16 @@ class EditorPolishLayoutInstrumentedTest {
                                     val root = activity.findViewById<ScrollView>(R.id.editorRoot)
                                     for (width in listOf(320, 360, 393, 411)) {
                                         measure(activity, root, width)
-                                        verifyEditor(activity, width, scale, up)
+                                        val case = "editor-$language-$scale-$theme-$width-$up"
                                         if (width == 393 || (width == 320 && theme != "SYSTEM")) {
-                                            capture(root.getChildAt(0), "editor-$language-$scale-$theme-$width-$up")
+                                            capture(root.getChildAt(0), case)
                                             captures++
+                                        }
+                                        try {
+                                            verifyEditor(activity, width, scale, up)
+                                        } catch (error: AssertionError) {
+                                            capture(root.getChildAt(0), "failure-$case")
+                                            problems += "$case: ${error.message}"
                                         }
                                     }
                                     // Exercise a narrow/wide reflow without replacing the focused view.
@@ -110,6 +123,9 @@ class EditorPolishLayoutInstrumentedTest {
                             scenario.onActivity { activity ->
                                 val root = activity.findViewById<View>(R.id.mainRoot)
                                 measure(activity, root, 320)
+                                val case = "editor-header-$language-$scale-$theme"
+                                capture(root, case)
+                                captures++
                                 val button = activity.findViewById<Button>(R.id.languageButton)
                                 assertEquals("", button.text.toString())
                                 assertEquals(1, button.compoundDrawablesRelative.count { it != null })
@@ -123,20 +139,27 @@ class EditorPolishLayoutInstrumentedTest {
                                 assertTrue(button.right < activity.findViewById<View>(R.id.themeButton).left)
                                 val empty = activity.findViewById<ScrollView>(R.id.emptyState)
                                 if (empty.visibility == View.VISIBLE) {
-                                    assertTextFits(activity.findViewById(R.id.emptyDescription))
+                                    try {
+                                        assertTextFits(activity.findViewById(R.id.emptyDescription))
+                                    } catch (error: AssertionError) {
+                                        problems += "$case: ${error.message}"
+                                    }
                                     val content = empty.getChildAt(0)
                                     empty.scrollTo(0, content.height)
                                     assertTrue(empty.scrollY + empty.height >= content.height - content.paddingBottom)
                                     empty.scrollTo(0, 0)
                                 }
-                                capture(root, "editor-header-$language-$scale-$theme")
-                                captures++
                             }
                         }
                     }
                 }
             }
+            File(context.filesDir, "layout-evidence/editor-matrix.txt").apply {
+                parentFile!!.mkdirs()
+                writeText("captures=$captures\nexpected=117\nfailures=${problems.size}\n" + problems.joinToString("\n"))
+            }
             assertEquals(117, captures)
+            assertTrue(problems.joinToString("\n"), problems.isEmpty())
         } finally {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && originalLocales != null) {
                 context.getSystemService(LocaleManager::class.java).applicationLocales = originalLocales
@@ -160,10 +183,50 @@ class EditorPolishLayoutInstrumentedTest {
                 button.requestFocusFromTouch()
                 button.performClick()
             }
-            pressBack()
+            // Synchronize with the dialog that owns focus before delivering Back to that window.
+            onView(isRoot()).inRoot(isDialog()).perform(pressKey(KeyEvent.KEYCODE_BACK))
             onView(withId(R.id.modeButton)).check(matches(hasFocus()))
             scenario.onActivity { assertEquals(before, it.findViewById<Button>(R.id.modeButton).text.toString()) }
         }
+    }
+
+    @Test fun textFitChecksIgnoreTrailingWhitespaceButRejectVisibleOverflow() = instrumentation.runOnMainSync {
+        fun fixture(text: String) = TextView(context).apply {
+            this.text = text
+            textSize = 16f
+            setPadding(0, 0, 0, 0)
+        }
+        fun layout(view: TextView, width: Int, height: Int? = null) {
+            view.forceLayout()
+            view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height ?: 0,
+                    if (height == null) View.MeasureSpec.UNSPECIFIED else View.MeasureSpec.EXACTLY))
+            view.layout(0, 0, view.measuredWidth, view.measuredHeight)
+        }
+        fun rejects(view: TextView, message: String) {
+            val failure = runCatching { assertTextFits(view) }.exceptionOrNull()
+            assertTrue("Expected $message, got $failure", failure is AssertionError &&
+                failure.message.orEmpty().contains(message))
+        }
+        val wrapped = fixture("Visible                    \nNext")
+        val width = ceil(wrapped.paint.measureText("Visible")).toInt() + 2
+        layout(wrapped, width)
+        assertTrue("Fixture must expose the old trailing-whitespace false positive",
+            (0 until wrapped.layout.lineCount).any { wrapped.layout.getLineWidth(it) > wrapped.layout.width + 1 })
+        assertTextFits(wrapped)
+
+        val overflow = fixture("Visible content must not escape its viewport").apply { setHorizontallyScrolling(true) }
+        layout(overflow, width)
+        rejects(overflow, "Clipped text width")
+        val ellipsized = fixture("Visible content must not be replaced with dots").apply {
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+        }
+        layout(ellipsized, width)
+        rejects(ellipsized, "Ellipsized text")
+        val clippedHeight = fixture("Visible\nNext")
+        layout(clippedHeight, width, 1)
+        rejects(clippedHeight, "Clipped text height")
     }
 
     private fun verifyEditor(activity: EditorActivity, width: Int, scale: Float, up: Boolean) {
@@ -176,6 +239,7 @@ class EditorPolishLayoutInstrumentedTest {
         for (card in cards) {
             assertTextFits(card)
             assertWholeWordsFit(card)
+            assertGlyphTint(card)
             assertTrue(card.width >= dp(activity, 48))
             assertTrue(card.height >= dp(activity, 48))
             val node = card.createAccessibilityNodeInfo()
@@ -224,10 +288,32 @@ class EditorPolishLayoutInstrumentedTest {
         val layout = checkNotNull(view.layout) { "Unmeasured text: ${view.text}" }
         assertTrue("Clipped text height: ${view.text}",
             layout.height <= view.height - view.compoundPaddingTop - view.compoundPaddingBottom + 1)
+        val visibleWidth = minOf(layout.width, view.width - view.compoundPaddingLeft - view.compoundPaddingRight)
         for (line in 0 until layout.lineCount) {
             assertEquals("Ellipsized text: ${view.text}", 0, layout.getEllipsisCount(line))
-            assertTrue("Clipped text width: ${view.text}", layout.getLineWidth(line) <= layout.width + 1)
+            // getLineWidth includes invisible trailing spaces; getLineMax measures the visible extent.
+            assertTrue("Clipped text width: ${view.text}; line=$line visible=${layout.getLineMax(line)} " +
+                "includingWhitespace=${layout.getLineWidth(line)} available=$visibleWidth",
+                layout.getLineMax(line) <= visibleWidth + 1)
         }
+    }
+
+    private fun assertGlyphTint(view: TextView) {
+        val glyph = view.compoundDrawablesRelative.filterNotNull().single()
+        val bitmap = Bitmap.createBitmap(glyph.bounds.width(), glyph.bounds.height(), Bitmap.Config.ARGB_8888)
+        try {
+            glyph.draw(Canvas(bitmap))
+            val expected = view.context.getColor(R.color.accent_text) and 0x00ffffff
+            var opaquePixels = 0
+            for (y in 0 until bitmap.height) for (x in 0 until bitmap.width) {
+                val pixel = bitmap.getPixel(x, y)
+                if (Color.alpha(pixel) == 255) {
+                    opaquePixels++
+                    assertEquals("Untinted catalog glyph: ${view.text}", expected, pixel and 0x00ffffff)
+                }
+            }
+            assertTrue("Catalog glyph must have visible pixels: ${view.text}", opaquePixels > 0)
+        } finally { bitmap.recycle() }
     }
 
     private fun assertWholeWordsFit(view: TextView) {
