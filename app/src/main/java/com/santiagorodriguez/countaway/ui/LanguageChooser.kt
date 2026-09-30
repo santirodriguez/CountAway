@@ -3,6 +3,7 @@ package com.santiagorodriguez.countaway.ui
 import android.app.Activity
 import android.app.AlertDialog
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.Toast
@@ -82,20 +83,56 @@ internal class LanguageChooser(
             .create()
         picker.setOnDismissListener {
             dialog = null
-            button.post {
-                if (!activity.isFinishing && !activity.isDestroyed) {
-                    button.requestFocusFromTouch()
-                    if (restoreAccessibilityFocus) {
-                        button.performAccessibilityAction(
-                            AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS,
-                            null,
-                        )
-                    }
-                }
-            }
+            restoreButtonFocus(restoreAccessibilityFocus)
         }
         dialog = picker
         picker.show()
+    }
+
+    private fun restoreButtonFocus(restoreAccessibilityFocus: Boolean) {
+        if (activity.isFinishing || activity.isDestroyed) return
+
+        var restored = false
+        fun restoreOnce() {
+            if (restored || activity.isFinishing || activity.isDestroyed) return
+            restored = true
+            button.requestFocusFromTouch()
+            if (restoreAccessibilityFocus) {
+                button.performAccessibilityAction(
+                    AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS,
+                    null,
+                )
+            }
+        }
+
+        if (button.hasWindowFocus()) {
+            button.post { restoreOnce() }
+            return
+        }
+
+        val observer = button.viewTreeObserver
+        val listener = object : ViewTreeObserver.OnWindowFocusChangeListener {
+            override fun onWindowFocusChanged(hasFocus: Boolean) {
+                if (!hasFocus) return
+                val currentObserver = button.viewTreeObserver
+                if (currentObserver.isAlive) {
+                    currentObserver.removeOnWindowFocusChangeListener(this)
+                }
+                button.post { restoreOnce() }
+            }
+        }
+        observer.addOnWindowFocusChangeListener(listener)
+
+        // Close the race where window focus returns between the initial check and listener registration.
+        button.post {
+            if (button.hasWindowFocus()) {
+                val currentObserver = button.viewTreeObserver
+                if (currentObserver.isAlive) {
+                    currentObserver.removeOnWindowFocusChangeListener(listener)
+                }
+                restoreOnce()
+            }
+        }
     }
 
     fun dismiss() {
