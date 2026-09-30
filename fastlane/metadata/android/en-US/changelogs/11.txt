@@ -1,0 +1,1 @@
+Count days in both directions: count down to future dates or count up from a start date. Count-up events work in the app, fixed widgets, sharing, and backups. Language switching is now explicit and accessible, and widget pinning is more reliable. Existing data migrates automatically; no new permissions or Internet access.
