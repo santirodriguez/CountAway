@@ -100,7 +100,11 @@ class LanguageChooserInstrumentedTest {
             pressBack()
             // Enter real keyboard-navigation mode before requesting keyboard focus.
             instrumentation.setInTouchMode(false)
-            scenario.onActivity { assertTrue(it.findViewById<Button>(R.id.languageButton).requestFocus()) }
+            instrumentation.waitForIdleSync()
+            scenario.onActivity {
+                val button = it.findViewById<Button>(R.id.languageButton)
+                assertTrue(button.hasFocus() || button.requestFocus())
+            }
             onView(withId(R.id.languageButton)).check(matches(hasFocus()))
             onView(withId(R.id.languageButton)).perform(pressKey(KeyEvent.KEYCODE_DPAD_CENTER))
             onView(withText("Choose language")).inRoot(isDialog()).check(matches(isDisplayed()))
