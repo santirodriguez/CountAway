@@ -297,8 +297,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          grep -Fqx "## ${VERSION}" CHANGELOG.md
+          test -s "docs/releases/${VERSION}.md"
+          test ! -d "fastlane/metadata/android/en"
+          for locale in en-US es ca; do
+            TITLE="fastlane/metadata/android/${locale}/title.txt"
+            SHORT_DESCRIPTION="fastlane/metadata/android/${locale}/short_description.txt"
+            FULL_DESCRIPTION="fastlane/metadata/android/${locale}/full_description.txt"
+            CHANGELOG="fastlane/metadata/android/${locale}/changelogs/${VERSION_CODE}.txt"
+
+            test -s "${TITLE}"
+            test -s "${SHORT_DESCRIPTION}"
+            test -s "${FULL_DESCRIPTION}"
+            test -s "${CHANGELOG}"
+
+            test "$(wc -m < "${TITLE}")" -le 31
+            test "$(wc -m < "${SHORT_DESCRIPTION}")" -le 81
+            test "$(wc -m < "${FULL_DESCRIPTION}")" -le 4001
+            test "$(wc -m < "${CHANGELOG}")" -le 501
+          done
+
           if [[ "${PREPARE_RELEASE}" == "true" ]]; then
-            grep -Fqx "## ${VERSION}" CHANGELOG.md
             test -s PRIVACY.md
             PRIVACY_URL="https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md"
             PRIVACY_RAW_URL="https://raw.githubusercontent.com/santirodriguez/CountAway/main/PRIVACY.md"
@@ -307,11 +326,6 @@ jobs:
             test -s "${RUNNER_TEMP}/countaway-privacy-policy.html"
             curl --fail --location --silent --show-error --retry 2               "${PRIVACY_RAW_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.md"
             grep -Fqx '# CountAway Privacy Policy' "${RUNNER_TEMP}/countaway-privacy-policy.md"
-            test -s "docs/releases/${VERSION}.md"
-            test ! -d "fastlane/metadata/android/en"
-            for locale in en-US es ca; do
-              test -s "fastlane/metadata/android/${locale}/changelogs/${VERSION_CODE}.txt"
-            done
 
             declare -a SCREENSHOTS=(
               "fastlane/metadata/android/en-US/images/phoneScreenshots/1.png"
