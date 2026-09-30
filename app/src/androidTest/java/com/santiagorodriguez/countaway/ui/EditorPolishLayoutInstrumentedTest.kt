@@ -13,6 +13,7 @@ import android.provider.Settings
 import android.view.View
 import android.widget.Button
 import android.widget.GridLayout
+import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
@@ -65,10 +66,11 @@ class EditorPolishLayoutInstrumentedTest {
                                 measure(activity, root)
                                 val grid = activity.findViewById<GridLayout>(R.id.typeGrid)
                                 assertEquals(9, grid.childCount)
-                                assertEquals(if (scale >= 1.3f) 2 else 3, grid.columnCount)
+                                assertEquals(if (scale >= 1.5f) 1 else 2, grid.columnCount)
                                 for (index in 0 until grid.childCount) {
                                     val card = grid.getChildAt(index) as TextView
                                     assertTextFits(card)
+                                    assertWholeWordsFit(card)
                                     assertTrue(card.width >= dp(activity, 48))
                                     assertTrue(card.height >= dp(activity, 48))
                                     val node = card.createAccessibilityNodeInfo()
@@ -78,9 +80,17 @@ class EditorPolishLayoutInstrumentedTest {
                                 for (id in listOf(R.id.modeButton, R.id.countUpModeButton)) {
                                     val button = activity.findViewById<Button>(id)
                                     assertTextFits(button)
+                                    assertWholeWordsFit(button)
                                     assertTrue(button.height >= dp(activity, 48))
                                 }
-                                assertTrue(activity.findViewById<View>(R.id.modeSelector).bottom < grid.top)
+                                val selector = activity.findViewById<LinearLayout>(R.id.modeSelector)
+                                assertEquals(if (scale >= 1.5f) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL,
+                                    selector.orientation)
+                                if (selector.orientation == LinearLayout.HORIZONTAL) {
+                                    assertEquals(activity.findViewById<Button>(R.id.modeButton).height,
+                                        activity.findViewById<Button>(R.id.countUpModeButton).height)
+                                }
+                                assertTrue(selector.bottom < grid.top)
                                 capture(root.getChildAt(0), "experiment-editor-$language-$scale-$up")
                                 captures++
                             }
@@ -116,7 +126,6 @@ class EditorPolishLayoutInstrumentedTest {
             preferences.edit().apply {
                 if (hadLanguage) putString("language", originalLanguage) else remove("language")
             }.commit()
-            // The CI device is disposable, but restore its exact incoming configuration as well.
             if (originalScale == null) shell("settings delete system font_scale")
             else shell("settings put system font_scale $originalScale")
             waitForFontScale(effectiveScale)
@@ -133,6 +142,17 @@ class EditorPolishLayoutInstrumentedTest {
         }
     }
 
+    private fun assertWholeWordsFit(view: TextView) {
+        val layout = checkNotNull(view.layout)
+        for (line in 0 until layout.lineCount - 1) {
+            val end = layout.getLineEnd(line)
+            if (end > 0 && end < view.text.length) {
+                assertFalse("Word split inside ${view.text}",
+                    view.text[end - 1].isLetter() && view.text[end].isLetter())
+            }
+        }
+    }
+
     private fun measure(context: Context, root: View) {
         repeat(3) {
             root.measure(View.MeasureSpec.makeMeasureSpec(dp(context, 320), View.MeasureSpec.EXACTLY),
@@ -144,7 +164,9 @@ class EditorPolishLayoutInstrumentedTest {
     private fun capture(view: View, name: String) {
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
         try {
-            view.draw(Canvas(bitmap))
+            val canvas = Canvas(bitmap)
+            canvas.drawColor(view.context.getColor(R.color.background))
+            view.draw(canvas)
             File(context.filesDir, "layout-evidence/$name.png").apply {
                 parentFile!!.mkdirs()
                 outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }

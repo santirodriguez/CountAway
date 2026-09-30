@@ -25,6 +25,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -111,6 +112,9 @@ class EditorActivity : BaseActivity() {
         session.operation.onChanged = { consumeOperation() }
         titleInput = findViewById(R.id.titleInput)
         typeGrid = findViewById(R.id.typeGrid)
+        typeGrid.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+            if (editorInitialized && right > left && right - left != oldRight - oldLeft) renderTypeGrid()
+        }
         customIconSection = findViewById(R.id.customIconSection)
         iconGrid = findViewById(R.id.iconGrid)
         dateButton = findViewById(R.id.dateButton)
@@ -278,6 +282,18 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun renderMode() {
+        val vertical = resources.configuration.fontScale >= 1.5f
+        findViewById<LinearLayout>(R.id.modeSelector).orientation =
+            if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+        listOf(modeButton, countUpModeButton).forEachIndexed { index, button ->
+            button.layoutParams = (button.layoutParams as LinearLayout.LayoutParams).apply {
+                width = if (vertical) ViewGroup.LayoutParams.MATCH_PARENT else 0
+                height = if (vertical) ViewGroup.LayoutParams.WRAP_CONTENT else ViewGroup.LayoutParams.MATCH_PARENT
+                weight = if (vertical) 0f else 1f
+                marginEnd = if (!vertical && index == 0) dp(4) else 0
+                bottomMargin = if (vertical && index == 0) dp(4) else 0
+            }
+        }
         modeButton.isSelected = selectedCountMode == CountMode.COUNT_DOWN
         countUpModeButton.isSelected = selectedCountMode == CountMode.COUNT_UP
         modeButton.contentDescription = getString(R.string.count_mode_label) + ": " + modeButton.text
@@ -442,8 +458,10 @@ class EditorActivity : BaseActivity() {
 
     private fun renderTypeGrid() {
         val choices = presetChoices()
-        val columns = if (resources.configuration.fontScale >= 1.3f ||
-            resources.configuration.screenWidthDp in 1..299) 2 else 3
+        val availableWidth = typeGrid.width.takeIf { it > 0 }
+            ?: dp((resources.configuration.screenWidthDp - 48).coerceAtLeast(112))
+        val preferredCardWidth = dp(112) * resources.configuration.fontScale.coerceAtLeast(1f)
+        val columns = (availableWidth / preferredCardWidth).toInt().coerceIn(1, 3)
         val selectedKey = if (selectedCountMode == CountMode.COUNT_UP) {
             (selectedPreset ?: CountUpPreset.forStoredType(selectedType))?.let { "up:${it.name}" }
         } else "down:${selectedType.name}"
