@@ -105,7 +105,6 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:background="@drawable/surface_card"
-            android:clipToOutline="true"
             android:scrollbars="vertical">
 
             <LinearLayout
