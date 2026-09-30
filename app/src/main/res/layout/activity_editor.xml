@@ -89,9 +89,32 @@
             android:textSize="16sp" />
 
         <TextView
+            android:id="@+id/modeLabel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:labelFor="@id/modeButton"
+            android:text="@string/count_mode_label"
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/modeButton"
+            style="@style/Widget.CountAway.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:minHeight="48dp"
+            android:foreground="?android:attr/selectableItemBackground"
+            android:text="@string/count_mode_down"
+            android:textAllCaps="false" />
+
+        <TextView
+            android:id="@+id/dateLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:labelFor="@id/dateButton"
             android:text="@string/field_date"
             android:textColor="@color/secondary_text"
             android:textSize="13sp" />
@@ -103,55 +126,69 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp" />
 
-        <TextView
+        <LinearLayout
+            android:id="@+id/repeatSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/field_repeat"
-            android:labelFor="@id/repeatSpinner"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
+            android:orientation="vertical">
 
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/control_surface">
-
-            <Spinner
-                android:id="@+id/repeatSpinner"
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:background="@android:color/transparent"
-                android:paddingStart="14dp"
-                android:paddingEnd="8dp"
-                android:spinnerMode="dropdown" />
-        </FrameLayout>
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/field_repeat"
+                android:labelFor="@id/repeatSpinner"
+                android:textColor="@color/secondary_text"
+                android:textSize="13sp" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/field_reminder"
-            android:labelFor="@id/reminderSpinner"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/control_surface">
-
-            <Spinner
-                android:id="@+id/reminderSpinner"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:background="@android:color/transparent"
-                android:paddingStart="14dp"
-                android:paddingEnd="8dp"
-                android:spinnerMode="dropdown" />
-        </FrameLayout>
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/control_surface">
+
+                <Spinner
+                    android:id="@+id/repeatSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:background="@android:color/transparent"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="8dp"
+                    android:spinnerMode="dropdown" />
+            </FrameLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/reminderSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/field_reminder"
+                android:labelFor="@id/reminderSpinner"
+                android:textColor="@color/secondary_text"
+                android:textSize="13sp" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/control_surface">
+
+                <Spinner
+                    android:id="@+id/reminderSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:background="@android:color/transparent"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="8dp"
+                    android:spinnerMode="dropdown" />
+            </FrameLayout>
+        </LinearLayout>
 
         <TextView
             android:id="@+id/editorScheduleSummary"
@@ -182,10 +219,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="@string/action_share" />
-
-
-
-
 
         <Button
             android:id="@+id/deleteButton"

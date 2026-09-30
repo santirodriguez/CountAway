@@ -11,10 +11,10 @@ import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
-import com.santiagorodriguez.countaway.countdown.CountdownCalculator
-import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountUpState
+import com.santiagorodriguez.countaway.countdown.EventCountResolver
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.RepeatRule
@@ -38,20 +38,19 @@ class CountdownEventAdapter(
     }
 
     override fun getCount(): Int = items.size
-
     override fun getItem(position: Int): CountdownEvent = items[position]
-
     override fun getItemId(position: Int): Long = getItem(position).id.hashCode().toLong()
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: inflater.inflate(R.layout.item_countdown, parent, false)
         val event = getItem(position)
-        val displayDate = CountdownOccurrenceResolver.displayDate(event, today)
-        val countdown = CountdownCalculator.value(today, displayDate)
+        val value = EventCountResolver.resolve(event, today)
+        val displayDate = value.displayDate
+        val status = value.countdownStatus
         val locale = context.resources.configuration.locales[0]
         val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
-        val displayedIcon = if (countdown.status == CountdownStatus.TODAY) EventIcon.CONFETTI else event.icon
+        val displayedIcon = if (status == CountdownStatus.TODAY) EventIcon.CONFETTI else event.icon
         view.findViewById<ImageView>(R.id.eventIcon).apply {
             setImageResource(EventIconPresentation.drawableRes(displayedIcon))
             contentDescription = context.getString(EventIconPresentation.labelRes(displayedIcon))
@@ -59,61 +58,54 @@ class CountdownEventAdapter(
         view.findViewById<TextView>(R.id.eventTitle).text = event.title
         val eventType = context.getString(EventTypePresentation.labelRes(event.type))
         val formattedDate = displayDate.format(dateFormatter)
-        val meta = if (event.repeatRule == RepeatRule.NONE) {
-            context.getString(R.string.event_meta, eventType, formattedDate)
-        } else {
-            context.getString(
-                R.string.event_meta_repeating,
-                eventType,
-                formattedDate,
-                context.getString(repeatLabelRes(event.repeatRule)),
-            )
+        val meta = when {
+            value.countUpState != null -> context.getString(R.string.count_up_meta_format,
+                EventCountText.status(context, value), EventCountText.date(context, displayDate, event.countMode))
+            event.repeatRule == RepeatRule.NONE -> context.getString(R.string.event_meta, eventType, formattedDate)
+            else -> context.getString(R.string.event_meta_repeating, eventType, formattedDate,
+                context.getString(repeatLabelRes(event.repeatRule)))
         }
-        view.findViewById<TextView>(R.id.eventMeta).text = meta
+        view.findViewById<TextView>(R.id.eventMeta).apply {
+            text = meta
+            maxLines = if (value.countUpState == null) 2 else 3
+        }
 
         val statusView = view.findViewById<TextView>(R.id.eventStatus).apply {
-            text = when (countdown.status) {
-                CountdownStatus.FUTURE -> context.getString(R.string.status_days, countdown.days)
+            animate().withEndAction(null).cancel()
+            text = when (status) {
+                CountdownStatus.FUTURE -> context.getString(R.string.status_days, value.magnitude)
                 CountdownStatus.THREE_DAYS -> "✦ 3"
                 CountdownStatus.TWO_DAYS -> "✦ 2 ✦"
                 CountdownStatus.TOMORROW -> "✦ 1 ✦"
                 CountdownStatus.TODAY -> context.getString(R.string.status_today_zero)
-                CountdownStatus.DONE -> elapsedStatus(countdown.elapsedDays)
+                CountdownStatus.DONE -> elapsedStatus(value.magnitude)
+                null -> (if (value.countUpState == CountUpState.ELAPSED) "+" else "−") + value.magnitude
             }
-            contentDescription = when (countdown.status) {
-                CountdownStatus.FUTURE,
-                CountdownStatus.THREE_DAYS,
-                CountdownStatus.TWO_DAYS,
-                -> context.getString(R.string.status_days, countdown.days)
+            contentDescription = when (status) {
+                CountdownStatus.FUTURE, CountdownStatus.THREE_DAYS, CountdownStatus.TWO_DAYS ->
+                    context.getString(R.string.status_days, value.magnitude)
                 CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
                 CountdownStatus.TODAY -> context.getString(R.string.status_today)
-                CountdownStatus.DONE -> elapsedStatus(countdown.elapsedDays)
+                CountdownStatus.DONE -> elapsedStatus(value.magnitude)
+                null -> EventCountText.status(context, value)
             }
             setTypeface(typeface, Typeface.BOLD)
             scaleX = 1f
             scaleY = 1f
             alpha = 1f
-
-            if (countdown.status in MILESTONE_STATUSES) {
-                val animationKey = "${event.id}:$displayDate:${countdown.status}"
+            if (status in MILESTONE_STATUSES) {
+                val animationKey = "${event.id}:$displayDate:$status"
                 if (animatedMilestones.add(animationKey)) {
                     scaleX = 0.94f
                     scaleY = 0.94f
-                    animate()
-                        .scaleX(1.07f)
-                        .scaleY(1.07f)
-                        .setDuration(160)
-                        .withEndAction {
-                            animate().scaleX(1f).scaleY(1f).setDuration(160).start()
-                        }
+                    animate().scaleX(1.07f).scaleY(1.07f).setDuration(160)
+                        .withEndAction { animate().scaleX(1f).scaleY(1f).setDuration(160).start() }
                         .start()
                 }
             }
         }
-        view.contentDescription = listOf(event.title, meta, statusView.contentDescription)
-            .joinToString(", ")
+        view.contentDescription = listOf(event.title, meta, statusView.contentDescription).joinToString(", ")
         bindAddWidgetAction(view, event)
-
         return view
     }
 
@@ -123,26 +115,15 @@ class CountdownEventAdapter(
             view.accessibilityDelegate = null
             return
         }
-
         view.accessibilityDelegate = object : View.AccessibilityDelegate() {
-            override fun onInitializeAccessibilityNodeInfo(
-                host: View,
-                info: AccessibilityNodeInfo,
-            ) {
+            override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
                 super.onInitializeAccessibilityNodeInfo(host, info)
-                info.addAction(
-                    AccessibilityNodeInfo.AccessibilityAction(
-                        AccessibilityNodeInfo.ACTION_LONG_CLICK,
-                        context.getString(R.string.widget_add_accessibility_action),
-                    ),
-                )
+                info.addAction(AccessibilityNodeInfo.AccessibilityAction(
+                    AccessibilityNodeInfo.ACTION_LONG_CLICK,
+                    context.getString(R.string.widget_add_accessibility_action),
+                ))
             }
-
-            override fun performAccessibilityAction(
-                host: View,
-                actionId: Int,
-                arguments: Bundle?,
-            ): Boolean {
+            override fun performAccessibilityAction(host: View, actionId: Int, arguments: Bundle?): Boolean {
                 if (actionId == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
                     action(event)
                     return true
@@ -152,10 +133,9 @@ class CountdownEventAdapter(
         }
     }
 
-    private fun elapsedStatus(elapsedDays: Long): String {
-        val quantity = elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
-        return context.resources.getQuantityString(R.plurals.status_days_ago, quantity, elapsedDays)
-    }
+    private fun elapsedStatus(elapsedDays: Long): String = context.resources.getQuantityString(
+        R.plurals.status_days_ago, elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(), elapsedDays,
+    )
 
     private fun repeatLabelRes(repeatRule: RepeatRule): Int = when (repeatRule) {
         RepeatRule.NONE -> R.string.repeat_never
@@ -166,10 +146,7 @@ class CountdownEventAdapter(
 
     private companion object {
         val MILESTONE_STATUSES = setOf(
-            CountdownStatus.THREE_DAYS,
-            CountdownStatus.TWO_DAYS,
-            CountdownStatus.TOMORROW,
-            CountdownStatus.TODAY,
+            CountdownStatus.THREE_DAYS, CountdownStatus.TWO_DAYS, CountdownStatus.TOMORROW, CountdownStatus.TODAY,
         )
     }
 }

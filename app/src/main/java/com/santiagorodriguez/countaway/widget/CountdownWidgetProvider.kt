@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.util.SizeF
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
-import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownIo
@@ -74,12 +73,9 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             newWidgetIds.forEach { appWidgetId ->
                 runCatching {
-                    manager.updateAppWidgetOptions(
-                        appWidgetId,
-                        Bundle().apply {
-                            putBoolean(AppWidgetManager.OPTION_APPWIDGET_RESTORE_COMPLETED, true)
-                        },
-                    )
+                    manager.updateAppWidgetOptions(appWidgetId, Bundle().apply {
+                        putBoolean(AppWidgetManager.OPTION_APPWIDGET_RESTORE_COMPLETED, true)
+                    })
                 }
             }
         }
@@ -88,12 +84,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         super.onRestored(context, oldWidgetIds, newWidgetIds)
     }
 
-    override fun onAppWidgetOptionsChanged(
-        context: Context,
-        manager: AppWidgetManager,
-        appWidgetId: Int,
-        newOptions: Bundle,
-    ) {
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, appWidgetId: Int, newOptions: Bundle) {
         val pending = goAsync()
         val appContext = context.applicationContext
         val snapshot = CountdownTime.snapshot()
@@ -108,52 +99,28 @@ class CountdownWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        fun updateAllWidgets(
-            context: Context,
-            snapshot: CountdownTimeSnapshot = CountdownTime.snapshot(),
-        ) {
+        fun updateAllWidgets(context: Context, snapshot: CountdownTimeSnapshot = CountdownTime.snapshot()) {
             val appContext = context.applicationContext
             val manager = AppWidgetManager.getInstance(appContext)
             val component = ComponentName(appContext, CountdownWidgetProvider::class.java)
             updateWidgets(appContext, manager, manager.getAppWidgetIds(component), snapshot)
         }
 
-        fun updateWidget(
-            context: Context,
-            manager: AppWidgetManager,
-            appWidgetId: Int,
-            snapshot: CountdownTimeSnapshot = CountdownTime.snapshot(),
-        ) {
+        fun updateWidget(context: Context, manager: AppWidgetManager, appWidgetId: Int,
+            snapshot: CountdownTimeSnapshot = CountdownTime.snapshot()) {
             updateWidgets(context.applicationContext, manager, intArrayOf(appWidgetId), snapshot)
         }
 
-        private fun updateWidgets(
-            context: Context,
-            manager: AppWidgetManager,
-            appWidgetIds: IntArray,
-            snapshot: CountdownTimeSnapshot,
-        ) {
+        private fun updateWidgets(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray,
+            snapshot: CountdownTimeSnapshot) {
             if (appWidgetIds.isEmpty()) return
-
             val displayContext = LanguageManager.localizedContext(context)
             val preferences = WidgetPreferences(context)
-            val renderData = WidgetRenderData.from(
-                CountdownRepository(context).loadResult(),
-                snapshot.today,
-            )
+            val renderData = WidgetRenderData.from(CountdownRepository(context).loadResult(), snapshot.today)
             val backgroundCache = HashMap<BackgroundKey, Bitmap>()
-
             appWidgetIds.forEach { appWidgetId ->
-                val views = buildRemoteViews(
-                    context = context,
-                    displayContext = displayContext,
-                    manager = manager,
-                    appWidgetId = appWidgetId,
-                    today = snapshot.today,
-                    configuration = preferences.get(appWidgetId),
-                    renderData = renderData,
-                    backgroundCache = backgroundCache,
-                )
+                val views = buildRemoteViews(context, displayContext, manager, appWidgetId,
+                    snapshot.today, preferences.get(appWidgetId), renderData, backgroundCache)
                 manager.updateAppWidget(appWidgetId, views)
             }
         }
@@ -170,36 +137,16 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         ): RemoteViews {
             val options = manager.getAppWidgetOptions(appWidgetId)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val responsive = responsiveViews(
-                    context,
-                    displayContext,
-                    appWidgetId,
-                    today,
-                    configuration,
-                    renderData,
-                    options,
-                    backgroundCache,
-                )
+                val responsive = responsiveViews(context, displayContext, appWidgetId, today,
+                    configuration, renderData, options, backgroundCache)
                 if (responsive != null) return responsive
             }
-
-            val widthDp = options
-                .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, DEFAULT_MIN_WIDTH_DP)
+            val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, DEFAULT_MIN_WIDTH_DP)
                 .takeIf { it > 0 } ?: DEFAULT_MIN_WIDTH_DP
-            val heightDp = options
-                .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, DEFAULT_MIN_HEIGHT_DP)
+            val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, DEFAULT_MIN_HEIGHT_DP)
                 .takeIf { it > 0 } ?: DEFAULT_MIN_HEIGHT_DP
-            return renderForSize(
-                context,
-                displayContext,
-                appWidgetId,
-                today,
-                configuration,
-                renderData,
-                widthDp,
-                heightDp,
-                backgroundCache,
-            )
+            return renderForSize(context, displayContext, appWidgetId, today, configuration,
+                renderData, widthDp, heightDp, backgroundCache)
         }
 
         @TargetApi(Build.VERSION_CODES.S)
@@ -214,25 +161,15 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             options: Bundle,
             backgroundCache: MutableMap<BackgroundKey, Bitmap>,
         ): RemoteViews? {
-            val sizes = options
-                .getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
-                .orEmpty()
-                .distinct()
+            val sizes = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
+                .orEmpty().distinct()
             if (sizes.isEmpty()) return null
-
             val mapping = LinkedHashMap<SizeF, RemoteViews>(sizes.size)
             sizes.forEach { size ->
-                mapping[size] = renderForSize(
-                    context,
-                    displayContext,
-                    appWidgetId,
-                    today,
-                    configuration,
-                    renderData,
+                mapping[size] = renderForSize(context, displayContext, appWidgetId, today,
+                    configuration, renderData,
                     size.width.roundToInt().coerceAtLeast(MIN_RENDER_DIMENSION_DP),
-                    size.height.roundToInt().coerceAtLeast(MIN_RENDER_DIMENSION_DP),
-                    backgroundCache,
-                )
+                    size.height.roundToInt().coerceAtLeast(MIN_RENDER_DIMENSION_DP), backgroundCache)
             }
             return RemoteViews(mapping)
         }
@@ -249,42 +186,21 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             backgroundCache: MutableMap<BackgroundKey, Bitmap>,
         ): RemoteViews {
             val size = WidgetSize.fromDimensions(widthDp, heightDp)
-            val layoutId = WidgetLayoutResolver.layoutRes(size)
-            val views = RemoteViews(context.packageName, layoutId)
+            val views = RemoteViews(context.packageName, WidgetLayoutResolver.layoutRes(size))
             val appearance = configuration?.appearance ?: WidgetAppearance.SYSTEM
             val background = configuration?.background ?: WidgetBackground.CLASSIC
             val theme = WidgetThemeResolver.resolve(context, appearance, background)
-
-            applyTheme(
-                context,
-                views,
-                theme,
-                background,
-                widthDp,
-                heightDp,
-                backgroundCache,
-            )
+            applyTheme(context, views, theme, background, widthDp, heightDp, backgroundCache)
 
             when (renderData) {
-                is WidgetRenderData.Failure -> renderDataError(
-                    displayContext,
-                    views,
-                    appWidgetId,
-                    renderData.problem,
-                    size,
-                    heightDp,
-                )
+                is WidgetRenderData.Failure -> renderDataError(displayContext, views, appWidgetId,
+                    renderData.problem, size, heightDp)
                 is WidgetRenderData.Ready -> {
                     val event = renderData.resolve(configuration)
                     if (event == null) {
-                        renderUnconfigured(
-                            displayContext,
-                            views,
-                            appWidgetId,
-                            size = size,
-                            heightDp = heightDp,
+                        renderUnconfigured(displayContext, views, appWidgetId,
                             noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
-                        )
+                            size = size, heightDp = heightDp)
                     } else {
                         renderEvent(displayContext, views, appWidgetId, event, today, size, heightDp)
                     }
@@ -293,84 +209,25 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             return views
         }
 
-        private fun renderEvent(
-            context: Context,
-            views: RemoteViews,
-            appWidgetId: Int,
-            event: CountdownEvent,
-            today: LocalDate,
-            size: WidgetSize,
-            heightDp: Int,
-        ) {
-            val content = WidgetEventContentFactory.from(event, today)
-            WidgetRemoteViewsPresentation.applyEvent(
-                context = context,
-                views = views,
-                content = content,
-                size = size,
-                fontScale = context.resources.configuration.fontScale,
-                heightDp = heightDp,
-            )
-            val locale = context.resources.configuration.locales[0]
-            val formattedDate = content.date.format(
-                java.time.format.DateTimeFormatter
-                    .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
-                    .withLocale(locale),
-            )
-            views.setContentDescription(
-                R.id.widgetRoot,
-                listOf(
-                    content.title,
-                    statusDescription(context, content),
-                    formattedDate,
-                    context.getString(R.string.widget_open_countdown),
-                ).joinToString(", "),
-            )
+        private fun renderEvent(context: Context, views: RemoteViews, appWidgetId: Int,
+            event: CountdownEvent, today: LocalDate, size: WidgetSize, heightDp: Int) {
+            WidgetRemoteViewsPresentation.applyEvent(context, views, WidgetEventContentFactory.from(event, today),
+                size, context.resources.configuration.fontScale, heightDp)
             views.setOnClickPendingIntent(R.id.widgetRoot, editPendingIntent(context, appWidgetId, event.id))
         }
 
-        private fun statusDescription(context: Context, content: WidgetEventContent): String {
-            val count = content.countText.toLongOrNull()?.coerceAtMost(Int.MAX_VALUE.toLong()) ?: 0L
-            val quantity = count.toInt()
-            return when (content.status) {
-                CountdownStatus.FUTURE,
-                CountdownStatus.THREE_DAYS,
-                CountdownStatus.TWO_DAYS,
-                -> context.getString(R.string.status_days, count)
-                CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
-                CountdownStatus.TODAY -> context.getString(R.string.status_today)
-                CountdownStatus.DONE ->
-                    context.resources.getQuantityString(R.plurals.status_days_ago, quantity, count)
-            }
-        }
-
-        private fun renderUnconfigured(
-            context: Context,
-            views: RemoteViews,
-            appWidgetId: Int,
-            noUpcoming: Boolean,
-            size: WidgetSize,
-            heightDp: Int,
-        ) {
-            val title = context.getString(
-                if (noUpcoming) R.string.widget_no_upcoming else R.string.widget_select_countdown,
-            )
+        private fun renderUnconfigured(context: Context, views: RemoteViews, appWidgetId: Int,
+            noUpcoming: Boolean, size: WidgetSize, heightDp: Int) {
+            val title = context.getString(if (noUpcoming) R.string.widget_no_upcoming else R.string.widget_select_event)
             val action = context.getString(R.string.widget_tap_to_configure)
-            WidgetRemoteViewsPresentation.applyPlaceholder(
-                views, size, context.resources.configuration.fontScale, title, action, "—", heightDp,
-            )
+            WidgetRemoteViewsPresentation.applyPlaceholder(views, size, context.resources.configuration.fontScale,
+                title, action, "—", heightDp)
             views.setContentDescription(R.id.widgetRoot, "$title, $action")
             views.setOnClickPendingIntent(R.id.widgetRoot, configurePendingIntent(context, appWidgetId))
         }
 
-        private fun renderDataError(
-            context: Context,
-            views: RemoteViews,
-            appWidgetId: Int,
-            problem: com.santiagorodriguez.countaway.data.CountdownDataProblem,
-            size: WidgetSize,
-            heightDp: Int,
-        ) {
+        private fun renderDataError(context: Context, views: RemoteViews, appWidgetId: Int,
+            problem: com.santiagorodriguez.countaway.data.CountdownDataProblem, size: WidgetSize, heightDp: Int) {
             val title = context.getString(
                 if (problem == com.santiagorodriguez.countaway.data.CountdownDataProblem.UNSUPPORTED_SCHEMA) {
                     R.string.widget_data_newer_version
@@ -379,31 +236,18 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                 },
             )
             val action = context.getString(R.string.widget_open_app)
-            WidgetRemoteViewsPresentation.applyPlaceholder(
-                views, size, context.resources.configuration.fontScale, title, action, "!", heightDp,
-            )
+            WidgetRemoteViewsPresentation.applyPlaceholder(views, size, context.resources.configuration.fontScale,
+                title, action, "!", heightDp)
             views.setContentDescription(R.id.widgetRoot, "$title, $action")
             views.setOnClickPendingIntent(R.id.widgetRoot, openAppPendingIntent(context, appWidgetId))
         }
 
-        private fun applyTheme(
-            context: Context,
-            views: RemoteViews,
-            theme: WidgetTheme,
-            background: WidgetBackground,
-            widthDp: Int,
-            heightDp: Int,
-            backgroundCache: MutableMap<BackgroundKey, Bitmap>,
-        ) {
+        private fun applyTheme(context: Context, views: RemoteViews, theme: WidgetTheme,
+            background: WidgetBackground, widthDp: Int, heightDp: Int,
+            backgroundCache: MutableMap<BackgroundKey, Bitmap>) {
             val key = BackgroundKey(background, theme.dark, widthDp, heightDp)
             val bitmap = backgroundCache.getOrPut(key) {
-                WidgetBackgroundRenderer.render(
-                    context.applicationContext,
-                    background,
-                    theme.dark,
-                    widthDp,
-                    heightDp,
-                )
+                WidgetBackgroundRenderer.render(context.applicationContext, background, theme.dark, widthDp, heightDp)
             }
             views.setImageViewBitmap(R.id.widgetBackground, bitmap)
             views.setInt(R.id.widgetIcon, "setColorFilter", theme.accentTextColor)
@@ -418,36 +262,24 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val intent = Intent(context, EditorActivity::class.java)
                 .putExtra(EditorActivity.EXTRA_EVENT_ID, eventId)
                 .setData(Uri.parse("countaway://widget/$appWidgetId/event/$eventId"))
-            return PendingIntent.getActivity(
-                context,
-                appWidgetId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+            return PendingIntent.getActivity(context, appWidgetId, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }
 
         private fun configurePendingIntent(context: Context, appWidgetId: Int): PendingIntent {
             val intent = Intent(context, WidgetConfigActivity::class.java)
                 .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
                 .setData(Uri.parse("countaway://widget/$appWidgetId/configure"))
-            return PendingIntent.getActivity(
-                context,
-                CONFIG_REQUEST_CODE_OFFSET + appWidgetId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+            return PendingIntent.getActivity(context, CONFIG_REQUEST_CODE_OFFSET + appWidgetId, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }
 
         private fun openAppPendingIntent(context: Context, appWidgetId: Int): PendingIntent {
             val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
                 ?: Intent(context, WidgetConfigActivity::class.java)
             intent.setData(Uri.parse("countaway://widget/$appWidgetId/data-error"))
-            return PendingIntent.getActivity(
-                context,
-                DATA_ERROR_REQUEST_CODE_OFFSET + appWidgetId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+            return PendingIntent.getActivity(context, DATA_ERROR_REQUEST_CODE_OFFSET + appWidgetId, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }
 
         private const val DEFAULT_MIN_WIDTH_DP = 56
@@ -457,10 +289,5 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         private const val DATA_ERROR_REQUEST_CODE_OFFSET = 200_000
     }
 
-    private data class BackgroundKey(
-        val background: WidgetBackground,
-        val dark: Boolean,
-        val widthDp: Int,
-        val heightDp: Int,
-    )
+    private data class BackgroundKey(val background: WidgetBackground, val dark: Boolean, val widthDp: Int, val heightDp: Int)
 }

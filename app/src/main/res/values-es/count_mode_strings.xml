@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="count_mode_label">Modo</string>
+    <string name="count_mode_down">Cuenta regresiva</string>
+    <string name="count_mode_up">Días transcurridos</string>
+    <string name="count_up_start_date">Fecha de inicio</string>
+    <string name="count_up_start_date_format">Inicio: %1$s</string>
+    <string name="count_up_explanation">Cuenta los días desde la fecha de inicio. No se repite ni envía recordatorios.</string>
+    <string name="count_mode_confirm_title">¿Contar los días transcurridos?</string>
+    <string name="count_mode_confirm_message">Se quitarán la repetición y los recordatorios de este borrador. Tu evento guardado no cambia hasta que lo guardes.</string>
+    <string name="count_mode_confirm_action">Cambiar modo</string>
+    <string name="count_up_day_elapsed">día transcurrido</string>
+    <string name="count_up_days_elapsed">días transcurridos</string>
+    <string name="count_up_day_until_start">día para el inicio</string>
+    <string name="count_up_days_until_start">días para el inicio</string>
+    <plurals name="count_up_elapsed">
+        <item quantity="one">%1$d día transcurrido</item>
+        <item quantity="other">%1$d días transcurridos</item>
+    </plurals>
+    <plurals name="count_up_starts_in">
+        <item quantity="one">Empieza en %1$d día</item>
+        <item quantity="other">Empieza en %1$d días</item>
+    </plurals>
+    <string name="event_new_title">Nuevo evento</string>
+    <string name="event_edit_title">Editar evento</string>
+    <string name="action_add_event">Agregar evento</string>
+    <string name="widget_select_event">Elegí un evento</string>
+    <string name="widget_open_event">Abrir evento</string>
+    <string name="count_up_meta_format">Días transcurridos · %1$s\n%2$s</string>
+    <string name="widget_count_up_option">%1$s · Días transcurridos · %2$s</string>
+</resources>

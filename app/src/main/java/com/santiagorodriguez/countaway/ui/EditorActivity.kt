@@ -29,12 +29,9 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
-import com.santiagorodriguez.countaway.countdown.CountdownCalculator
 import com.santiagorodriguez.countaway.countdown.CountdownDateDomain
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
-import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.countdown.CountdownTime
-import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
@@ -71,6 +68,7 @@ class EditorActivity : BaseActivity() {
     private lateinit var customIconSection: View
     private lateinit var iconGrid: GridLayout
     private lateinit var dateButton: Button
+    private lateinit var modeButton: Button
     private lateinit var saveButton: Button
     private lateinit var shareButton: Button
     private lateinit var deleteButton: Button
@@ -85,6 +83,8 @@ class EditorActivity : BaseActivity() {
     private var selectedRepeatRule: RepeatRule = RepeatRule.NONE
     private var selectedReminder: ReminderOption = ReminderOption.OFF
     private var selectedCountMode: CountMode = CountMode.COUNT_DOWN
+    private var pendingCountUpConfirmation = false
+    private var modeDialog: AlertDialog? = null
     private var suppressRepeatSelection = false
     private var suppressReminderSelection = false
     private var editorInitialized = false
@@ -108,6 +108,7 @@ class EditorActivity : BaseActivity() {
         customIconSection = findViewById(R.id.customIconSection)
         iconGrid = findViewById(R.id.iconGrid)
         dateButton = findViewById(R.id.dateButton)
+        modeButton = findViewById(R.id.modeButton)
         saveButton = findViewById(R.id.saveButton)
         shareButton = findViewById(R.id.shareButton)
         deleteButton = findViewById(R.id.deleteButton)
@@ -116,9 +117,7 @@ class EditorActivity : BaseActivity() {
         scheduleSummary = findViewById(R.id.editorScheduleSummary)
         registerBackCallback()
         temporalInvalidationController = TemporalInvalidationController(this) { snapshot ->
-            if (editorInitialized) {
-                refreshReminderSpinner(snapshot.today)
-            }
+            if (editorInitialized) refreshReminderSpinner(snapshot.today)
         }
 
         pendingEditorState = savedInstanceState
@@ -133,7 +132,6 @@ class EditorActivity : BaseActivity() {
             task = { repository.loadResult() },
             onComplete = { result ->
                 if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
-
                 when (val loaded = result.getOrElse {
                     CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT)
                 }) {
@@ -152,10 +150,7 @@ class EditorActivity : BaseActivity() {
         )
     }
 
-    private fun initializeEditor(
-        loadedEvents: List<CountdownEvent>,
-        savedInstanceState: Bundle?,
-    ) {
+    private fun initializeEditor(loadedEvents: List<CountdownEvent>, savedInstanceState: Bundle?) {
         val requestedEventId = intent.getStringExtra(EXTRA_EVENT_ID)
         if (requestedEventId == null && loadedEvents.any { it.id == session.id }) {
             finish()
@@ -166,11 +161,9 @@ class EditorActivity : BaseActivity() {
             finish()
             return
         }
-
         findViewById<TextView>(R.id.editorHeading).setText(
-            if (existingEvent == null) R.string.editor_new_title else R.string.editor_edit_title,
+            if (existingEvent == null) R.string.event_new_title else R.string.event_edit_title,
         )
-
         existingEvent?.let { event ->
             titleInput.setText(event.title)
             selectedDate = event.date
@@ -192,18 +185,19 @@ class EditorActivity : BaseActivity() {
         renderCustomIconGrid()
         renderTitleHint()
         renderDate()
+        renderMode()
         configureRepeatSpinner()
         configureReminderSpinner()
-
+        modeButton.setOnClickListener { showModePicker() }
         dateButton.setOnClickListener { showDatePicker() }
         saveButton.setOnClickListener { save() }
         shareButton.setOnClickListener { share() }
-
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
         deleteButton.setOnClickListener { confirmDelete() }
         pendingEditorState = null
         editorInitialized = true
         consumeOperation()
+        if (pendingCountUpConfirmation && !editorBusy) showCountUpConfirmation()
     }
 
     override fun onRetainNonConfigurationInstance(): Any = session
@@ -212,9 +206,7 @@ class EditorActivity : BaseActivity() {
         super.onResume()
         val snapshot = CountdownTime.snapshot()
         temporalInvalidationController.start(snapshot)
-        if (editorInitialized) {
-            refreshReminderSpinner(snapshot.today)
-        }
+        if (editorInitialized) refreshReminderSpinner(snapshot.today)
     }
 
     override fun onPause() {
@@ -232,6 +224,7 @@ class EditorActivity : BaseActivity() {
             outState.putString(STATE_REPEAT_RULE, selectedRepeatRule.name)
             outState.putString(STATE_REMINDER, selectedReminder.name)
             outState.putString(STATE_COUNT_MODE, selectedCountMode.name)
+            outState.putBoolean(STATE_MODE_CONFIRMATION, pendingCountUpConfirmation)
         }
         session.writeState(outState)
         super.onSaveInstanceState(outState)
@@ -240,14 +233,13 @@ class EditorActivity : BaseActivity() {
     @SuppressLint("GestureBackNavigation")
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            super.onBackPressed()
-        } else {
-            handleBackRequest()
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) super.onBackPressed() else handleBackRequest()
     }
 
     override fun onDestroy() {
+        modeDialog?.setOnDismissListener(null)
+        modeDialog?.dismiss()
+        modeDialog = null
         session.operation.onChanged = null
         temporalInvalidationController.stop()
         unregisterBackCallback()
@@ -255,14 +247,9 @@ class EditorActivity : BaseActivity() {
         super.onDestroy()
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray,
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode != REQUEST_NOTIFICATIONS) return
-
+        if (requestCode != REQUEST_NOTIFICATIONS || selectedCountMode == CountMode.COUNT_UP) return
         val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
         if (!granted) {
             selectedReminder = ReminderOption.OFF
@@ -273,34 +260,95 @@ class EditorActivity : BaseActivity() {
         }
     }
 
+    private fun renderMode() {
+        modeButton.setText(EventCountText.modeLabel(selectedCountMode))
+        modeButton.contentDescription = getString(R.string.count_mode_label) + ": " + modeButton.text
+        findViewById<TextView>(R.id.dateLabel).setText(
+            if (selectedCountMode == CountMode.COUNT_UP) R.string.count_up_start_date else R.string.field_date,
+        )
+        val visibility = if (selectedCountMode == CountMode.COUNT_UP) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.repeatSection).visibility = visibility
+        findViewById<View>(R.id.reminderSection).visibility = visibility
+    }
+
+    private fun showModePicker() {
+        if (editorBusy || modeDialog?.isShowing == true) return
+        val modes = CountMode.entries
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.count_mode_label)
+            .setSingleChoiceItems(modes.map { getString(EventCountText.modeLabel(it)) }.toTypedArray(),
+                modes.indexOf(selectedCountMode)) { picker, which ->
+                picker.dismiss()
+                val next = modes[which]
+                if (next == selectedCountMode) return@setSingleChoiceItems
+                if (next == CountMode.COUNT_UP &&
+                    (selectedRepeatRule != RepeatRule.NONE || selectedReminder != ReminderOption.OFF)) {
+                    pendingCountUpConfirmation = true
+                    showCountUpConfirmation()
+                } else {
+                    applyCountMode(next)
+                }
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .create()
+        modeDialog = dialog
+        dialog.setOnDismissListener { if (modeDialog === dialog) modeDialog = null }
+        dialog.show()
+    }
+
+    private fun showCountUpConfirmation() {
+        if (selectedCountMode == CountMode.COUNT_UP) {
+            pendingCountUpConfirmation = false
+            return
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.count_mode_confirm_title)
+            .setMessage(R.string.count_mode_confirm_message)
+            .setNegativeButton(R.string.action_cancel, null)
+            .setPositiveButton(R.string.count_mode_confirm_action) { _, _ -> applyCountMode(CountMode.COUNT_UP) }
+            .create()
+        modeDialog = dialog
+        dialog.setOnDismissListener {
+            pendingCountUpConfirmation = false
+            if (modeDialog === dialog) modeDialog = null
+            modeButton.requestFocusFromTouch()
+        }
+        dialog.show()
+    }
+
+    private fun applyCountMode(mode: CountMode) {
+        selectedCountMode = mode
+        pendingCountUpConfirmation = false
+        if (mode == CountMode.COUNT_UP) {
+            selectedRepeatRule = RepeatRule.NONE
+            selectedReminder = ReminderOption.OFF
+            suppressRepeatSelection = true
+            repeatSpinner.setSelection(RepeatRule.entries.indexOf(RepeatRule.NONE))
+            suppressRepeatSelection = false
+        }
+        renderMode()
+        refreshReminderSpinner(CountdownTime.snapshot().today)
+    }
+
     private fun configureRepeatSpinner() {
-        repeatSpinner.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            RepeatRule.entries.map(::repeatLabel),
-        ).apply {
+        repeatSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item,
+            RepeatRule.entries.map(::repeatLabel)).apply {
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
         suppressRepeatSelection = true
         repeatSpinner.setSelection(RepeatRule.entries.indexOf(selectedRepeatRule))
         suppressRepeatSelection = false
         repeatSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
-            if (suppressRepeatSelection) return@SimpleItemSelectedListener
+            if (suppressRepeatSelection || selectedCountMode == CountMode.COUNT_UP) return@SimpleItemSelectedListener
             val next = RepeatRule.entries.getOrNull(position) ?: return@SimpleItemSelectedListener
             if (next == selectedRepeatRule) return@SimpleItemSelectedListener
             selectedRepeatRule = next
             val snapshot = CountdownTime.snapshot()
             refreshReminderSpinner(snapshot.today)
-            handleReminderSelectionEffect(
-                ReminderEditorPolicy.repeatChangeEffect(
-                    existingEvent = existingEvent,
-                    selectedDate = selectedDate,
-                    selectedReminder = selectedReminder,
-                    selectedRepeatRule = selectedRepeatRule,
-                    today = snapshot.today,
-                ),
-                snapshot.today,
-            )
+            handleReminderSelectionEffect(ReminderEditorPolicy.repeatChangeEffect(
+                existingEvent = existingEvent, selectedDate = selectedDate, selectedReminder = selectedReminder,
+                selectedRepeatRule = selectedRepeatRule, today = snapshot.today,
+            ), snapshot.today)
         }
     }
 
@@ -314,16 +362,12 @@ class EditorActivity : BaseActivity() {
     private fun configureReminderSpinner() {
         refreshReminderSpinner(CountdownTime.snapshot().today)
         reminderSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
-            if (!suppressReminderSelection) {
+            if (!suppressReminderSelection && selectedCountMode == CountMode.COUNT_DOWN) {
                 val next = reminderOptions.getOrNull(position) ?: return@SimpleItemSelectedListener
                 val snapshot = CountdownTime.snapshot()
                 val effect = ReminderEditorPolicy.selectionEffect(
-                    currentReminder = selectedReminder,
-                    nextReminder = next,
-                    existingEvent = existingEvent,
-                    selectedDate = selectedDate,
-                    today = snapshot.today,
-                    selectedRepeatRule = selectedRepeatRule,
+                    currentReminder = selectedReminder, nextReminder = next, existingEvent = existingEvent,
+                    selectedDate = selectedDate, today = snapshot.today, selectedRepeatRule = selectedRepeatRule,
                 )
                 selectedReminder = next
                 refreshReminderSpinner(snapshot.today)
@@ -333,23 +377,14 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun refreshReminderSpinner(today: LocalDate) {
-        val nextOptions = ReminderEditorPolicy.availableOptions(
-            existingEvent = existingEvent,
-            selectedDate = selectedDate,
-            selectedReminder = selectedReminder,
-            today = today,
-            selectedRepeatRule = selectedRepeatRule,
-        )
+        val nextOptions = if (selectedCountMode == CountMode.COUNT_UP) listOf(ReminderOption.OFF) else
+            ReminderEditorPolicy.availableOptions(existingEvent, selectedDate, selectedReminder, today, selectedRepeatRule)
         val optionsChanged = nextOptions != reminderOptions
         reminderOptions = nextOptions
-
         suppressReminderSelection = true
         if (optionsChanged || reminderSpinner.adapter == null) {
-            reminderSpinner.adapter = ArrayAdapter(
-                this,
-                android.R.layout.simple_spinner_item,
-                reminderOptions.map(::reminderLabel),
-            ).apply {
+            reminderSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item,
+                reminderOptions.map(::reminderLabel)).apply {
                 setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
         }
@@ -391,9 +426,7 @@ class EditorActivity : BaseActivity() {
                 setCompoundDrawablesWithIntrinsicBounds(0, EventTypePresentation.iconRes(type), 0, 0)
                 compoundDrawablePadding = dp(6)
                 compoundDrawableTintList = ColorStateList.valueOf(getColor(R.color.accent))
-                setBackgroundResource(
-                    if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface,
-                )
+                setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface)
                 setOnClickListener { selectType(type) }
             }
             typeGrid.addView(button, gridParams())
@@ -424,7 +457,6 @@ class EditorActivity : BaseActivity() {
             }
             return
         }
-
         EventIcon.customChoices.forEach { icon ->
             val button = ImageButton(this).apply {
                 ChoiceAccessibility.apply(this)
@@ -432,9 +464,7 @@ class EditorActivity : BaseActivity() {
                 imageTintList = ColorStateList.valueOf(getColor(R.color.accent))
                 backgroundTintList = null
                 isSelected = icon == selectedIcon
-                setBackgroundResource(
-                    if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface,
-                )
+                setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface)
                 contentDescription = getString(EventIconPresentation.labelRes(icon))
                 tooltipText = contentDescription
                 scaleType = android.widget.ImageView.ScaleType.CENTER_INSIDE
@@ -455,35 +485,21 @@ class EditorActivity : BaseActivity() {
 
     private fun showDatePicker() {
         val pickerSnapshot = CountdownTime.snapshot()
-        val dialog = DatePickerDialog(
-            this,
-            { _, year, month, dayOfMonth ->
-                val previousDate = selectedDate
-                selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
-                renderDate()
-                if (selectedDate != previousDate) {
-                    val snapshot = CountdownTime.snapshot()
-                    refreshReminderSpinner(snapshot.today)
-                    handleReminderSelectionEffect(
-                        ReminderEditorPolicy.dateChangeEffect(
-                            existingEvent = existingEvent,
-                            selectedDate = selectedDate,
-                            selectedReminder = selectedReminder,
-                            today = snapshot.today,
-                            selectedRepeatRule = selectedRepeatRule,
-                        ),
-                        snapshot.today,
-                    )
-                }
-            },
-            selectedDate.year,
-            selectedDate.monthValue - 1,
-            selectedDate.dayOfMonth,
-        )
-        dialog.datePicker.minDate =
-            CountdownDateDomain.MIN_DATE.atStartOfDay(pickerSnapshot.zone).toInstant().toEpochMilli()
-        dialog.datePicker.maxDate =
-            CountdownDateDomain.MAX_DATE.atStartOfDay(pickerSnapshot.zone).toInstant().toEpochMilli()
+        val dialog = DatePickerDialog(this, { _, year, month, dayOfMonth ->
+            val previousDate = selectedDate
+            selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+            renderDate()
+            if (selectedDate != previousDate) {
+                val snapshot = CountdownTime.snapshot()
+                refreshReminderSpinner(snapshot.today)
+                if (selectedCountMode == CountMode.COUNT_DOWN) handleReminderSelectionEffect(
+                    ReminderEditorPolicy.dateChangeEffect(existingEvent, selectedDate, selectedReminder,
+                        snapshot.today, selectedRepeatRule), snapshot.today,
+                )
+            }
+        }, selectedDate.year, selectedDate.monthValue - 1, selectedDate.dayOfMonth)
+        dialog.datePicker.minDate = CountdownDateDomain.MIN_DATE.atStartOfDay(pickerSnapshot.zone).toInstant().toEpochMilli()
+        dialog.datePicker.maxDate = CountdownDateDomain.MAX_DATE.atStartOfDay(pickerSnapshot.zone).toInstant().toEpochMilli()
         dialog.show()
     }
 
@@ -499,43 +515,27 @@ class EditorActivity : BaseActivity() {
             titleInput.error = getString(R.string.title_required)
             return
         }
-
         val snapshot = CountdownTime.snapshot()
-        val text = buildShareText(title, snapshot.today)
+        val text = ShareCardContentFactory.text(this, title, selectedDate, selectedRepeatRule,
+            snapshot.today, selectedCountMode)
         val renderContext = ShareCardRenderer.captureContext(this)
         val appContext = applicationContext
         val cardContent = ShareCardContentFactory.create(
-            context = renderContext,
-            title = title,
-            date = selectedDate,
-            icon = selectedIcon,
-            repeatRule = selectedRepeatRule,
-            today = snapshot.today,
+            context = renderContext, title = title, date = selectedDate, icon = selectedIcon,
+            repeatRule = selectedRepeatRule, today = snapshot.today, countMode = selectedCountMode,
         )
         val dark = ShareCardRenderer.resolveDark(this)
         shareButton.isEnabled = false
-
         CountdownIo.submit(
             task = {
-                val bitmap = ShareCardRenderer.render(
-                    context = renderContext,
-                    content = cardContent,
-                    dark = dark,
-                )
-                try {
-                    ShareImageStore.write(appContext, bitmap)
-                } finally {
-                    bitmap.recycle()
-                }
+                val bitmap = ShareCardRenderer.render(renderContext, cardContent, dark)
+                try { ShareImageStore.write(appContext, bitmap) } finally { bitmap.recycle() }
             },
             onComplete = { result ->
                 if (isFinishing || isDestroyed) return@submit
                 shareButton.isEnabled = true
-
                 val imageUri = result.getOrNull()
-                if (imageUri != null && launchShare(imageShareIntent(title, text, imageUri))) {
-                    return@submit
-                }
+                if (imageUri != null && launchShare(imageShareIntent(title, text, imageUri))) return@submit
                 if (!launchShare(textShareIntent(text))) {
                     Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
                 }
@@ -543,38 +543,7 @@ class EditorActivity : BaseActivity() {
         )
     }
 
-    private fun buildShareText(title: String, today: LocalDate): String {
-        val displayDate = CountdownOccurrenceResolver.displayDate(
-            selectedDate,
-            selectedRepeatRule,
-            today,
-        )
-        val countdown = CountdownCalculator.value(today, displayDate)
-        val status = when (countdown.status) {
-            CountdownStatus.FUTURE,
-            CountdownStatus.THREE_DAYS,
-            CountdownStatus.TWO_DAYS,
-            -> resources.getQuantityString(
-                R.plurals.share_days_left,
-                countdown.days.toInt(),
-                countdown.days,
-            )
-            CountdownStatus.TOMORROW -> getString(R.string.share_tomorrow)
-            CountdownStatus.TODAY -> getString(R.string.share_today)
-            CountdownStatus.DONE -> elapsedStatus(countdown.elapsedDays)
-        }
-        val locale = resources.configuration.locales[0]
-        val date = displayDate.format(
-            DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale),
-        )
-        return getString(R.string.share_countdown_format, title, status, date)
-    }
-
-    private fun imageShareIntent(
-        title: String,
-        text: String,
-        imageUri: Uri,
-    ): Intent = Intent(Intent.ACTION_SEND).apply {
+    private fun imageShareIntent(title: String, text: String, imageUri: Uri): Intent = Intent(Intent.ACTION_SEND).apply {
         type = "image/png"
         putExtra(Intent.EXTRA_STREAM, imageUri)
         putExtra(Intent.EXTRA_TEXT, text)
@@ -584,18 +553,12 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun textShareIntent(text: String): Intent = Intent(Intent.ACTION_SEND)
-        .setType("text/plain")
-        .putExtra(Intent.EXTRA_TEXT, text)
+        .setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
 
     private fun launchShare(sendIntent: Intent): Boolean = runCatching {
         startActivity(Intent.createChooser(sendIntent, getString(R.string.action_share)))
         true
     }.getOrDefault(false)
-
-    private fun elapsedStatus(elapsedDays: Long): String {
-        val quantity = elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
-        return resources.getQuantityString(R.plurals.status_days_ago, quantity, elapsedDays)
-    }
 
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -603,47 +566,30 @@ class EditorActivity : BaseActivity() {
         }
     }
 
-    private fun handleReminderSelectionEffect(
-        effect: ReminderSelectionEffect,
-        today: LocalDate,
-    ) {
+    private fun handleReminderSelectionEffect(effect: ReminderSelectionEffect, today: LocalDate) {
         when (effect) {
             ReminderSelectionEffect.NONE -> Unit
             ReminderSelectionEffect.SHOW_SCHEDULE_UNAVAILABLE ->
                 Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
             ReminderSelectionEffect.CHECK_NOTIFICATIONS -> {
-                if (!ArrivalNotificationScheduler.hasNotificationPermission(this)) {
-                    requestNotificationPermission()
-                } else {
-                    warnIfNotificationsBlocked(today)
-                }
+                if (!ArrivalNotificationScheduler.hasNotificationPermission(this)) requestNotificationPermission()
+                else warnIfNotificationsBlocked(today)
             }
         }
     }
 
-    private fun canSaveSelectedReminder(today: LocalDate): Boolean = ReminderEditorPolicy.canSave(
-        existingEvent = existingEvent,
-        selectedDate = selectedDate,
-        selectedReminder = selectedReminder,
-        today = today,
-        selectedRepeatRule = selectedRepeatRule,
-    )
-
-    private fun warnIfNotificationsBlocked(today: LocalDate) {
-        if (
-            selectedReminder == ReminderOption.OFF ||
-            !ArrivalNotificationPolicy.isSchedulePossible(
-                selectedDate,
-                selectedReminder,
-                selectedRepeatRule,
-                today,
-            ) ||
-            !ArrivalNotificationScheduler.hasNotificationPermission(this) ||
-            ArrivalNotificationScheduler.canPostNotifications(this)
-        ) {
-            return
+    private fun canSaveSelectedReminder(today: LocalDate): Boolean =
+        if (selectedCountMode == CountMode.COUNT_UP) {
+            selectedReminder == ReminderOption.OFF && selectedRepeatRule == RepeatRule.NONE
+        } else {
+            ReminderEditorPolicy.canSave(existingEvent, selectedDate, selectedReminder, today, selectedRepeatRule)
         }
 
+    private fun warnIfNotificationsBlocked(today: LocalDate) {
+        if (selectedCountMode == CountMode.COUNT_UP || selectedReminder == ReminderOption.OFF ||
+            !ArrivalNotificationPolicy.isSchedulePossible(selectedDate, selectedReminder, selectedRepeatRule, today) ||
+            !ArrivalNotificationScheduler.hasNotificationPermission(this) ||
+            ArrivalNotificationScheduler.canPostNotifications(this)) return
         AlertDialog.Builder(this)
             .setTitle(R.string.notification_blocked_title)
             .setMessage(R.string.notification_blocked_message)
@@ -661,24 +607,18 @@ class EditorActivity : BaseActivity() {
                 .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
                 .putExtra(Settings.EXTRA_CHANNEL_ID, ArrivalNotificationScheduler.CHANNEL_ID)
         } else {
-            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
         }
-
         runCatching { startActivity(intent) }.onFailure {
-            runCatching {
-                startActivity(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                        .setData(Uri.parse("package:$packageName")),
-                )
-            }.onFailure {
+            runCatching { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(Uri.parse("package:$packageName"))) }.onFailure {
                 Toast.makeText(this, R.string.external_action_unavailable, Toast.LENGTH_LONG).show()
             }
         }
     }
 
     private fun save() {
-        if (editorBusy) return
+        if (editorBusy || pendingCountUpConfirmation) return
         if (existingEvent?.let(EventRevision::of) != session.originalRevision) {
             showDataConflict()
             return
@@ -698,7 +638,6 @@ class EditorActivity : BaseActivity() {
             Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
             return
         }
-
         val event = CountdownEvent(
             id = existingEvent?.id ?: session.id,
             title = title,
@@ -770,6 +709,7 @@ class EditorActivity : BaseActivity() {
         state.getString(STATE_COUNT_MODE)?.let { raw ->
             CountMode.entries.firstOrNull { it.name == raw }?.let { selectedCountMode = it }
         }
+        pendingCountUpConfirmation = state.getBoolean(STATE_MODE_CONFIRMATION)
     }
 
     private fun showDataConflict() {
@@ -779,6 +719,7 @@ class EditorActivity : BaseActivity() {
             .setNegativeButton(R.string.data_conflict_keep_editing, null)
             .setPositiveButton(R.string.data_conflict_reload) { _, _ ->
                 pendingEditorState = null
+                pendingCountUpConfirmation = false
                 session.initialized = false
                 editorInitialized = false
                 titleInput.filters = emptyArray()
@@ -796,57 +737,33 @@ class EditorActivity : BaseActivity() {
     private fun setViewTreeEnabled(view: View, enabled: Boolean) {
         view.isEnabled = enabled
         if (view is ViewGroup) {
-            for (index in 0 until view.childCount) {
-                setViewTreeEnabled(view.getChildAt(index), enabled)
-            }
+            for (index in 0 until view.childCount) setViewTreeEnabled(view.getChildAt(index), enabled)
         }
     }
 
     private fun renderScheduleSummary(today: LocalDate) {
+        if (selectedCountMode == CountMode.COUNT_UP) {
+            scheduleSummary.setText(R.string.count_up_explanation)
+            scheduleSummary.visibility = View.VISIBLE
+            return
+        }
         val lines = mutableListOf<String>()
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
-
         if (selectedRepeatRule != RepeatRule.NONE) {
-            val occurrence = CountdownOccurrenceResolver.displayDate(
-                selectedDate,
-                selectedRepeatRule,
-                today,
-            )
-            lines += getString(
-                R.string.schedule_next_occurrence,
-                occurrence.format(formatter),
-                repeatLabel(selectedRepeatRule).lowercase(locale),
-            )
+            val occurrence = CountdownOccurrenceResolver.displayDate(selectedDate, selectedRepeatRule, today)
+            lines += getString(R.string.schedule_next_occurrence, occurrence.format(formatter),
+                repeatLabel(selectedRepeatRule).lowercase(locale))
         }
-
-        ArrivalNotificationPolicy.scheduledDate(
-            selectedDate,
-            selectedRepeatRule,
-            selectedReminder,
-            today,
-        )?.let { reminderDate ->
-            lines += getString(
-                R.string.schedule_next_reminder,
-                reminderDate.format(formatter),
-            )
+        ArrivalNotificationPolicy.scheduledDate(selectedDate, selectedRepeatRule, selectedReminder, today)?.let { date ->
+            lines += getString(R.string.schedule_next_reminder, date.format(formatter))
         }
-
-        if (
-            selectedRepeatRule == RepeatRule.MONTHLY &&
-            selectedDate.dayOfMonth >= 29
-        ) {
+        if (selectedRepeatRule == RepeatRule.MONTHLY && selectedDate.dayOfMonth >= 29) {
             lines += getString(R.string.schedule_month_end_note)
         }
-
-        if (
-            selectedRepeatRule == RepeatRule.YEARLY &&
-            selectedDate.monthValue == 2 &&
-            selectedDate.dayOfMonth == 29
-        ) {
+        if (selectedRepeatRule == RepeatRule.YEARLY && selectedDate.monthValue == 2 && selectedDate.dayOfMonth == 29) {
             lines += getString(R.string.schedule_leap_day_note)
         }
-
         scheduleSummary.text = lines.joinToString("\n")
         scheduleSummary.visibility = if (lines.isEmpty()) View.GONE else View.VISIBLE
     }
@@ -854,10 +771,7 @@ class EditorActivity : BaseActivity() {
     private fun registerBackCallback() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || backCallback != null) return
         val callback = OnBackInvokedCallback { handleBackRequest() }
-        onBackInvokedDispatcher.registerOnBackInvokedCallback(
-            OnBackInvokedDispatcher.PRIORITY_DEFAULT,
-            callback,
-        )
+        onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback)
         backCallback = callback
     }
 
@@ -873,7 +787,6 @@ class EditorActivity : BaseActivity() {
             finish()
             return
         }
-
         AlertDialog.Builder(this)
             .setTitle(R.string.unsaved_changes_title)
             .setMessage(R.string.unsaved_changes_message)
@@ -883,23 +796,13 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun currentDraft(): EditorDraft = EditorDraft(
-        title = titleInput.text.toString(),
-        date = selectedDate,
-        type = selectedType,
-        icon = selectedIcon,
-        repeatRule = selectedRepeatRule,
-        reminder = selectedReminder,
-        countMode = selectedCountMode,
+        title = titleInput.text.toString(), date = selectedDate, type = selectedType, icon = selectedIcon,
+        repeatRule = selectedRepeatRule, reminder = selectedReminder, countMode = selectedCountMode,
     )
 
     private data class EditorDraft(
-        val title: String,
-        val date: LocalDate,
-        val type: EventType,
-        val icon: EventIcon,
-        val repeatRule: RepeatRule,
-        val reminder: ReminderOption,
-        val countMode: CountMode,
+        val title: String, val date: LocalDate, val type: EventType, val icon: EventIcon,
+        val repeatRule: RepeatRule, val reminder: ReminderOption, val countMode: CountMode,
     ) {
         fun revision(): String = EventRevision.ofFields(title, date.toString(), type.name,
             icon.name, repeatRule.name, reminder.name, countMode.name)
@@ -913,7 +816,6 @@ class EditorActivity : BaseActivity() {
         var baselineRevision = state?.getString("baseline_revision")
         var deleting = state?.getBoolean("deleting") ?: false
         val operation = RetainedOperation<CountdownMutationResult>()
-
         fun writeState(state: Bundle) {
             state.putString("draft_id", id)
             state.putString("draft_created", createdAt.toString())
@@ -943,5 +845,6 @@ class EditorActivity : BaseActivity() {
         private const val STATE_REPEAT_RULE = "editor_repeat_rule"
         private const val STATE_REMINDER = "editor_reminder"
         private const val STATE_COUNT_MODE = "editor_count_mode"
+        private const val STATE_MODE_CONFIRMATION = "editor_mode_confirmation"
     }
 }

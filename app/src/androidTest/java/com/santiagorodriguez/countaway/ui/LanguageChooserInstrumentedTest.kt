@@ -14,6 +14,7 @@ import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.pressKey
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.RootMatchers.isDialog
+import androidx.test.espresso.matcher.ViewMatchers.hasFocus
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
@@ -97,7 +98,10 @@ class LanguageChooserInstrumentedTest {
             onView(withId(R.id.languageButton)).perform(click())
             onView(withText("Choose language")).inRoot(isDialog()).check(matches(isDisplayed()))
             pressBack()
-            scenario.onActivity { it.findViewById<Button>(R.id.languageButton).requestFocus() }
+            // Enter real keyboard-navigation mode before requesting keyboard focus.
+            instrumentation.setInTouchMode(false)
+            scenario.onActivity { assertTrue(it.findViewById<Button>(R.id.languageButton).requestFocus()) }
+            onView(withId(R.id.languageButton)).check(matches(hasFocus()))
             onView(withId(R.id.languageButton)).perform(pressKey(KeyEvent.KEYCODE_DPAD_CENTER))
             onView(withText("Choose language")).inRoot(isDialog()).check(matches(isDisplayed()))
             pressBack()

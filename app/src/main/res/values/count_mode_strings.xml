@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="count_mode_label">Mode</string>
+    <string name="count_mode_down">Count down</string>
+    <string name="count_mode_up">Count up</string>
+    <string name="count_up_start_date">Start date</string>
+    <string name="count_up_start_date_format">Start date: %1$s</string>
+    <string name="count_up_explanation">Counts days from the start date. It does not repeat or send reminders.</string>
+    <string name="count_mode_confirm_title">Switch to count up?</string>
+    <string name="count_mode_confirm_message">This removes repetition and reminders from this draft. Your saved event stays unchanged until you save.</string>
+    <string name="count_mode_confirm_action">Switch mode</string>
+    <string name="count_up_day_elapsed">day elapsed</string>
+    <string name="count_up_days_elapsed">days elapsed</string>
+    <string name="count_up_day_until_start">day until start</string>
+    <string name="count_up_days_until_start">days until start</string>
+    <plurals name="count_up_elapsed">
+        <item quantity="one">%1$d day elapsed</item>
+        <item quantity="other">%1$d days elapsed</item>
+    </plurals>
+    <plurals name="count_up_starts_in">
+        <item quantity="one">Starts in %1$d day</item>
+        <item quantity="other">Starts in %1$d days</item>
+    </plurals>
+    <string name="event_new_title">New event</string>
+    <string name="event_edit_title">Edit event</string>
+    <string name="action_add_event">Add event</string>
+    <string name="widget_select_event">Select an event</string>
+    <string name="widget_open_event">Open event</string>
+    <string name="count_up_meta_format">Count up · %1$s\n%2$s</string>
+    <string name="widget_count_up_option">%1$s · Count up · %2$s</string>
+</resources>

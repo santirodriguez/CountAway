@@ -50,6 +50,7 @@ class CountdownMutations(context: Context) {
 
     fun reconcile() {
         val time = CountdownTime.snapshot()
+        ArrivalNotificationScheduler.invalidatePlan()
         runCatching { CountdownWidgetProvider.updateAllWidgets(context, time) }
         runCatching { WidgetUpdateScheduler.ensureScheduled(context, time) }
         runCatching { ArrivalNotificationScheduler.ensureScheduled(context, time) }

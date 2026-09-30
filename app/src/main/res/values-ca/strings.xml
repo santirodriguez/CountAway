@@ -6,7 +6,7 @@
     <string name="language_spanish">Espanyol</string>
     <string name="language_catalan">Català</string>
 
-    <string name="action_add_countdown">Afegeix compte enrere</string>
+    <string name="action_add_countdown">@string/action_add_event</string>
     <string name="action_about">Sobre l’app</string>
     <string name="action_save">Desa</string>
     <string name="action_delete">Elimina</string>
@@ -29,8 +29,8 @@
         <item quantity="other">fa %1$d dies</item>
     </plurals>
 
-    <string name="editor_new_title">Nou compte enrere</string>
-    <string name="editor_edit_title">Edita el compte enrere</string>
+    <string name="editor_new_title">@string/event_new_title</string>
+    <string name="editor_edit_title">@string/event_edit_title</string>
     <string name="field_type">Tipus</string>
     <string name="field_icon">Icona</string>
     <string name="field_title">Títol</string>
@@ -42,8 +42,8 @@
     <string name="reminder_three_days">3 dies abans</string>
     <string name="reminder_seven_days">7 dies abans</string>
     <string name="notification_permission_denied">No s’ha concedit el permís de notificacions.</string>
-    <string name="title_required">Posa un títol a aquest compte enrere.</string>
-    <string name="delete_title">Vols eliminar el compte enrere?</string>
+    <string name="title_required">Posa un títol a aquest esdeveniment.</string>
+    <string name="delete_title">Vols eliminar l’esdeveniment?</string>
     <string name="delete_message">Vols eliminar &quot;%1$s&quot;?</string>
     <string name="data_error_edit_blocked">Ja Queda Poc no ha pogut llegir de manera segura les dades desades. L’edició està desactivada per evitar sobreescriure-les.</string>
 
@@ -70,18 +70,18 @@
     <string name="event_icon_flag">Bandera</string>
     <string name="event_icon_pin">Ubicació</string>
 
-    <string name="widget_name">Compte enrere de Ja Queda Poc</string>
-    <string name="widget_description">Un compte enrere lleuger i redimensionable per a la pantalla d’inici.</string>
+    <string name="widget_name">@string/app_name</string>
+    <string name="widget_description">Els dies que falten o han passat, a la pantalla d’inici.</string>
     <string name="widget_days_left">dies que falten</string>
     <string name="widget_day_ago">dia enrere</string>
     <string name="widget_days_ago">dies enrere</string>
-    <string name="widget_select_countdown">Tria un compte enrere</string>
+    <string name="widget_select_countdown">@string/widget_select_event</string>
     <string name="widget_no_upcoming">No hi ha cap compte enrere proper</string>
     <string name="widget_tap_to_configure">Toca per configurar</string>
-    <string name="widget_config_title">Tria un compte enrere</string>
+    <string name="widget_config_title">@string/widget_select_event</string>
     <string name="widget_config_description">Tria què vols tenir a la vista en aquest widget.</string>
-    <string name="widget_config_empty">Encara no hi ha comptes enrere. Crea’n un i després torna aquí.</string>
-    <string name="widget_create_countdown">Crea un compte enrere</string>
+    <string name="widget_config_empty">Encara no hi ha esdeveniments. Crea’n un i després torna aquí.</string>
+    <string name="widget_create_countdown">Crea un esdeveniment</string>
     <string name="widget_next_countdown">Proper compte enrere</string>
     <string name="widget_appearance_label">Aparença</string>
     <string name="widget_appearance_system">Sistema</string>
@@ -95,9 +95,9 @@
     <string name="widget_background_sunset">Capvespre</string>
     <string name="widget_background_six">Carena</string>
     <string name="widget_add_to_home">Desa el widget</string>
-    <string name="widget_add_from_event">Afegeix un widget per a aquest compte enrere</string>
+    <string name="widget_add_from_event">Afegeix un widget per a aquest esdeveniment</string>
     <string name="widget_save_before_pin">Desa els canvis abans d’afegir el widget.</string>
-    <string name="widget_open_countdown">Obre el compte enrere</string>
+    <string name="widget_open_countdown">@string/widget_open_event</string>
     <string name="widget_event_option">%1$s · %2$s</string>
 
     <string name="notification_channel_name">Recordatoris de comptes enrere</string>
@@ -115,19 +115,19 @@
     <string name="about_how_steps">1. Crea un compte enrere\n2. Afegeix el widget\n3. Deixa de mirar el calendari cada cinc minuts</string>
     <string name="about_privacy">Ja Queda Poc no utilitza comptes, publicitat, analítica ni accés a internet. Les dades es mantenen locals tret que exportis una còpia a un proveïdor que triïs.</string>
     <string name="backup_title">Còpia local</string>
-    <string name="backup_description">Exporta o restaura els teus comptes enrere amb un fitxer JSON de text que controles tu. El lloc on es desa depèn del proveïdor que triïs.</string>
+    <string name="backup_description">Exporta o restaura els teus esdeveniments amb un fitxer JSON de text que controles tu. El lloc on es desa depèn del proveïdor que triïs.</string>
     <string name="backup_export">Exporta la còpia</string>
     <string name="backup_import">Importa la còpia</string>
     <string name="backup_export_success">Còpia exportada.</string>
     <string name="backup_export_failed">No s’ha pogut exportar la còpia.</string>
-    <string name="backup_import_action">Substitueix els comptes enrere</string>
+    <string name="backup_import_action">Substitueix els esdeveniments</string>
     <string name="backup_import_invalid">Aquest fitxer no és una còpia vàlida de Ja Queda Poc.</string>
     <string name="backup_import_failed">No s’ha pogut importar la còpia.</string>
     <string name="backup_import_success">Còpia importada.</string>
     <string name="backup_import_confirm_title">Vols importar la còpia?</string>
     <plurals name="backup_import_confirm_message">
-        <item quantity="one">Això substituirà els comptes enrere actuals per %1$d compte enrere de la còpia.</item>
-        <item quantity="other">Això substituirà els comptes enrere actuals per %1$d comptes enrere de la còpia.</item>
+        <item quantity="one">Això substituirà els esdeveniments actuals per %1$d esdeveniment de la còpia.</item>
+        <item quantity="other">Això substituirà els esdeveniments actuals per %1$d esdeveniments de la còpia.</item>
     </plurals>
     <string name="about_author">Creada per santiagorodriguez.com</string>
     <string name="about_donate">Dona</string>

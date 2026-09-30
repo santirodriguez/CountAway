@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.countdown
 
 import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.RepeatRule
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
@@ -20,9 +21,12 @@ data class EventCountValue(
 
 object EventCountResolver {
     fun resolve(event: CountdownEvent, today: LocalDate): EventCountValue =
-        when (event.countMode) {
+        resolve(event.date, event.repeatRule, event.countMode, today)
+
+    fun resolve(date: LocalDate, repeatRule: RepeatRule, mode: CountMode, today: LocalDate): EventCountValue =
+        when (mode) {
             CountMode.COUNT_DOWN -> {
-                val displayDate = CountdownOccurrenceResolver.displayDate(event, today)
+                val displayDate = CountdownOccurrenceResolver.displayDate(date, repeatRule, today)
                 val countdown = CountdownCalculator.value(today, displayDate)
                 EventCountValue(
                     mode = CountMode.COUNT_DOWN,
@@ -35,12 +39,11 @@ object EventCountResolver {
                     countdownStatus = countdown.status,
                 )
             }
-
             CountMode.COUNT_UP -> {
-                val elapsed = ChronoUnit.DAYS.between(event.date, today)
+                val elapsed = ChronoUnit.DAYS.between(date, today)
                 EventCountValue(
                     mode = CountMode.COUNT_UP,
-                    displayDate = event.date,
+                    displayDate = date,
                     magnitude = if (elapsed >= 0L) elapsed else -elapsed,
                     countUpState = if (elapsed >= 0L) CountUpState.ELAPSED else CountUpState.STARTS_IN,
                 )

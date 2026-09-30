@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   widget-layout:
-    name: Widget layout (API ${{ matrix.api }})
+    name: Android contracts (API ${{ matrix.api }})
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
@@ -32,7 +32,7 @@ jobs:
           java-version: "17"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
-      - name: Build layout tests
+      - name: Build instrumentation tests
         run: ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
       - name: Prepare rendered and behavioral regression checks
         run: |
@@ -47,15 +47,12 @@ jobs:
           adb install -r app/build/outputs/apk/debug/app-debug.apk
           adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           collect() {
-            adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence > layout-evidence/renders.tar || true
+            adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence share-evidence > layout-evidence/renders.tar || true
             adb logcat -d > layout-evidence/logcat.txt || true
           }
           trap collect EXIT
-          CLASSES="$PACKAGE.widget.WidgetTitleLayoutInstrumentedTest,$PACKAGE.widget.ExpansionLayoutInstrumentedTest"
-          CLASSES+=",$PACKAGE.widget.WidgetPinCallbackInstrumentedTest,$PACKAGE.ui.LanguageChooserInstrumentedTest"
-          CLASSES+=",$PACKAGE.data.CountdownStorageContractInstrumentedTest,$PACKAGE.data.CountdownStorageSchemaInstrumentedTest"
-          printf '%s\n' "$CLASSES" > layout-evidence/test-classes.txt
-          adb shell am instrument -w -e class "$CLASSES" \
+          echo 'scope=complete_android_instrumentation_suite' > layout-evidence/test-classes.txt
+          adb shell am instrument -w \
             "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
           grep -Eq '^OK \([1-9][0-9]* tests?\)' layout-evidence/instrumentation.txt
           ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' layout-evidence/instrumentation.txt
@@ -109,7 +106,7 @@ jobs:
             echo "github_ref=${GITHUB_REF}"
             echo "event_name=${GITHUB_EVENT_NAME}"
             echo "pr_head_sha=${{ github.event.pull_request.head.sha || '' }}"
-            echo "instrumented_tests=compiled_not_executed"
+            echo "instrumented_tests=compiled_not_executed_in_this_job"
           } > ci-evidence/source.txt
 
       - name: Validate
