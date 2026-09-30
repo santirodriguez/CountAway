@@ -83,14 +83,25 @@ internal object WidgetPresentationResolver {
             }
         }
 
+        // Replace the old marker with background artwork. Only restore the event icon
+        // when it fits without taking away any title line available in the old layout.
+        val restoreArrivalIcon = if (showMilestone) {
+            val large = size == WidgetSize.LARGE
+            val fixed = (if (large) 28 else 20) + ceil((if (large) 22 else 20) * fontScale).toInt() +
+                (if (showUnit) 2 * ceil((if (large) 20 else 16) * fontScale).toInt() else 0) +
+                (if (showDate) 2 * ceil(20 * fontScale).toInt() + 4 else 0)
+            val title = titleMaxLines * ceil((if (large) 22 else 18) * fontScale).toInt()
+            heightDp >= fixed + title + if (large) 35 else 25
+        } else false
+
         return WidgetPresentation(
             countText = content.countTextFor(size, showUnit),
             unitRes = content.unitRes,
-            milestone = milestone,
+            milestone = null,
             showUnit = showUnit,
-            showMilestone = showMilestone,
+            showMilestone = false,
             showDate = showDate,
-            showIcon = showIcon,
+            showIcon = showIcon || restoreArrivalIcon,
             showTitle = size != WidgetSize.COMPACT || compactTitleLines > 0,
             titleMaxLines = titleMaxLines,
         )

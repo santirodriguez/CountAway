@@ -76,18 +76,19 @@ class WidgetPresentationTest {
     }
 
     @Test
-    fun standardMilestoneMatchesInstalledWidgetRules() {
-        val result = WidgetPresentationResolver.resolve(
-            content = content(CountdownStatus.TOMORROW, "1"),
-            size = WidgetSize.STANDARD,
-            fontScale = 1f,
-        )
-
-        assertEquals("1", result.countText)
-        assertTrue(result.showUnit)
-        assertTrue(result.showMilestone)
-        assertFalse(result.showDate)
-        assertEquals("😱", result.milestone)
+    fun arrivalArtworkDoesNotConsumeATextRowOrReduceTitleLines() {
+        val event = content(CountdownStatus.TOMORROW, "1")
+        val tight = WidgetPresentationResolver.resolve(event, WidgetSize.STANDARD, 1f, 100)
+        assertEquals("1", tight.countText)
+        assertTrue(tight.showUnit)
+        assertFalse(tight.showMilestone)
+        assertEquals(null, tight.milestone)
+        assertFalse(tight.showDate)
+        assertFalse(tight.showIcon)
+        val roomy = WidgetPresentationResolver.resolve(event, WidgetSize.STANDARD, 1f, 144)
+        assertTrue(roomy.showIcon)
+        assertEquals(2, roomy.titleMaxLines)
+        assertFalse(roomy.showMilestone)
     }
 
     @Test

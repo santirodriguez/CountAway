@@ -8,6 +8,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.ArrivalStage
 
 internal class WidgetPreviewController(
     private val context: Context,
@@ -16,6 +17,9 @@ internal class WidgetPreviewController(
 ) {
     private var currentSize: WidgetSize? = null
     private var currentHeightDp: Int = 0
+    private var currentStyle: WidgetStyleSelection? = null
+    private var currentDimensions: WidgetPreviewDimensions? = null
+    private var currentStage = ArrivalStage.NONE
     private lateinit var backgroundView: ImageView
     private lateinit var iconView: ImageView
     private lateinit var titleView: TextView
@@ -26,12 +30,12 @@ internal class WidgetPreviewController(
 
     fun renderStyle(selection: WidgetStyleSelection, dimensions: WidgetPreviewDimensions) {
         currentHeightDp = dimensions.heightDp
+        currentStyle = selection
+        currentDimensions = dimensions
         ensureLayout(dimensions.size)
         applyFrame(dimensions)
         val theme = WidgetThemeResolver.resolve(context, selection.appearance, selection.background)
-        backgroundView.setImageBitmap(WidgetBackgroundRenderer.render(
-            context.applicationContext, selection.background, theme.dark, dimensions.widthDp, dimensions.heightDp,
-        ))
+        renderBackground()
         iconView.setColorFilter(theme.accentTextColor)
         titleView.setTextColor(theme.primaryTextColor)
         countView.setTextColor(theme.accentTextColor)
@@ -40,7 +44,20 @@ internal class WidgetPreviewController(
         dateView.setTextColor(theme.secondaryTextColor)
     }
 
+    private fun renderBackground() {
+        val style = currentStyle ?: return
+        val dimensions = currentDimensions ?: return
+        val theme = WidgetThemeResolver.resolve(context, style.appearance, style.background)
+        backgroundView.setImageBitmap(WidgetArrivalBackground.render(context.applicationContext,
+            style.background, theme.dark, dimensions.widthDp, dimensions.heightDp, currentStage))
+    }
+
     fun renderEvent(content: WidgetEventContent) {
+        val stage = ArrivalStage.from(content.status)
+        if (stage != currentStage) {
+            currentStage = stage
+            renderBackground()
+        }
         val presentation = WidgetPresentationResolver.resolve(content, requireNotNull(currentSize),
             context.resources.configuration.fontScale, currentHeightDp)
         iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
@@ -64,6 +81,10 @@ internal class WidgetPreviewController(
         countText: String = context.getString(R.string.widget_preview_sample_count),
         iconRes: Int = R.drawable.ic_event_calendar,
     ) {
+        if (currentStage != ArrivalStage.NONE) {
+            currentStage = ArrivalStage.NONE
+            renderBackground()
+        }
         val presentation = WidgetPresentationResolver.placeholder(requireNotNull(currentSize),
             context.resources.configuration.fontScale, currentHeightDp)
         iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE

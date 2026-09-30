@@ -11,12 +11,12 @@ import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.ArrivalStage
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.CountUpState
 import com.santiagorodriguez.countaway.countdown.EventCountResolver
 import com.santiagorodriguez.countaway.model.CountdownEvent
-import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.RepeatRule
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -29,7 +29,6 @@ class CountdownEventAdapter(
     private val onEventActions: ((CountdownEvent, View) -> Unit)? = null,
 ) : BaseAdapter() {
     private val inflater = LayoutInflater.from(context)
-    private val animatedMilestones = mutableSetOf<String>()
     private var items: List<CountdownEvent> = emptyList()
     private var today: LocalDate = CountdownTime.snapshot().today
 
@@ -49,13 +48,15 @@ class CountdownEventAdapter(
         val value = EventCountResolver.resolve(event, today)
         val displayDate = value.displayDate
         val status = value.countdownStatus
+        val stage = ArrivalStage.from(status)
+        view.foreground = if (stage == ArrivalStage.NONE) null else ArrivalAccentDrawable(
+            stage, context.getColor(R.color.accent_text), context.resources.displayMetrics.density)
         val locale = context.resources.configuration.locales[0]
         val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
-        val displayedIcon = if (status == CountdownStatus.TODAY) EventIcon.CONFETTI else event.icon
         view.findViewById<ImageView>(R.id.eventIcon).apply {
-            setImageResource(EventIconPresentation.drawableRes(displayedIcon))
-            contentDescription = context.getString(EventIconPresentation.labelRes(displayedIcon))
+            setImageResource(EventIconPresentation.drawableRes(event.icon))
+            contentDescription = context.getString(EventIconPresentation.labelRes(event.icon))
         }
         view.findViewById<TextView>(R.id.eventTitle).text = event.title
         val eventType = context.getString(EventTypePresentation.labelRes(event.type))
@@ -76,9 +77,7 @@ class CountdownEventAdapter(
             animate().withEndAction(null).cancel()
             text = when (status) {
                 CountdownStatus.FUTURE -> context.getString(R.string.status_days, value.magnitude)
-                CountdownStatus.THREE_DAYS -> "✦ 3"
-                CountdownStatus.TWO_DAYS -> "✦ 2 ✦"
-                CountdownStatus.TOMORROW -> "✦ 1 ✦"
+                CountdownStatus.THREE_DAYS, CountdownStatus.TWO_DAYS, CountdownStatus.TOMORROW -> value.magnitude.toString()
                 CountdownStatus.TODAY -> context.getString(R.string.status_today_zero)
                 CountdownStatus.DONE -> elapsedStatus(value.magnitude)
                 null -> (if (value.countUpState == CountUpState.ELAPSED) "+" else "−") + value.magnitude
@@ -95,16 +94,6 @@ class CountdownEventAdapter(
             scaleX = 1f
             scaleY = 1f
             alpha = 1f
-            if (status in MILESTONE_STATUSES) {
-                val animationKey = "${event.id}:$displayDate:$status"
-                if (animatedMilestones.add(animationKey)) {
-                    scaleX = 0.94f
-                    scaleY = 0.94f
-                    animate().scaleX(1.07f).scaleY(1.07f).setDuration(160)
-                        .withEndAction { animate().scaleX(1f).scaleY(1f).setDuration(160).start() }
-                        .start()
-                }
-            }
         }
         view.contentDescription = listOf(event.title, meta, statusView.contentDescription).joinToString(", ")
         bindAddWidgetAction(view, event)
@@ -157,11 +146,5 @@ class CountdownEventAdapter(
         RepeatRule.WEEKLY -> R.string.repeat_weekly
         RepeatRule.MONTHLY -> R.string.repeat_monthly
         RepeatRule.YEARLY -> R.string.repeat_yearly
-    }
-
-    private companion object {
-        val MILESTONE_STATUSES = setOf(
-            CountdownStatus.THREE_DAYS, CountdownStatus.TWO_DAYS, CountdownStatus.TOMORROW, CountdownStatus.TODAY,
-        )
     }
 }

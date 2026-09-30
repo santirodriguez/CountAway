@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.ArrivalStage
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import java.time.LocalDate
@@ -40,7 +41,7 @@ internal object WidgetPreviewFactory {
         val content = WidgetEventContentFactory.from(event, today)
         val theme = WidgetThemeResolver.resolve(context, style.appearance, style.background)
         val views = RemoteViews(context.packageName, WidgetLayoutResolver.layoutRes(dimensions.size))
-        applyTheme(context, views, style, theme, dimensions)
+        applyTheme(context, views, style, theme, dimensions, ArrivalStage.from(content.status))
         WidgetRemoteViewsPresentation.applyEvent(
             context = context,
             views = views,
@@ -58,13 +59,15 @@ internal object WidgetPreviewFactory {
         style: WidgetStyleSelection,
         theme: WidgetTheme,
         dimensions: WidgetPreviewDimensions,
+        stage: ArrivalStage = ArrivalStage.NONE,
     ) {
-        views.setImageViewBitmap(R.id.widgetBackground, WidgetBackgroundRenderer.render(
+        views.setImageViewBitmap(R.id.widgetBackground, WidgetArrivalBackground.render(
             context = context.applicationContext,
             background = style.background,
             dark = theme.dark,
             widthDp = dimensions.widthDp,
             heightDp = dimensions.heightDp,
+            stage = stage,
         ))
         views.setInt(R.id.widgetIcon, "setColorFilter", theme.accentTextColor)
         views.setTextColor(R.id.widgetTitle, theme.primaryTextColor)

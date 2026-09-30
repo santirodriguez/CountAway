@@ -1,0 +1,202 @@
+package com.santiagorodriguez.countaway.widget
+
+import android.content.Context
+import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Rect
+import android.graphics.drawable.BitmapDrawable
+import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.RemoteViews
+import android.widget.TextView
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.ArrivalStage
+import com.santiagorodriguez.countaway.data.CountdownDataProblem
+import com.santiagorodriguez.countaway.data.CountdownLoadResult
+import com.santiagorodriguez.countaway.model.CountMode
+import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.EventIcon
+import com.santiagorodriguez.countaway.model.EventType
+import org.junit.Assert.*
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.File
+import java.time.Instant
+import java.time.LocalDate
+import java.util.Locale
+import kotlin.math.ceil
+import kotlin.math.roundToInt
+
+@RunWith(AndroidJUnit4::class)
+class ArrivalAccentInstrumentedTest {
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    private val context = instrumentation.targetContext
+    private val today = LocalDate.of(2026, 12, 31)
+    private val event = CountdownEvent(id = "arrival", title = "Family 🧩", date = today,
+        type = EventType.EVENT, icon = EventIcon.CALENDAR, createdAt = Instant.EPOCH)
+    private val sizes = listOf(WidgetPreviewDimensions(56, 50), WidgetPreviewDimensions(57, 102),
+        WidgetPreviewDimensions(90, 180), WidgetPreviewDimensions(180, 50),
+        WidgetPreviewDimensions(160, 144), WidgetPreviewDimensions(240, 220))
+
+    @Test fun everyStyleKeepsItsCenterAndMakesEachStageVisiblyDifferent() {
+        instrumentation.runOnMainSync {
+            for (background in WidgetBackground.entries) for (dark in listOf(false, true)) for (dimensions in sizes) {
+                val base = WidgetBackgroundRenderer.render(context, background, dark, dimensions.widthDp, dimensions.heightDp)
+                try {
+                    val unchanged = WidgetArrivalBackground.render(context, background, dark,
+                        dimensions.widthDp, dimensions.heightDp, ArrivalStage.NONE)
+                    try { assertTrue("Ordinary artwork must be unchanged", base.sameAs(unchanged)) }
+                    finally { unchanged.recycle() }
+                    var previous: Bitmap? = null
+                    try {
+                        for (stage in ArrivalStage.entries.filter { it != ArrivalStage.NONE }) {
+                            val rendered = WidgetArrivalBackground.render(context, background, dark,
+                                dimensions.widthDp, dimensions.heightDp, stage)
+                            val margin = ceil(8.0 * base.width / dimensions.widthDp).toInt()
+                            try {
+                                assertFalse("Stage must actually be visible: $background/$stage/$dimensions", base.sameAs(rendered))
+                                previous?.let { assertFalse("Stages must differ", it.sameAs(rendered)) }
+                                val originalCenter = Bitmap.createBitmap(base, margin, margin,
+                                    base.width - 2 * margin, base.height - 2 * margin)
+                                val decoratedCenter = Bitmap.createBitmap(rendered, margin, margin,
+                                    rendered.width - 2 * margin, rendered.height - 2 * margin)
+                                try { assertTrue("Decoration invaded content", originalCenter.sameAs(decoratedCenter)) }
+                                finally { originalCenter.recycle(); decoratedCenter.recycle() }
+                                if (dimensions.widthDp == 240) save(rendered, "arrival-art-$background-$dark-$stage")
+                            } catch (failure: Throwable) {
+                                rendered.recycle()
+                                throw failure
+                            }
+                            previous?.recycle()
+                            previous = rendered
+                        }
+                    } finally { previous?.recycle() }
+                } finally { base.recycle() }
+            }
+        }
+    }
+
+    @Test fun actualWidgetsRetainCountsAndFittingTitlesAcrossLocalesAndTextSizes() {
+        instrumentation.runOnMainSync {
+            var checked = 0
+            val failures = mutableListOf<String>()
+            for (locale in listOf("en", "es", "ca")) for (scale in listOf(1f, 2f)) for (dimensions in sizes) {
+                val config = Configuration(context.resources.configuration).apply {
+                    setLocale(Locale.forLanguageTag(locale)); fontScale = scale
+                }
+                val localized = context.createConfigurationContext(config)
+                for (days in 0L..3L) {
+                    val source = event.copy(date = today.plusDays(days))
+                    val style = WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.MONOGRAM)
+                    val root = WidgetPreviewFactory.remoteViews(localized, source, style, today, dimensions)
+                        .apply(localized, FrameLayout(localized))
+                    layout(localized, root, dimensions)
+                    capture(root, "arrival-widget-$locale-$scale-${dimensions.widthDp}-${dimensions.heightDp}-$days")
+                    try {
+                        val title = root.findViewById<TextView>(R.id.widgetTitle)
+                        assertEquals(source.title, title.text.toString())
+                        val count = root.findViewById<TextView>(R.id.widgetCount)
+                        assertFits(root, count)
+                        assertFalse("Counter ellipsized", hasEllipsis(count))
+                        for (id in listOf(R.id.widgetTitle, R.id.widgetIcon, R.id.widgetUnit, R.id.widgetDate)) {
+                            val view = root.findViewById<View>(id)
+                            if (view.visibility == View.VISIBLE) assertFits(root, view)
+                        }
+                        assertEquals(View.GONE, root.findViewById<View>(R.id.widgetMilestone).visibility)
+                        if (scale == 1f && dimensions == WidgetPreviewDimensions(57, 102)) {
+                            assertEquals(View.VISIBLE, title.visibility)
+                            assertFalse("Narrow-tall title must remain whole", hasEllipsis(title))
+                            assertEquals(View.VISIBLE, root.findViewById<View>(R.id.widgetIcon).visibility)
+                        }
+                    } catch (failure: AssertionError) { failures += "$locale/$scale/$dimensions/$days: ${failure.message}" }
+                    checked++
+                }
+            }
+            File(context.filesDir, "layout-evidence/arrival-matrix.txt").writeText(
+                "checked=$checked\nexpected=144\nfailures=${failures.size}\n" + failures.joinToString("\n"))
+            assertEquals(144, checked)
+            assertTrue(failures.joinToString("\n"), failures.isEmpty())
+        }
+    }
+
+    @Test fun providerCacheSeparatesStagesAndClearsForCountUpErrorAndEmpty() {
+        instrumentation.runOnMainSync {
+            val companion = CountdownWidgetProvider.Companion
+            val render = companion.javaClass.declaredMethods.single { it.name == "renderForSize" }.apply { isAccessible = true }
+            val cache = HashMap<Any, Bitmap>()
+            val later = event.copy(id = "later", date = today.plusDays(3))
+            val up = event.copy(id = "up", countMode = CountMode.COUNT_UP)
+            val data = WidgetRenderData.from(CountdownLoadResult.Success(listOf(event, later, up)), today)
+            val style = WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.MONOGRAM)
+            fun rendered(configuration: WidgetConfiguration?, input: WidgetRenderData = data): Bitmap {
+                val views = render.invoke(companion, context, context, 90421, today, configuration,
+                    input, 160, 144, cache) as RemoteViews
+                val root = views.apply(context, FrameLayout(context))
+                return (root.findViewById<ImageView>(R.id.widgetBackground).drawable as BitmapDrawable).bitmap
+            }
+            fun configuration(id: String) = WidgetConfiguration(id, style.appearance, style.background)
+            val arrival = rendered(configuration(event.id))
+            val approaching = rendered(configuration(later.id))
+            val ordinary = rendered(configuration(up.id))
+            assertFalse(arrival.sameAs(approaching))
+            assertFalse(arrival.sameAs(ordinary))
+            assertTrue(ordinary.sameAs(rendered(configuration("missing"))))
+            assertTrue(ordinary.sameAs(rendered(configuration(event.id), WidgetRenderData.Failure(CountdownDataProblem.CORRUPT))))
+            val next = WidgetConfiguration(null, style.appearance, style.background, WidgetEventSelection.NEXT)
+            assertTrue(arrival.sameAs(rendered(next)))
+            val upOnly = WidgetRenderData.from(CountdownLoadResult.Success(listOf(up)), today)
+            assertTrue(ordinary.sameAs(rendered(next, upOnly)))
+            val preview = WidgetPreviewFactory.remoteViews(context, event, style, today, WidgetPreviewDimensions(160, 144))
+                .apply(context, FrameLayout(context))
+            assertTrue(arrival.sameAs((preview.findViewById<ImageView>(R.id.widgetBackground).drawable as BitmapDrawable).bitmap))
+            val frame = FrameLayout(context)
+            val controller = WidgetPreviewController(context, FrameLayout(context), frame)
+            controller.renderStyle(style, WidgetPreviewDimensions(160, 144))
+            controller.renderEvent(WidgetEventContentFactory.from(event, today))
+            assertTrue(arrival.sameAs((frame.findViewById<ImageView>(R.id.widgetBackground).drawable as BitmapDrawable).bitmap))
+            controller.renderPlaceholder("Select event", "Configure")
+            assertTrue(ordinary.sameAs((frame.findViewById<ImageView>(R.id.widgetBackground).drawable as BitmapDrawable).bitmap))
+        }
+    }
+
+    private fun layout(context: Context, root: View, dimensions: WidgetPreviewDimensions) {
+        val density = context.resources.displayMetrics.density
+        repeat(3) {
+            root.measure(View.MeasureSpec.makeMeasureSpec((dimensions.widthDp * density).roundToInt(), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec((dimensions.heightDp * density).roundToInt(), View.MeasureSpec.EXACTLY))
+            root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+        }
+    }
+
+    private fun hasEllipsis(view: TextView) = (0 until view.layout.lineCount).any { view.layout.getEllipsisCount(it) > 0 }
+
+    private fun assertFits(root: View, view: View) {
+        val rect = Rect(0, 0, view.width, view.height)
+        (root as ViewGroup).offsetDescendantRectToMyCoords(view, rect)
+        assertTrue("No space for content: $rect", view.width > 0 && view.height > 0)
+        assertTrue("Content clipped: $rect in ${root.width}x${root.height}",
+            rect.left >= 0 && rect.top >= 0 && rect.right <= root.width && rect.bottom <= root.height)
+        if (view is TextView) {
+            assertTrue("Text clipped vertically", view.layout.height <= view.height)
+            for (line in 0 until view.layout.lineCount) assertTrue("Text overflow",
+                view.layout.getLineMax(line) <= view.width - view.compoundPaddingLeft - view.compoundPaddingRight + 1f)
+        }
+    }
+
+    private fun capture(root: View, name: String) {
+        val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+        try { root.draw(Canvas(bitmap)); save(bitmap, name) } finally { bitmap.recycle() }
+    }
+
+    private fun save(bitmap: Bitmap, name: String) {
+        File(context.filesDir, "layout-evidence/$name.png").apply {
+            parentFile!!.mkdirs()
+            outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+    }
+}
