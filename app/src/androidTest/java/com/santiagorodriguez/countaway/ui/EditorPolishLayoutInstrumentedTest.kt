@@ -208,7 +208,9 @@ class EditorPolishLayoutInstrumentedTest {
             assertTrue("Expected $message, got $failure", failure is AssertionError &&
                 failure.message.orEmpty().contains(message))
         }
-        val wrapped = fixture("Visible                    \nNext")
+        // Exercise whitespace at an automatic wrap, as in the actual Home paragraph.
+        // An explicit newline has different line-end measurement semantics on older Android.
+        val wrapped = fixture("Visible Next")
         val width = ceil(wrapped.paint.measureText("Visible")).toInt() + 2
         layout(wrapped, width)
         assertTrue("Fixture must expose the old trailing-whitespace false positive",
