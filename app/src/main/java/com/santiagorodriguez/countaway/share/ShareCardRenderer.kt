@@ -172,7 +172,6 @@ internal object ShareCardRenderer {
             .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_LTR)
             .setIncludePad(false)
             .setLineSpacing(lineHeight - paint.fontSpacing, 1f)
-            .setBreakStrategy(Layout.BREAK_STRATEGY_SIMPLE)
             .setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE)
             .setMaxLines(2)
             .setEllipsize(TextUtils.TruncateAt.END)
