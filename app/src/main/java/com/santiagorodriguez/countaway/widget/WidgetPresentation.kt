@@ -60,7 +60,7 @@ internal object WidgetPresentationResolver {
             if (compactIconFits) 16 else 0) / compactLineHeight).coerceIn(0, 3)
         val showIcon = when (size) {
             WidgetSize.COMPACT -> compactIconFits
-            WidgetSize.SHORT -> true
+            WidgetSize.SHORT -> fontScale < LARGE_FONT_SCALE || content.countTextFor(WidgetSize.SHORT, false).length <= 5
             else -> fontScale < 1.3f && milestone == null
         }
         // Reserve space for the count and visible details before allowing another title line.
