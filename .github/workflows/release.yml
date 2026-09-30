@@ -979,7 +979,7 @@ jobs:
           # Preserve failing renders as evidence without turning a failed suite green.
           test "${TEST_STATUS}" -eq 0
           test "${RENDER_STATUS}" -eq 0
-          grep -Eq '^OK \([1-9][0-9]* tests?\)
+          grep -Eq '^OK \\([1-9][0-9]* tests?\\)$' acceptance-evidence/render-tests.txt
           if [[ "${API_LEVEL}" == "33" ]]; then
             # Disposable emulator: install the EN-only device set, then switch languages offline.
             adb uninstall "${PACKAGE_ID}" || true
