@@ -8,7 +8,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
-import com.santiagorodriguez.countaway.countdown.ArrivalStage
 
 internal class WidgetPreviewController(
     private val context: Context,
@@ -19,7 +18,7 @@ internal class WidgetPreviewController(
     private var currentHeightDp: Int = 0
     private var currentStyle: WidgetStyleSelection? = null
     private var currentDimensions: WidgetPreviewDimensions? = null
-    private var currentStage = ArrivalStage.NONE
+    private var currentContent: WidgetEventContent? = null
     private lateinit var backgroundView: ImageView
     private lateinit var iconView: ImageView
     private lateinit var titleView: TextView
@@ -42,22 +41,19 @@ internal class WidgetPreviewController(
         milestoneView.setTextColor(theme.secondaryTextColor)
         unitView.setTextColor(theme.secondaryTextColor)
         dateView.setTextColor(theme.secondaryTextColor)
+        currentContent?.let(::renderEvent) ?: renderIllustration(null)
     }
 
     private fun renderBackground() {
         val style = currentStyle ?: return
         val dimensions = currentDimensions ?: return
         val theme = WidgetThemeResolver.resolve(context, style.appearance, style.background)
-        backgroundView.setImageBitmap(WidgetArrivalBackground.render(context.applicationContext,
-            style.background, theme.dark, dimensions.widthDp, dimensions.heightDp, currentStage))
+        backgroundView.setImageBitmap(WidgetBackgroundRenderer.render(context.applicationContext,
+            style.background, theme.dark, dimensions.widthDp, dimensions.heightDp))
     }
 
     fun renderEvent(content: WidgetEventContent) {
-        val stage = ArrivalStage.from(content.status)
-        if (stage != currentStage) {
-            currentStage = stage
-            renderBackground()
-        }
+        currentContent = content
         val presentation = WidgetPresentationResolver.resolve(content, requireNotNull(currentSize),
             context.resources.configuration.fontScale, currentHeightDp)
         iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
@@ -73,6 +69,17 @@ internal class WidgetPreviewController(
         unitView.visibility = if (presentation.showUnit) View.VISIBLE else View.GONE
         dateView.visibility = if (presentation.showDate) View.VISIBLE else View.GONE
         frame.findViewById<View>(R.id.widgetRoot).contentDescription = content.description(context)
+        renderIllustration(content)
+    }
+
+    private fun renderIllustration(content: WidgetEventContent?) {
+        val dimensions = currentDimensions ?: return
+        if (!WidgetArrivalIllustration.supports(dimensions.size)) return
+        val view = frame.findViewById<ImageView>(R.id.widgetArrival)
+        val resource = content?.let { WidgetArrivalIllustration.resource(context, it, dimensions.size,
+            dimensions.widthDp, dimensions.heightDp) } ?: 0
+        if (resource != 0) view.setImageResource(resource)
+        view.visibility = if (resource == 0) View.GONE else View.VISIBLE
     }
 
     fun renderPlaceholder(
@@ -81,10 +88,7 @@ internal class WidgetPreviewController(
         countText: String = context.getString(R.string.widget_preview_sample_count),
         iconRes: Int = R.drawable.ic_event_calendar,
     ) {
-        if (currentStage != ArrivalStage.NONE) {
-            currentStage = ArrivalStage.NONE
-            renderBackground()
-        }
+        currentContent = null
         val presentation = WidgetPresentationResolver.placeholder(requireNotNull(currentSize),
             context.resources.configuration.fontScale, currentHeightDp)
         iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
@@ -100,6 +104,7 @@ internal class WidgetPreviewController(
         dateView.visibility = View.GONE
         unitView.visibility = if (presentation.showUnit) View.VISIBLE else View.GONE
         frame.findViewById<View>(R.id.widgetRoot).contentDescription = "$title, $unit"
+        renderIllustration(null)
     }
 
     private fun ensureLayout(size: WidgetSize) {

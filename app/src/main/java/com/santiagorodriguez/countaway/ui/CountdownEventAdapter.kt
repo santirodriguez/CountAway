@@ -11,6 +11,7 @@ import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.ArrivalStage
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.EventCountResolver
 import com.santiagorodriguez.countaway.model.CountdownEvent
@@ -70,6 +71,7 @@ class CountdownEventAdapter(
             scaleY = 1f
             alpha = 1f
         }
+        ArrivalIllustration.bindHome(context, statusView, ArrivalStage.from(value.countdownStatus))
         view.contentDescription = listOf(event.title, meta, statusView.contentDescription).joinToString(", ")
         bindAddWidgetAction(view, event)
         bindRowActions(view, event)

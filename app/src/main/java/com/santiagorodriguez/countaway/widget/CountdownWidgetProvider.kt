@@ -14,10 +14,8 @@ import android.os.Bundle
 import android.util.SizeF
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
-import com.santiagorodriguez.countaway.countdown.ArrivalStage
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
-import com.santiagorodriguez.countaway.countdown.EventCountResolver
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.model.CountdownEvent
@@ -193,8 +191,8 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val background = configuration?.background ?: WidgetBackground.CLASSIC
             val theme = WidgetThemeResolver.resolve(context, appearance, background)
             val event = (renderData as? WidgetRenderData.Ready)?.resolve(configuration)
-            val stage = ArrivalStage.from(event?.let { EventCountResolver.resolve(it, today).countdownStatus })
-            applyTheme(context, views, theme, background, widthDp, heightDp, backgroundCache, stage)
+            applyTheme(context, views, theme, background, widthDp, heightDp, backgroundCache)
+            WidgetArrivalIllustration.clear(views, size)
 
             when (renderData) {
                 is WidgetRenderData.Failure -> renderDataError(displayContext, views, appWidgetId,
@@ -206,6 +204,8 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                             size = size, heightDp = heightDp)
                     } else {
                         renderEvent(displayContext, views, appWidgetId, event, today, size, heightDp)
+                        WidgetArrivalIllustration.apply(displayContext, views, WidgetEventContentFactory.from(event, today),
+                            size, widthDp, heightDp)
                     }
                 }
             }
@@ -247,10 +247,10 @@ class CountdownWidgetProvider : AppWidgetProvider() {
 
         private fun applyTheme(context: Context, views: RemoteViews, theme: WidgetTheme,
             background: WidgetBackground, widthDp: Int, heightDp: Int,
-            backgroundCache: MutableMap<BackgroundKey, Bitmap>, stage: ArrivalStage) {
-            val key = BackgroundKey(background, theme.dark, widthDp, heightDp, stage)
+            backgroundCache: MutableMap<BackgroundKey, Bitmap>) {
+            val key = BackgroundKey(background, theme.dark, widthDp, heightDp)
             val bitmap = backgroundCache.getOrPut(key) {
-                WidgetArrivalBackground.render(context.applicationContext, background, theme.dark, widthDp, heightDp, stage)
+                WidgetBackgroundRenderer.render(context.applicationContext, background, theme.dark, widthDp, heightDp)
             }
             views.setImageViewBitmap(R.id.widgetBackground, bitmap)
             views.setInt(R.id.widgetIcon, "setColorFilter", theme.accentTextColor)
@@ -293,5 +293,5 @@ class CountdownWidgetProvider : AppWidgetProvider() {
     }
 
     private data class BackgroundKey(val background: WidgetBackground, val dark: Boolean,
-        val widthDp: Int, val heightDp: Int, val stage: ArrivalStage)
+        val widthDp: Int, val heightDp: Int)
 }

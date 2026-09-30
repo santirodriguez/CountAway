@@ -4,7 +4,6 @@ import android.content.Context
 import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
-import com.santiagorodriguez.countaway.countdown.ArrivalStage
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import java.time.LocalDate
@@ -24,6 +23,7 @@ internal object WidgetPreviewFactory {
             setTextViewText(R.id.widgetDate, "")
             setViewVisibility(R.id.widgetMilestone, View.GONE)
             setViewVisibility(R.id.widgetDate, View.GONE)
+            WidgetArrivalIllustration.clear(this, dimensions.size)
             setContentDescription(R.id.widgetRoot, listOf(
                 context.getString(R.string.widget_select_event),
                 context.getString(R.string.widget_tap_to_configure),
@@ -41,7 +41,7 @@ internal object WidgetPreviewFactory {
         val content = WidgetEventContentFactory.from(event, today)
         val theme = WidgetThemeResolver.resolve(context, style.appearance, style.background)
         val views = RemoteViews(context.packageName, WidgetLayoutResolver.layoutRes(dimensions.size))
-        applyTheme(context, views, style, theme, dimensions, ArrivalStage.from(content.status))
+        applyTheme(context, views, style, theme, dimensions)
         WidgetRemoteViewsPresentation.applyEvent(
             context = context,
             views = views,
@@ -50,6 +50,7 @@ internal object WidgetPreviewFactory {
             fontScale = context.resources.configuration.fontScale,
             heightDp = dimensions.heightDp,
         )
+        WidgetArrivalIllustration.apply(context, views, content, dimensions.size, dimensions.widthDp, dimensions.heightDp)
         return views
     }
 
@@ -59,15 +60,13 @@ internal object WidgetPreviewFactory {
         style: WidgetStyleSelection,
         theme: WidgetTheme,
         dimensions: WidgetPreviewDimensions,
-        stage: ArrivalStage = ArrivalStage.NONE,
     ) {
-        views.setImageViewBitmap(R.id.widgetBackground, WidgetArrivalBackground.render(
+        views.setImageViewBitmap(R.id.widgetBackground, WidgetBackgroundRenderer.render(
             context = context.applicationContext,
             background = style.background,
             dark = theme.dark,
             widthDp = dimensions.widthDp,
             heightDp = dimensions.heightDp,
-            stage = stage,
         ))
         views.setInt(R.id.widgetIcon, "setColorFilter", theme.accentTextColor)
         views.setTextColor(R.id.widgetTitle, theme.primaryTextColor)
