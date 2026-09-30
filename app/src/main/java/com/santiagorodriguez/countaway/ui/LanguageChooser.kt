@@ -83,7 +83,7 @@ internal class LanguageChooser(
         picker.setOnDismissListener {
             dialog = null
             if (!activity.isFinishing && !activity.isDestroyed) {
-                button.requestFocus()
+                button.requestFocusFromTouch()
                 if (restoreAccessibilityFocus) {
                     button.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
                 }
