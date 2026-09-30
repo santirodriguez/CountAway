@@ -39,6 +39,7 @@ import com.santiagorodriguez.countaway.data.CountdownMutationResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.data.CountdownValidation
 import com.santiagorodriguez.countaway.model.CountMode
+import com.santiagorodriguez.countaway.model.CountUpPreset
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
@@ -60,6 +61,7 @@ import java.util.UUID
 
 class EditorActivity : BaseActivity() {
     private val eventTypes = EventType.entries.toList()
+    private val customIcons = (EventIcon.customChoices + listOf(EventIcon.BOOK, EventIcon.HOURGLASS)).distinct()
     private var reminderOptions: List<ReminderOption> = emptyList()
     private lateinit var repository: CountdownRepository
     private lateinit var editorRoot: View
@@ -69,6 +71,7 @@ class EditorActivity : BaseActivity() {
     private lateinit var iconGrid: GridLayout
     private lateinit var dateButton: Button
     private lateinit var modeButton: Button
+    private lateinit var countUpModeButton: Button
     private lateinit var saveButton: Button
     private lateinit var shareButton: Button
     private lateinit var deleteButton: Button
@@ -83,6 +86,9 @@ class EditorActivity : BaseActivity() {
     private var selectedRepeatRule: RepeatRule = RepeatRule.NONE
     private var selectedReminder: ReminderOption = ReminderOption.OFF
     private var selectedCountMode: CountMode = CountMode.COUNT_DOWN
+    private var selectedPreset: CountUpPreset? = null
+    private var dateChosen = false
+    private var typeChosen = false
     private var pendingCountUpConfirmation = false
     private var modeDialog: AlertDialog? = null
     private var suppressRepeatSelection = false
@@ -109,6 +115,9 @@ class EditorActivity : BaseActivity() {
         iconGrid = findViewById(R.id.iconGrid)
         dateButton = findViewById(R.id.dateButton)
         modeButton = findViewById(R.id.modeButton)
+        countUpModeButton = findViewById(R.id.countUpModeButton)
+        ChoiceAccessibility.apply(modeButton)
+        ChoiceAccessibility.apply(countUpModeButton)
         saveButton = findViewById(R.id.saveButton)
         shareButton = findViewById(R.id.shareButton)
         deleteButton = findViewById(R.id.deleteButton)
@@ -164,6 +173,9 @@ class EditorActivity : BaseActivity() {
         findViewById<TextView>(R.id.editorHeading).setText(
             if (existingEvent == null) R.string.event_new_title else R.string.event_edit_title,
         )
+        dateChosen = existingEvent != null
+        typeChosen = existingEvent != null
+        selectedPreset = null
         existingEvent?.let { event ->
             titleInput.setText(event.title)
             selectedDate = event.date
@@ -173,6 +185,7 @@ class EditorActivity : BaseActivity() {
             selectedReminder = event.reminder
             selectedCountMode = event.countMode
         }
+        if (selectedCountMode == CountMode.COUNT_UP) selectedPreset = CountUpPreset.forStoredType(selectedType)
         if (!session.initialized) {
             session.originalRevision = existingEvent?.let(EventRevision::of)
             session.baselineRevision = currentDraft().revision()
@@ -188,7 +201,8 @@ class EditorActivity : BaseActivity() {
         renderMode()
         configureRepeatSpinner()
         configureReminderSpinner()
-        modeButton.setOnClickListener { showModePicker() }
+        modeButton.setOnClickListener { selectCountMode(CountMode.COUNT_DOWN) }
+        countUpModeButton.setOnClickListener { selectCountMode(CountMode.COUNT_UP) }
         dateButton.setOnClickListener { showDatePicker() }
         saveButton.setOnClickListener { save() }
         shareButton.setOnClickListener { share() }
@@ -224,6 +238,9 @@ class EditorActivity : BaseActivity() {
             outState.putString(STATE_REPEAT_RULE, selectedRepeatRule.name)
             outState.putString(STATE_REMINDER, selectedReminder.name)
             outState.putString(STATE_COUNT_MODE, selectedCountMode.name)
+            outState.putString(STATE_PRESET, selectedPreset?.name)
+            outState.putBoolean(STATE_DATE_CHOSEN, dateChosen)
+            outState.putBoolean(STATE_TYPE_CHOSEN, typeChosen)
             outState.putBoolean(STATE_MODE_CONFIRMATION, pendingCountUpConfirmation)
         }
         session.writeState(outState)
@@ -261,8 +278,13 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun renderMode() {
-        modeButton.setText(EventCountText.modeLabel(selectedCountMode))
+        modeButton.isSelected = selectedCountMode == CountMode.COUNT_DOWN
+        countUpModeButton.isSelected = selectedCountMode == CountMode.COUNT_UP
         modeButton.contentDescription = getString(R.string.count_mode_label) + ": " + modeButton.text
+        countUpModeButton.contentDescription = getString(R.string.count_mode_label) + ": " + countUpModeButton.text
+        findViewById<TextView>(R.id.presetHint).setText(
+            if (selectedCountMode == CountMode.COUNT_UP) R.string.preset_count_up_hint else R.string.preset_count_down_hint,
+        )
         findViewById<TextView>(R.id.dateLabel).setText(
             if (selectedCountMode == CountMode.COUNT_UP) R.string.count_up_start_date else R.string.field_date,
         )
@@ -271,29 +293,15 @@ class EditorActivity : BaseActivity() {
         findViewById<View>(R.id.reminderSection).visibility = visibility
     }
 
-    private fun showModePicker() {
-        if (editorBusy || modeDialog?.isShowing == true) return
-        val modes = CountMode.entries
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.count_mode_label)
-            .setSingleChoiceItems(modes.map { getString(EventCountText.modeLabel(it)) }.toTypedArray(),
-                modes.indexOf(selectedCountMode)) { picker, which ->
-                picker.dismiss()
-                val next = modes[which]
-                if (next == selectedCountMode) return@setSingleChoiceItems
-                if (next == CountMode.COUNT_UP &&
-                    (selectedRepeatRule != RepeatRule.NONE || selectedReminder != ReminderOption.OFF)) {
-                    pendingCountUpConfirmation = true
-                    showCountUpConfirmation()
-                } else {
-                    applyCountMode(next)
-                }
-            }
-            .setNegativeButton(R.string.action_cancel, null)
-            .create()
-        modeDialog = dialog
-        dialog.setOnDismissListener { if (modeDialog === dialog) modeDialog = null }
-        dialog.show()
+    private fun selectCountMode(next: CountMode) {
+        if (editorBusy || modeDialog?.isShowing == true || next == selectedCountMode) return
+        if (next == CountMode.COUNT_UP &&
+            (selectedRepeatRule != RepeatRule.NONE || selectedReminder != ReminderOption.OFF)) {
+            pendingCountUpConfirmation = true
+            showCountUpConfirmation()
+        } else {
+            applyCountMode(next)
+        }
     }
 
     private fun showCountUpConfirmation() {
@@ -317,7 +325,18 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun applyCountMode(mode: CountMode) {
+        val snapshot = CountdownTime.snapshot()
+        val nextType = EventCreationDefaults.typeForMode(selectedType, mode, existingEvent == null, typeChosen)
+        if (nextType != selectedType) {
+            selectedType = nextType
+            selectedIcon = EventIcon.defaultFor(nextType)
+        }
+        selectedDate = EventCreationDefaults.dateForMode(selectedDate, mode, snapshot.today,
+            existingEvent == null, dateChosen)
         selectedCountMode = mode
+        if (mode == CountMode.COUNT_UP && selectedPreset?.type != selectedType) {
+            selectedPreset = CountUpPreset.forStoredType(selectedType)
+        }
         pendingCountUpConfirmation = false
         if (mode == CountMode.COUNT_UP) {
             selectedRepeatRule = RepeatRule.NONE
@@ -327,7 +346,11 @@ class EditorActivity : BaseActivity() {
             suppressRepeatSelection = false
         }
         renderMode()
-        refreshReminderSpinner(CountdownTime.snapshot().today)
+        renderTypeGrid()
+        renderCustomIconGrid()
+        renderTitleHint()
+        renderDate()
+        refreshReminderSpinner(snapshot.today)
     }
 
     private fun configureRepeatSpinner() {
@@ -401,44 +424,80 @@ class EditorActivity : BaseActivity() {
         ReminderOption.SEVEN_DAYS -> getString(R.string.reminder_seven_days)
     }
 
-    private fun renderTypeGrid() {
-        if (typeGrid.childCount > 0) {
-            eventTypes.forEachIndexed { index, type ->
-                typeGrid.getChildAt(index).apply {
-                    isSelected = type == selectedType
-                    setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface)
-                }
-            }
-            return
+    private data class PresetChoice(
+        val key: String, val type: EventType, val icon: EventIcon, val labelRes: Int,
+        val preset: CountUpPreset? = null,
+    )
+
+    private fun presetChoices(): List<PresetChoice> = if (selectedCountMode == CountMode.COUNT_UP) {
+        CountUpPreset.entries.map { preset ->
+            PresetChoice("up:${preset.name}", preset.type, preset.icon,
+                CountUpPresetPresentation.labelRes(preset), preset)
         }
-        eventTypes.forEach { type ->
-            val button = TextView(this).apply {
-                ChoiceAccessibility.apply(this)
-                text = getString(EventTypePresentation.labelRes(type))
-                contentDescription = text
-                isSelected = type == selectedType
-                gravity = Gravity.CENTER
-                textSize = 12f
-                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-                setTextColor(getColor(R.color.foreground))
-                minHeight = dp(78)
-                setPadding(dp(6), dp(9), dp(6), dp(9))
-                setCompoundDrawablesWithIntrinsicBounds(0, EventTypePresentation.iconRes(type), 0, 0)
-                compoundDrawablePadding = dp(6)
-                compoundDrawableTintList = ColorStateList.valueOf(getColor(R.color.accent))
-                setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface)
-                setOnClickListener { selectType(type) }
-            }
-            typeGrid.addView(button, gridParams())
+    } else {
+        eventTypes.map { type ->
+            PresetChoice("down:${type.name}", type, EventIcon.defaultFor(type), EventTypePresentation.labelRes(type))
         }
     }
 
-    private fun selectType(type: EventType) {
-        selectedType = type
-        selectedIcon = if (type == EventType.CUSTOM) {
-            selectedIcon.takeIf { it in EventIcon.customChoices } ?: EventIcon.STAR
-        } else {
-            EventIcon.defaultFor(type)
+    private fun renderTypeGrid() {
+        val choices = presetChoices()
+        val columns = if (resources.configuration.fontScale >= 1.3f ||
+            resources.configuration.screenWidthDp in 1..299) 2 else 3
+        val selectedKey = if (selectedCountMode == CountMode.COUNT_UP) {
+            (selectedPreset ?: CountUpPreset.forStoredType(selectedType))?.let { "up:${it.name}" }
+        } else "down:${selectedType.name}"
+        val notice = findViewById<TextView>(R.id.presetPreservedNotice)
+        notice.visibility = if (selectedCountMode == CountMode.COUNT_UP && selectedKey == null) View.VISIBLE else View.GONE
+        if (notice.visibility == View.VISIBLE) {
+            notice.text = getString(R.string.preset_preserved_type, getString(EventTypePresentation.labelRes(selectedType)))
+        }
+        val sameChoices = typeGrid.columnCount == columns && typeGrid.childCount == choices.size &&
+            choices.indices.all { typeGrid.getChildAt(it).tag == choices[it].key }
+        if (!sameChoices) {
+            typeGrid.removeAllViews()
+            typeGrid.columnCount = columns
+            choices.forEach { choice ->
+                val button = TextView(this).apply {
+                    ChoiceAccessibility.apply(this)
+                    tag = choice.key
+                    text = getString(choice.labelRes)
+                    contentDescription = text
+                    gravity = Gravity.CENTER
+                    textSize = 13f
+                    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                    setTextColor(getColorStateList(R.color.preset_choice_text))
+                    minHeight = dp(88)
+                    setPadding(dp(8), dp(12), dp(8), dp(12))
+                    setCompoundDrawablesWithIntrinsicBounds(0, EventIconPresentation.drawableRes(choice.icon), 0, 0)
+                    compoundDrawablePadding = dp(8)
+                    compoundDrawableTintList = ColorStateList.valueOf(getColor(R.color.accent_text))
+                    setBackgroundResource(R.drawable.preset_choice_background)
+                    setOnClickListener { selectPresetChoice(choice) }
+                }
+                typeGrid.addView(button, gridParams().apply {
+                    rowSpec = GridLayout.spec(GridLayout.UNDEFINED, GridLayout.FILL)
+                })
+            }
+        }
+        choices.forEachIndexed { index, choice ->
+            typeGrid.getChildAt(index).isSelected = choice.key == selectedKey
+        }
+    }
+
+    private fun selectPresetChoice(choice: PresetChoice) {
+        if (editorBusy) return
+        typeChosen = true
+        selectedType = choice.type
+        selectedPreset = choice.preset
+        selectedIcon = if (choice.type == EventType.CUSTOM &&
+            (choice.preset == null || choice.preset == CountUpPreset.CUSTOM)) {
+            selectedIcon.takeIf { it in customIcons } ?: EventIcon.STAR
+        } else choice.icon
+        choice.preset?.let { preset ->
+            val current = titleInput.text.toString()
+            val suggested = preset.titleFor(current, getString(choice.labelRes))
+            if (suggested != current) titleInput.setText(suggested)
         }
         renderTypeGrid()
         renderCustomIconGrid()
@@ -449,22 +508,19 @@ class EditorActivity : BaseActivity() {
         customIconSection.visibility = if (selectedType == EventType.CUSTOM) View.VISIBLE else View.GONE
         if (selectedType != EventType.CUSTOM) return
         if (iconGrid.childCount > 0) {
-            EventIcon.customChoices.forEachIndexed { index, icon ->
-                iconGrid.getChildAt(index).apply {
-                    isSelected = icon == selectedIcon
-                    setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface)
-                }
+            customIcons.forEachIndexed { index, icon ->
+                iconGrid.getChildAt(index).isSelected = icon == selectedIcon
             }
             return
         }
-        EventIcon.customChoices.forEach { icon ->
+        customIcons.forEach { icon ->
             val button = ImageButton(this).apply {
                 ChoiceAccessibility.apply(this)
                 setImageResource(EventIconPresentation.drawableRes(icon))
-                imageTintList = ColorStateList.valueOf(getColor(R.color.accent))
+                imageTintList = ColorStateList.valueOf(getColor(R.color.accent_text))
                 backgroundTintList = null
                 isSelected = icon == selectedIcon
-                setBackgroundResource(if (isSelected) R.drawable.language_chip_active else R.drawable.control_surface)
+                setBackgroundResource(R.drawable.preset_choice_background)
                 contentDescription = getString(EventIconPresentation.labelRes(icon))
                 tooltipText = contentDescription
                 scaleType = android.widget.ImageView.ScaleType.CENTER_INSIDE
@@ -472,7 +528,11 @@ class EditorActivity : BaseActivity() {
                 setPadding(dp(15), dp(15), dp(15), dp(15))
                 setOnClickListener {
                     selectedIcon = icon
+                    typeChosen = true
+                    selectedPreset = CountUpPreset.CUSTOM
+                    renderTypeGrid()
                     renderCustomIconGrid()
+                    renderTitleHint()
                 }
             }
             iconGrid.addView(button, gridParams())
@@ -480,7 +540,9 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun renderTitleHint() {
-        titleInput.hint = getString(EventTypePresentation.labelRes(selectedType))
+        val preset = selectedPreset.takeIf { selectedCountMode == CountMode.COUNT_UP }
+        titleInput.hint = getString(preset?.let(CountUpPresetPresentation::labelRes)
+            ?: EventTypePresentation.labelRes(selectedType))
     }
 
     private fun showDatePicker() {
@@ -488,6 +550,7 @@ class EditorActivity : BaseActivity() {
         val dialog = DatePickerDialog(this, { _, year, month, dayOfMonth ->
             val previousDate = selectedDate
             selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+            dateChosen = true
             renderDate()
             if (selectedDate != previousDate) {
                 val snapshot = CountdownTime.snapshot()
@@ -709,6 +772,11 @@ class EditorActivity : BaseActivity() {
         state.getString(STATE_COUNT_MODE)?.let { raw ->
             CountMode.entries.firstOrNull { it.name == raw }?.let { selectedCountMode = it }
         }
+        selectedPreset = state.getString(STATE_PRESET)?.let { raw ->
+            CountUpPreset.entries.firstOrNull { it.name == raw && it.type == selectedType }
+        } ?: CountUpPreset.forStoredType(selectedType)
+        dateChosen = state.getBoolean(STATE_DATE_CHOSEN, state.containsKey(STATE_DATE))
+        typeChosen = state.getBoolean(STATE_TYPE_CHOSEN, state.containsKey(STATE_TYPE))
         pendingCountUpConfirmation = state.getBoolean(STATE_MODE_CONFIRMATION)
     }
 
@@ -845,6 +913,9 @@ class EditorActivity : BaseActivity() {
         private const val STATE_REPEAT_RULE = "editor_repeat_rule"
         private const val STATE_REMINDER = "editor_reminder"
         private const val STATE_COUNT_MODE = "editor_count_mode"
+        private const val STATE_PRESET = "editor_creation_preset"
+        private const val STATE_DATE_CHOSEN = "editor_date_chosen"
+        private const val STATE_TYPE_CHOSEN = "editor_type_chosen"
         private const val STATE_MODE_CONFIRMATION = "editor_mode_confirmation"
     }
 }

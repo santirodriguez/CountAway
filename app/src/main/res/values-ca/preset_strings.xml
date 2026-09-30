@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preset_smoke_free">Sense fumar</string>
+    <string name="preset_new_habit">Nou hàbit</string>
+    <string name="preset_training">Entrenament</string>
+    <string name="preset_learning">Aprenentatge</string>
+    <string name="preset_project">Projecte</string>
+    <string name="preset_new_job">Nova feina</string>
+    <string name="preset_new_home">Nova llar</string>
+    <string name="preset_count_up_hint">Tria un punt de partida. Fes-lo teu.</string>
+    <string name="preset_count_down_hint">Tria alguna cosa que valgui la pena esperar.</string>
+    <string name="preset_preserved_type">Categoria actual: %1$s. Tria una plantilla per canviar-la.</string>
+</resources>

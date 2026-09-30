@@ -21,15 +21,25 @@
         <Button
             android:id="@+id/languageButton"
             style="@style/Widget.CountAway.Button.Secondary"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:minWidth="48dp"
             android:minHeight="48dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
+            android:background="@drawable/icon_button"
+            android:gravity="center"
             android:foreground="?android:attr/selectableItemBackground"
-            android:text="@string/language_label"
+            android:contentDescription="@string/language_choose"
             android:textAllCaps="false"
             android:textSize="14sp" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
 
         <TextView
             android:id="@+id/themeButton"

@@ -7,7 +7,6 @@ import android.widget.EditText
 import android.widget.Spinner
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.closeSoftKeyboard
-import androidx.test.espresso.Espresso.onData
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.Espresso.pressBack
 import androidx.test.espresso.action.ViewActions.click
@@ -32,7 +31,6 @@ import com.santiagorodriguez.countaway.widget.WidgetAppearance
 import com.santiagorodriguez.countaway.widget.WidgetBackground
 import com.santiagorodriguez.countaway.widget.WidgetEventSelection
 import com.santiagorodriguez.countaway.widget.WidgetPreferences
-import org.hamcrest.Matchers.anything
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,7 +58,8 @@ class EditorCountModeInstrumentedTest {
             drain()
             onView(withText(R.string.count_mode_confirm_title)).inRoot(isDialog()).check(matches(isDisplayed()))
             scenario.onActivity {
-                assertEquals(it.getString(R.string.count_mode_down), it.findViewById<Button>(R.id.modeButton).text.toString())
+                assertTrue(it.findViewById<Button>(R.id.modeButton).isSelected)
+                assertFalse(it.findViewById<Button>(R.id.countUpModeButton).isSelected)
             }
             assertTrue(bytes.contentEquals(storage().readBytes()))
             dialogButton(android.R.id.button2)
@@ -118,7 +117,8 @@ class EditorCountModeInstrumentedTest {
             drain()
             scenario.onActivity {
                 assertEquals(title, it.findViewById<EditText>(R.id.titleInput).text.toString())
-                assertEquals(it.getString(R.string.count_mode_up), it.findViewById<Button>(R.id.modeButton).text.toString())
+                assertTrue(it.findViewById<Button>(R.id.countUpModeButton).isSelected)
+                assertFalse(it.findViewById<Button>(R.id.modeButton).isSelected)
                 it.findViewById<Button>(R.id.saveButton).performClick()
             }
             drain()
@@ -159,8 +159,9 @@ class EditorCountModeInstrumentedTest {
     }
 
     private fun chooseMode(scenario: ActivityScenario<EditorActivity>, position: Int) {
-        scenario.onActivity { it.findViewById<Button>(R.id.modeButton).performClick() }
-        onData(anything()).inRoot(isDialog()).atPosition(position).perform(click())
+        scenario.onActivity {
+            it.findViewById<Button>(if (position == 1) R.id.countUpModeButton else R.id.modeButton).performClick()
+        }
         instrumentation.waitForIdleSync()
     }
 
