@@ -62,7 +62,7 @@ import java.util.UUID
 
 class EditorActivity : BaseActivity() {
     private val eventTypes = EventType.entries.toList()
-    private val customIcons = (EventIcon.customChoices + listOf(EventIcon.BOOK, EventIcon.HOURGLASS)).distinct()
+    private val customIcons = EventIcon.customChoices
     private var reminderOptions: List<ReminderOption> = emptyList()
     private lateinit var repository: CountdownRepository
     private lateinit var editorRoot: View

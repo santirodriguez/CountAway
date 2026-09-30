@@ -71,7 +71,7 @@ class EditorPresetInstrumentedTest {
         assertEquals(today, created.date)
         assertEquals(CountMode.COUNT_UP, created.countMode)
         assertEquals(EventType.CUSTOM, created.type)
-        assertEquals(EventIcon.BOOK, created.icon)
+        assertEquals(EventIcon.STAR, created.icon)
         assertEquals(listOf(created), CountdownStorageCodec.decode(CountdownStorageCodec.encode(listOf(created))))
         ActivityScenario.launch<EditorActivity>(intent(created)).use { scenario ->
             drain()
@@ -143,6 +143,7 @@ class EditorPresetInstrumentedTest {
     @Test fun allTemplatesRoundTripThroughTheUnchangedSchema7Reader() {
         val baselineTypes = setOf("trip", "exam", "party", "birthday", "anniversary", "concert", "deadline", "event", "custom")
         val baselineIcons = setOf("airplane", "book", "confetti", "cake", "heart", "music", "hourglass", "calendar", "star", "gift", "flag", "pin")
+        val baselineCustomIcons = setOf("star", "gift", "flag", "pin", "heart", "music", "airplane", "calendar")
         val fixtures = CountUpPreset.entries.map { preset ->
             CountdownEvent(preset.name, "Milestone ${preset.name}", LocalDate.of(2024, 2, 29),
                 preset.type, icon = preset.icon, createdAt = Instant.EPOCH, countMode = CountMode.COUNT_UP)
@@ -155,6 +156,7 @@ class EditorPresetInstrumentedTest {
             val event = entries.getJSONObject(index)
             assertTrue(event.getString("type") in baselineTypes)
             assertTrue(event.getString("iconKey") in baselineIcons)
+            if (event.getString("type") == "custom") assertTrue(event.getString("iconKey") in baselineCustomIcons)
             assertFalse(event.has("preset"))
             assertFalse(event.has("template"))
         }

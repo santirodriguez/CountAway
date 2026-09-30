@@ -10,12 +10,14 @@ class CountUpPresetTest {
         assertEquals(7, CountUpPreset.entries.count { it.suggestsTitle })
     }
 
-    @Test fun templatesOnlyUseTypesAndIconsReadableByTheBaseline() {
-        val baselineIcons = setOf("airplane", "book", "confetti", "cake", "heart", "music",
-            "hourglass", "calendar", "star", "gift", "flag", "pin")
+    @Test fun templatesOnlyUseTypesAndIconsHandledByTheBaselineEditor() {
         CountUpPreset.entries.forEach {
             assertTrue(it.type.storageKey in setOf("event", "custom"))
-            assertTrue(it.icon.storageKey in baselineIcons)
+            if (it.type == EventType.CUSTOM) {
+                assertTrue(it.icon in EventIcon.customChoices)
+            } else {
+                assertEquals(EventIcon.defaultFor(EventType.EVENT), it.icon)
+            }
         }
     }
 
