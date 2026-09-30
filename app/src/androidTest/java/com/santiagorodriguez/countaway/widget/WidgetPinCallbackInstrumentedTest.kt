@@ -120,7 +120,7 @@ class WidgetPinCallbackInstrumentedTest {
         val event = CountdownEvent(UUID.randomUUID().toString(), "Callback event", LocalDate.of(2027, 1, 1),
             EventType.EVENT, createdAt = Instant.EPOCH)
         val snapshot = WidgetPinRequestSnapshot.create(event.id,
-            WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.RIDGE))
+            WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.MONOGRAM))
         try {
             repository.save(original + event)
             block(repository, preferences, event, id, snapshot)
