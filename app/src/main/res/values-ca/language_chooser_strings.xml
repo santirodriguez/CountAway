@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="language_label">Llengua</string>
     <string name="language_choose">Tria la llengua</string>
     <string name="language_in_use">%1$s · En ús</string>
     <string name="language_system_choice">Utilitza la llengua del sistema · %1$s</string>
