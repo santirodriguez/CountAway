@@ -14,8 +14,8 @@
     <string name="theme_switch_to_light">Canvia al mode clar</string>
     <string name="theme_switch_to_dark">Canvia al mode fosc</string>
 
-    <string name="empty_title">Encara no hi ha cap compte enrere</string>
-    <string name="empty_description">Afegeix un viatge, un examen, un aniversari o qualsevol cosa que valgui la pena esperar.</string>
+    <string name="empty_title">Encara no hi ha cap esdeveniment</string>
+    <string name="empty_description">Afegeix un viatge, un examen, un aniversari o qualsevol data que vulguis seguir.</string>
     <string name="data_error_title">Les dades desades necessiten atenció</string>
     <string name="data_error_description">Ja Queda Poc ha aturat l’edició per protegir el fitxer existent. Restaura una còpia vàlida des de Sobre l’app abans de fer canvis.</string>
     <string name="event_meta">%1$s · %2$s</string>
@@ -111,8 +111,8 @@
 
     <string name="about_version">Versió %1$s</string>
     <string name="about_how_title">Perquè sigui útil de debò</string>
-    <string name="about_how_body">Tres passos i després deixa de mirar el calendari. Crea un compte enrere, mantén-lo premut per triar l’estil del giny i deixa que la pantalla d’inici faci la resta.</string>
-    <string name="about_how_steps">1. Crea un compte enrere\n2. Afegeix el widget\n3. Deixa de mirar el calendari cada cinc minuts</string>
+    <string name="about_how_body">Tres passos i després deixa de mirar el calendari. Crea un esdeveniment, mantén-lo premut per triar l’estil del giny i deixa que la pantalla d’inici faci la resta.</string>
+    <string name="about_how_steps">1. Crea un esdeveniment\n2. Afegeix el widget\n3. Deixa de mirar el calendari cada cinc minuts</string>
     <string name="about_privacy">Ja Queda Poc no utilitza comptes, publicitat, analítica ni accés a internet. Les dades es mantenen locals tret que exportis una còpia a un proveïdor que triïs.</string>
     <string name="backup_title">Còpia local</string>
     <string name="backup_description">Exporta o restaura els teus esdeveniments amb un fitxer JSON de text que controles tu. El lloc on es desa depèn del proveïdor que triïs.</string>

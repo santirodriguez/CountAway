@@ -14,8 +14,8 @@
     <string name="theme_switch_to_light">Cambiar a modo claro</string>
     <string name="theme_switch_to_dark">Cambiar a modo oscuro</string>
 
-    <string name="empty_title">Todavía no hay nada en cuenta regresiva</string>
-    <string name="empty_description">Agregá un viaje, examen, cumpleaños o cualquier cosa que valga la espera.</string>
+    <string name="empty_title">Todavía no hay eventos</string>
+    <string name="empty_description">Agregá un viaje, examen, cumpleaños, aniversario o cualquier fecha que quieras seguir.</string>
     <string name="data_error_title">Hay un problema con los datos guardados</string>
     <string name="data_error_description">Ya Estamos detuvo la edición para proteger el archivo existente. Restaurá una copia válida desde Acerca de antes de hacer cambios.</string>
     <string name="event_meta">%1$s · %2$s</string>
@@ -111,8 +111,8 @@
 
     <string name="about_version">Versión %1$s</string>
     <string name="about_how_title">Para que sirva de verdad</string>
-    <string name="about_how_body">Tres pasos y después dejá de mirar el calendario. Creá una cuenta regresiva, mantenela apretada para elegir el estilo del widget y dejá que la pantalla de inicio haga el resto.</string>
-    <string name="about_how_steps">1. Creá una cuenta regresiva\n2. Agregá el widget\n3. Dejá de mirar el calendario cada cinco minutos</string>
+    <string name="about_how_body">Tres pasos y después dejá de mirar el calendario. Creá un evento, mantenelo apretado para elegir el estilo del widget y dejá que la pantalla de inicio haga el resto.</string>
+    <string name="about_how_steps">1. Creá un evento\n2. Agregá el widget\n3. Dejá de mirar el calendario cada cinco minutos</string>
     <string name="about_privacy">Ya Estamos no usa cuentas, publicidad, analíticas ni acceso a internet. Tus datos quedan locales salvo que exportes una copia a un proveedor que elijas.</string>
     <string name="backup_title">Copia local</string>
     <string name="backup_description">Exportá o restaurá tus eventos usando un archivo JSON de texto que controlás vos. El lugar donde se guarde depende del proveedor que elijas.</string>

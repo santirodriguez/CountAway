@@ -16,8 +16,8 @@
     <string name="theme_switch_to_dark">Switch to dark mode</string>
     <string name="theme_follow_system">Follow system theme</string>
 
-    <string name="empty_title">Nothing to count down yet</string>
-    <string name="empty_description">Add a trip, exam, birthday, or anything else worth waiting for.</string>
+    <string name="empty_title">No events yet</string>
+    <string name="empty_description">Add a trip, exam, birthday, anniversary, or any date worth tracking.</string>
     <string name="data_error_title">Saved data needs attention</string>
     <string name="data_error_description">CountAway stopped editing to protect the existing file. Restore a valid backup from About before making changes.</string>
     <string name="event_meta">%1$s · %2$s</string>
@@ -119,8 +119,8 @@
 
     <string name="about_version">Version %1$s</string>
     <string name="about_how_title">Make it useful</string>
-    <string name="about_how_body">Three steps, then stop checking the calendar. Create a countdown, long-press it to choose a widget style, and let the Home screen do the remembering.</string>
-    <string name="about_how_steps">1. Create a countdown\n2. Add the widget\n3. Stop checking the calendar every five minutes</string>
+    <string name="about_how_body">Three steps, then stop checking the calendar. Create an event, long-press it to choose a widget style, and let the Home screen do the remembering.</string>
+    <string name="about_how_steps">1. Create an event\n2. Add the widget\n3. Stop checking the calendar every five minutes</string>
     <string name="about_privacy">CountAway has no accounts, ads, analytics, or network access. Your data stays local unless you export a backup to a provider you choose.</string>
     <string name="backup_title">Local backup</string>
     <string name="backup_description">Export or restore your events using a plain JSON file you control. Where that file is stored depends on the provider you choose.</string>
