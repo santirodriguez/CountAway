@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>A lightweight Android countdown for the things worth waiting for.</strong>
+  <strong>A lightweight Android day counter for dates worth looking forward to — or remembering.</strong>
 </p>
 
 <p align="center">
@@ -41,7 +41,7 @@ CountAway skips all that. It counts the days and leaves you alone.
   <tr>
     <td width="33%" valign="top">
       <strong>Count what matters</strong><br /><br />
-      Multiple countdowns, custom icons, reminders, and optional weekly, monthly, or yearly recurrence.
+      Count down to future dates or count up from a starting date, with custom icons and flexible event tracking.
     </td>
     <td width="33%" valign="top">
       <strong>Keep it on Home</strong><br /><br />
@@ -56,15 +56,16 @@ CountAway skips all that. It counts the days and leaves you alone.
 
 ## Highlights
 
-- **Widget-first:** long-press a countdown, choose a style, preview it, and add it directly on supported launchers.
-- **Flexible recurrence:** weekly, monthly, or yearly countdowns with sensible short-month handling.
+- **Count both ways:** count down to future dates or count up from a start date.
+- **Widget-first:** long-press an event, choose a style, preview it, and add it directly on supported launchers.
+- **Flexible recurrence:** weekly, monthly, or yearly count-down events with sensible short-month handling.
 - **Nine widget backgrounds:** from clean Classic to Mist, Horizon, Sunset, Ember, Ridge, and more.
 - **Three appearance modes:** System, Light, and Dark for both the app and widgets.
-- **Useful reminders:** optional local notifications before or on the event day.
-- **Smart widget behavior:** fixed-event widgets stay fixed; **Next countdown** follows the nearest event automatically.
-- **Share without the screenshot ritual:** Share turns a countdown into a Ridge-style PNG card that follows your current Light/Dark appearance.
+- **Useful reminders:** optional local notifications before or on the event day for count-down events.
+- **Smart widget behavior:** fixed-event widgets support both count directions; **Next countdown** follows the nearest upcoming count-down event automatically.
+- **Share without the screenshot ritual:** Share turns an event into a Ridge-style PNG card with the same count direction shown in the app.
 - **Local portability:** JSON export/import stays entirely under your control.
-- **Multilingual:** English, Spanish, and Catalan.
+- **Multilingual:** switch explicitly between English, Español, and Català, or follow the system language.
 
 ## Screenshots
 
