@@ -112,6 +112,15 @@ class EditorPolishLayoutInstrumentedTest {
                             assertTrue(flag.bounds.width() <= button.width - button.paddingLeft - button.paddingRight)
                             assertTrue(flag.bounds.height() <= button.height - button.paddingTop - button.paddingBottom)
                             assertTrue(button.right < activity.findViewById<View>(R.id.themeButton).left)
+                            val empty = activity.findViewById<ScrollView>(R.id.emptyState)
+                            if (empty.visibility == View.VISIBLE) {
+                                assertTextFits(activity.findViewById(R.id.emptyDescription))
+                                val content = empty.getChildAt(0)
+                                empty.scrollTo(0, content.height)
+                                assertTrue("Empty-state final line must be reachable within its viewport",
+                                    empty.scrollY + empty.height >= content.height - content.paddingBottom)
+                                empty.scrollTo(0, 0)
+                            }
                             capture(root, "experiment-header-$language-$scale")
                             captures++
                         }
