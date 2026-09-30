@@ -41,8 +41,12 @@ internal class LanguageChooser(
         }
         val flag = activity.getDrawable(flagRes)?.apply { setBounds(0, 0, dp(24), dp(16)) }
         button.setCompoundDrawablesRelative(flag, null, null, null)
-        button.compoundDrawablePadding = dp(8)
-        button.setText(R.string.language_label)
+        // Split the actual pixel budget: separately rounded dp paddings can crop the flag.
+        val horizontalSpace = (button.layoutParams.width - dp(24)).coerceAtLeast(0)
+        button.setPaddingRelative(horizontalSpace / 2, 0, horizontalSpace - horizontalSpace / 2, 0)
+        button.compoundDrawablePadding = 0
+        button.text = ""
+        button.tooltipText = activity.getString(R.string.language_choose)
         val stateRes = if (LanguageManager.isFollowingSystem(activity)) {
             R.string.language_state_system
         } else {
