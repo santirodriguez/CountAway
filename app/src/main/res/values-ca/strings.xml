@@ -22,7 +22,6 @@
     <string name="status_days">%1$d dies</string>
     <string name="status_tomorrow">Demà</string>
     <string name="status_today">Avui</string>
-    <string name="status_today_zero">0 · Avui</string>
     <string name="status_done">Ja ha passat</string>
     <plurals name="status_days_ago">
         <item quantity="one">fa %1$d dia</item>

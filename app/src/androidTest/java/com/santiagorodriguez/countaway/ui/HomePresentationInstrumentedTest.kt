@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.view.ContextThemeWrapper
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -108,6 +109,35 @@ class HomePresentationInstrumentedTest {
         }
         assertTrue(problems.joinToString("\n"), problems.isEmpty())
         assertEquals(360, checked)
+    }
+
+    @Test fun arrivalIllustrationsAreActuallyLaidOutAndClearWhenTheyShould() = instrumentation.runOnMainSync {
+        val context = localized("en", 1f, false)
+        val adapter = adapter(context)
+        val parent = FrameLayout(context)
+        val events = listOf(event(3), event(2), event(1), event(0), event(84), event(-15, CountMode.COUNT_UP))
+        adapter.submit(events, today)
+        events.indices.forEach { index ->
+            val row = adapter.getView(index, null, parent)
+            measure(context, row, 411)
+            val illustration = row.findViewById<ImageView>(R.id.eventArrival)
+            if (index <= 3) {
+                assertEquals(View.VISIBLE, illustration.visibility)
+                assertTrue("Arrival illustration was requested but not laid out", illustration.width >= dp(context, 18))
+                assertTrue("Arrival illustration was requested but not laid out", illustration.height >= dp(context, 18))
+                val status = row.findViewById<View>(R.id.eventStatus)
+                assertTrue("Arrival illustration overlaps the status", illustration.right <= status.left)
+            } else {
+                assertEquals(View.GONE, illustration.visibility)
+            }
+        }
+
+        val largeTextContext = localized("en", 2f, false)
+        val largeTextAdapter = adapter(largeTextContext)
+        largeTextAdapter.submit(listOf(event(3)), today)
+        val largeTextRow = largeTextAdapter.getView(0, null, FrameLayout(largeTextContext))
+        measure(largeTextContext, largeTextRow, 411)
+        assertEquals(View.GONE, largeTextRow.findViewById<View>(R.id.eventArrival).visibility)
     }
 
     @Test fun shortCardsStayCompactWithoutSmallerFonts() = instrumentation.runOnMainSync {

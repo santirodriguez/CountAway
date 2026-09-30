@@ -17,9 +17,11 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     private val title: TextView get() = findViewById(R.id.eventTitle)
     private val meta: TextView get() = findViewById(R.id.eventMeta)
     private val status: TextView get() = findViewById(R.id.eventStatus)
+    private val arrival: View get() = findViewById(R.id.eventArrival)
     private val actions: View get() = findViewById(R.id.eventActions)
     private var expanded = false
     private var stackedDetails = false
+    private var showArrival = false
     private var railWidth = 0
     private var headerHeight = 0
     private var bodyHeight = 0
@@ -30,32 +32,67 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
             dp(320) else MeasureSpec.getSize(widthMeasureSpec)
         val inner = (width - paddingLeft - paddingRight).coerceAtLeast(1)
         icon.measure(exact(dp(48)), exact(dp(48)))
+        arrival.measure(exact(dp(18)), exact(dp(18)))
         actions.measure(exact(dp(48)), exact(dp(48)))
         val railLimit = min(dp(112), (inner * 0.38f).roundToInt()).coerceAtLeast(dp(54)).coerceAtMost(inner)
         status.measure(MeasureSpec.makeMeasureSpec(railLimit, MeasureSpec.AT_MOST), unspecified())
-        railWidth = max(dp(54), status.measuredWidth).coerceAtMost(inner)
-        val sideWidth = (inner - dp(48 + 12 + 12) - railWidth).coerceAtLeast(1)
-        measureText(title, sideWidth)
-        measureText(meta, sideWidth)
-        expanded = sideWidth < dp(100) || title.lineCount > 2 || meta.lineCount > 3 || status.lineCount > 2 ||
-            splitsWord(title) || splitsWord(meta) || splitsWord(status)
+        val plainRailWidth = max(dp(54), status.measuredWidth).coerceAtMost(inner)
+        val arrivalExtra = dp(22)
+        val requestedArrival = arrival.visibility == View.VISIBLE && (arrival.tag as? Int ?: 0) != 0
+        val decoratedRailWidth = max(dp(54), status.measuredWidth + arrivalExtra).coerceAtMost(inner)
+
+        railWidth = plainRailWidth
+        val plainExpanded = measureSide(inner, plainRailWidth)
+        showArrival = requestedArrival && status.measuredWidth + arrivalExtra <= railLimit
+        if (showArrival) {
+            railWidth = decoratedRailWidth
+            val decoratedExpanded = measureSide(inner, decoratedRailWidth)
+            if (decoratedExpanded && !plainExpanded) {
+                showArrival = false
+                railWidth = plainRailWidth
+                expanded = measureSide(inner, plainRailWidth)
+            } else {
+                expanded = decoratedExpanded
+            }
+        } else {
+            expanded = plainExpanded
+        }
+
         stackedDetails = false
         if (!expanded) {
             contentHeight = max(dp(48), max(title.measuredHeight + dp(3) + meta.measuredHeight, actionRailHeight()))
         } else {
             measureText(title, (inner - dp(60)).coerceAtLeast(1))
             headerHeight = max(dp(48), title.measuredHeight)
-            // The title uses its own row. Long localized statuses can now use more width.
-            val statusLimit = min(inner, max(railLimit, maxWordWidth(status) + status.compoundPaddingLeft + status.compoundPaddingRight))
+            val statusLimit = min(inner, max(railLimit,
+                maxWordWidth(status) + status.compoundPaddingLeft + status.compoundPaddingRight))
             status.measure(MeasureSpec.makeMeasureSpec(statusLimit, MeasureSpec.AT_MOST), unspecified())
-            railWidth = max(dp(54), status.measuredWidth).coerceAtMost(inner)
+            val plainExpandedRail = max(dp(54), status.measuredWidth).coerceAtMost(inner)
+            if (showArrival && status.measuredWidth + arrivalExtra <= railLimit) {
+                railWidth = max(dp(54), status.measuredWidth + arrivalExtra).coerceAtMost(inner)
+            } else {
+                showArrival = false
+                railWidth = plainExpandedRail
+            }
             val detailWidth = (inner - railWidth - dp(12)).coerceAtLeast(1)
             measureText(meta, detailWidth)
             stackedDetails = detailWidth < dp(100) || meta.lineCount > 2 || splitsWord(meta) || splitsWord(status)
+            if (showArrival && stackedDetails) {
+                val plainDetailWidth = (inner - plainExpandedRail - dp(12)).coerceAtLeast(1)
+                measureText(meta, plainDetailWidth)
+                val stacksWithoutArrival = plainDetailWidth < dp(100) || meta.lineCount > 2 ||
+                    splitsWord(meta) || splitsWord(status)
+                if (!stacksWithoutArrival) {
+                    showArrival = false
+                    railWidth = plainExpandedRail
+                    stackedDetails = false
+                }
+            }
             if (stackedDetails) {
                 measureText(meta, inner)
                 status.measure(MeasureSpec.makeMeasureSpec(inner, MeasureSpec.AT_MOST), unspecified())
-                railWidth = max(dp(54), status.measuredWidth).coerceAtMost(inner)
+                val extra = if (showArrival) arrivalExtra else 0
+                railWidth = max(dp(54), status.measuredWidth + extra).coerceAtMost(inner)
                 bodyHeight = meta.measuredHeight + dp(4) + actionRailHeight()
             } else {
                 bodyHeight = max(meta.measuredHeight, actionRailHeight())
@@ -85,9 +122,25 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         }
     }
 
+    private fun measureSide(inner: Int, rail: Int): Boolean {
+        val sideWidth = (inner - dp(48 + 12 + 12) - rail).coerceAtLeast(1)
+        measureText(title, sideWidth)
+        measureText(meta, sideWidth)
+        return sideWidth < dp(100) || title.lineCount > 2 || meta.lineCount > 3 || status.lineCount > 2 ||
+            splitsWord(title) || splitsWord(meta) || splitsWord(status)
+    }
+
     private fun placeRail(inner: Int, y: Int) {
         val start = inner - railWidth
-        place(status, start + (railWidth - status.measuredWidth) / 2, y)
+        if (showArrival) {
+            val groupWidth = arrival.measuredWidth + dp(4) + status.measuredWidth
+            val groupStart = start + ((railWidth - groupWidth) / 2).coerceAtLeast(0)
+            place(arrival, groupStart, y + (status.measuredHeight - arrival.measuredHeight) / 2)
+            place(status, groupStart + arrival.measuredWidth + dp(4), y)
+        } else {
+            arrival.layout(0, 0, 0, 0)
+            place(status, start + (railWidth - status.measuredWidth) / 2, y)
+        }
         if (actions.visibility != View.GONE) place(actions, start + (railWidth - actions.measuredWidth) / 2,
             y + status.measuredHeight)
         else actions.layout(0, 0, 0, 0)

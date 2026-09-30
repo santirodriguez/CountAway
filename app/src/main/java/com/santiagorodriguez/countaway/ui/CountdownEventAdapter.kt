@@ -71,7 +71,8 @@ class CountdownEventAdapter(
             scaleY = 1f
             alpha = 1f
         }
-        ArrivalIllustration.bindHome(context, statusView, ArrivalStage.from(value.countdownStatus))
+        ArrivalIllustration.bindHome(context, view.findViewById(R.id.eventArrival),
+            ArrivalStage.from(value.countdownStatus))
         view.contentDescription = listOf(event.title, meta, statusView.contentDescription).joinToString(", ")
         bindAddWidgetAction(view, event)
         bindRowActions(view, event)
