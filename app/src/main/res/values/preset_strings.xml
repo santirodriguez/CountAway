@@ -3,11 +3,10 @@
     <string name="preset_smoke_free">Smoke-free</string>
     <string name="preset_new_habit">New habit</string>
     <string name="preset_training">Training</string>
-    <string name="preset_learning">Learning</string>
+    <string name="preset_reading">Reading</string>
     <string name="preset_project">Project</string>
-    <string name="preset_new_job">New job</string>
-    <string name="preset_new_home">New home</string>
-    <string name="preset_count_up_hint">Pick a starting point. Make it yours.</string>
-    <string name="preset_count_down_hint">Pick something worth looking forward to.</string>
+    <string name="preset_fresh_start">Fresh start</string>
+    <string name="preset_milestone">Milestone</string>
     <string name="preset_preserved_type">Current category: %1$s. Choose a preset to change it.</string>
+    <string name="editor_change_icon">Change icon · %1$s</string>
 </resources>

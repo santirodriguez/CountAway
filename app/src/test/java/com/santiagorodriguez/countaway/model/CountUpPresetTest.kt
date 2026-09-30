@@ -5,8 +5,8 @@ import org.junit.Test
 
 class CountUpPresetTest {
     @Test fun catalogHasSevenStartingPointsAndTwoGenericChoices() {
-        assertEquals(listOf("SMOKE_FREE", "NEW_HABIT", "TRAINING", "LEARNING", "PROJECT",
-            "NEW_JOB", "NEW_HOME", "EVENT", "CUSTOM"), CountUpPreset.entries.map { it.name })
+        assertEquals(listOf("SMOKE_FREE", "NEW_HABIT", "TRAINING", "READING", "PROJECT",
+            "FRESH_START", "MILESTONE", "EVENT", "CUSTOM"), CountUpPreset.entries.map { it.name })
         assertEquals(7, CountUpPreset.entries.count { it.suggestsTitle })
     }
 

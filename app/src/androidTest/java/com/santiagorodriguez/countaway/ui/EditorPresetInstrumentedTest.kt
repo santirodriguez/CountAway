@@ -2,10 +2,12 @@ package com.santiagorodriguez.countaway.ui
 
 import android.content.Intent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso.onData
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.matcher.RootMatchers.isDialog
@@ -23,6 +25,7 @@ import com.santiagorodriguez.countaway.model.CountUpPreset
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.EventType
+import org.hamcrest.Matchers.anything
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
@@ -45,23 +48,24 @@ class EditorPresetInstrumentedTest {
         var suggestion = ""
         ActivityScenario.launch<EditorActivity>(Intent(context, EditorActivity::class.java)).use { scenario ->
             drain()
+            scenario.onActivity { assertMode(it, false) }
+            EditorTestActions.chooseMode(scenario, true)
             scenario.onActivity { activity ->
-                assertTrue(activity.findViewById<Button>(R.id.modeButton).isSelected)
-                activity.findViewById<Button>(R.id.countUpModeButton).performClick()
-                val grid = activity.findViewById<GridLayout>(R.id.typeGrid)
-                assertEquals(9, grid.childCount)
+                assertEquals(9, activity.findViewById<GridLayout>(R.id.typeGrid).childCount)
                 assertTrue(choice(activity, "up:EVENT").isSelected)
-                assertEquals("", activity.findViewById<EditText>(R.id.titleInput).text.toString())
-                choice(activity, "up:LEARNING").performClick()
-                suggestion = activity.getString(R.string.preset_learning)
-                assertEquals(suggestion, activity.findViewById<EditText>(R.id.titleInput).text.toString())
+                assertEquals("", title(activity).text.toString())
+                choice(activity, "up:READING").performClick()
+                suggestion = activity.getString(R.string.preset_reading)
+                assertEquals(suggestion, title(activity).text.toString())
+                val section = activity.findViewById<ViewGroup>(R.id.customIconSection)
+                assertTrue((0 until section.childCount).none { section.getChildAt(it) is GridLayout })
             }
             scenario.recreate()
             drain()
             scenario.onActivity {
-                assertTrue(it.findViewById<Button>(R.id.countUpModeButton).isSelected)
-                assertTrue(choice(it, "up:LEARNING").isSelected)
-                assertEquals(suggestion, it.findViewById<EditText>(R.id.titleInput).text.toString())
+                assertMode(it, true)
+                assertTrue(choice(it, "up:READING").isSelected)
+                assertEquals(suggestion, title(it).text.toString())
                 it.findViewById<Button>(R.id.saveButton).performClick()
             }
             drain()
@@ -77,63 +81,128 @@ class EditorPresetInstrumentedTest {
             drain()
             scenario.onActivity {
                 assertTrue(choice(it, "up:CUSTOM").isSelected)
-                assertEquals(suggestion, it.findViewById<EditText>(R.id.titleInput).text.toString())
+                assertEquals(suggestion, title(it).text.toString())
             }
+        }
+        ActivityScenario.launch<EditorActivity>(Intent(context, EditorActivity::class.java)).use { scenario ->
+            drain()
+            scenario.onActivity { assertMode(it, false) }
         }
     }
 
     @Test fun switchingTemplatesOnlyReplacesAppSuggestedTitles() = isolated {
         ActivityScenario.launch<EditorActivity>(Intent(context, EditorActivity::class.java)).use { scenario ->
             drain()
+            EditorTestActions.chooseMode(scenario, true)
             scenario.onActivity { activity ->
-                activity.findViewById<Button>(R.id.countUpModeButton).performClick()
-                choice(activity, "up:LEARNING").performClick()
-                assertEquals(activity.getString(R.string.preset_learning),
-                    activity.findViewById<EditText>(R.id.titleInput).text.toString())
-
+                choice(activity, "up:READING").performClick()
+                assertEquals(activity.getString(R.string.preset_reading), title(activity).text.toString())
                 choice(activity, "up:PROJECT").performClick()
-                assertEquals(activity.getString(R.string.preset_project),
-                    activity.findViewById<EditText>(R.id.titleInput).text.toString())
-
+                assertEquals(activity.getString(R.string.preset_project), title(activity).text.toString())
+            }
+            scenario.recreate()
+            drain()
+            scenario.onActivity { activity ->
                 choice(activity, "up:EVENT").performClick()
-                assertEquals("", activity.findViewById<EditText>(R.id.titleInput).text.toString())
-
-                activity.findViewById<EditText>(R.id.titleInput).setText("My own title")
+                assertEquals("", title(activity).text.toString())
+                title(activity).setText("My own title")
                 choice(activity, "up:SMOKE_FREE").performClick()
-                assertEquals("My own title", activity.findViewById<EditText>(R.id.titleInput).text.toString())
+                assertEquals("My own title", title(activity).text.toString())
+            }
+        }
+    }
+
+    @Test fun editingBackToSuggestedTextTransfersOwnershipAndPreservesSelection() = isolated {
+        var expected = ""
+        ActivityScenario.launch<EditorActivity>(Intent(context, EditorActivity::class.java)).use { scenario ->
+            drain()
+            EditorTestActions.chooseMode(scenario, true)
+            scenario.onActivity {
+                choice(it, "up:READING").performClick()
+                val input = title(it)
+                expected = input.text.toString()
+                input.setText("Edited by the user")
+                input.setText(expected)
+                input.setSelection(1, 3)
+            }
+            scenario.recreate()
+            drain()
+            scenario.onActivity {
+                val input = title(it)
+                assertEquals(1, input.selectionStart)
+                assertEquals(3, input.selectionEnd)
+                choice(it, "up:PROJECT").performClick()
+                assertEquals(expected, input.text.toString())
+                choice(it, "up:EVENT").performClick()
+                assertEquals(expected, input.text.toString())
+            }
+        }
+    }
+
+    @Test fun iconDialogCancelPreservesDraftAndExplicitSelectionSurvives() = isolated {
+        ActivityScenario.launch<EditorActivity>(Intent(context, EditorActivity::class.java)).use { scenario ->
+            drain()
+            EditorTestActions.chooseMode(scenario, true)
+            var before = ""
+            scenario.onActivity {
+                choice(it, "up:TRAINING").performClick()
+                val button = it.findViewById<Button>(R.id.iconButton)
+                before = button.text.toString()
+                button.performClick()
+            }
+            onView(withId(android.R.id.button2)).inRoot(isDialog()).perform(click())
+            drain()
+            scenario.onActivity {
+                val button = it.findViewById<Button>(R.id.iconButton)
+                assertEquals(before, button.text.toString())
+                assertTrue(choice(it, "up:TRAINING").isSelected)
+                button.performClick()
+            }
+            onData(anything()).inRoot(isDialog()).atPosition(7).perform(click())
+            drain()
+            scenario.recreate()
+            drain()
+            scenario.onActivity {
+                assertTrue(choice(it, "up:CUSTOM").isSelected)
+                assertEquals(it.getString(R.string.editor_change_icon,
+                    it.getString(EventIconPresentation.labelRes(EventIcon.CALENDAR))),
+                    it.findViewById<Button>(R.id.iconButton).text.toString())
+                assertEquals(it.getString(R.string.preset_training), title(it).text.toString())
             }
         }
     }
 
     @Test fun typedTitleAndExplicitDateArePreservedAcrossModesAndRecreation() = isolated { original ->
         val tomorrow = CountdownTime.snapshot().today.plusDays(1)
-        val title = "My own milestone 👩🏽‍🚀"
+        val expected = "My own milestone \uD83D\uDC69\uD83C\uDFFD\u200D\uD83D\uDE80"
         ActivityScenario.launch<EditorActivity>(Intent(context, EditorActivity::class.java)).use { scenario ->
             drain()
             scenario.onActivity {
-                it.findViewById<EditText>(R.id.titleInput).setText(title)
+                title(it).setText(expected)
                 choice(it, "down:EXAM").performClick()
                 it.findViewById<Button>(R.id.dateButton).performClick()
             }
-            // Confirm the existing date as an explicit choice, even though its value does not change.
+            // Confirming the unchanged default date is still an explicit choice.
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
             scenario.recreate()
             drain()
+            EditorTestActions.chooseMode(scenario, true)
             scenario.onActivity {
-                it.findViewById<Button>(R.id.countUpModeButton).performClick()
                 assertEquals(View.VISIBLE, it.findViewById<View>(R.id.presetPreservedNotice).visibility)
                 choice(it, "up:SMOKE_FREE").performClick()
-                assertEquals(title, it.findViewById<EditText>(R.id.titleInput).text.toString())
-                it.findViewById<Button>(R.id.modeButton).performClick()
-                it.findViewById<Button>(R.id.countUpModeButton).performClick()
+                assertEquals(expected, title(it).text.toString())
+            }
+            EditorTestActions.chooseMode(scenario, false)
+            EditorTestActions.chooseMode(scenario, true)
+            scenario.onActivity {
                 assertTrue(choice(it, "up:SMOKE_FREE").isSelected)
-                assertEquals(title, it.findViewById<EditText>(R.id.titleInput).text.toString())
+                assertEquals(expected, title(it).text.toString())
                 it.findViewById<Button>(R.id.saveButton).performClick()
             }
             drain()
         }
         val created = events().single { candidate -> original.none { it.id == candidate.id } }
-        assertEquals(title, created.title)
+        assertEquals(expected, created.title)
         assertEquals(tomorrow, created.date)
         assertEquals(EventType.CUSTOM, created.type)
         assertEquals(EventIcon.HEART, created.icon)
@@ -153,7 +222,7 @@ class EditorPresetInstrumentedTest {
                     val generic = type == EventType.EVENT || type == EventType.CUSTOM
                     assertEquals(if (generic) View.GONE else View.VISIBLE,
                         it.findViewById<View>(R.id.presetPreservedNotice).visibility)
-                    assertEquals(event.title, it.findViewById<EditText>(R.id.titleInput).text.toString())
+                    assertEquals(event.title, title(it).text.toString())
                     assertTrue(bytes.contentEquals(File(context.filesDir, "countaways.json").readBytes()))
                     it.findViewById<Button>(R.id.saveButton).performClick()
                 }
@@ -185,7 +254,15 @@ class EditorPresetInstrumentedTest {
         }
         assertEquals(fixtures, CountdownStorageCodec.decode(payload))
         assertEquals(fixtures, CountdownStorageCodec.decodeForImport(payload))
+        assertEquals(9, CountUpPreset.entries.map(CountUpPresetPresentation::glyphRes).distinct().size)
     }
+
+    private fun assertMode(activity: EditorActivity, up: Boolean) {
+        assertEquals(activity.getString(if (up) R.string.count_mode_up else R.string.count_mode_down),
+            activity.findViewById<Button>(R.id.modeButton).text.toString())
+    }
+
+    private fun title(activity: EditorActivity): EditText = activity.findViewById(R.id.titleInput)
 
     private fun choice(activity: EditorActivity, key: String): View {
         val grid = activity.findViewById<GridLayout>(R.id.typeGrid)

@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="20dp">
 
         <TextView
             android:id="@+id/editorHeading"
@@ -22,77 +22,9 @@
             android:textSize="28sp" />
 
         <TextView
-            android:id="@+id/presetHint"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="@string/preset_count_down_hint"
-            android:textColor="@color/secondary_text"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/modeLabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/count_mode_label"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
-
-        <LinearLayout
-            android:id="@+id/modeSelector"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/mode_track"
-            android:orientation="horizontal"
-            android:padding="4dp">
-
-            <Button
-                android:id="@+id/modeButton"
-                style="@style/Widget.CountAway.Button.Secondary"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_gravity="fill_vertical"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/preset_choice_background"
-                android:minWidth="0dp"
-                android:minHeight="48dp"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp"
-                android:text="@string/count_mode_down"
-                android:textColor="@color/preset_choice_text"
-                android:textSize="14sp" />
-
-            <Button
-                android:id="@+id/countUpModeButton"
-                style="@style/Widget.CountAway.Button.Secondary"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_gravity="fill_vertical"
-                android:background="@drawable/preset_choice_background"
-                android:minWidth="0dp"
-                android:minHeight="48dp"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp"
-                android:text="@string/count_mode_up"
-                android:textColor="@color/preset_choice_text"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:text="@string/field_type"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
+            android:id="@+id/typeLabel"
+            style="@style/Widget.CountAway.EditorLabel"
+            android:text="@string/field_type" />
 
         <GridLayout
             android:id="@+id/typeGrid"
@@ -111,73 +43,52 @@
             android:textSize="13sp"
             android:visibility="gone" />
 
-        <LinearLayout
-            android:id="@+id/customIconSection"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/field_icon"
-                android:textColor="@color/secondary_text"
-                android:textSize="13sp" />
-
-            <GridLayout
-                android:id="@+id/iconGrid"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:columnCount="4"
-                android:orientation="horizontal" />
-        </LinearLayout>
-
         <TextView
             android:id="@+id/titleLabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            style="@style/Widget.CountAway.EditorLabel"
             android:labelFor="@id/titleInput"
-            android:text="@string/field_title"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
+            android:text="@string/field_title" />
 
         <EditText
             android:id="@+id/titleInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:background="@drawable/control_surface"
             android:gravity="center_vertical"
             android:importantForAutofill="no"
+            android:saveEnabled="false"
             android:inputType="textCapSentences|textMultiLine"
             android:maxLines="2"
-            android:minHeight="54dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
+            android:minHeight="52dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
             android:textColor="@color/foreground"
             android:textColorHint="@color/secondary_text"
             android:textSize="16sp" />
 
         <TextView
+            android:id="@+id/modeLabel"
+            style="@style/Widget.CountAway.EditorLabel"
+            android:labelFor="@id/modeButton"
+            android:text="@string/count_mode_label" />
+
+        <Button
+            android:id="@+id/modeButton"
+            style="@style/Widget.CountAway.EditorControl"
+            android:text="@string/count_mode_down" />
+
+        <TextView
             android:id="@+id/dateLabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            style="@style/Widget.CountAway.EditorLabel"
             android:labelFor="@id/dateButton"
-            android:text="@string/field_date"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
+            android:text="@string/field_date" />
 
         <Button
             android:id="@+id/dateButton"
-            style="@style/Widget.CountAway.Button.Secondary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp" />
+            style="@style/Widget.CountAway.EditorControl" />
 
         <LinearLayout
             android:id="@+id/repeatSection"
@@ -186,29 +97,20 @@
             android:orientation="vertical">
 
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                style="@style/Widget.CountAway.EditorLabel"
                 android:text="@string/field_repeat"
-                android:labelFor="@id/repeatSpinner"
-                android:textColor="@color/secondary_text"
-                android:textSize="13sp" />
+                android:labelFor="@id/repeatSpinner" />
 
-            <FrameLayout
+            <Spinner
+                android:id="@+id/repeatSpinner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/control_surface">
-
-                <Spinner
-                    android:id="@+id/repeatSpinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="54dp"
-                    android:background="@android:color/transparent"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="8dp"
-                    android:spinnerMode="dropdown" />
-            </FrameLayout>
+                android:layout_marginTop="4dp"
+                android:minHeight="52dp"
+                android:background="@drawable/control_surface"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:popupBackground="@color/surface"
+                android:spinnerMode="dropdown" />
         </LinearLayout>
 
         <LinearLayout
@@ -218,51 +120,54 @@
             android:orientation="vertical">
 
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                style="@style/Widget.CountAway.EditorLabel"
                 android:text="@string/field_reminder"
-                android:labelFor="@id/reminderSpinner"
-                android:textColor="@color/secondary_text"
-                android:textSize="13sp" />
+                android:labelFor="@id/reminderSpinner" />
 
-            <FrameLayout
+            <Spinner
+                android:id="@+id/reminderSpinner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/control_surface">
-
-                <Spinner
-                    android:id="@+id/reminderSpinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="54dp"
-                    android:background="@android:color/transparent"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="8dp"
-                    android:spinnerMode="dropdown" />
-            </FrameLayout>
+                android:layout_marginTop="4dp"
+                android:minHeight="52dp"
+                android:background="@drawable/control_surface"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:popupBackground="@color/surface"
+                android:spinnerMode="dropdown" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/editorScheduleSummary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/status_pill"
-            android:paddingStart="12dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="8dp"
-            android:textColor="@color/accent_text"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/secondary_text"
             android:textSize="13sp"
             android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/customIconSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/Widget.CountAway.EditorLabel"
+                android:labelFor="@id/iconButton"
+                android:text="@string/field_icon" />
+
+            <Button
+                android:id="@+id/iconButton"
+                style="@style/Widget.CountAway.EditorControl" />
+        </LinearLayout>
 
         <Button
             android:id="@+id/saveButton"
             style="@style/Widget.CountAway.Button.Primary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="26dp"
+            android:layout_marginTop="20dp"
             android:text="@string/action_save" />
 
         <Button
@@ -270,7 +175,7 @@
             style="@style/Widget.CountAway.Button.Secondary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:text="@string/action_share" />
 
         <Button
@@ -278,8 +183,7 @@
             style="@style/Widget.CountAway.Button.Destructive"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:text="@string/action_delete" />
-
     </LinearLayout>
 </ScrollView>

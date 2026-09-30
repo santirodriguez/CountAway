@@ -5,10 +5,10 @@ enum class CountUpPreset(val icon: EventIcon) {
     SMOKE_FREE(EventIcon.HEART),
     NEW_HABIT(EventIcon.STAR),
     TRAINING(EventIcon.FLAG),
-    LEARNING(EventIcon.STAR),
+    READING(EventIcon.STAR),
     PROJECT(EventIcon.CALENDAR),
-    NEW_JOB(EventIcon.PIN),
-    NEW_HOME(EventIcon.GIFT),
+    FRESH_START(EventIcon.GIFT),
+    MILESTONE(EventIcon.PIN),
     EVENT(EventIcon.CALENDAR),
     CUSTOM(EventIcon.STAR);
 
