@@ -88,7 +88,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 
 CountAway has no Internet permission, accounts, ads, analytics, or cloud sync.
 
-Your countdowns stay on your device. Revolutionary stuff, apparently.
+Your events stay on your device. Revolutionary stuff, apparently.
 
 ## Build
 
