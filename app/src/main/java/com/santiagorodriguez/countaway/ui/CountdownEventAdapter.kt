@@ -102,14 +102,24 @@ class CountdownEventAdapter(
     }
 
     private fun bindRowActions(view: View, event: CountdownEvent) {
-        view.setOnClickListener(onOpenEvent?.let { open -> View.OnClickListener { open(event) } })
+        view.setOnClickListener(onOpenEvent?.let { open ->
+            View.OnClickListener { if (interactionEnabled(view)) open(event) }
+        })
         view.isFocusable = onOpenEvent != null
-        view.setOnLongClickListener(onAddWidget?.let { add -> View.OnLongClickListener { add(event); true } })
+        view.setOnLongClickListener(onAddWidget?.let { add ->
+            View.OnLongClickListener {
+                if (!interactionEnabled(view)) return@OnLongClickListener false
+                add(event)
+                true
+            }
+        })
         view.findViewById<View>(R.id.eventActions).apply {
             tag = event.id
             visibility = if (onEventActions == null) View.GONE else View.VISIBLE
             contentDescription = context.getString(R.string.event_actions_description, event.title)
-            setOnClickListener { onEventActions?.invoke(event, this) }
+            setOnClickListener {
+                if (interactionEnabled(this)) onEventActions?.invoke(event, this)
+            }
         }
     }
 
@@ -128,13 +138,22 @@ class CountdownEventAdapter(
                 ))
             }
             override fun performAccessibilityAction(host: View, actionId: Int, arguments: Bundle?): Boolean {
-                if (actionId == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
+                if (actionId == AccessibilityNodeInfo.ACTION_LONG_CLICK && interactionEnabled(host)) {
                     action(event)
                     return true
                 }
                 return super.performAccessibilityAction(host, actionId, arguments)
             }
         }
+    }
+
+    private fun interactionEnabled(view: View): Boolean {
+        var current: View? = view
+        while (current != null) {
+            if (!current.isEnabled) return false
+            current = current.parent as? View
+        }
+        return true
     }
 
     private fun elapsedStatus(elapsedDays: Long): String = context.resources.getQuantityString(

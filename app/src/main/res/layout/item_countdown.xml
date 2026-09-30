@@ -73,6 +73,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="@drawable/event_actions_button"
+            android:contentDescription="@string/event_actions_label"
             android:foreground="?android:attr/selectableItemBackgroundBorderless"
             android:padding="15dp"
             android:src="@drawable/ic_event_more"

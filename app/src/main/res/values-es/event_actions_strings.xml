@@ -3,6 +3,7 @@
     <string name="event_action_edit">Editar</string>
     <string name="event_action_duplicate">Duplicar</string>
     <string name="event_action_widget">Agregar widget</string>
+    <string name="event_actions_label">Acciones del evento</string>
     <string name="event_actions_description">Opciones de %1$s</string>
     <string name="event_copy_title">Nueva copia</string>
     <string name="copy_source_changed">Este evento cambió o se eliminó. Volvé a la lista y elegí Duplicar de nuevo.</string>

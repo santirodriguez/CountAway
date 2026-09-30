@@ -3,6 +3,7 @@
     <string name="event_action_edit">Edit</string>
     <string name="event_action_duplicate">Duplicate</string>
     <string name="event_action_widget">Add widget</string>
+    <string name="event_actions_label">Event actions</string>
     <string name="event_actions_description">Actions for %1$s</string>
     <string name="event_copy_title">New copy</string>
     <string name="copy_source_changed">This event changed or was removed. Open the list and choose Duplicate again.</string>

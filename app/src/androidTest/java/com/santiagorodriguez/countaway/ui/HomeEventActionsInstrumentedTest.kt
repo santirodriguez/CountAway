@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.ContextThemeWrapper
 import android.view.View
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
@@ -98,6 +99,39 @@ class HomeEventActionsInstrumentedTest {
                 }
             }
             assertEquals(36, checked)
+        }
+    }
+
+    @Test fun disabledAncestorBlocksRowMenuAndAccessibilityActionsUntilReenabled() {
+        instrumentation.runOnMainSync {
+            val event = fixture()
+            var edits = 0
+            var widgets = 0
+            var menus = 0
+            val adapter = CountdownEventAdapter(context, { widgets++ }, { edits++ }, { _, _ -> menus++ })
+            adapter.submit(listOf(event), CountdownTime.snapshot().today)
+            val parent = FrameLayout(context)
+            val row = adapter.getView(0, null, parent)
+            parent.addView(row)
+            val button = row.findViewById<View>(R.id.eventActions)
+
+            parent.isEnabled = false
+            row.performClick()
+            row.performLongClick()
+            button.performClick()
+            row.performAccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, null)
+            assertEquals(0, edits)
+            assertEquals(0, widgets)
+            assertEquals(0, menus)
+
+            parent.isEnabled = true
+            assertTrue(row.performClick())
+            assertTrue(row.performLongClick())
+            assertTrue(button.performClick())
+            assertTrue(row.performAccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, null))
+            assertEquals(1, edits)
+            assertEquals(2, widgets)
+            assertEquals(1, menus)
         }
     }
 
