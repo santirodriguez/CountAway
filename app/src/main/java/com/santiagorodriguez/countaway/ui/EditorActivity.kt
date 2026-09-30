@@ -71,6 +71,7 @@ class EditorActivity : BaseActivity() {
     private lateinit var customIconSection: View
     private lateinit var iconGrid: GridLayout
     private lateinit var dateButton: Button
+    private lateinit var modeSelector: LinearLayout
     private lateinit var modeButton: Button
     private lateinit var countUpModeButton: Button
     private lateinit var saveButton: Button
@@ -118,6 +119,10 @@ class EditorActivity : BaseActivity() {
         customIconSection = findViewById(R.id.customIconSection)
         iconGrid = findViewById(R.id.iconGrid)
         dateButton = findViewById(R.id.dateButton)
+        modeSelector = findViewById(R.id.modeSelector)
+        modeSelector.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+            if (editorInitialized && right > left && right - left != oldRight - oldLeft) renderMode()
+        }
         modeButton = findViewById(R.id.modeButton)
         countUpModeButton = findViewById(R.id.countUpModeButton)
         ChoiceAccessibility.apply(modeButton)
@@ -282,9 +287,8 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun renderMode() {
-        val vertical = resources.configuration.fontScale >= 1.5f
-        findViewById<LinearLayout>(R.id.modeSelector).orientation =
-            if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+        val vertical = resources.configuration.fontScale >= 1.5f || !modeLabelsFitHorizontally()
+        modeSelector.orientation = if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
         listOf(modeButton, countUpModeButton).forEachIndexed { index, button ->
             button.layoutParams = (button.layoutParams as LinearLayout.LayoutParams).apply {
                 width = if (vertical) ViewGroup.LayoutParams.MATCH_PARENT else 0
@@ -307,6 +311,20 @@ class EditorActivity : BaseActivity() {
         val visibility = if (selectedCountMode == CountMode.COUNT_UP) View.GONE else View.VISIBLE
         findViewById<View>(R.id.repeatSection).visibility = visibility
         findViewById<View>(R.id.reminderSection).visibility = visibility
+    }
+
+    private fun modeLabelsFitHorizontally(): Boolean {
+        val selectorWidth = modeSelector.width.takeIf { it > 0 }
+            ?: dp((resources.configuration.screenWidthDp - 48).coerceAtLeast(120))
+        val buttonWidth = (
+            selectorWidth - modeSelector.paddingLeft - modeSelector.paddingRight - dp(4)
+        ) / 2
+        if (buttonWidth <= 0) return false
+        return listOf(modeButton, countUpModeButton).all { button ->
+            val desiredTextWidth = button.paint.measureText(button.text.toString())
+            val requiredWidth = desiredTextWidth + button.paddingStart + button.paddingEnd + dp(2)
+            requiredWidth <= buttonWidth
+        }
     }
 
     private fun selectCountMode(next: CountMode) {

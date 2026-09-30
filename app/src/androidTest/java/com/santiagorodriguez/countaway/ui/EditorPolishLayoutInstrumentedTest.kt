@@ -85,11 +85,15 @@ class EditorPolishLayoutInstrumentedTest {
                                     assertTrue(button.height >= dp(activity, 48))
                                 }
                                 val selector = activity.findViewById<LinearLayout>(R.id.modeSelector)
-                                assertEquals(if (scale >= 1.5f) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL,
-                                    selector.orientation)
+                                val downButton = activity.findViewById<Button>(R.id.modeButton)
+                                val upButton = activity.findViewById<Button>(R.id.countUpModeButton)
                                 if (selector.orientation == LinearLayout.HORIZONTAL) {
-                                    assertEquals(activity.findViewById<Button>(R.id.modeButton).height,
-                                        activity.findViewById<Button>(R.id.countUpModeButton).height)
+                                    assertEquals(downButton.height, upButton.height)
+                                    assertEquals(1, checkNotNull(downButton.layout).lineCount)
+                                    assertEquals(1, checkNotNull(upButton.layout).lineCount)
+                                } else {
+                                    assertEquals(LinearLayout.VERTICAL, selector.orientation)
+                                    assertEquals(downButton.width, upButton.width)
                                 }
                                 assertTrue(selector.bottom < grid.top)
                                 capture(root.getChildAt(0), "experiment-editor-$language-$scale-$up")
