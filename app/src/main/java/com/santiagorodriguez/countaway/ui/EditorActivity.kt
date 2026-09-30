@@ -671,7 +671,7 @@ class EditorActivity : BaseActivity() {
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 
-    private fun textShareIntent(title: String, text: String): Intent = Intent(Intent.ACTION_SEND)
+    private fun textShareIntent(text: String): Intent = Intent(Intent.ACTION_SEND)
         .setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
 
     private fun launchShare(sendIntent: Intent): Boolean = runCatching {
