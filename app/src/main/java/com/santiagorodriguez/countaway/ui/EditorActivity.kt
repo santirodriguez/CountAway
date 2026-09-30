@@ -89,6 +89,7 @@ class EditorActivity : BaseActivity() {
     private var selectedReminder: ReminderOption = ReminderOption.OFF
     private var selectedCountMode: CountMode = CountMode.COUNT_DOWN
     private var selectedPreset: CountUpPreset? = null
+    private var autoSuggestedTitle: String? = null
     private var dateChosen = false
     private var typeChosen = false
     private var pendingCountUpConfirmation = false
@@ -248,6 +249,7 @@ class EditorActivity : BaseActivity() {
             outState.putString(STATE_REMINDER, selectedReminder.name)
             outState.putString(STATE_COUNT_MODE, selectedCountMode.name)
             outState.putString(STATE_PRESET, selectedPreset?.name)
+            outState.putString(STATE_AUTO_SUGGESTED_TITLE, autoSuggestedTitle)
             outState.putBoolean(STATE_DATE_CHOSEN, dateChosen)
             outState.putBoolean(STATE_TYPE_CHOSEN, typeChosen)
             outState.putBoolean(STATE_MODE_CONFIRMATION, pendingCountUpConfirmation)
@@ -530,10 +532,19 @@ class EditorActivity : BaseActivity() {
             (choice.preset == null || choice.preset == CountUpPreset.CUSTOM)) {
             selectedIcon.takeIf { it in customIcons } ?: EventIcon.STAR
         } else choice.icon
-        choice.preset?.let { preset ->
-            val current = titleInput.text.toString()
-            val suggested = preset.titleFor(current, getString(choice.labelRes))
-            if (suggested != current) titleInput.setText(suggested)
+        val currentTitle = titleInput.text.toString()
+        val mayReplaceSuggestion = currentTitle.isBlank() || currentTitle == autoSuggestedTitle
+        if (choice.preset?.suggestsTitle == true) {
+            if (mayReplaceSuggestion) {
+                val suggested = getString(choice.labelRes)
+                titleInput.setText(suggested)
+                autoSuggestedTitle = suggested
+            } else {
+                autoSuggestedTitle = null
+            }
+        } else {
+            if (currentTitle == autoSuggestedTitle) titleInput.setText("")
+            autoSuggestedTitle = null
         }
         renderTypeGrid()
         renderCustomIconGrid()
@@ -811,6 +822,8 @@ class EditorActivity : BaseActivity() {
         selectedPreset = state.getString(STATE_PRESET)?.let { raw ->
             CountUpPreset.entries.firstOrNull { it.name == raw && it.type == selectedType }
         } ?: CountUpPreset.forStoredType(selectedType)
+        autoSuggestedTitle = state.getString(STATE_AUTO_SUGGESTED_TITLE)
+            ?.takeIf { it == titleInput.text.toString() }
         dateChosen = state.getBoolean(STATE_DATE_CHOSEN, state.containsKey(STATE_DATE))
         typeChosen = state.getBoolean(STATE_TYPE_CHOSEN, state.containsKey(STATE_TYPE))
         pendingCountUpConfirmation = state.getBoolean(STATE_MODE_CONFIRMATION)
@@ -950,6 +963,7 @@ class EditorActivity : BaseActivity() {
         private const val STATE_REMINDER = "editor_reminder"
         private const val STATE_COUNT_MODE = "editor_count_mode"
         private const val STATE_PRESET = "editor_creation_preset"
+        private const val STATE_AUTO_SUGGESTED_TITLE = "editor_auto_suggested_title"
         private const val STATE_DATE_CHOSEN = "editor_date_chosen"
         private const val STATE_TYPE_CHOSEN = "editor_type_chosen"
         private const val STATE_MODE_CONFIRMATION = "editor_mode_confirmation"

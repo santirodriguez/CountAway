@@ -82,6 +82,29 @@ class EditorPresetInstrumentedTest {
         }
     }
 
+    @Test fun switchingTemplatesOnlyReplacesAppSuggestedTitles() = isolated {
+        ActivityScenario.launch<EditorActivity>(Intent(context, EditorActivity::class.java)).use { scenario ->
+            drain()
+            scenario.onActivity { activity ->
+                activity.findViewById<Button>(R.id.countUpModeButton).performClick()
+                choice(activity, "up:LEARNING").performClick()
+                assertEquals(activity.getString(R.string.preset_learning),
+                    activity.findViewById<EditText>(R.id.titleInput).text.toString())
+
+                choice(activity, "up:PROJECT").performClick()
+                assertEquals(activity.getString(R.string.preset_project),
+                    activity.findViewById<EditText>(R.id.titleInput).text.toString())
+
+                choice(activity, "up:EVENT").performClick()
+                assertEquals("", activity.findViewById<EditText>(R.id.titleInput).text.toString())
+
+                activity.findViewById<EditText>(R.id.titleInput).setText("My own title")
+                choice(activity, "up:SMOKE_FREE").performClick()
+                assertEquals("My own title", activity.findViewById<EditText>(R.id.titleInput).text.toString())
+            }
+        }
+    }
+
     @Test fun typedTitleAndExplicitDateArePreservedAcrossModesAndRecreation() = isolated { original ->
         val tomorrow = CountdownTime.snapshot().today.plusDays(1)
         val title = "My own milestone 👩🏽‍🚀"
