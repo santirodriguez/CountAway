@@ -1,0 +1,243 @@
+package com.santiagorodriguez.countaway.ui
+
+import android.content.Context
+import android.content.Intent
+import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.view.ContextThemeWrapper
+import android.view.View
+import android.widget.Button
+import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.ListView
+import android.widget.TextView
+import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.RootMatchers.isDialog
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.data.CountdownIo
+import com.santiagorodriguez.countaway.data.CountdownLoadResult
+import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.EventRevision
+import com.santiagorodriguez.countaway.model.CountMode
+import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.EventIcon
+import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.model.ReminderOption
+import com.santiagorodriguez.countaway.model.RepeatRule
+import org.junit.Assert.*
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.File
+import java.time.Instant
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
+
+@RunWith(AndroidJUnit4::class)
+class HomeEventActionsInstrumentedTest {
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    private val context = instrumentation.targetContext
+    private val repository = CountdownRepository(context)
+
+    @Test fun actionsPreserveTextWidthAndExistingGesturesAcrossLayouts() {
+        instrumentation.runOnMainSync {
+            var checked = 0
+            for (locale in listOf("en", "es", "ca")) for (dark in listOf(false, true)) {
+                for (scale in listOf(1f, 1.3f, 2f)) for (width in listOf(320, 411)) {
+                    val config = Configuration(context.resources.configuration).apply {
+                        setLocale(Locale.forLanguageTag(locale))
+                        fontScale = scale
+                        uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                            if (dark) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+                    }
+                    val themed = ContextThemeWrapper(context.createConfigurationContext(config), context.applicationInfo.theme)
+                    val event = fixture().copy(title = "Reading together 🧩 for our next project")
+                    var edits = 0
+                    var widgets = 0
+                    var menus = 0
+                    val plain = CountdownEventAdapter(themed)
+                    val actions = CountdownEventAdapter(themed, { widgets++ }, { edits++ }, { _, _ -> menus++ })
+                    listOf(plain, actions).forEach { it.submit(listOf(event), CountdownTime.snapshot().today) }
+                    val parent = FrameLayout(themed)
+                    val before = plain.getView(0, null, parent)
+                    val after = actions.getView(0, null, parent)
+                    measure(themed, before, width)
+                    measure(themed, after, width)
+                    for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus)) {
+                        val old = before.findViewById<TextView>(id)
+                        val current = after.findViewById<TextView>(id)
+                        assertEquals("Text width $locale/$scale/$width", old.width, current.width)
+                        assertEquals(old.text.toString(), current.text.toString())
+                        assertEquals(old.layout.lineCount, current.layout.lineCount)
+                        for (line in 0 until old.layout.lineCount) {
+                            assertEquals(old.layout.getEllipsisCount(line), current.layout.getEllipsisCount(line))
+                        }
+                    }
+                    val button = after.findViewById<View>(R.id.eventActions)
+                    assertTrue(button.width >= dp(themed, 48) && button.height >= dp(themed, 48))
+                    assertTrue(after.performClick())
+                    assertTrue(after.performLongClick())
+                    assertTrue(button.performClick())
+                    assertEquals(1, edits)
+                    assertEquals(1, widgets)
+                    assertEquals(1, menus)
+                    capture(after, "home-actions-$locale-$dark-$scale-$width")
+                    checked++
+                }
+            }
+            assertEquals(36, checked)
+        }
+    }
+
+    @Test fun menuOffersFourActionsAndDeleteIsCancellableAndConflictSafe() = isolated {
+        val source = fixture()
+        repository.save(listOf(source))
+        val originalBytes = File(context.filesDir, "countaways.json").readBytes()
+        ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
+            drain()
+            var deleteLabel = ""
+            var labels = emptyList<String>()
+            scenario.onActivity {
+                deleteLabel = it.getString(R.string.action_delete)
+                labels = listOf(R.string.event_action_edit, R.string.event_action_duplicate,
+                    R.string.event_action_widget, R.string.action_delete).map(it::getString)
+                actionButton(it).performClick()
+            }
+            labels.forEach { onView(withText(it)).check(matches(isDisplayed())) }
+            onView(withText(deleteLabel)).perform(click())
+            onView(withId(android.R.id.button2)).inRoot(isDialog()).perform(click())
+            drain()
+            assertArrayEquals(originalBytes, File(context.filesDir, "countaways.json").readBytes())
+            scenario.onActivity { actionButton(it).performClick() }
+            onView(withText(deleteLabel)).perform(click())
+            val changed = source.copy(title = "Changed elsewhere")
+            repository.save(listOf(changed))
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            drain()
+            assertEquals(listOf(changed), events())
+            scenario.onActivity { actionButton(it).performClick() }
+            onView(withText(deleteLabel)).perform(click())
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            drain()
+            assertTrue(events().isEmpty())
+        }
+    }
+
+    @Test fun duplicateSurvivesRecreationAndSavesOnlyOneIndependentRecord() = isolated {
+        for (mode in CountMode.entries) {
+            val source = fixture().copy(countMode = mode,
+                repeatRule = if (mode == CountMode.COUNT_DOWN) RepeatRule.YEARLY else RepeatRule.NONE,
+                reminder = if (mode == CountMode.COUNT_DOWN) ReminderOption.ONE_DAY else ReminderOption.OFF)
+            repository.save(listOf(source))
+            val originalBytes = File(context.filesDir, "countaways.json").readBytes()
+            ActivityScenario.launch<EditorActivity>(copyIntent(source)).use { scenario ->
+                drain()
+                scenario.onActivity {
+                    assertEquals(source.title, it.findViewById<EditText>(R.id.titleInput).text.toString())
+                    assertEquals(it.getString(R.string.event_copy_title), it.findViewById<TextView>(R.id.editorHeading).text)
+                    assertEquals(View.GONE, it.findViewById<View>(R.id.deleteButton).visibility)
+                }
+                assertArrayEquals(originalBytes, File(context.filesDir, "countaways.json").readBytes())
+                val changedSource = source.copy(title = "Original changed after copying")
+                repository.save(listOf(changedSource))
+                scenario.recreate()
+                drain()
+                scenario.onActivity {
+                    assertEquals(source.title, it.findViewById<EditText>(R.id.titleInput).text.toString())
+                    val save = it.findViewById<Button>(R.id.saveButton)
+                    save.performClick()
+                    save.performClick()
+                }
+                drain()
+                val saved = events()
+                assertEquals(2, saved.size)
+                assertEquals(changedSource, saved.single { it.id == source.id })
+                val copy = saved.single { it.id != source.id }
+                assertEquals(source.copy(id = copy.id, createdAt = copy.createdAt, reminder = ReminderOption.OFF), copy)
+            }
+        }
+    }
+
+    @Test fun abandonedCopyAndHistoricalTitleValidationDoNotWrite() = isolated {
+        val source = fixture().copy(title = "Long title 🧩 ".repeat(40))
+        repository.save(listOf(source))
+        val bytes = File(context.filesDir, "countaways.json").readBytes()
+        ActivityScenario.launch<EditorActivity>(copyIntent(source)).use { scenario ->
+            drain()
+            scenario.onActivity {
+                val title = it.findViewById<EditText>(R.id.titleInput)
+                assertEquals(source.title, title.text.toString())
+                it.findViewById<Button>(R.id.saveButton).performClick()
+                assertNotNull(title.error)
+            }
+        }
+        drain()
+        assertArrayEquals(bytes, File(context.filesDir, "countaways.json").readBytes())
+    }
+
+    private fun actionButton(activity: MainActivity): View =
+        activity.findViewById<ListView>(R.id.countdownList).getChildAt(0).findViewById(R.id.eventActions)
+
+    private fun copyIntent(source: CountdownEvent) = Intent(context, EditorActivity::class.java)
+        .putExtra(EditorActivity.EXTRA_DUPLICATE_EVENT_ID, source.id)
+        .putExtra(EditorActivity.EXTRA_SOURCE_REVISION, EventRevision.of(source))
+
+    private fun fixture() = CountdownEvent(id = UUID.randomUUID().toString(), title = "Reading 🧩",
+        date = CountdownTime.snapshot().today.plusDays(20), type = EventType.CUSTOM,
+        icon = EventIcon.BOOK, createdAt = Instant.EPOCH)
+
+    private fun events() = (repository.loadResult() as CountdownLoadResult.Success).events
+
+    private fun measure(context: Context, view: View, width: Int) {
+        repeat(3) {
+            view.forceLayout()
+            view.measure(View.MeasureSpec.makeMeasureSpec(dp(context, width), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+            view.layout(0, 0, view.measuredWidth, view.measuredHeight)
+        }
+    }
+
+    private fun capture(view: View, name: String) {
+        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        try {
+            view.draw(Canvas(bitmap))
+            File(context.filesDir, "layout-evidence/$name.png").apply {
+                parentFile!!.mkdirs()
+                outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            }
+        } finally { bitmap.recycle() }
+    }
+
+    private fun dp(context: Context, value: Int) = (value * context.resources.displayMetrics.density).roundToInt()
+
+    private fun drain() {
+        repeat(2) {
+            val done = CountDownLatch(1)
+            CountdownIo.submit({ Unit }) { done.countDown() }
+            assertTrue(done.await(15, TimeUnit.SECONDS))
+            instrumentation.waitForIdleSync()
+        }
+    }
+
+    private fun isolated(test: () -> Unit) {
+        drain()
+        val backup = listOf("countaways.json", "countaways.json.bak", "countaways.json.new")
+            .associate { name -> File(context.filesDir, name).let { it to if (it.isFile) it.readBytes() else null } }
+        try { test() } finally {
+            drain()
+            backup.forEach { (file, bytes) -> if (bytes == null) file.delete() else file.writeBytes(bytes) }
+        }
+    }
+}
