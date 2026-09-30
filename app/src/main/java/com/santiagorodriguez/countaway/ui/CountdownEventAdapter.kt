@@ -11,10 +11,7 @@ import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
-import com.santiagorodriguez.countaway.countdown.ArrivalStage
-import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.countdown.CountdownTime
-import com.santiagorodriguez.countaway.countdown.CountUpState
 import com.santiagorodriguez.countaway.countdown.EventCountResolver
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.RepeatRule
@@ -46,11 +43,7 @@ class CountdownEventAdapter(
         val view = convertView ?: inflater.inflate(R.layout.item_countdown, parent, false)
         val event = getItem(position)
         val value = EventCountResolver.resolve(event, today)
-        val displayDate = value.displayDate
-        val status = value.countdownStatus
-        val stage = ArrivalStage.from(status)
-        view.foreground = if (stage == ArrivalStage.NONE) null else ArrivalAccentDrawable(
-            stage, context.getColor(R.color.accent_text), context.resources.displayMetrics.density)
+        view.foreground = null
         val locale = context.resources.configuration.locales[0]
         val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
 
@@ -60,36 +53,18 @@ class CountdownEventAdapter(
         }
         view.findViewById<TextView>(R.id.eventTitle).text = event.title
         val eventType = context.getString(EventTypePresentation.labelRes(event.type))
-        val formattedDate = displayDate.format(dateFormatter)
+        val formattedDate = value.displayDate.format(dateFormatter)
         val meta = when {
-            value.countUpState != null -> context.getString(R.string.count_up_meta_format,
-                EventCountText.status(context, value), EventCountText.date(context, displayDate, event.countMode))
+            value.countUpState != null -> HomeEventText.startDate(context, value)
             event.repeatRule == RepeatRule.NONE -> context.getString(R.string.event_meta, eventType, formattedDate)
             else -> context.getString(R.string.event_meta_repeating, eventType, formattedDate,
                 context.getString(repeatLabelRes(event.repeatRule)))
         }
-        view.findViewById<TextView>(R.id.eventMeta).apply {
-            text = meta
-            maxLines = if (value.countUpState == null) 2 else 3
-        }
-
+        view.findViewById<TextView>(R.id.eventMeta).text = meta
         val statusView = view.findViewById<TextView>(R.id.eventStatus).apply {
             animate().withEndAction(null).cancel()
-            text = when (status) {
-                CountdownStatus.FUTURE -> context.getString(R.string.status_days, value.magnitude)
-                CountdownStatus.THREE_DAYS, CountdownStatus.TWO_DAYS, CountdownStatus.TOMORROW -> value.magnitude.toString()
-                CountdownStatus.TODAY -> context.getString(R.string.status_today_zero)
-                CountdownStatus.DONE -> elapsedStatus(value.magnitude)
-                null -> (if (value.countUpState == CountUpState.ELAPSED) "+" else "−") + value.magnitude
-            }
-            contentDescription = when (status) {
-                CountdownStatus.FUTURE, CountdownStatus.THREE_DAYS, CountdownStatus.TWO_DAYS ->
-                    context.getString(R.string.status_days, value.magnitude)
-                CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
-                CountdownStatus.TODAY -> context.getString(R.string.status_today)
-                CountdownStatus.DONE -> elapsedStatus(value.magnitude)
-                null -> EventCountText.status(context, value)
-            }
+            text = HomeEventText.status(context, value)
+            contentDescription = EventCountText.status(context, value)
             setTypeface(typeface, Typeface.BOLD)
             scaleX = 1f
             scaleY = 1f
@@ -155,10 +130,6 @@ class CountdownEventAdapter(
         }
         return true
     }
-
-    private fun elapsedStatus(elapsedDays: Long): String = context.resources.getQuantityString(
-        R.plurals.status_days_ago, elapsedDays.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(), elapsedDays,
-    )
 
     private fun repeatLabelRes(repeatRule: RepeatRule): Int = when (repeatRule) {
         RepeatRule.NONE -> R.string.repeat_never
