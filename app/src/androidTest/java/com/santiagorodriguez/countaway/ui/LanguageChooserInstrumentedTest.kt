@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import android.os.LocaleList
+import android.os.SystemClock
 import android.view.KeyEvent
 import android.widget.Button
 import androidx.test.core.app.ActivityScenario
@@ -95,20 +96,19 @@ class LanguageChooserInstrumentedTest {
             onView(withText("Español")).inRoot(isDialog()).check(matches(isDisplayed()))
             onView(withText("Català")).inRoot(isDialog()).check(matches(isDisplayed()))
             pressBack()
+            waitForLanguageButtonFocus(scenario)
             onView(withId(R.id.languageButton)).perform(click())
             onView(withText("Choose language")).inRoot(isDialog()).check(matches(isDisplayed()))
             pressBack()
-            // Enter real keyboard-navigation mode before requesting keyboard focus.
+            waitForLanguageButtonFocus(scenario)
+            // Enter real keyboard-navigation mode only after the dismiss callback restored focus.
             instrumentation.setInTouchMode(false)
             instrumentation.waitForIdleSync()
-            scenario.onActivity {
-                val button = it.findViewById<Button>(R.id.languageButton)
-                assertTrue(button.hasFocus() || button.requestFocus())
-            }
             onView(withId(R.id.languageButton)).check(matches(hasFocus()))
             onView(withId(R.id.languageButton)).perform(pressKey(KeyEvent.KEYCODE_DPAD_CENTER))
             onView(withText("Choose language")).inRoot(isDialog()).check(matches(isDisplayed()))
             pressBack()
+            waitForLanguageButtonFocus(scenario)
             scenario.onActivity {
                 assertEquals("en", LanguageManager.currentLanguageTag(it))
                 assertFalse(LanguageManager.isFollowingSystem(it))
@@ -141,6 +141,19 @@ class LanguageChooserInstrumentedTest {
             instrumentation.waitForIdleSync()
             scenario.onActivity { assertTrue(LanguageManager.isFollowingSystem(it)) }
         }
+    }
+
+    private fun waitForLanguageButtonFocus(scenario: ActivityScenario<MainActivity>) {
+        val deadline = SystemClock.uptimeMillis() + 2_000L
+        var focused = false
+        while (!focused && SystemClock.uptimeMillis() < deadline) {
+            instrumentation.waitForIdleSync()
+            scenario.onActivity {
+                focused = it.findViewById<Button>(R.id.languageButton).hasFocus()
+            }
+            if (!focused) SystemClock.sleep(50L)
+        }
+        assertTrue(focused)
     }
 
     private fun selectEnglish() {
