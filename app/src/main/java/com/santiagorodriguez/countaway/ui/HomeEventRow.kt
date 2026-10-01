@@ -22,6 +22,9 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     private val status: TextView get() = findViewById(R.id.eventStatus)
     private val arrival: View get() = findViewById(R.id.eventArrival)
     private val actions: View get() = findViewById(R.id.eventActions)
+    // Keep the actual inflated pixel size: XML dimensions can be rounded
+    // differently from converting the same nominal sp value at runtime.
+    private val fallbackStatusSizePx by lazy { status.textSize }
     private var lateral = false
     private var lateralWidth = 0
     private var lastLateralAppearance: Boolean? = null
@@ -42,11 +45,11 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         icon.measure(exact(dp(48)), exact(dp(48)))
         arrival.measure(exact(dp(18)), exact(dp(18)))
         actions.measure(exact(dp(48)), exact(dp(48)))
-        setStatusSize(14f)
+        restoreStatusSize()
         measureFallback(inner)
         lateral = !expanded && tryLateral(inner)
         if (!lateral) {
-            setStatusSize(14f)
+            restoreStatusSize()
             measureFallback(inner)
         }
         applyAppearance()
@@ -159,6 +162,11 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
             }
         }
         return false
+    }
+
+    private fun restoreStatusSize() {
+        val px = fallbackStatusSizePx
+        if (status.textSize != px) status.setTextSize(TypedValue.COMPLEX_UNIT_PX, px)
     }
 
     private fun setStatusSize(sp: Float) {
