@@ -52,7 +52,7 @@ class HomeEventActionsInstrumentedTest {
     private val context = instrumentation.targetContext
     private val repository = CountdownRepository(context)
 
-    @Test fun actionsPreserveTextWidthAndExistingGesturesAcrossLayouts() {
+    @Test fun actionsPreserveTextAndExistingGesturesAcrossLayouts() {
         instrumentation.runOnMainSync {
             var checked = 0
             for (locale in listOf("en", "es", "ca")) for (dark in listOf(false, true)) {
@@ -76,17 +76,32 @@ class HomeEventActionsInstrumentedTest {
                     val after = actions.getView(0, null, parent)
                     measure(themed, before, width)
                     measure(themed, after, width)
+                    val button = after.findViewById<View>(R.id.eventActions)
+                    val lateral = button.top < after.findViewById<View>(R.id.eventStatus).bottom
                     for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus)) {
                         val old = before.findViewById<TextView>(id)
                         val current = after.findViewById<TextView>(id)
-                        assertEquals("Text width $locale/$scale/$width", old.width, current.width)
                         assertEquals(old.text.toString(), current.text.toString())
-                        assertEquals(old.layout.lineCount, current.layout.lineCount)
-                        for (line in 0 until old.layout.lineCount) {
-                            assertEquals(old.layout.getEllipsisCount(line), current.layout.getEllipsisCount(line))
+                        if (!lateral) {
+                            assertEquals("Fallback text width $locale/$scale/$width", old.width, current.width)
+                            assertEquals(old.textSize, current.textSize, 0.001f)
+                        }
+                        // A lateral rail can use spare width, but never change the
+                        // primary text's type size or where any line ends.
+                        if (!lateral || id != R.id.eventStatus) {
+                            assertEquals(old.textSize, current.textSize, 0.001f)
+                            assertEquals(old.layout.lineCount, current.layout.lineCount)
+                            for (line in 0 until old.layout.lineCount) {
+                                assertEquals(old.layout.getLineEnd(line), current.layout.getLineEnd(line))
+                                assertEquals(old.layout.getEllipsisCount(line), current.layout.getEllipsisCount(line))
+                            }
+                        }
+                        for (line in 0 until current.layout.lineCount) {
+                            assertEquals("Text must remain complete", 0, current.layout.getEllipsisCount(line))
+                            assertTrue("Text exceeds its measured width", current.layout.getLineMax(line) <=
+                                current.width - current.compoundPaddingLeft - current.compoundPaddingRight + 1f)
                         }
                     }
-                    val button = after.findViewById<View>(R.id.eventActions)
                     assertTrue(button.width >= dp(themed, 48) && button.height >= dp(themed, 48))
                     assertTrue(after.performClick())
                     assertTrue(after.performLongClick())

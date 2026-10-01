@@ -56,7 +56,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
 
     private fun measureFallback(inner: Int) {
         val railLimit = min(dp(112), (inner * 0.38f).roundToInt()).coerceAtLeast(dp(54)).coerceAtMost(inner)
-        status.measure(MeasureSpec.makeMeasureSpec(railLimit, MeasureSpec.AT_MOST), unspecified())
+        measureStatus(railLimit)
         val plainRailWidth = max(dp(54), status.measuredWidth).coerceAtMost(inner)
         val arrivalExtra = dp(22)
         val requestedArrival = arrival.visibility == View.VISIBLE && (arrival.tag as? Int ?: 0) != 0
@@ -87,7 +87,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
             headerHeight = max(dp(48), title.measuredHeight)
             val statusLimit = min(inner, max(railLimit,
                 maxWordWidth(status) + status.compoundPaddingLeft + status.compoundPaddingRight))
-            status.measure(MeasureSpec.makeMeasureSpec(statusLimit, MeasureSpec.AT_MOST), unspecified())
+            measureStatus(statusLimit)
             val plainExpandedRail = max(dp(54), status.measuredWidth).coerceAtMost(inner)
             if (showArrival && status.measuredWidth + arrivalExtra <= railLimit) {
                 railWidth = max(dp(54), status.measuredWidth + arrivalExtra).coerceAtMost(inner)
@@ -111,7 +111,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
             }
             if (stackedDetails) {
                 measureText(meta, inner)
-                status.measure(MeasureSpec.makeMeasureSpec(inner, MeasureSpec.AT_MOST), unspecified())
+                measureStatus(inner)
                 val extra = if (showArrival) arrivalExtra else 0
                 railWidth = max(dp(54), status.measuredWidth + extra).coerceAtMost(inner)
                 bodyHeight = meta.measuredHeight + dp(4) + actionRailHeight()
@@ -139,7 +139,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
                 val artWidth = if (art) dp(26) else 0
                 val limit = min(dp(112), (inner * 0.38f).roundToInt()) - artWidth
                 if (limit < dp(54)) continue
-                status.measure(MeasureSpec.makeMeasureSpec(limit, MeasureSpec.AT_MOST), unspecified())
+                measureStatus(limit)
                 if (status.lineCount > 2 || splitsWord(status)) continue
                 val pillWidth = status.measuredWidth + artWidth
                 val groupWidth = pillWidth + dp(4) + actions.measuredWidth
@@ -257,7 +257,17 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     }
 
     private fun actionRailHeight() = status.measuredHeight + if (actions.visibility == View.GONE) 0 else actions.measuredHeight
-    private fun measureText(view: TextView, width: Int) = view.measure(exact(width), unspecified())
+    private fun measureText(view: TextView, width: Int) {
+        // Trial layouts revisit widths within one pass. Dimensions from View's cache
+        // do not guarantee that TextView.layout belongs to the requested width.
+        view.forceLayout()
+        view.measure(exact(width), unspecified())
+    }
+
+    private fun measureStatus(limit: Int) {
+        status.forceLayout()
+        status.measure(MeasureSpec.makeMeasureSpec(limit, MeasureSpec.AT_MOST), unspecified())
+    }
     private fun maxWordWidth(view: TextView): Int = ceil(view.text.toString().split(Regex("\\s+"))
         .maxOfOrNull { view.paint.measureText(it).toDouble() } ?: 0.0).toInt()
 
