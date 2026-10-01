@@ -1,10 +1,7 @@
 package com.santiagorodriguez.countaway.ui
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Rect
 import android.util.AttributeSet
-import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -14,19 +11,14 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/** Uses spare horizontal space for actions without changing title or metadata wrapping. */
-class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : ViewGroup(context, attrs) {
+/** Frozen Home row from f891466c9ff586e9a5391fe2e90b5866e44eb505 for fallback regression checks. */
+internal class HomeRowBaseline @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : ViewGroup(context, attrs) {
     private val icon: View get() = findViewById(R.id.eventIcon)
     private val title: TextView get() = findViewById(R.id.eventTitle)
     private val meta: TextView get() = findViewById(R.id.eventMeta)
     private val status: TextView get() = findViewById(R.id.eventStatus)
     private val arrival: View get() = findViewById(R.id.eventArrival)
     private val actions: View get() = findViewById(R.id.eventActions)
-    private var lateral = false
-    private var lateralWidth = 0
-    private var lastLateralAppearance: Boolean? = null
-    private val combinedPill = requireNotNull(context.getDrawable(R.drawable.status_pill)).mutate()
-    private val pillBounds = Rect()
     private var expanded = false
     private var stackedDetails = false
     private var showArrival = false
@@ -42,19 +34,6 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         icon.measure(exact(dp(48)), exact(dp(48)))
         arrival.measure(exact(dp(18)), exact(dp(18)))
         actions.measure(exact(dp(48)), exact(dp(48)))
-        setStatusSize(14f)
-        measureFallback(inner)
-        lateral = !expanded && tryLateral(inner)
-        if (!lateral) {
-            setStatusSize(14f)
-            measureFallback(inner)
-        }
-        applyAppearance()
-        setMeasuredDimension(resolveSize(width, widthMeasureSpec),
-            resolveSize(max(suggestedMinimumHeight, contentHeight + paddingTop + paddingBottom), heightMeasureSpec))
-    }
-
-    private fun measureFallback(inner: Int) {
         val railLimit = min(dp(112), (inner * 0.38f).roundToInt()).coerceAtLeast(dp(54)).coerceAtMost(inner)
         status.measure(MeasureSpec.makeMeasureSpec(railLimit, MeasureSpec.AT_MOST), unspecified())
         val plainRailWidth = max(dp(54), status.measuredWidth).coerceAtMost(inner)
@@ -120,98 +99,15 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
             }
             contentHeight = headerHeight + dp(4) + bodyHeight
         }
-    }
-
-    private fun tryLateral(inner: Int): Boolean {
-        if (actions.visibility != View.VISIBLE || resources.configuration.fontScale > 1.3f) return false
-        val titleLines = lineEnds(title)
-        val metaLines = lineEnds(meta)
-        val baselineHeight = contentHeight
-        val requestedArt = showArrival
-        // Reuse only eight dp of existing end padding. The full 48dp touch target
-        // remains inside this row and never overlays the title or the status.
-        val endAllowance = min(dp(8), paddingEnd)
-        val sizes = if (requestedArt) listOf(true, false) else listOf(false)
-        for (art in sizes) {
-            for (sp in listOf(15f, 14f, 13f)) {
-                if (art && sp == 13f) continue // Drop decoration before shrinking text.
-                setStatusSize(sp)
-                val artWidth = if (art) dp(26) else 0
-                val limit = min(dp(112), (inner * 0.38f).roundToInt()) - artWidth
-                if (limit < dp(54)) continue
-                status.measure(MeasureSpec.makeMeasureSpec(limit, MeasureSpec.AT_MOST), unspecified())
-                if (status.lineCount > 2 || splitsWord(status)) continue
-                val pillWidth = status.measuredWidth + artWidth
-                val groupWidth = pillWidth + dp(4) + actions.measuredWidth
-                val textWidth = inner + endAllowance - groupWidth - dp(72)
-                if (textWidth < dp(100)) continue
-                measureText(title, textWidth)
-                measureText(meta, textWidth)
-                if (lineEnds(title) != titleLines || lineEnds(meta) != metaLines ||
-                    splitsWord(title) || splitsWord(meta)) continue
-                val nextHeight = max(dp(48), max(title.measuredHeight + dp(3) + meta.measuredHeight,
-                    max(status.measuredHeight, actions.measuredHeight)))
-                if (nextHeight > baselineHeight) continue
-                lateralWidth = groupWidth
-                contentHeight = nextHeight
-                showArrival = art
-                return true
-            }
-        }
-        return false
-    }
-
-    private fun setStatusSize(sp: Float) {
-        val px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, resources.displayMetrics)
-        if (status.textSize != px) status.setTextSize(TypedValue.COMPLEX_UNIT_PX, px)
-    }
-
-    private fun lineEnds(view: TextView): List<Int> {
-        val layout = view.layout ?: return emptyList()
-        return (0 until layout.lineCount).map(layout::getLineEnd)
-    }
-
-    private fun applyAppearance() {
-        if (lastLateralAppearance == lateral) return
-        // Alpha does not alter TextView padding, measurement, or accessibility.
-        status.background.mutate().alpha = if (lateral) 0 else 255
-        actions.setBackgroundResource(if (lateral) R.drawable.home_event_actions_bubble else R.drawable.event_actions_button)
-        actions.setPadding(dp(15), dp(15), dp(15), dp(15))
-        lastLateralAppearance = lateral
-    }
-
-    override fun dispatchDraw(canvas: Canvas) {
-        if (lateral) {
-            combinedPill.bounds = pillBounds
-            combinedPill.draw(canvas)
-        }
-        super.dispatchDraw(canvas)
+        setMeasuredDimension(resolveSize(width, widthMeasureSpec),
+            resolveSize(max(suggestedMinimumHeight, contentHeight + paddingTop + paddingBottom), heightMeasureSpec))
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         val inner = (width - paddingLeft - paddingRight).coerceAtLeast(1)
         val availableHeight = height - paddingTop - paddingBottom
         val y = paddingTop + ((availableHeight - contentHeight) / 2).coerceAtLeast(0)
-        if (lateral) {
-            place(icon, 0, y + (contentHeight - icon.measuredHeight) / 2)
-            val textY = y + (contentHeight - title.measuredHeight - dp(3) - meta.measuredHeight) / 2
-            place(title, dp(60), textY)
-            place(meta, dp(60), textY + title.measuredHeight + dp(3))
-            val start = inner + min(dp(8), paddingEnd) - lateralWidth
-            val statusY = y + (contentHeight - status.measuredHeight) / 2
-            if (showArrival) {
-                place(arrival, start + dp(4), statusY + (status.measuredHeight - arrival.measuredHeight) / 2)
-                place(status, start + dp(26), statusY)
-            } else {
-                arrival.layout(0, 0, 0, 0)
-                place(status, start, statusY)
-            }
-            val pillWidth = status.measuredWidth + if (showArrival) dp(26) else 0
-            val pillLeft = if (layoutDirection == View.LAYOUT_DIRECTION_RTL)
-                width - paddingRight - start - pillWidth else paddingLeft + start
-            pillBounds.set(pillLeft, statusY, pillLeft + pillWidth, statusY + status.measuredHeight)
-            place(actions, start + pillWidth + dp(4), y + (contentHeight - actions.measuredHeight) / 2)
-        } else if (!expanded) {
+        if (!expanded) {
             place(icon, 0, y + (contentHeight - icon.measuredHeight) / 2)
             val textY = y + (contentHeight - title.measuredHeight - dp(3) - meta.measuredHeight) / 2
             place(title, dp(60), textY)

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.util.TypedValue
 import android.view.ContextThemeWrapper
 import android.view.View
 import android.widget.FrameLayout
@@ -91,7 +92,16 @@ class HomePresentationInstrumentedTest {
                         val menu = row.findViewById<View>(R.id.eventActions)
                         val status = row.findViewById<View>(R.id.eventStatus)
                         assertTrue(menu.width >= dp(context, 48) && menu.height >= dp(context, 48))
-                        assertTrue("Menu must stay below count", menu.top >= status.bottom)
+                        if (menu.top < status.bottom) {
+                            assertTrue("Lateral menu must not overlap the status", menu.left >= status.right)
+                            val title = row.findViewById<View>(R.id.eventTitle)
+                            val meta = row.findViewById<View>(R.id.eventMeta)
+                            val center = (title.top + meta.bottom) / 2f
+                            assertEquals(center, (status.top + status.bottom) / 2f, 1.1f)
+                            assertEquals(center, (menu.top + menu.bottom) / 2f, 1.1f)
+                        } else {
+                            assertTrue("Fallback menu must stay below count", menu.top >= status.bottom)
+                        }
                         assertTrue(menu.bottom <= row.height - row.paddingBottom)
                         assertEquals(events[index].title, row.findViewById<TextView>(R.id.eventTitle).text.toString())
                         checked++
@@ -149,8 +159,10 @@ class HomePresentationInstrumentedTest {
         assertTrue("Short card grew beyond the compact budget", row.height <= dp(context, 104))
         assertEquals(17f * context.resources.displayMetrics.scaledDensity,
             row.findViewById<TextView>(R.id.eventTitle).textSize, 0.6f)
-        assertEquals(14f * context.resources.displayMetrics.scaledDensity,
-            row.findViewById<TextView>(R.id.eventStatus).textSize, 0.6f)
+        val statusSize = row.findViewById<TextView>(R.id.eventStatus).textSize
+        val metrics = context.resources.displayMetrics
+        assertTrue(statusSize >= TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, metrics) - 0.6f)
+        assertTrue(statusSize <= TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 15f, metrics) + 0.6f)
     }
 
     @Test fun recycledRowsKeepModeAndTextWhenWidthChanges() = instrumentation.runOnMainSync {
