@@ -25,6 +25,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     // Keep the actual inflated pixel size: XML dimensions can be rounded
     // differently from converting the same nominal sp value at runtime.
     private val fallbackStatusSizePx by lazy { status.textSize }
+    private var measuringVariants = false
     private var lateral = false
     private var lateralWidth = 0
     private var lastLateralAppearance: Boolean? = null
@@ -45,10 +46,13 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         icon.measure(exact(dp(48)), exact(dp(48)))
         arrival.measure(exact(dp(18)), exact(dp(18)))
         actions.measure(exact(dp(48)), exact(dp(48)))
+        // Ineligible rows use the accepted fallback once, without speculative
+        // text measurements changing its native wrapping or height.
+        measuringVariants = actions.visibility == View.VISIBLE && resources.configuration.fontScale <= 1.3f
         restoreStatusSize()
         measureFallback(inner)
-        lateral = !expanded && tryLateral(inner)
-        if (!lateral) {
+        lateral = measuringVariants && !expanded && tryLateral(inner)
+        if (measuringVariants && !lateral) {
             restoreStatusSize()
             measureFallback(inner)
         }
@@ -268,12 +272,12 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     private fun measureText(view: TextView, width: Int) {
         // Trial layouts revisit widths within one pass. Dimensions from View's cache
         // do not guarantee that TextView.layout belongs to the requested width.
-        view.forceLayout()
+        if (measuringVariants) view.forceLayout()
         view.measure(exact(width), unspecified())
     }
 
     private fun measureStatus(limit: Int) {
-        status.forceLayout()
+        if (measuringVariants) status.forceLayout()
         status.measure(MeasureSpec.makeMeasureSpec(limit, MeasureSpec.AT_MOST), unspecified())
     }
     private fun maxWordWidth(view: TextView): Int = ceil(view.text.toString().split(Regex("\\s+"))
