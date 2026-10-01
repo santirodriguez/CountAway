@@ -55,7 +55,21 @@ class HomeLateralActionsInstrumentedTest {
                     val now = after.findViewById<TextView>(id)
                     assertEquals(old.text.toString(), now.text.toString())
                     assertEquals("Primary typography changed", old.textSize, now.textSize, 0.001f)
-                    assertEquals("Primary text acquired different wrapping", lineEnds(old), lineEnds(now))
+                    if (lineEnds(old) != lineEnds(now)) {
+                        val case = "$language-$scale-$width-$index"
+                        capture(before, "home-wrap-before-$case")
+                        capture(after, "home-wrap-after-$case")
+                        val details = visibleIds.joinToString("\n") { childId ->
+                            val previous = before.findViewById<View>(childId)
+                            val current = after.findViewById<View>(childId)
+                            val previousText = if (previous is TextView) "${previous.text};lines=${lineEnds(previous)};layout=${previous.layout.width};font=${previous.textSize}" else ""
+                            val currentText = if (current is TextView) "${current.text};lines=${lineEnds(current)};layout=${current.layout.width};font=${current.textSize}" else ""
+                            "id=$childId before=${bounds(previous)}[$previousText] after=${bounds(current)}[$currentText]"
+                        }
+                        File(instrumentation.targetContext.filesDir, "layout-evidence/home-wrap-$case.txt")
+                            .writeText("case=$case lateral=$lateral beforeHeight=${before.height} afterHeight=${after.height}\n$details\n")
+                    }
+                    assertEquals("Primary wrapping $language/$scale/$width/$index id=$id text=${old.text} lateral=$lateral", lineEnds(old), lineEnds(now))
                     for (line in 0 until now.layout.lineCount) {
                         assertEquals(0, now.layout.getEllipsisCount(line))
                     }
