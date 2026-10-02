@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Rect
 import android.util.TypedValue
 import android.view.ContextThemeWrapper
 import android.view.View
@@ -90,17 +91,16 @@ class HomePresentationInstrumentedTest {
                     try {
                         for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus)) assertText(row.findViewById(id))
                         val menu = row.findViewById<View>(R.id.eventActions)
-                        val status = row.findViewById<View>(R.id.eventStatus)
                         assertTrue(menu.width >= dp(context, 48) && menu.height >= dp(context, 48))
-                        if (menu.top < status.bottom) {
-                            assertTrue("Lateral menu must not overlap the status", menu.left >= status.right)
-                            val title = row.findViewById<View>(R.id.eventTitle)
-                            val meta = row.findViewById<View>(R.id.eventMeta)
-                            val center = (title.top + meta.bottom) / 2f
-                            assertEquals(center, (status.top + status.bottom) / 2f, 1.1f)
-                            assertEquals(center, (menu.top + menu.bottom) / 2f, 1.1f)
-                        } else {
-                            assertTrue("Fallback menu must stay below count", menu.top >= status.bottom)
+                        assertEquals("Every menu must reach the trailing edge", row.width, menu.right)
+                        assertEquals(row.height / 2f, (menu.top + menu.bottom) / 2f, 1.1f)
+                        val menuBounds = Rect(menu.left, menu.top, menu.right, menu.bottom)
+                        for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus, R.id.eventIcon, R.id.eventArrival)) {
+                            val content = row.findViewById<View>(id)
+                            if (content.visibility == View.VISIBLE && content.width > 0) {
+                                assertTrue("Content must leave the action target clear", content.right <= menu.left - dp(context, 4) + 1)
+                                assertFalse(Rect.intersects(menuBounds, Rect(content.left, content.top, content.right, content.bottom)))
+                            }
                         }
                         assertTrue(menu.bottom <= row.height - row.paddingBottom)
                         assertEquals(events[index].title, row.findViewById<TextView>(R.id.eventTitle).text.toString())

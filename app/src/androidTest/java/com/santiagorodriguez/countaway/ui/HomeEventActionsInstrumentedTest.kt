@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Rect
 import android.view.ContextThemeWrapper
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
@@ -77,32 +78,30 @@ class HomeEventActionsInstrumentedTest {
                     measure(themed, before, width)
                     measure(themed, after, width)
                     val button = after.findViewById<View>(R.id.eventActions)
-                    val lateral = button.top < after.findViewById<View>(R.id.eventStatus).bottom
                     for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus)) {
                         val old = before.findViewById<TextView>(id)
                         val current = after.findViewById<TextView>(id)
                         assertEquals(old.text.toString(), current.text.toString())
-                        if (!lateral) {
-                            assertEquals("Fallback text width $locale/$scale/$width", old.width, current.width)
-                            assertEquals(old.textSize, current.textSize, 0.001f)
-                        }
-                        // A lateral rail can use spare width, but never change the
-                        // primary text's type size or where any line ends.
-                        if (!lateral || id != R.id.eventStatus) {
-                            assertEquals(old.textSize, current.textSize, 0.001f)
-                            assertEquals(old.layout.lineCount, current.layout.lineCount)
-                            for (line in 0 until old.layout.lineCount) {
-                                assertEquals(old.layout.getLineEnd(line), current.layout.getLineEnd(line))
-                                assertEquals(old.layout.getEllipsisCount(line), current.layout.getEllipsisCount(line))
-                            }
-                        }
+                        // A dedicated native edge target may reflow content, but
+                        // must never shrink, clip or truncate it to make room.
+                        assertEquals(old.textSize, current.textSize, 0.001f)
+                        assertTrue("Text height clipped", current.layout.height <=
+                            current.height - current.compoundPaddingTop - current.compoundPaddingBottom)
                         for (line in 0 until current.layout.lineCount) {
                             assertEquals("Text must remain complete", 0, current.layout.getEllipsisCount(line))
                             assertTrue("Text exceeds its measured width", current.layout.getLineMax(line) <=
                                 current.width - current.compoundPaddingLeft - current.compoundPaddingRight + 1f)
+                            val end = current.layout.getLineEnd(line)
+                            if (line < current.layout.lineCount - 1 && end in 1 until current.text.length) {
+                                assertFalse("Word split", current.text[end - 1].isLetterOrDigit() && current.text[end].isLetterOrDigit())
+                            }
                         }
+                        assertFalse("Menu overlaps text", Rect.intersects(
+                            Rect(button.left, button.top, button.right, button.bottom),
+                            Rect(current.left, current.top, current.right, current.bottom)))
                     }
                     assertTrue(button.width >= dp(themed, 48) && button.height >= dp(themed, 48))
+                    assertEquals(after.width, button.right)
                     assertTrue(after.performClick())
                     assertTrue(after.performLongClick())
                     assertTrue(button.performClick())
