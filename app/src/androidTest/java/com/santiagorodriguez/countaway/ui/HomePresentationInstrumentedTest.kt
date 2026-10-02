@@ -91,9 +91,10 @@ class HomePresentationInstrumentedTest {
                     try {
                         for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus)) assertText(row.findViewById(id))
                         val menu = row.findViewById<View>(R.id.eventActions)
+                        val tile = row.findViewById<View>(R.id.eventCountTile)
                         assertTrue(menu.width >= dp(context, 48) && menu.height >= dp(context, 48))
                         assertEquals("Every menu must reach the trailing edge", row.width, menu.right)
-                        assertEquals(row.height / 2f, (menu.top + menu.bottom) / 2f, 1.1f)
+                        assertEquals((tile.top + tile.bottom) / 2f, (menu.top + menu.bottom) / 2f, 1.1f)
                         val menuBounds = Rect(menu.left, menu.top, menu.right, menu.bottom)
                         for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus, R.id.eventIcon, R.id.eventArrival)) {
                             val content = row.findViewById<View>(id)
@@ -136,7 +137,7 @@ class HomePresentationInstrumentedTest {
                 assertTrue("Arrival illustration was requested but not laid out", illustration.width >= dp(context, 18))
                 assertTrue("Arrival illustration was requested but not laid out", illustration.height >= dp(context, 18))
                 val status = row.findViewById<View>(R.id.eventStatus)
-                assertTrue("Arrival illustration overlaps the status", illustration.right <= status.left)
+                assertTrue("Arrival illustration overlaps the status", illustration.bottom <= status.top)
             } else {
                 assertEquals(View.GONE, illustration.visibility)
             }

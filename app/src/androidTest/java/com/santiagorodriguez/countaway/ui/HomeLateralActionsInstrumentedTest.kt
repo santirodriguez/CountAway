@@ -102,7 +102,7 @@ class HomeLateralActionsInstrumentedTest {
                         measure(context, row, width)
                         measure(context, fresh, width)
                         assertEquals(fresh.height, row.height)
-                        for (id in contentIds + R.id.eventActions) {
+                        for (id in contentIds + R.id.eventActions + R.id.eventCountTile) {
                             assertEquals(bounds(fresh.findViewById(id)), bounds(row.findViewById(id)))
                         }
                         textIds.forEach { assertText(row.findViewById(it)) }
@@ -241,10 +241,11 @@ class HomeLateralActionsInstrumentedTest {
 
     private fun assertEdgeTarget(context: Context, row: View) {
         val menu = row.findViewById<View>(R.id.eventActions)
+        val tile = row.findViewById<View>(R.id.eventCountTile)
         assertEquals(dp(context, 48), menu.width)
         assertEquals(dp(context, 48), menu.height)
         assertTrue(menu.top >= row.paddingTop && menu.bottom <= row.height - row.paddingBottom)
-        assertEquals(row.height / 2f, (menu.top + menu.bottom) / 2f, 1.1f)
+        assertEquals((tile.top + tile.bottom) / 2f, (menu.top + menu.bottom) / 2f, 1.1f)
         val rtl = row.layoutDirection == View.LAYOUT_DIRECTION_RTL
         assertEquals(if (rtl) 0 else row.width, if (rtl) menu.left else menu.right)
         val content = contentIds.map { row.findViewById<View>(it) }.filter { it.visibility == View.VISIBLE && it.width > 0 }
@@ -256,6 +257,10 @@ class HomeLateralActionsInstrumentedTest {
         }
         for (i in content.indices) for (j in i + 1 until content.size) {
             assertFalse("Content overlaps", Rect.intersects(bounds(content[i]), bounds(content[j])))
+        }
+        assertFalse("Tile overlaps action", Rect.intersects(bounds(tile), bounds(menu)))
+        for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventIcon)) {
+            assertFalse("Tile overlaps primary content", Rect.intersects(bounds(tile), bounds(row.findViewById(id))))
         }
     }
 
