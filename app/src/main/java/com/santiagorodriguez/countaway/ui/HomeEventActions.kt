@@ -41,7 +41,8 @@ internal class HomeEventActions(
     fun show(event: CountdownEvent, anchor: View) {
         if (!resumed || session.deletion.running || popup != null || confirmation != null) return
         focus.capture(anchor)
-        val content = LayoutInflater.from(activity).inflate(R.layout.event_actions_popup, null, false)
+        val popupParent = anchor.rootView as? ViewGroup ?: return
+        val content = LayoutInflater.from(activity).inflate(R.layout.event_actions_popup, popupParent, false)
         content.contentDescription = activity.getString(R.string.event_actions_description, event.title)
         content.findViewById<ImageView>(R.id.eventActionsPopupIcon)
             .setImageResource(EventIconPresentation.drawableRes(event.icon))
