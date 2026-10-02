@@ -92,14 +92,15 @@ class HomePresentationInstrumentedTest {
                         for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus)) assertText(row.findViewById(id))
                         val menu = row.findViewById<View>(R.id.eventActions)
                         val tile = row.findViewById<View>(R.id.eventCountTile)
-                        assertTrue(menu.width >= dp(context, 48) && menu.height >= dp(context, 48))
+                        assertEquals("Visible action rail width changed", dp(context, 24), menu.width)
+                        assertTrue("Action rail lost its 48dp vertical target", menu.height >= dp(context, 48))
                         assertEquals("Every menu must reach the trailing edge", row.width, menu.right)
                         assertEquals((tile.top + tile.bottom) / 2f, (menu.top + menu.bottom) / 2f, 1.1f)
                         val menuBounds = Rect(menu.left, menu.top, menu.right, menu.bottom)
                         for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus, R.id.eventIcon, R.id.eventArrival)) {
                             val content = row.findViewById<View>(id)
                             if (content.visibility == View.VISIBLE && content.width > 0) {
-                                assertTrue("Content must leave the action target clear", content.right <= menu.left - dp(context, 4) + 1)
+                                assertTrue("Content must clear the visible action rail", content.right <= menu.left - dp(context, 4) + 1)
                                 assertFalse(Rect.intersects(menuBounds, Rect(content.left, content.top, content.right, content.bottom)))
                             }
                         }

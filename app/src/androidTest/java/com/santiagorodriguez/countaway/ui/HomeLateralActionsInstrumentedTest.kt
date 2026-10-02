@@ -75,10 +75,10 @@ class HomeLateralActionsInstrumentedTest {
         }
         File(instrumentation.targetContext.filesDir, "layout-evidence/home-lateral-matrix.txt").apply {
             parentFile!!.mkdirs()
-            writeText("checked=${compactCount + expandedCount}\nexpected=432\ncompact=$compactCount\nexpanded=$expandedCount\nfailures=${problems.size}\n" + problems.joinToString("\n"))
+            writeText("checked=${compactCount + expandedCount}\nexpected=486\ncompact=$compactCount\nexpanded=$expandedCount\nfailures=${problems.size}\n" + problems.joinToString("\n"))
         }
         assertTrue(problems.joinToString("\n"), problems.isEmpty())
-        assertEquals(432, compactCount + expandedCount)
+        assertEquals(486, compactCount + expandedCount)
         assertTrue("Compact content was never exercised", compactCount > 0)
         assertTrue("Expanded content was never exercised", expandedCount > 0)
     }
@@ -324,7 +324,10 @@ class HomeLateralActionsInstrumentedTest {
         return listOf(event(84), event(3), event(0), event(-20), event(24, CountMode.COUNT_UP),
             event(-1763, CountMode.COUNT_UP, "Reading together for our next project"),
             event(1, title = "Sofía 🧩 and family 👨‍👩‍👧‍👦"),
-            event(-12345, CountMode.COUNT_UP, "Reading together 🧩 for our next project"))
+            event(-12345, CountMode.COUNT_UP, "Reading together 🧩 for our next project"),
+            // Deliberately exercises the full-width text-band path now that the
+            // compact rail lets ordinary real-world titles stay beside the tile.
+            event(9, title = "ExtraordinaryCelebration"))
     }
 
     private fun localized(language: String, scale: Float, dark: Boolean? = null): Context {
