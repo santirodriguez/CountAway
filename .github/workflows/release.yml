@@ -861,8 +861,8 @@ jobs:
                   sys.exit(0 if bounds(node) else 1)
               if mode == "field-text":
                   sys.exit(0 if node.get("text") == sys.argv[4] else 1)
-              # The immutable fixture uses a short, single-line suggested title.
-              # Refuse unexpected input instead of sending unbounded key events.
+              # XML may expose the hint of an empty field as text. Extra deletes
+              # are harmless; exact replacement is verified after typing below.
               text = node.get("text", "")
               if "\n" in text or "\r" in text or len(text.encode("utf-16-le")) > 512:
                   sys.exit(1)
@@ -945,10 +945,8 @@ jobs:
               mapfile -t keys < <(python3 "${RUNNER_TEMP}/countaway-ui.py" clear-keys "${field}" "${xml_file}")
               test "${#keys[@]}" -gt 0
               adb shell input keyevent "${keys[@]}"
-              dump_ui "${xml_file}"
-              if ! python3 "${RUNNER_TEMP}/countaway-ui.py" field-text "${field}" "${xml_file}" ""; then
-                continue
-              fi
+              # An empty EditText can report its hint (Trip) as XML text. Do not
+              # require an empty XML value; require the exact typed value instead.
               adb shell input text "${expected}"
               for ready in {1..5}; do
                 if dump_ui "${xml_file}" \

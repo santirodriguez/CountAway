@@ -109,6 +109,11 @@ jobs:
             echo "instrumented_tests=compiled_not_executed_in_this_job"
           } > ci-evidence/source.txt
 
+      - name: Check upgrade fixture driver
+        run: |
+          set -euo pipefail
+          python3 scripts/test-upgrade-fixture.py -v 2>&1 | tee ci-evidence/upgrade-fixture-tests.txt
+
       - name: Validate
         run: ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease bundleRelease --stacktrace
 
