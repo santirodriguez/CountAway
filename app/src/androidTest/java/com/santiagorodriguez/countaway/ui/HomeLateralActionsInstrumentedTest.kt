@@ -215,7 +215,7 @@ class HomeLateralActionsInstrumentedTest {
                     scenario.onActivity {
                         val menu = row.findViewById<View>(R.id.eventActions)
                         val rtl = direction == View.LAYOUT_DIRECTION_RTL
-                        val x = if (rtl) menu.left + dp(row.context, 47) else menu.right - dp(row.context, 47)
+                        val x = (if (rtl) menu.left + dp(row.context, 47) else menu.right - dp(row.context, 47)).toFloat()
                         val y = (menu.top + menu.bottom) / 2f
                         val now = SystemClock.uptimeMillis()
                         for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
