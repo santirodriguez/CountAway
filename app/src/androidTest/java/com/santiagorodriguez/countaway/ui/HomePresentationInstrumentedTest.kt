@@ -92,7 +92,7 @@ class HomePresentationInstrumentedTest {
                         for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus)) assertText(row.findViewById(id))
                         val menu = row.findViewById<View>(R.id.eventActions)
                         val tile = row.findViewById<View>(R.id.eventCountTile)
-                        assertEquals("Visible action rail width changed", dp(context, 24), menu.width)
+                        assertEquals("Visible action rail width changed", dp(context, 20), menu.width)
                         assertTrue("Action rail lost its 48dp vertical target", menu.height >= dp(context, 48))
                         assertEquals("Every menu must reach the trailing edge", row.width, menu.right)
                         assertEquals((tile.top + tile.bottom) / 2f, (menu.top + menu.bottom) / 2f, 1.1f)
@@ -100,7 +100,7 @@ class HomePresentationInstrumentedTest {
                         for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventStatus, R.id.eventIcon, R.id.eventArrival)) {
                             val content = row.findViewById<View>(id)
                             if (content.visibility == View.VISIBLE && content.width > 0) {
-                                assertTrue("Content must clear the visible action rail", content.right <= menu.left - dp(context, 4) + 1)
+                                assertTrue("Content must clear the visible action rail", content.right <= menu.left - dp(context, 2) + 1)
                                 assertFalse(Rect.intersects(menuBounds, Rect(content.left, content.top, content.right, content.bottom)))
                             }
                         }
@@ -121,6 +121,28 @@ class HomePresentationInstrumentedTest {
         }
         assertTrue(problems.joinToString("\n"), problems.isEmpty())
         assertEquals(360, checked)
+    }
+
+    @Test fun referenceLengthBirthdayTitleStaysOnOneLineAtNormalPhoneWidths() = instrumentation.runOnMainSync {
+        val context = localized("en", 1f, false)
+        val adapter = adapter(context)
+        val event = CountdownEvent(
+            id = "reference-birthday",
+            title = "Sophia's birthday 🥳",
+            date = today.plusDays(82),
+            type = EventType.BIRTHDAY,
+            icon = EventIcon.CAKE,
+            createdAt = Instant.EPOCH,
+        )
+        adapter.submit(listOf(event), today)
+        for (width in listOf(360, 411)) {
+            val row = adapter.getView(0, null, FrameLayout(context))
+            measure(context, row, width)
+            val title = row.findViewById<TextView>(R.id.eventTitle)
+            assertEquals("Reference-length title wrapped at ${width}dp", 1, title.lineCount)
+            assertText(title)
+            capture(row, "home-reference-birthday-$width")
+        }
     }
 
     @Test fun arrivalIllustrationsAreActuallyLaidOutAndClearWhenTheyShould() = instrumentation.runOnMainSync {

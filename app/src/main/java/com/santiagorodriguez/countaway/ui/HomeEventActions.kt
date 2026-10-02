@@ -67,6 +67,7 @@ internal class HomeEventActions(
                 block()
             }
         }
+        action(R.id.home_event_widget) { addWidget(event) }
         action(R.id.home_event_edit) { edit(event) }
         action(R.id.home_event_duplicate) {
             activity.startActivity(
@@ -75,7 +76,6 @@ internal class HomeEventActions(
                     .putExtra(EditorActivity.EXTRA_SOURCE_REVISION, EventRevision.of(event)),
             )
         }
-        action(R.id.home_event_widget) { addWidget(event) }
         action(R.id.home_event_delete) { confirmDelete(event, anchor) }
 
         menu.setOnDismissListener {
@@ -96,7 +96,7 @@ internal class HomeEventActions(
         val maxY = (root.height - content.measuredHeight - margin).coerceAtLeast(margin)
         val y = desiredY.coerceIn(margin, maxY)
         menu.showAtLocation(anchor, Gravity.TOP or Gravity.START, x, y)
-        content.findViewById<View>(R.id.home_event_edit).requestFocus()
+        content.findViewById<View>(R.id.home_event_widget).requestFocus()
     }
 
     private fun confirmDelete(event: CountdownEvent, anchor: View) {

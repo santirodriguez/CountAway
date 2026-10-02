@@ -19,6 +19,15 @@
     </LinearLayout>
     <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="6dp"
         android:layout_marginEnd="6dp" android:layout_marginBottom="4dp" android:background="@color/outline" />
+    <LinearLayout android:id="@+id/home_event_widget" android:layout_width="match_parent" android:layout_height="50dp"
+        android:background="@drawable/event_action_row" android:clickable="true" android:contentDescription="@string/event_action_widget"
+        android:focusable="true" android:gravity="center_vertical" android:orientation="horizontal"
+        android:paddingStart="8dp" android:paddingEnd="10dp">
+        <ImageView android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/icon_container"
+            android:contentDescription="@null" android:padding="7dp" android:src="@drawable/ic_action_widget" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp"
+            android:text="@string/event_action_widget" android:textColor="@color/foreground" android:textSize="15sp" />
+    </LinearLayout>
     <LinearLayout android:id="@+id/home_event_edit" android:layout_width="match_parent" android:layout_height="50dp"
         android:background="@drawable/event_action_row" android:clickable="true" android:contentDescription="@string/event_action_edit"
         android:focusable="true" android:gravity="center_vertical" android:orientation="horizontal"
@@ -36,15 +45,6 @@
             android:contentDescription="@null" android:padding="7dp" android:src="@drawable/ic_action_duplicate" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp"
             android:text="@string/event_action_duplicate" android:textColor="@color/foreground" android:textSize="15sp" />
-    </LinearLayout>
-    <LinearLayout android:id="@+id/home_event_widget" android:layout_width="match_parent" android:layout_height="50dp"
-        android:background="@drawable/event_action_row" android:clickable="true" android:contentDescription="@string/event_action_widget"
-        android:focusable="true" android:gravity="center_vertical" android:orientation="horizontal"
-        android:paddingStart="8dp" android:paddingEnd="10dp">
-        <ImageView android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/icon_container"
-            android:contentDescription="@null" android:padding="7dp" android:src="@drawable/ic_action_widget" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp"
-            android:text="@string/event_action_widget" android:textColor="@color/foreground" android:textSize="15sp" />
     </LinearLayout>
     <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="6dp"
         android:layout_marginTop="4dp" android:layout_marginEnd="6dp" android:layout_marginBottom="4dp"

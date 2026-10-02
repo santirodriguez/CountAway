@@ -44,7 +44,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         val inner = contentWidth(width)
         icon.measure(exact(dp(48)), exact(dp(48)))
         arrival.measure(exact(dp(18)), exact(dp(18)))
-        val actionWidth = if (actions.visibility == View.GONE) 0 else dp(24)
+        val actionWidth = if (actions.visibility == View.GONE) 0 else dp(20)
         val actionHeight = if (actions.visibility == View.GONE) 0 else dp(48)
         actions.measure(exact(actionWidth), exact(actionHeight))
         val tileWidth = status.preferredTileWidth().coerceAtMost(inner)
@@ -55,7 +55,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         status.forceLayout()
         status.measure(exact(tileWidth), exact(tileHeight - if (showArrival) dp(22) else 0))
 
-        val leftWidth = (inner - tileWidth - dp(12)).coerceAtLeast(1)
+        val leftWidth = (inner - tileWidth - dp(8)).coerceAtLeast(1)
         val wordWidth = max(maxWordWidth(title), maxWordWidth(meta))
         // Only a genuine word-fit constraint allows a full-width text band.
         // The count tile never changes width in response to an event or status.
@@ -74,9 +74,9 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     }
 
     private fun contentWidth(width: Int): Int {
-        // Only the 24dp visual rail plus a 4dp gap consumes layout width.
+        // Only the 20dp visual rail plus a 2dp gap consumes layout width.
         // TouchDelegate restores the full 48dp hit target without pushing content left.
-        val end = if (actions.visibility == View.GONE) paddingEnd else max(paddingEnd, dp(28))
+        val end = if (actions.visibility == View.GONE) paddingEnd else max(paddingEnd, dp(22))
         return (width - paddingStart - end).coerceAtLeast(1)
     }
 

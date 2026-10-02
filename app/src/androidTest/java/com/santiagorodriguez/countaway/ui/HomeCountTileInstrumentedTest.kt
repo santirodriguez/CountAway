@@ -62,14 +62,20 @@ class HomeCountTileInstrumentedTest {
                     val status = row.findViewById<TextView>(R.id.eventStatus)
                     val menu = row.findViewById<View>(R.id.eventActions)
                     val size = tile.width to tile.height
+                    if (scale == 1f) {
+                        assertEquals("Normal-scale tile width changed: $case",
+                            (64 * context.resources.displayMetrics.density).roundToInt(), tile.width)
+                        assertTrue("Normal-scale tile height is no longer compact: $case",
+                            tile.height <= (64 * context.resources.displayMetrics.density).roundToInt())
+                    }
                     if (expectedSize == null) { expectedSize = size; expectedRight = tile.right }
                     assertEquals("Tile size depends on the event: $case", expectedSize, size)
                     assertEquals(requireNotNull(expectedRight).toInt(), tile.right)
                     assertTrue(tile.right <= menu.left)
-                    assertTrue("Count tile grew back to the old 96dp rail: $case", tile.width <=
-                        (90 * context.resources.displayMetrics.density).roundToInt())
+                    assertTrue("Count tile exceeded the compact 80dp maximum: $case", tile.width <=
+                        (80 * context.resources.displayMetrics.density).roundToInt())
                     assertEquals("Count tile is not tucked beside the action rail: $case",
-                        (4 * context.resources.displayMetrics.density).roundToInt(), menu.left - tile.right)
+                        (2 * context.resources.displayMetrics.density).roundToInt(), menu.left - tile.right)
                     assertEquals((tile.top + tile.bottom) / 2f, (menu.top + menu.bottom) / 2f, 1.1f)
                     assertTrue(Rect(tile.left, tile.top, tile.right, tile.bottom)
                         .contains(Rect(status.left, status.top, status.right, status.bottom)))

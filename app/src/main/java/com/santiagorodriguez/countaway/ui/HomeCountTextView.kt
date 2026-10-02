@@ -38,7 +38,7 @@ class HomeCountTextView @JvmOverloads constructor(context: Context, attrs: Attri
                 // accessibility copy and selection retain their original identity.
                 return SpannableString(String(chars)).apply {
                     if (isEmpty()) return@apply
-                    setSpan(AbsoluteSizeSpan(sp(11f).roundToInt()), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    setSpan(AbsoluteSizeSpan(sp(10f).roundToInt()), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     setSpan(StyleSpan(Typeface.NORMAL), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     val start = number?.range?.first ?: 0
                     val end = number?.range?.last?.plus(1) ?: length
@@ -49,7 +49,7 @@ class HomeCountTextView @JvmOverloads constructor(context: Context, attrs: Attri
                         sizeSpan = AbsoluteSizeSpan(px)
                         setSpan(sizeSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     }
-                    val preferred = sp(if (number == null) 21f else 24f).toInt().coerceAtLeast(1)
+                    val preferred = sp(if (number == null) 20f else 24f).toInt().coerceAtLeast(1)
                     if (tileTextWidth <= 0) {
                         applySize(preferred)
                     } else {
@@ -87,7 +87,7 @@ class HomeCountTextView @JvmOverloads constructor(context: Context, attrs: Attri
     fun preferredTileWidth(): Int {
         val scale = resources.configuration.fontScale.coerceAtLeast(1f)
         val growth = 1f + (min(scale, 2f) - 1f) * 0.25f
-        return (72f * resources.displayMetrics.density * growth).roundToInt()
+        return (64f * resources.displayMetrics.density * growth).roundToInt()
     }
 
     fun preferredTileHeight(): Int {
@@ -97,8 +97,8 @@ class HomeCountTextView @JvmOverloads constructor(context: Context, attrs: Attri
             val fm = metrics.fontMetrics
             return fm.bottom - fm.top
         }
-        return maxOf((64f * resources.displayMetrics.density).roundToInt(),
-            (lineHeight(24f) + 2 * lineHeight(11f) + 12f * resources.displayMetrics.density).roundToInt())
+        return maxOf((60f * resources.displayMetrics.density).roundToInt(),
+            (lineHeight(24f) + 2 * lineHeight(10f) + 8f * resources.displayMetrics.density).roundToInt())
     }
 
     private fun sp(value: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, value, resources.displayMetrics)

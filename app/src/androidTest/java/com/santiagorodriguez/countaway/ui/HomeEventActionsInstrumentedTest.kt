@@ -160,12 +160,20 @@ class HomeEventActionsInstrumentedTest {
             var labels = emptyList<String>()
             scenario.onActivity {
                 deleteLabel = it.getString(R.string.action_delete)
-                labels = listOf(R.string.event_action_edit, R.string.event_action_duplicate,
-                    R.string.event_action_widget, R.string.action_delete).map(it::getString)
+                labels = listOf(R.string.event_action_widget, R.string.event_action_edit,
+                    R.string.event_action_duplicate, R.string.action_delete).map(it::getString)
                 actionButton(it).performClick()
             }
             onView(withId(R.id.eventActionsPopup)).check(matches(isDisplayed()))
             onView(withId(R.id.eventActionsPopupTitle)).check(matches(withText(source.title)))
+            onView(withId(R.id.home_event_widget)).check { widget, error ->
+                if (error != null) throw error
+                val edit = widget.rootView.findViewById<View>(R.id.home_event_edit)
+                val duplicate = widget.rootView.findViewById<View>(R.id.home_event_duplicate)
+                assertTrue("Add widget must appear above Edit", widget.top < edit.top)
+                assertTrue("Edit must appear above Duplicate", edit.top < duplicate.top)
+                assertTrue("Add widget must receive initial popup focus", widget.hasFocus())
+            }
             for (id in listOf(R.id.home_event_edit, R.id.home_event_duplicate,
                 R.id.home_event_widget, R.id.home_event_delete)) {
                 onView(withId(id)).check(matches(isDisplayed()))
