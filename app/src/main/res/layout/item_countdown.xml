@@ -40,9 +40,9 @@
 
     <View
         android:id="@+id/eventCountTile"
-        android:layout_width="96dp"
-        android:layout_height="80dp"
-        android:background="@drawable/icon_container"
+        android:layout_width="72dp"
+        android:layout_height="64dp"
+        android:background="@drawable/home_count_tile"
         android:importantForAccessibility="no" />
 
     <ImageView
@@ -61,10 +61,10 @@
         android:fontFamily="sans-serif-medium"
         android:gravity="center"
         android:minWidth="54dp"
-        android:paddingStart="8dp"
-        android:paddingTop="3dp"
-        android:paddingEnd="8dp"
-        android:paddingBottom="3dp"
+        android:paddingStart="4dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="4dp"
+        android:paddingBottom="2dp"
         android:breakStrategy="simple"
         android:hyphenationFrequency="none"
         android:textColor="@color/accent_text"
@@ -72,12 +72,12 @@
 
     <ImageButton
         android:id="@+id/eventActions"
-        android:layout_width="48dp"
+        android:layout_width="24dp"
         android:layout_height="48dp"
         android:background="@android:color/transparent"
         android:contentDescription="@string/event_actions_label"
         android:foreground="?android:attr/selectableItemBackgroundBorderless"
-        android:paddingStart="32dp"
+        android:paddingStart="8dp"
         android:paddingEnd="0dp"
         android:paddingTop="16dp"
         android:paddingBottom="16dp"

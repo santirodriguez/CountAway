@@ -100,7 +100,8 @@ class HomeEventActionsInstrumentedTest {
                             Rect(button.left, button.top, button.right, button.bottom),
                             Rect(current.left, current.top, current.right, current.bottom)))
                     }
-                    assertTrue(button.width >= dp(themed, 48) && button.height >= dp(themed, 48))
+                    assertEquals(dp(themed, 24), button.width)
+                    assertTrue(button.height >= dp(themed, 48))
                     assertEquals(after.width, button.right)
                     assertTrue(after.performClick())
                     assertTrue(after.performLongClick())
@@ -162,6 +163,12 @@ class HomeEventActionsInstrumentedTest {
                 labels = listOf(R.string.event_action_edit, R.string.event_action_duplicate,
                     R.string.event_action_widget, R.string.action_delete).map(it::getString)
                 actionButton(it).performClick()
+            }
+            onView(withId(R.id.eventActionsPopup)).check(matches(isDisplayed()))
+            onView(withId(R.id.eventActionsPopupTitle)).check(matches(withText(source.title)))
+            for (id in listOf(R.id.home_event_edit, R.id.home_event_duplicate,
+                R.id.home_event_widget, R.id.home_event_delete)) {
+                onView(withId(id)).check(matches(isDisplayed()))
             }
             labels.forEach { onView(withText(it)).check(matches(isDisplayed())) }
             onView(withText(deleteLabel)).perform(click())

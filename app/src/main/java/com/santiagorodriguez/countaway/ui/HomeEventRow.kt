@@ -4,7 +4,9 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Rect
 import android.util.AttributeSet
+import android.view.TouchDelegate
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -42,8 +44,9 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         val inner = contentWidth(width)
         icon.measure(exact(dp(48)), exact(dp(48)))
         arrival.measure(exact(dp(18)), exact(dp(18)))
-        val actionSize = if (actions.visibility == View.GONE) 0 else dp(48)
-        actions.measure(exact(actionSize), exact(actionSize))
+        val actionWidth = if (actions.visibility == View.GONE) 0 else dp(24)
+        val actionHeight = if (actions.visibility == View.GONE) 0 else dp(48)
+        actions.measure(exact(actionWidth), exact(actionHeight))
         val tileWidth = status.preferredTileWidth().coerceAtMost(inner)
         val tileHeight = status.preferredTileHeight()
         tile.measure(exact(tileWidth), exact(tileHeight))
@@ -71,7 +74,9 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     }
 
     private fun contentWidth(width: Int): Int {
-        val end = if (actions.visibility == View.GONE) paddingEnd else max(paddingEnd, dp(52))
+        // Only the 24dp visual rail plus a 4dp gap consumes layout width.
+        // TouchDelegate restores the full 48dp hit target without pushing content left.
+        val end = if (actions.visibility == View.GONE) paddingEnd else max(paddingEnd, dp(28))
         return (width - paddingStart - end).coerceAtLeast(1)
     }
 
@@ -100,7 +105,22 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
             val actionY = tileY + (tile.measuredHeight - actions.measuredHeight) / 2
             actions.layout(x, actionY, x + actions.measuredWidth, actionY + actions.measuredHeight)
         } else actions.layout(0, 0, 0, 0)
+        updateActionTouchDelegate()
         updateActionNotch()
+    }
+
+    private fun updateActionTouchDelegate() {
+        if (actions.visibility != View.VISIBLE || actions.width == 0) {
+            touchDelegate = null
+            return
+        }
+        val target = Rect(actions.left, actions.top, actions.right, actions.bottom)
+        if (layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+            target.right = (target.left + dp(48)).coerceAtMost(width)
+        } else {
+            target.left = (target.right - dp(48)).coerceAtLeast(0)
+        }
+        touchDelegate = TouchDelegate(target, actions)
     }
 
     private fun updateActionNotch() {

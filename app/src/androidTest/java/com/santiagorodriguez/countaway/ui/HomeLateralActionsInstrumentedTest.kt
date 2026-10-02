@@ -212,6 +212,23 @@ class HomeLateralActionsInstrumentedTest {
                             assertEquals(0, edits)
                         }
                     }
+                    scenario.onActivity {
+                        val menu = row.findViewById<View>(R.id.eventActions)
+                        val rtl = direction == View.LAYOUT_DIRECTION_RTL
+                        val x = if (rtl) menu.left + dp(row.context, 47) else menu.right - dp(row.context, 47)
+                        val y = (menu.top + menu.bottom) / 2f
+                        val now = SystemClock.uptimeMillis()
+                        for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
+                            val event = MotionEvent.obtain(now, now + 16, action, x, y, 0)
+                            try { assertTrue(row.dispatchTouchEvent(event)) } finally { event.recycle() }
+                        }
+                    }
+                    instrumentation.waitForIdleSync()
+                    expectedMenus++
+                    scenario.onActivity {
+                        assertEquals("Expanded 48dp delegate did not open actions", expectedMenus, menus)
+                        assertEquals(0, edits)
+                    }
                 }
             }
             scenario.onActivity {
@@ -242,7 +259,7 @@ class HomeLateralActionsInstrumentedTest {
     private fun assertEdgeTarget(context: Context, row: View) {
         val menu = row.findViewById<View>(R.id.eventActions)
         val tile = row.findViewById<View>(R.id.eventCountTile)
-        assertEquals(dp(context, 48), menu.width)
+        assertEquals(dp(context, 24), menu.width)
         assertEquals(dp(context, 48), menu.height)
         assertTrue(menu.top >= row.paddingTop && menu.bottom <= row.height - row.paddingBottom)
         assertEquals((tile.top + tile.bottom) / 2f, (menu.top + menu.bottom) / 2f, 1.1f)
@@ -252,13 +269,15 @@ class HomeLateralActionsInstrumentedTest {
         for (view in content) {
             assertTrue("Content outside row", view.left >= 0 && view.top >= 0 && view.right <= row.width && view.bottom <= row.height)
             assertFalse("Action overlaps content", Rect.intersects(bounds(menu), bounds(view)))
-            assertTrue("Content must respect the full target clearance", if (rtl) view.left >= menu.right + dp(context, 4) - 1
+            assertTrue("Content must clear the visible edge control", if (rtl) view.left >= menu.right + dp(context, 4) - 1
                 else view.right <= menu.left - dp(context, 4) + 1)
         }
         for (i in content.indices) for (j in i + 1 until content.size) {
             assertFalse("Content overlaps", Rect.intersects(bounds(content[i]), bounds(content[j])))
         }
-        assertFalse("Tile overlaps action", Rect.intersects(bounds(tile), bounds(menu)))
+        assertFalse("Tile overlaps visible action", Rect.intersects(bounds(tile), bounds(menu)))
+        assertEquals("Tile must sit directly beside the compact edge rail", dp(context, 4),
+            if (rtl) tile.left - menu.right else menu.left - tile.right)
         for (id in listOf(R.id.eventTitle, R.id.eventMeta, R.id.eventIcon)) {
             assertFalse("Tile overlaps primary content", Rect.intersects(bounds(tile), bounds(row.findViewById(id))))
         }
