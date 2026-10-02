@@ -17,6 +17,7 @@ import com.santiagorodriguez.countaway.model.EventType
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.util.Locale
@@ -29,6 +30,7 @@ class HomeCountTileInstrumentedTest {
 
     @Test fun everyStatusUsesTheSameTileSizeAndTrailingAlignment() = instrumentation.runOnMainSync {
         val base = instrumentation.targetContext
+        var checked = 0
         for (language in listOf("en", "es", "ca")) for (scale in listOf(1f, 1.3f, 2f)) {
             for (dark in listOf(false, true)) for (widthDp in listOf(320, 360, 411)) {
                 val config = Configuration(base.resources.configuration).apply {
@@ -47,6 +49,7 @@ class HomeCountTileInstrumentedTest {
                 var expectedSize: Pair<Int, Int>? = null
                 var expectedRight: Int? = null
                 for (index in events.indices) {
+                    val case = "$language/$scale/$dark/$widthDp/$index"
                     val row = adapter.getView(index, null, FrameLayout(context))
                     val width = (widthDp * context.resources.displayMetrics.density).roundToInt()
                     repeat(2) {
@@ -60,7 +63,7 @@ class HomeCountTileInstrumentedTest {
                     val menu = row.findViewById<View>(R.id.eventActions)
                     val size = tile.width to tile.height
                     if (expectedSize == null) { expectedSize = size; expectedRight = tile.right }
-                    assertEquals("Tile size depends on the event", expectedSize, size)
+                    assertEquals("Tile size depends on the event: $case", expectedSize, size)
                     assertEquals(requireNotNull(expectedRight).toInt(), tile.right)
                     assertTrue(tile.right <= menu.left)
                     assertEquals((tile.top + tile.bottom) / 2f, (menu.top + menu.bottom) / 2f, 1.1f)
@@ -71,13 +74,24 @@ class HomeCountTileInstrumentedTest {
                     assertEquals(status.text.length, transformed.length)
                     assertEquals(status.text.toString(), transformed.toString().replace('\n', ' '))
                     assertTrue(transformed is Spanned)
-                    assertTrue(status.layout.height <= status.height - status.compoundPaddingTop - status.compoundPaddingBottom)
+                    assertTrue("Tile text height clipped: $case ${status.text}",
+                        status.layout.height <= status.height - status.compoundPaddingTop - status.compoundPaddingBottom)
                     for (line in 0 until status.lineCount) {
                         assertEquals(0, status.layout.getEllipsisCount(line))
-                        assertTrue(status.layout.getLineMax(line) <= status.width - status.compoundPaddingLeft - status.compoundPaddingRight + 1f)
+                        assertTrue("Tile text width clipped: $case ${status.text}", status.layout.getLineMax(line) <=
+                            status.width - status.compoundPaddingLeft - status.compoundPaddingRight + 1f)
                     }
+                    val number = Regex("[+\\-]?\\p{Nd}+(?:[.,\\u00a0\\u202f]\\p{Nd}+)*").find(status.text)
+                    if (number != null) assertEquals("Number split across lines: $case ${status.text}",
+                        status.layout.getLineForOffset(number.range.first), status.layout.getLineForOffset(number.range.last))
+                    checked++
                 }
             }
+        }
+        assertEquals(486, checked)
+        File(base.filesDir, "layout-evidence/home-count-tile-matrix.txt").apply {
+            parentFile!!.mkdirs()
+            writeText("checked=$checked\nexpected=486\nfailures=0\n")
         }
     }
 

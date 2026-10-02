@@ -3,12 +3,13 @@ package com.santiagorodriguez.countaway.ui
 import android.content.Context
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.Typeface
+import android.text.Layout
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.method.TransformationMethod
 import android.text.style.AbsoluteSizeSpan
 import android.text.style.StyleSpan
-import android.graphics.Typeface
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.View
@@ -41,13 +42,33 @@ class HomeCountTextView @JvmOverloads constructor(context: Context, attrs: Attri
                     setSpan(StyleSpan(Typeface.NORMAL), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     val start = number?.range?.first ?: 0
                     val end = number?.range?.last?.plus(1) ?: length
-                    val preferred = sp(if (number == null) 23f else 26f)
-                    val metrics = Paint(paint).apply { textSize = preferred; typeface = Typeface.create(typeface, Typeface.BOLD) }
-                    val needed = metrics.measureText(original, start, end)
-                    val size = if (tileTextWidth > 0 && needed > tileTextWidth)
-                        preferred * tileTextWidth / needed else preferred
-                    setSpan(AbsoluteSizeSpan(size.toInt().coerceAtLeast(1)), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     setSpan(StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    var sizeSpan: AbsoluteSizeSpan? = null
+                    fun applySize(px: Int) {
+                        sizeSpan?.let(::removeSpan)
+                        sizeSpan = AbsoluteSizeSpan(px)
+                        setSpan(sizeSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                    val preferred = sp(if (number == null) 23f else 26f).toInt().coerceAtLeast(1)
+                    if (tileTextWidth <= 0) {
+                        applySize(preferred)
+                    } else {
+                        // Measure the actual styled run, not an approximation from
+                        // a plain Paint. Keep rounding room for native line breaking.
+                        val available = (tileTextWidth - resources.displayMetrics.density).coerceAtLeast(1f)
+                        var low = 1
+                        var high = preferred
+                        var fitting = 1
+                        while (low <= high) {
+                            val candidate = (low + high) / 2
+                            applySize(candidate)
+                            if (Layout.getDesiredWidth(this, start, end, paint) <= available) {
+                                fitting = candidate
+                                low = candidate + 1
+                            } else high = candidate - 1
+                        }
+                        applySize(fitting)
+                    }
                 }
             }
 
@@ -60,8 +81,7 @@ class HomeCountTextView @JvmOverloads constructor(context: Context, attrs: Attri
         val available = (width - compoundPaddingLeft - compoundPaddingRight).coerceAtLeast(1)
         if (available == tileTextWidth) return
         tileTextWidth = available
-        // Recompute the transformed spans only when the shared tile width changes.
-        text = text
+        setText(text.toString(), BufferType.NORMAL)
     }
 
     fun preferredTileWidth(): Int = (96f * resources.displayMetrics.density *
