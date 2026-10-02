@@ -96,7 +96,12 @@ internal class HomeEventActions(
         val maxY = (root.height - content.measuredHeight - margin).coerceAtLeast(margin)
         val y = desiredY.coerceIn(margin, maxY)
         menu.showAtLocation(anchor, Gravity.TOP or Gravity.START, x, y)
-        content.findViewById<View>(R.id.home_event_widget).requestFocus()
+        val firstAction = content.findViewById<View>(R.id.home_event_widget)
+        // PopupWindow attachment timing differs across Android releases.
+        // Request initial keyboard focus after the popup content is attached.
+        firstAction.post {
+            if (popup === menu && menu.isShowing) firstAction.requestFocus()
+        }
     }
 
     private fun confirmDelete(event: CountdownEvent, anchor: View) {
