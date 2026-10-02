@@ -325,9 +325,10 @@ class HomeLateralActionsInstrumentedTest {
             event(-1763, CountMode.COUNT_UP, "Reading together for our next project"),
             event(1, title = "Sofía 🧩 and family 👨‍👩‍👧‍👦"),
             event(-12345, CountMode.COUNT_UP, "Reading together 🧩 for our next project"),
-            // Deliberately exercises the full-width text-band path now that the
-            // compact rail lets ordinary real-world titles stay beside the tile.
-            event(9, title = "ExtraordinaryCelebration"))
+            // At 200% / 320dp this word is wider than the compact text column
+            // but still fits the full text band, so it exercises wideText
+            // without violating the no-word-splitting readability contract.
+            event(9, title = "Extraordinary"))
     }
 
     private fun localized(language: String, scale: Float, dark: Boolean? = null): Context {
