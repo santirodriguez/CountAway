@@ -180,6 +180,10 @@ class HomeEventActionsInstrumentedTest {
             }
             labels.forEach { onView(withText(it)).check(matches(isDisplayed())) }
             onView(withText(deleteLabel)).perform(click())
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).check { view, error ->
+                if (error != null) throw error
+                assertEquals(context.getColor(R.color.danger), (view as Button).currentTextColor)
+            }
             onView(withId(android.R.id.button2)).inRoot(isDialog()).perform(click())
             drain()
             assertArrayEquals(originalBytes, File(context.filesDir, "countaways.json").readBytes())

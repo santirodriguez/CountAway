@@ -125,6 +125,7 @@ internal class HomeEventActions(
             restoreFocus(anchor, event.id)
         }
         dialog.show()
+        DialogPresentation.polish(dialog, DialogPresentation.PositiveTone.DANGER)
     }
 
     private fun restoreFocus(anchor: View, eventId: String) {

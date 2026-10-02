@@ -395,6 +395,7 @@ class EditorActivity : BaseActivity() {
             dialogFocus.restore(modeButton)
         }
         dialog.show()
+        DialogPresentation.polish(dialog)
     }
 
     private fun applyCountMode(mode: CountMode) {
@@ -734,7 +735,7 @@ class EditorActivity : BaseActivity() {
             .setMessage(R.string.notification_blocked_message)
             .setNegativeButton(R.string.action_cancel, null)
             .setPositiveButton(R.string.notification_open_settings) { _, _ -> openNotificationSettings() }
-            .show()
+            .show().also { DialogPresentation.polish(it) }
     }
 
     private fun openNotificationSettings() {
@@ -810,7 +811,7 @@ class EditorActivity : BaseActivity() {
                 setEditorBusy(true)
                 session.operation.start { mutations.delete(event.id, revision) }
             }
-            .show()
+            .show().also { DialogPresentation.polish(it, DialogPresentation.PositiveTone.DANGER) }
     }
 
     private fun consumeOperation() {
@@ -876,7 +877,7 @@ class EditorActivity : BaseActivity() {
                 setEditorBusy(true)
                 loadEditorData(null)
             }
-            .show()
+            .show().also { DialogPresentation.polish(it) }
     }
 
     private fun setEditorBusy(busy: Boolean) {
@@ -942,7 +943,7 @@ class EditorActivity : BaseActivity() {
             .setMessage(R.string.unsaved_changes_message)
             .setNegativeButton(R.string.data_conflict_keep_editing, null)
             .setPositiveButton(R.string.unsaved_changes_discard) { _, _ -> finish() }
-            .show()
+            .show().also { DialogPresentation.polish(it, DialogPresentation.PositiveTone.DANGER) }
     }
 
     private fun currentDraft(): EditorDraft = EditorDraft(
