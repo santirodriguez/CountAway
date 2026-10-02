@@ -80,8 +80,29 @@ class HomeLateralActionsInstrumentedTest {
         assertTrue(problems.joinToString("\n"), problems.isEmpty())
         assertEquals(486, compactCount + expandedCount)
         assertTrue("Compact content was never exercised", compactCount > 0)
-        assertTrue("Expanded content was never exercised", expandedCount > 0)
     }
+
+    @Test fun fullWidthTextBandIsExercisedDeterministicallyWhenCompactColumnIsTooNarrow() =
+        instrumentation.runOnMainSync {
+            val context = localized("en", 1f, false)
+            val row = current(context, fixtures().first())
+            // At 188dp: inner=150dp, tile=64dp and text/tile gap=8dp,
+            // leaving 78dp. This forces wideText via leftWidth < 80dp on
+            // every API without depending on platform font metrics.
+            measure(context, row, 188)
+            val title = row.findViewById<TextView>(R.id.eventTitle)
+            val meta = row.findViewById<TextView>(R.id.eventMeta)
+            val icon = row.findViewById<View>(R.id.eventIcon)
+            val tile = row.findViewById<View>(R.id.eventCountTile)
+            val status = row.findViewById<TextView>(R.id.eventStatus)
+            assertText(title)
+            assertText(meta)
+            assertText(status)
+            assertTrue("Full-width text band was not placed above the count tile",
+                tile.top >= maxOf(title.bottom, meta.bottom, icon.bottom) + dp(context, 4))
+            assertEdgeTarget(context, row)
+            capture(row, "home-wide-text-band-api-${android.os.Build.VERSION.SDK_INT}")
+        }
 
     @Test fun recyclingRtlResizeAndActionlessRowsMatchFreshLayout() = instrumentation.runOnMainSync {
         for (scale in listOf(1f, 2f)) {
@@ -325,9 +346,8 @@ class HomeLateralActionsInstrumentedTest {
             event(-1763, CountMode.COUNT_UP, "Reading together for our next project"),
             event(1, title = "Sofía 🧩 and family 👨‍👩‍👧‍👦"),
             event(-12345, CountMode.COUNT_UP, "Reading together 🧩 for our next project"),
-            // At 200% / 320dp this word is wider than the compact text column
-            // but still fits the full text band, so it exercises wideText
-            // without violating the no-word-splitting readability contract.
+            // Keep a natural long-word case in the matrix; wideText path
+            // coverage itself is exercised deterministically in its own test.
             event(9, title = "Extraordinary"))
     }
 
