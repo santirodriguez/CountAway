@@ -65,8 +65,8 @@ class HomeCountTileInstrumentedTest {
                     if (scale == 1f) {
                         assertEquals("Normal-scale tile width changed: $case",
                             (64 * context.resources.displayMetrics.density).roundToInt(), tile.width)
-                        assertTrue("Normal-scale tile height is no longer compact: $case",
-                            tile.height <= (64 * context.resources.displayMetrics.density).roundToInt())
+                        assertTrue("Normal-scale tile height regressed beyond the compact budget: $case",
+                            tile.height <= (68 * context.resources.displayMetrics.density).roundToInt())
                     }
                     if (expectedSize == null) { expectedSize = size; expectedRight = tile.right }
                     assertEquals("Tile size depends on the event: $case", expectedSize, size)

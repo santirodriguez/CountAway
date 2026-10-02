@@ -53,7 +53,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         showArrival = arrival.visibility == View.VISIBLE && (arrival.tag as? Int ?: 0) != 0
         status.prepareForWidth(tileWidth)
         status.forceLayout()
-        status.measure(exact(tileWidth), exact(tileHeight - if (showArrival) dp(22) else 0))
+        status.measure(exact(tileWidth), exact(tileHeight - if (showArrival) dp(20) else 0))
 
         val leftWidth = (inner - tileWidth - dp(8)).coerceAtLeast(1)
         val wordWidth = max(maxWordWidth(title), maxWordWidth(meta))
@@ -94,8 +94,8 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         val tileStart = inner - tile.measuredWidth
         place(tile, tileStart, tileY)
         if (showArrival) {
-            place(arrival, tileStart + (tile.measuredWidth - arrival.measuredWidth) / 2, tileY + dp(4))
-            place(status, tileStart, tileY + dp(22))
+            place(arrival, tileStart + (tile.measuredWidth - arrival.measuredWidth) / 2, tileY + dp(2))
+            place(status, tileStart, tileY + dp(20))
         } else {
             arrival.layout(0, 0, 0, 0)
             place(status, tileStart, tileY)

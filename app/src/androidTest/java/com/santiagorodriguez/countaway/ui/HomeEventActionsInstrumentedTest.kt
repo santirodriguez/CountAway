@@ -100,7 +100,7 @@ class HomeEventActionsInstrumentedTest {
                             Rect(button.left, button.top, button.right, button.bottom),
                             Rect(current.left, current.top, current.right, current.bottom)))
                     }
-                    assertEquals(dp(themed, 24), button.width)
+                    assertEquals(dp(themed, 20), button.width)
                     assertTrue(button.height >= dp(themed, 48))
                     assertEquals(after.width, button.right)
                     assertTrue(after.performClick())
