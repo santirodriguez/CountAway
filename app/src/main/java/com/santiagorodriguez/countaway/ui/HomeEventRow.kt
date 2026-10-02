@@ -2,6 +2,8 @@ package com.santiagorodriguez.countaway.ui
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Rect
 import android.util.AttributeSet
 import android.util.TypedValue
@@ -31,6 +33,16 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     private var lastLateralAppearance: Boolean? = null
     private val combinedPill = requireNotNull(context.getDrawable(R.drawable.status_pill)).mutate()
     private val pillBounds = Rect()
+    private val notchCurve = Path()
+    private val notchFill = Path()
+    private val notchSurface = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = context.getColor(R.color.surface_secondary)
+    }
+    private val notchOutline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = context.getColor(R.color.outline)
+        style = Paint.Style.STROKE
+        strokeWidth = dp(1).toFloat()
+    }
     private var expanded = false
     private var stackedDetails = false
     private var showArrival = false
@@ -187,7 +199,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         if (lastLateralAppearance == lateral) return
         // Alpha does not alter TextView padding, measurement, or accessibility.
         status.background.mutate().alpha = if (lateral) 0 else 255
-        actions.setBackgroundResource(if (lateral) R.drawable.home_event_actions_bubble else R.drawable.event_actions_button)
+        actions.setBackgroundResource(if (lateral) android.R.color.transparent else R.drawable.event_actions_button)
         actions.setPadding(dp(15), dp(15), dp(15), dp(15))
         lastLateralAppearance = lateral
     }
@@ -196,6 +208,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         if (lateral) {
             combinedPill.bounds = pillBounds
             combinedPill.draw(canvas)
+            drawActionNotch(canvas)
         }
         super.dispatchDraw(canvas)
     }
@@ -236,6 +249,44 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
             place(meta, 0, bodyY)
             placeRail(inner, if (stackedDetails) bodyY + meta.measuredHeight + dp(4) else bodyY)
         }
+        updateActionNotch()
+    }
+
+    private fun updateActionNotch() {
+        notchCurve.rewind()
+        notchFill.rewind()
+        if (!lateral || actions.visibility != View.VISIBLE || actions.width == 0) return
+        // Build once per layout in LTR coordinates; mirror only the decoration.
+        // The existing 48dp button and every content bound stay unchanged.
+        val start = if (layoutDirection == View.LAYOUT_DIRECTION_RTL) width - actions.right else actions.left
+        val edge = width - notchOutline.strokeWidth / 2f
+        val inset = start + dp(8).toFloat()
+        val top = actions.top.toFloat()
+        val bottom = actions.bottom.toFloat()
+        val center = (top + bottom) / 2f
+        val bend = actions.height * 0.22f
+        notchCurve.moveTo(edge, top)
+        notchCurve.cubicTo(edge, top + bend, inset, top + bend, inset, center)
+        notchCurve.cubicTo(inset, bottom - bend, edge, bottom - bend, edge, bottom)
+        notchFill.set(notchCurve)
+        // Bridge the remaining end padding visually, without extending the hit
+        // target or painting a second straight border across the curved edge.
+        notchFill.lineTo(width.toFloat(), bottom)
+        notchFill.lineTo(width.toFloat(), top)
+        notchFill.close()
+    }
+
+    private fun drawActionNotch(canvas: Canvas) {
+        if (notchFill.isEmpty || actions.visibility != View.VISIBLE) return
+        val saved = canvas.save()
+        canvas.clipRect(0, 0, width, height)
+        if (layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+            canvas.translate(width.toFloat(), 0f)
+            canvas.scale(-1f, 1f)
+        }
+        canvas.drawPath(notchFill, notchSurface)
+        canvas.drawPath(notchCurve, notchOutline)
+        canvas.restoreToCount(saved)
     }
 
     private fun measureSide(inner: Int, rail: Int): Boolean {
