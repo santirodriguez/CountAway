@@ -6,7 +6,7 @@
 - Keep **Next countdown** focused on upcoming count-down events while fixed widgets support both count directions.
 - Add an explicit, accessible language chooser for English, Español, and Català, including a return-to-System option.
 - Make widget pin callbacks more reliable across supported Android versions and preserve widget configuration identity safely.
-- Refine Home cards with a more compact day-count tile, more room for event titles, a subtle edge action notch, and a polished contextual actions menu with Add widget up front.
+- Refine Home cards with a more compact day-count tile, more room for event titles, clearer count-down/count-up grouping, a subtle edge action notch, and polished contextual event actions.
 - Give confirmations and pickers a consistent CountAway dialog treatment, including clearer destructive Delete/Discard actions in light and dark themes.
 - Harden contextual-menu focus and touch behavior across supported Android versions without shrinking the real 48dp action target.
 - Improve large-text widget layouts and use neutral event wording where count-up and count-down modes share the same surface.

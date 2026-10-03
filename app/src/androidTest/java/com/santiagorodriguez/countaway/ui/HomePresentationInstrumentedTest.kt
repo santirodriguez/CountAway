@@ -35,9 +35,9 @@ class HomePresentationInstrumentedTest {
 
     @Test fun visibleStatusesHaveShortIndependentLocalizedExpectations() = instrumentation.runOnMainSync {
         val expected = mapOf(
-            "en" to listOf("84 days", "3 days", "2 days", "1 day", "Today", "20 days ago", "In 24 days", "+0 days", "+15 days"),
-            "es" to listOf("84 días", "3 días", "2 días", "1 día", "Hoy", "Hace 20 días", "En 24 días", "+0 días", "+15 días"),
-            "ca" to listOf("84 dies", "3 dies", "2 dies", "1 dia", "Avui", "Fa 20 dies", "D’aquí a 24 dies", "+0 dies", "+15 dies"),
+            "en" to listOf("In 84 days", "In 3 days", "In 2 days", "In 1 day", "Today", "20 days ago", "In 24 days", "+0 days", "+15 days"),
+            "es" to listOf("Faltan 84 días", "Faltan 3 días", "Faltan 2 días", "Falta 1 día", "Hoy", "Hace 20 días", "En 24 días", "+0 días", "+15 días"),
+            "ca" to listOf("Falten 84 dies", "Falten 3 dies", "Falten 2 dies", "Falta 1 dia", "Avui", "Fa 20 dies", "D’aquí a 24 dies", "+0 dies", "+15 dies"),
         )
         for ((language, labels) in expected) {
             val context = localized(language, 1f, false)
@@ -121,6 +121,42 @@ class HomePresentationInstrumentedTest {
         }
         assertTrue(problems.joinToString("\n"), problems.isEmpty())
         assertEquals(360, checked)
+    }
+
+    @Test fun mixedModesUseTinyLocalizedSectionHeadersWithoutRepeatingPerCardArrows() = instrumentation.runOnMainSync {
+        val expected = mapOf(
+            "en" to listOf("UPCOMING ↓", "COUNT UP ↑", "PAST ↓"),
+            "es" to listOf("PRÓXIMOS ↓", "TRANSCURRIDOS ↑", "PASADOS ↓"),
+            "ca" to listOf("PROPERS ↓", "TRANSCORREGUTS ↑", "PASSATS ↓"),
+        )
+        for ((language, labels) in expected) {
+            val context = localized(language, 1f, false)
+            val adapter = adapter(context)
+            val events = listOf(event(5), event(-7, CountMode.COUNT_UP), event(-3))
+            val sorted = com.santiagorodriguez.countaway.countdown.CountdownEventOrder.sortedForDisplay(events, today)
+            adapter.submit(sorted, today)
+            val list = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+            sorted.indices.forEach { index ->
+                val row = adapter.getView(index, null, list)
+                list.addView(row)
+                measure(context, row, 411)
+                val header = row.findViewById<TextView>(R.id.eventSectionLabel)
+                assertEquals(View.VISIBLE, header.visibility)
+                assertEquals(labels[index], header.text.toString())
+                assertTrue("Section header became visually heavy", header.textSize <= 9f * context.resources.displayMetrics.scaledDensity + 0.6f)
+                assertTrue("Section cap exceeded compact budget", row.paddingTop <= dp(context, 30))
+            }
+            measure(context, list, 411)
+            capture(list, "home-sections-$language")
+        }
+
+        val context = localized("en", 1f, false)
+        val adapter = adapter(context)
+        adapter.submit(listOf(event(5), event(12)), today)
+        val row = adapter.getView(0, null, FrameLayout(context))
+        measure(context, row, 411)
+        assertEquals(View.GONE, row.findViewById<View>(R.id.eventSectionLabel).visibility)
+        assertEquals(dp(context, 10), row.paddingTop)
     }
 
     @Test fun referenceLengthBirthdayTitleStaysOnOneLineAtNormalPhoneWidths() = instrumentation.runOnMainSync {

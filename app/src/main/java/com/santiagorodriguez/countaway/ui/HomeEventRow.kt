@@ -24,6 +24,8 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     private val status: HomeCountTextView get() = findViewById(R.id.eventStatus)
     private val arrival: View get() = findViewById(R.id.eventArrival)
     private val actions: View get() = findViewById(R.id.eventActions)
+    private val sectionLabel: TextView get() = findViewById(R.id.eventSectionLabel)
+    private val sectionLine: View get() = findViewById(R.id.eventSectionLine)
     private val notchCurve = Path()
     private val notchFill = Path()
     private val notchSurface = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = context.getColor(R.color.surface_secondary) }
@@ -37,11 +39,34 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     private var showArrival = false
     private var leftHeight = 0
     private var contentHeight = 0
+    private var hasSectionHeader = false
+
+    fun bindSectionHeader(label: CharSequence?, accessibilityLabel: CharSequence?) {
+        val visible = label != null
+        sectionLabel.text = label.orEmpty()
+        sectionLabel.contentDescription = accessibilityLabel
+        sectionLabel.visibility = if (visible) View.VISIBLE else View.GONE
+        sectionLine.visibility = if (visible) View.VISIBLE else View.GONE
+        if (visible != hasSectionHeader) {
+            hasSectionHeader = visible
+            setBackgroundResource(if (visible) R.drawable.surface_card_clickable_sectioned else R.drawable.surface_card_clickable)
+            setPaddingRelative(dp(16), dp(if (visible) 30 else 10), dp(16), dp(10))
+        }
+        requestLayout()
+    }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.UNSPECIFIED)
             dp(320) else MeasureSpec.getSize(widthMeasureSpec)
         val inner = contentWidth(width)
+        if (hasSectionHeader) {
+            sectionLabel.measure(atMost((width - dp(24)).coerceAtLeast(1)), unspecified())
+            val lineWidth = (width - dp(24) - sectionLabel.measuredWidth - dp(8)).coerceAtLeast(dp(24))
+            sectionLine.measure(exact(lineWidth), exact(dp(1)))
+        } else {
+            sectionLabel.measure(exact(0), exact(0))
+            sectionLine.measure(exact(0), exact(0))
+        }
         icon.measure(exact(dp(48)), exact(dp(48)))
         arrival.measure(exact(dp(18)), exact(dp(18)))
         val actionWidth = if (actions.visibility == View.GONE) 0 else dp(20)
@@ -69,8 +94,9 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         val textHeight = title.measuredHeight + dp(3) + meta.measuredHeight
         leftHeight = if (stackedIcon) dp(48 + 8) + textHeight else max(dp(48), textHeight)
         contentHeight = if (wideText) leftHeight + dp(8) + tileHeight else max(leftHeight, tileHeight)
+        val minimumHeight = suggestedMinimumHeight + if (hasSectionHeader) dp(20) else 0
         setMeasuredDimension(resolveSize(width, widthMeasureSpec),
-            resolveSize(max(suggestedMinimumHeight, contentHeight + paddingTop + paddingBottom), heightMeasureSpec))
+            resolveSize(max(minimumHeight, contentHeight + paddingTop + paddingBottom), heightMeasureSpec))
     }
 
     private fun contentWidth(width: Int): Int {
@@ -81,6 +107,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        layoutSectionHeader()
         val inner = contentWidth(width)
         val y = paddingTop + ((height - paddingTop - paddingBottom - contentHeight) / 2).coerceAtLeast(0)
         val leftY = if (wideText) y else y + (contentHeight - leftHeight) / 2
@@ -107,6 +134,30 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         } else actions.layout(0, 0, 0, 0)
         updateActionTouchDelegate()
         updateActionNotch()
+    }
+
+    private fun layoutSectionHeader() {
+        if (!hasSectionHeader) {
+            sectionLabel.layout(0, 0, 0, 0)
+            sectionLine.layout(0, 0, 0, 0)
+            return
+        }
+        val headerHeight = dp(20)
+        val edge = dp(8)
+        val gap = dp(8)
+        val labelTop = ((headerHeight - sectionLabel.measuredHeight) / 2).coerceAtLeast(0)
+        val lineTop = (headerHeight - sectionLine.measuredHeight) / 2
+        if (layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+            val labelRight = width - edge
+            val labelLeft = labelRight - sectionLabel.measuredWidth
+            sectionLabel.layout(labelLeft, labelTop, labelRight, labelTop + sectionLabel.measuredHeight)
+            sectionLine.layout(edge, lineTop, (labelLeft - gap).coerceAtLeast(edge), lineTop + sectionLine.measuredHeight)
+        } else {
+            val labelLeft = edge
+            val labelRight = labelLeft + sectionLabel.measuredWidth
+            sectionLabel.layout(labelLeft, labelTop, labelRight, labelTop + sectionLabel.measuredHeight)
+            sectionLine.layout(labelRight + gap, lineTop, width - edge, lineTop + sectionLine.measuredHeight)
+        }
     }
 
     private fun updateActionTouchDelegate() {
@@ -170,6 +221,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         .maxOfOrNull { view.paint.measureText(it).toDouble() } ?: 0.0).toInt()
     private fun dp(value: Int) = (value * resources.displayMetrics.density).roundToInt()
     private fun exact(value: Int) = MeasureSpec.makeMeasureSpec(value.coerceAtLeast(0), MeasureSpec.EXACTLY)
+    private fun atMost(value: Int) = MeasureSpec.makeMeasureSpec(value.coerceAtLeast(0), MeasureSpec.AT_MOST)
     private fun unspecified() = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
     override fun generateDefaultLayoutParams() = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
 }
