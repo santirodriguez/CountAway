@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.santiagorodriguez.countaway.ui.HomeEventRow xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/surface_card_clickable"
@@ -9,6 +10,28 @@
     android:paddingEnd="16dp"
     android:paddingTop="10dp"
     android:paddingBottom="10dp">
+
+    <TextView
+        android:id="@+id/eventSectionLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:includeFontPadding="false"
+        android:importantForAccessibility="no"
+        android:letterSpacing="0.08"
+        android:textColor="@color/secondary_text"
+        android:textSize="8sp"
+        android:visibility="gone"
+        tools:ignore="SmallSp" />
+
+    <View
+        android:id="@+id/eventSectionLine"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:alpha="0.78"
+        android:background="@color/outline"
+        android:importantForAccessibility="no"
+        android:visibility="gone" />
 
     <ImageView
         android:id="@+id/eventIcon"

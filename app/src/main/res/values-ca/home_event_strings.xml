@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <plurals name="home_days"><item quantity="one">%1$s dia</item><item quantity="many">%1$s dies</item><item quantity="other">%1$s dies</item></plurals>
+    <plurals name="home_days"><item quantity="one">Falta %1$s dia</item><item quantity="many">Falten %1$s dies</item><item quantity="other">Falten %1$s dies</item></plurals>
+    <plurals name="home_days_arrival"><item quantity="one">%1$s dia</item><item quantity="many">%1$s dies</item><item quantity="other">%1$s dies</item></plurals>
     <plurals name="home_days_ago"><item quantity="one">Fa %1$s dia</item><item quantity="many">Fa %1$s dies</item><item quantity="other">Fa %1$s dies</item></plurals>
     <plurals name="home_days_since"><item quantity="one">+%1$s dia</item><item quantity="many">+%1$s dies</item><item quantity="other">+%1$s dies</item></plurals>
     <plurals name="home_days_until_start"><item quantity="one">D’aquí a %1$s dia</item><item quantity="many">D’aquí a %1$s dies</item><item quantity="other">D’aquí a %1$s dies</item></plurals>
     <string name="home_start_date">Inici: %1$s</string>
     <string name="home_since_date">Des de %1$s</string>
+    <string name="home_section_upcoming">PROPERS ↓</string>
+    <string name="home_section_count_up">TRANSCORREGUTS ↑</string>
+    <string name="home_section_past">PASSATS ↓</string>
+    <string name="home_section_upcoming_accessibility">Esdeveniments propers de compte enrere</string>
+    <string name="home_section_count_up_accessibility">Esdeveniments amb dies transcorreguts</string>
+    <string name="home_section_past_accessibility">Esdeveniments passats de compte enrere</string>
 </resources>
