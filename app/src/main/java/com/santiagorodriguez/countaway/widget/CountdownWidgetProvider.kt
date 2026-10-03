@@ -190,19 +190,22 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val appearance = configuration?.appearance ?: WidgetAppearance.SYSTEM
             val background = configuration?.background ?: WidgetBackground.CLASSIC
             val theme = WidgetThemeResolver.resolve(context, appearance, background)
+            val event = (renderData as? WidgetRenderData.Ready)?.resolve(configuration)
             applyTheme(context, views, theme, background, widthDp, heightDp, backgroundCache)
+            WidgetArrivalIllustration.clear(views, size)
 
             when (renderData) {
                 is WidgetRenderData.Failure -> renderDataError(displayContext, views, appWidgetId,
                     renderData.problem, size, heightDp)
                 is WidgetRenderData.Ready -> {
-                    val event = renderData.resolve(configuration)
                     if (event == null) {
                         renderUnconfigured(displayContext, views, appWidgetId,
                             noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
                             size = size, heightDp = heightDp)
                     } else {
                         renderEvent(displayContext, views, appWidgetId, event, today, size, heightDp)
+                        WidgetArrivalIllustration.apply(displayContext, views, WidgetEventContentFactory.from(event, today),
+                            size, widthDp, heightDp)
                     }
                 }
             }
@@ -289,5 +292,6 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         private const val DATA_ERROR_REQUEST_CODE_OFFSET = 200_000
     }
 
-    private data class BackgroundKey(val background: WidgetBackground, val dark: Boolean, val widthDp: Int, val heightDp: Int)
+    private data class BackgroundKey(val background: WidgetBackground, val dark: Boolean,
+        val widthDp: Int, val heightDp: Int)
 }

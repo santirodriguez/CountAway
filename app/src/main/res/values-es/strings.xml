@@ -22,7 +22,6 @@
     <string name="status_days">%1$d días</string>
     <string name="status_tomorrow">Mañana</string>
     <string name="status_today">Hoy</string>
-    <string name="status_today_zero">0 · Hoy</string>
     <string name="status_done">Ya pasó</string>
     <plurals name="status_days_ago">
         <item quantity="one">hace %1$d día</item>

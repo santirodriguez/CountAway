@@ -24,7 +24,6 @@
     <string name="status_days">%1$d days</string>
     <string name="status_tomorrow">Tomorrow</string>
     <string name="status_today">Today</string>
-    <string name="status_today_zero">0 · Today</string>
     <string name="status_done">Done</string>
     <plurals name="status_days_ago">
         <item quantity="one">%1$d day ago</item>

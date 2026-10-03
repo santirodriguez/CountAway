@@ -23,6 +23,7 @@ internal object WidgetPreviewFactory {
             setTextViewText(R.id.widgetDate, "")
             setViewVisibility(R.id.widgetMilestone, View.GONE)
             setViewVisibility(R.id.widgetDate, View.GONE)
+            WidgetArrivalIllustration.clear(this, dimensions.size)
             setContentDescription(R.id.widgetRoot, listOf(
                 context.getString(R.string.widget_select_event),
                 context.getString(R.string.widget_tap_to_configure),
@@ -49,6 +50,7 @@ internal object WidgetPreviewFactory {
             fontScale = context.resources.configuration.fontScale,
             heightDp = dimensions.heightDp,
         )
+        WidgetArrivalIllustration.apply(context, views, content, dimensions.size, dimensions.widthDp, dimensions.heightDp)
         return views
     }
 

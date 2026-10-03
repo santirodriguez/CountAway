@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.santiagorodriguez.countaway.ui.HomeEventRow xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/surface_card_clickable"
-    android:gravity="center_vertical"
-    android:minHeight="92dp"
-    android:orientation="horizontal"
-    android:padding="16dp">
+    android:clipToPadding="false"
+    android:minHeight="88dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
 
     <ImageView
         android:id="@+id/eventIcon"
@@ -17,49 +19,70 @@
         android:scaleType="centerInside"
         android:tint="@color/accent" />
 
-    <LinearLayout
-        android:layout_width="0dp"
+    <TextView
+        android:id="@+id/eventTitle"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/eventTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:textColor="@color/foreground"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/eventMeta"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
-    </LinearLayout>
+        android:breakStrategy="simple"
+        android:hyphenationFrequency="none"
+        android:textColor="@color/foreground"
+        android:textSize="17sp"
+        android:textStyle="bold" />
 
     <TextView
+        android:id="@+id/eventMeta"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:breakStrategy="simple"
+        android:hyphenationFrequency="none"
+        android:textColor="@color/secondary_text"
+        android:textSize="13sp" />
+
+    <View
+        android:id="@+id/eventCountTile"
+        android:layout_width="64dp"
+        android:layout_height="60dp"
+        android:background="@drawable/home_count_tile"
+        android:importantForAccessibility="no" />
+
+    <ImageView
+        android:id="@+id/eventArrival"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:contentDescription="@null"
+        android:scaleType="centerInside"
+        android:visibility="gone" />
+
+    <com.santiagorodriguez.countaway.ui.HomeCountTextView
         android:id="@+id/eventStatus"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:background="@drawable/status_pill"
+        android:background="@android:color/transparent"
         android:fontFamily="sans-serif-medium"
         android:gravity="center"
         android:minWidth="54dp"
-        android:paddingStart="10dp"
-        android:paddingTop="7dp"
-        android:paddingEnd="10dp"
-        android:paddingBottom="7dp"
-        android:maxLines="2"
+        android:paddingStart="3dp"
+        android:paddingTop="0dp"
+        android:paddingEnd="3dp"
+        android:paddingBottom="0dp"
+        android:breakStrategy="simple"
+        android:hyphenationFrequency="none"
         android:textColor="@color/accent_text"
         android:textSize="14sp" />
 
-</LinearLayout>
+    <ImageButton
+        android:id="@+id/eventActions"
+        android:layout_width="20dp"
+        android:layout_height="48dp"
+        android:background="@android:color/transparent"
+        android:contentDescription="@string/event_actions_label"
+        android:foreground="@drawable/event_actions_edge_feedback"
+        android:paddingStart="4dp"
+        android:paddingEnd="0dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_event_more"
+        android:tint="@color/accent_text"
+        android:visibility="gone" />
+</com.santiagorodriguez.countaway.ui.HomeEventRow>

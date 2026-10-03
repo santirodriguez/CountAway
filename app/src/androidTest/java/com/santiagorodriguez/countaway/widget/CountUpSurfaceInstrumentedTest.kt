@@ -141,7 +141,7 @@ class CountUpSurfaceInstrumentedTest {
         adapter.submit(listOf(event(0)), today)
         assertSame(row, adapter.getView(0, row, parent))
         val status = row.findViewById<TextView>(R.id.eventStatus)
-        assertEquals("+0", status.text.toString())
+        assertEquals("+0 days", status.text.toString())
         assertEquals(1f, status.scaleX, 0f)
         assertEquals(1f, status.scaleY, 0f)
         assertTrue(status.contentDescription.toString().contains("0 days elapsed"))
