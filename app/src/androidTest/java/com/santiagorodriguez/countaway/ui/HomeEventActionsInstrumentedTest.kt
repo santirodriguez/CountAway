@@ -182,7 +182,7 @@ class HomeEventActionsInstrumentedTest {
             onView(withText(deleteLabel)).perform(click())
             onView(withId(android.R.id.button1)).inRoot(isDialog()).check { view, error ->
                 if (error != null) throw error
-                assertEquals(context.getColor(R.color.danger), (view as Button).currentTextColor)
+                assertEquals(view.context.getColor(R.color.danger), (view as Button).currentTextColor)
             }
             onView(withId(android.R.id.button2)).inRoot(isDialog()).perform(click())
             drain()
