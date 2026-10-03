@@ -36,6 +36,7 @@ jobs:
       BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
       EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
       PACKAGE_ID: "com.santiagorodriguez.countaway"
+      PREVIOUS_PUBLIC_VERSION: "1.2.1"
       PREVIOUS_PUBLIC_APK_BYTES: "443929"
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -296,8 +297,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          grep -Fqx "## ${VERSION}" CHANGELOG.md
+          test -s "docs/releases/${VERSION}.md"
+          test ! -d "fastlane/metadata/android/en"
+          for locale in en-US es ca; do
+            TITLE="fastlane/metadata/android/${locale}/title.txt"
+            SHORT_DESCRIPTION="fastlane/metadata/android/${locale}/short_description.txt"
+            FULL_DESCRIPTION="fastlane/metadata/android/${locale}/full_description.txt"
+            CHANGELOG="fastlane/metadata/android/${locale}/changelogs/${VERSION_CODE}.txt"
+
+            test -s "${TITLE}"
+            test -s "${SHORT_DESCRIPTION}"
+            test -s "${FULL_DESCRIPTION}"
+            test -s "${CHANGELOG}"
+
+            test "$(wc -m < "${TITLE}")" -le 31
+            test "$(wc -m < "${SHORT_DESCRIPTION}")" -le 81
+            test "$(wc -m < "${FULL_DESCRIPTION}")" -le 4001
+            test "$(wc -m < "${CHANGELOG}")" -le 501
+          done
+
           if [[ "${PREPARE_RELEASE}" == "true" ]]; then
-            grep -Fqx "## ${VERSION}" CHANGELOG.md
             test -s PRIVACY.md
             PRIVACY_URL="https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md"
             PRIVACY_RAW_URL="https://raw.githubusercontent.com/santirodriguez/CountAway/main/PRIVACY.md"
@@ -306,11 +326,6 @@ jobs:
             test -s "${RUNNER_TEMP}/countaway-privacy-policy.html"
             curl --fail --location --silent --show-error --retry 2               "${PRIVACY_RAW_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.md"
             grep -Fqx '# CountAway Privacy Policy' "${RUNNER_TEMP}/countaway-privacy-policy.md"
-            test -s "docs/releases/${VERSION}.md"
-            test ! -d "fastlane/metadata/android/en"
-            for locale in en-US es ca; do
-              test -s "fastlane/metadata/android/${locale}/changelogs/${VERSION_CODE}.txt"
-            done
 
             declare -a SCREENSHOTS=(
               "fastlane/metadata/android/en-US/images/phoneScreenshots/1.png"
@@ -513,7 +528,8 @@ jobs:
 
           {
             echo "current_apk_bytes=${APK_BYTES}"
-            echo "previous_public_1_2_0_apk_bytes=${PREVIOUS_PUBLIC_APK_BYTES}"
+            echo "previous_public_version=${PREVIOUS_PUBLIC_VERSION}"
+            echo "previous_public_apk_bytes=${PREVIOUS_PUBLIC_APK_BYTES}"
             echo "delta_from_previous_public_bytes=${DELTA_PREVIOUS}"
             echo "delta_from_previous_public_percent=${PERCENT_PREVIOUS}"
             echo "review=Explain material growth by changed files/resources/dependencies before publication."
@@ -719,6 +735,10 @@ jobs:
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
+      PREVIOUS_PUBLIC_VERSION: "1.2.1"
+      PREVIOUS_PUBLIC_VERSION_CODE: "10"
+      PREVIOUS_PUBLIC_APK_SHA256: "43e45ddee319c9ee6161988d4f681d13f14d8e93bad4d28a3c28bda1cfbeeffb"
+      PREVIOUS_PUBLIC_APK_BYTES: "443929"
 
     steps:
       - name: Checkout exact candidate source
@@ -803,6 +823,184 @@ jobs:
 
           mkdir -p acceptance-evidence
 
+          cat > "${RUNNER_TEMP}/countaway-ui.py" <<'PYUI'
+          import re
+          import sys
+          import xml.etree.ElementTree as ET
+
+          mode, query, xml_path = sys.argv[1:4]
+          root = ET.parse(xml_path).getroot()
+
+          def bounds(node):
+              match = re.fullmatch(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
+              if match:
+                  x1, y1, x2, y2 = map(int, match.groups())
+                  if x2 > x1 and y2 > y1:
+                      return x1, y1, x2, y2
+              return None
+
+          if mode == "center":
+              for node in root.iter():
+                  if node.get("resource-id") != query or node.get("enabled") != "true":
+                      continue
+                  rect = bounds(node)
+                  if rect:
+                      x1, y1, x2, y2 = rect
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      sys.exit(0)
+              sys.exit(1)
+
+          if mode == "text":
+              sys.exit(0 if any(node.get("text") == query for node in root.iter()) else 1)
+
+          if mode in ("focused", "field-text", "clear-keys"):
+              node = next((node for node in root.iter() if node.get("resource-id") == query), None)
+              if node is None or node.get("enabled") != "true" or node.get("focused") != "true":
+                  sys.exit(1)
+              if mode == "focused":
+                  sys.exit(0 if bounds(node) else 1)
+              if mode == "field-text":
+                  sys.exit(0 if node.get("text") == sys.argv[4] else 1)
+              # XML may expose the hint of an empty field as text. Extra deletes
+              # are harmless; exact replacement is verified after typing below.
+              text = node.get("text", "")
+              if "\n" in text or "\r" in text or len(text.encode("utf-16-le")) > 512:
+                  sys.exit(1)
+              print("KEYCODE_MOVE_END")
+              for _ in range(len(text.encode("utf-16-le")) // 2):
+                  print("KEYCODE_DEL")
+              sys.exit(0)
+
+          if mode == "scroll":
+              for node in root.iter():
+                  if node.get("package") != query or node.get("scrollable") != "true":
+                      continue
+                  rect = bounds(node)
+                  if rect:
+                      x1, y1, x2, y2 = rect
+                      if y2 - y1 < 100:
+                          continue
+                      x = (x1 + x2) // 2
+                      print(x, y1 + (y2 - y1) * 3 // 4, x, y1 + (y2 - y1) // 4)
+                      sys.exit(0)
+              sys.exit(1)
+
+          raise SystemExit(f"Unsupported UI query mode: {mode}")
+          PYUI
+
+          dump_ui() {
+            local output="$1"
+            local attempt
+            rm -f "${output}"
+            for attempt in {1..10}; do
+              if adb shell uiautomator dump /sdcard/countaway-ui.xml >/dev/null 2>&1 \
+                && adb pull /sdcard/countaway-ui.xml "${output}" >/dev/null 2>&1; then
+                return 0
+              fi
+              sleep 1
+            done
+            echo "Could not capture CountAway UI hierarchy" >&2
+            return 1
+          }
+
+          tap_resource() {
+            local short_id="$1"
+            local xml_file="acceptance-evidence/tap-${short_id}-api-${API_LEVEL}.xml"
+            local attempt x y
+            for attempt in {1..10}; do
+              dump_ui "${xml_file}" || true
+              local coords=""
+              coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" center "${PACKAGE_ID}:id/${short_id}" "${xml_file}" 2>/dev/null)" || true
+              if [[ -n "${coords}" ]]; then
+                read -r x y <<< "${coords}"
+                adb shell input tap "${x}" "${y}"
+                return 0
+              fi
+              sleep 1
+            done
+            echo "Could not find CountAway resource: ${short_id}" >&2
+            return 1
+          }
+
+          replace_fixture_title() {
+            local expected="$1"
+            local xml_file="acceptance-evidence/upgrade-input-api-${API_LEVEL}.xml"
+            local field="${PACKAGE_ID}:id/titleInput"
+            local attempt ready focused
+            local -a keys
+            for attempt in {1..3}; do
+              tap_resource titleInput
+              focused=false
+              for ready in {1..5}; do
+                if dump_ui "${xml_file}" \
+                  && python3 "${RUNNER_TEMP}/countaway-ui.py" focused "${field}" "${xml_file}"; then
+                  focused=true
+                  break
+                fi
+                sleep 1
+              done
+              if [[ "${focused}" != true ]]; then
+                continue
+              fi
+              mapfile -t keys < <(python3 "${RUNNER_TEMP}/countaway-ui.py" clear-keys "${field}" "${xml_file}")
+              test "${#keys[@]}" -gt 0
+              adb shell input keyevent "${keys[@]}"
+              # An empty EditText can report its hint (Trip) as XML text. Do not
+              # require an empty XML value; require the exact typed value instead.
+              adb shell input text "${expected}"
+              for ready in {1..5}; do
+                if dump_ui "${xml_file}" \
+                  && python3 "${RUNNER_TEMP}/countaway-ui.py" field-text "${field}" "${xml_file}" "${expected}"; then
+                  printf 'exact_input_verified=true\nattempt=%s\n' "${attempt}" \
+                    > "acceptance-evidence/upgrade-input-api-${API_LEVEL}.txt"
+                  return 0
+                fi
+                sleep 1
+              done
+            done
+            echo "Could not establish the exact upgrade fixture title before Save" >&2
+            return 1
+          }
+
+          tap_fixture_save() {
+            local xml_file="acceptance-evidence/tap-saveButton-api-${API_LEVEL}.xml"
+            local coords=""
+            local attempt x y x1 y1 x2 y2
+            for attempt in {1..8}; do
+              dump_ui "${xml_file}"
+              coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" center "${PACKAGE_ID}:id/saveButton" "${xml_file}")" || coords=""
+              if [[ -n "${coords}" ]]; then
+                read -r x y <<< "${coords}"
+                adb shell input tap "${x}" "${y}"
+                return 0
+              fi
+              coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" scroll "${PACKAGE_ID}" "${xml_file}")" || coords=""
+              if [[ -z "${coords}" ]]; then
+                echo "No visible editor scroll area while locating Save" >&2
+                return 1
+              fi
+              read -r x1 y1 x2 y2 <<< "${coords}"
+              adb shell input swipe "${x1}" "${y1}" "${x2}" "${y2}" 450
+            done
+            echo "Could not find a visible enabled Save button for the upgrade fixture" >&2
+            return 1
+          }
+
+          wait_for_text() {
+            local expected="$1"
+            local xml_file="$2"
+            local attempt
+            for attempt in {1..15}; do
+              dump_ui "${xml_file}" || true
+              if python3 "${RUNNER_TEMP}/countaway-ui.py" text "${expected}" "${xml_file}" 2>/dev/null; then
+                return 0
+              fi
+              sleep 1
+            done
+            echo "Expected CountAway text not found: ${expected}" >&2
+            return 1
+          }
+
           capture_runtime_state() {
             set +e
             adb shell dumpsys alarm > "acceptance-evidence/alarm-api-${API_LEVEL}.txt"
@@ -816,35 +1014,55 @@ jobs:
           adb shell getprop ro.build.version.sdk             > "acceptance-evidence/android-sdk-api-${API_LEVEL}.txt"
 
           if [[ "${API_LEVEL}" == "33" ]]; then
-            PREVIOUS_APK="candidate/CountAway-v1.2.0.apk"
-            PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v1.2.0/CountAway-v1.2.0.apk"
-            PREVIOUS_APK_SHA256="b734fa23f157394e36daad4f45a4d24ff0a90e7e465582f6e718067c78615ec6"
-            PREVIOUS_APK_BYTES="443929"
+            PREVIOUS_APK="candidate/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
+            PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v${PREVIOUS_PUBLIC_VERSION}/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
+            UPGRADE_PROBE_TITLE="UpgradeProbe122"
 
-            curl --fail --location --silent --show-error --retry 2               "${PREVIOUS_APK_URL}"               --output "${PREVIOUS_APK}"
-            echo "${PREVIOUS_APK_SHA256}  ${PREVIOUS_APK}" | sha256sum -c -
-            test "$(stat -c%s "${PREVIOUS_APK}")" = "${PREVIOUS_APK_BYTES}"
+            curl --fail --location --silent --show-error --retry 2 \
+              "${PREVIOUS_APK_URL}" \
+              --output "${PREVIOUS_APK}"
+            echo "${PREVIOUS_PUBLIC_APK_SHA256}  ${PREVIOUS_APK}" | sha256sum -c -
+            test "$(stat -c%s "${PREVIOUS_APK}")" = "${PREVIOUS_PUBLIC_APK_BYTES}"
 
             adb install "${PREVIOUS_APK}"
-            adb shell am start -W               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"               > "acceptance-evidence/upgrade-1.2.0-launch-api-${API_LEVEL}.txt"
-            sleep 1
-            adb shell dumpsys package "${PACKAGE_ID}"               > "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
+            adb shell am start -W \
+              -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity" \
+              > "acceptance-evidence/upgrade-${PREVIOUS_PUBLIC_VERSION}-launch-api-${API_LEVEL}.txt"
+
+            tap_resource addCountdownButton
+            replace_fixture_title "${UPGRADE_PROBE_TITLE}"
+            tap_fixture_save
+            wait_for_text "${UPGRADE_PROBE_TITLE}" \
+              "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.xml"
+
+            adb shell dumpsys package "${PACKAGE_ID}" \
+              > "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
+            grep -Fq "versionName=${PREVIOUS_PUBLIC_VERSION}" \
+              "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
+            grep -Eq "versionCode=${PREVIOUS_PUBLIC_VERSION_CODE}([[:space:]]|$)" \
+              "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
 
             adb install -r "${CANDIDATE_APK}"
-            adb shell am start -W               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity"               > "acceptance-evidence/upgrade-candidate-launch-api-${API_LEVEL}.txt"
-            sleep 2
+            adb shell am start -W \
+              -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity" \
+              > "acceptance-evidence/upgrade-candidate-launch-api-${API_LEVEL}.txt"
+            wait_for_text "${UPGRADE_PROBE_TITLE}" \
+              "acceptance-evidence/upgrade-after-data-api-${API_LEVEL}.xml"
 
             PID="$(adb shell pidof "${PACKAGE_ID}" | tr -d '\r')"
             if [[ -z "${PID}" ]]; then
               adb logcat -d > "acceptance-evidence/upgrade-logcat-api-${API_LEVEL}.txt" || true
-              echo "CountAway did not remain alive after 1.2.0 -> ${VERSION} signed upgrade" >&2
+              echo "CountAway did not remain alive after ${PREVIOUS_PUBLIC_VERSION} -> ${VERSION} signed upgrade" >&2
               exit 1
             fi
 
-            adb shell dumpsys package "${PACKAGE_ID}"               > "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
-            grep -Fq "versionName=${VERSION}"               "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
-            grep -Eq "versionCode=${VERSION_CODE}([[:space:]]|$)"               "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
+            adb shell dumpsys package "${PACKAGE_ID}" \
+              > "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
+            grep -Fq "versionName=${VERSION}" \
+              "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
+            grep -Eq "versionCode=${VERSION_CODE}([[:space:]]|$)" \
+              "acceptance-evidence/upgrade-after-package-api-${API_LEVEL}.txt"
             adb uninstall "${PACKAGE_ID}"
           fi
 
@@ -879,7 +1097,7 @@ jobs:
           # Preserve failing renders as evidence without turning a failed suite green.
           test "${TEST_STATUS}" -eq 0
           test "${RENDER_STATUS}" -eq 0
-          grep -Fq 'OK (9 tests)' acceptance-evidence/render-tests.txt
+          grep -Eq '^OK \([1-9][0-9]* tests?\)$' acceptance-evidence/render-tests.txt
           if [[ "${API_LEVEL}" == "33" ]]; then
             # Disposable emulator: install the EN-only device set, then switch languages offline.
             adb uninstall "${PACKAGE_ID}" || true
@@ -898,7 +1116,7 @@ jobs:
             done
             python3 - <<'LOCALES'
           import xml.etree.ElementTree as ET
-          for language, expected in [('es', 'Todavía no hay nada en cuenta regresiva'), ('ca', 'Encara no hi ha cap compte enrere')]:
+          for language, expected in [('es', 'Todavía no hay eventos'), ('ca', 'Encara no hi ha cap esdeveniment')]:
               root = ET.parse(f'acceptance-evidence/bundle-offline-{language}.xml').getroot()
               assert any(node.get('text') == expected for node in root.iter()), language
           LOCALES

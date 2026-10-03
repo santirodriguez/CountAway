@@ -4,8 +4,6 @@ import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.ArrivalMood
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import kotlin.math.ceil
 
 internal data class WidgetPresentation(
@@ -50,7 +48,7 @@ internal object WidgetPresentationResolver {
         heightDp: Int = WidgetPreviewSizing.representative(size).heightDp,
     ): WidgetPresentation {
         val largeFont = fontScale >= LARGE_FONT_SCALE
-        val milestone = ArrivalMood.marker(content.status)
+        val milestone = content.status?.let(ArrivalMood::marker)
         val showUnit = (size == WidgetSize.STANDARD || size == WidgetSize.LARGE) && !largeFont
         val showMilestone = milestone != null &&
             size != WidgetSize.SHORT && size != WidgetSize.COMPACT && fontScale < 1.3f
@@ -62,7 +60,7 @@ internal object WidgetPresentationResolver {
             if (compactIconFits) 16 else 0) / compactLineHeight).coerceIn(0, 3)
         val showIcon = when (size) {
             WidgetSize.COMPACT -> compactIconFits
-            WidgetSize.SHORT -> true
+            WidgetSize.SHORT -> fontScale < LARGE_FONT_SCALE || content.countTextFor(WidgetSize.SHORT, false).length <= 5
             else -> fontScale < 1.3f && milestone == null
         }
         // Reserve space for the count and visible details before allowing another title line.
@@ -85,14 +83,25 @@ internal object WidgetPresentationResolver {
             }
         }
 
+        // Replace the old marker with background artwork. Only restore the event icon
+        // when it fits without taking away any title line available in the old layout.
+        val restoreArrivalIcon = if (showMilestone) {
+            val large = size == WidgetSize.LARGE
+            val fixed = (if (large) 28 else 20) + ceil((if (large) 22 else 20) * fontScale).toInt() +
+                (if (showUnit) 2 * ceil((if (large) 20 else 16) * fontScale).toInt() else 0) +
+                (if (showDate) 2 * ceil(20 * fontScale).toInt() + 4 else 0)
+            val title = titleMaxLines * ceil((if (large) 22 else 18) * fontScale).toInt()
+            heightDp >= fixed + title + if (large) 35 else 25
+        } else false
+
         return WidgetPresentation(
-            countText = content.countTextFor(size),
+            countText = content.countTextFor(size, showUnit),
             unitRes = content.unitRes,
-            milestone = milestone,
+            milestone = null,
             showUnit = showUnit,
-            showMilestone = showMilestone,
+            showMilestone = false,
             showDate = showDate,
-            showIcon = showIcon,
+            showIcon = showIcon || restoreArrivalIcon,
             showTitle = size != WidgetSize.COMPACT || compactTitleLines > 0,
             titleMaxLines = titleMaxLines,
         )
@@ -148,34 +157,18 @@ internal object WidgetRemoteViewsPresentation {
         heightDp: Int = WidgetPreviewSizing.representative(size).heightDp,
     ) {
         val presentation = WidgetPresentationResolver.resolve(content, size, fontScale, heightDp)
-        val locale = context.resources.configuration.locales[0]
-        val formattedDate = content.date.format(
-            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
-        )
-
         views.setViewVisibility(R.id.widgetIcon, if (presentation.showIcon) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.widgetTitle, if (presentation.showTitle) View.VISIBLE else View.GONE)
         views.setInt(R.id.widgetTitle, "setMaxLines", presentation.titleMaxLines)
         views.setImageViewResource(R.id.widgetIcon, content.iconRes)
         views.setTextViewText(R.id.widgetTitle, content.title)
         views.setTextViewText(R.id.widgetCount, presentation.countText)
-        views.setTextViewText(
-            R.id.widgetUnit,
-            presentation.unitRes?.let(context::getString).orEmpty(),
-        )
-        views.setTextViewText(R.id.widgetDate, formattedDate)
+        views.setTextViewText(R.id.widgetUnit, presentation.unitRes?.let(context::getString).orEmpty())
+        views.setTextViewText(R.id.widgetDate, content.dateText(context))
         views.setTextViewText(R.id.widgetMilestone, presentation.milestone.orEmpty())
-        views.setViewVisibility(
-            R.id.widgetUnit,
-            if (presentation.showUnit) View.VISIBLE else View.GONE,
-        )
-        views.setViewVisibility(
-            R.id.widgetMilestone,
-            if (presentation.showMilestone) View.VISIBLE else View.GONE,
-        )
-        views.setViewVisibility(
-            R.id.widgetDate,
-            if (presentation.showDate) View.VISIBLE else View.GONE,
-        )
+        views.setViewVisibility(R.id.widgetUnit, if (presentation.showUnit) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widgetMilestone, if (presentation.showMilestone) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.widgetDate, if (presentation.showDate) View.VISIBLE else View.GONE)
+        views.setContentDescription(R.id.widgetRoot, content.description(context))
     }
 }

@@ -1,5 +1,6 @@
 package com.santiagorodriguez.countaway.data
 
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
@@ -21,7 +22,7 @@ class LifecycleIdentityTest {
             event.copy(date = event.date.plusDays(1)), event.copy(type = EventType.TRIP),
             event.copy(icon = com.santiagorodriguez.countaway.model.EventIcon.defaultFor(EventType.BIRTHDAY)),
             event.copy(reminder = ReminderOption.ON_DAY), event.copy(createdAt = event.createdAt.plusSeconds(1)),
-            event.copy(repeatRule = RepeatRule.YEARLY)).forEach {
+            event.copy(repeatRule = RepeatRule.YEARLY), event.copy(countMode = CountMode.COUNT_UP)).forEach {
             assertNotEquals(revision, EventRevision.of(it))
         }
     }

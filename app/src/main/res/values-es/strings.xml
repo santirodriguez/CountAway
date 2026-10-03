@@ -6,7 +6,7 @@
     <string name="language_spanish">Español</string>
     <string name="language_catalan">Catalán</string>
 
-    <string name="action_add_countdown">Agregar cuenta regresiva</string>
+    <string name="action_add_countdown">@string/action_add_event</string>
     <string name="action_about">Acerca de</string>
     <string name="action_save">Guardar</string>
     <string name="action_delete">Eliminar</string>
@@ -14,23 +14,22 @@
     <string name="theme_switch_to_light">Cambiar a modo claro</string>
     <string name="theme_switch_to_dark">Cambiar a modo oscuro</string>
 
-    <string name="empty_title">Todavía no hay nada en cuenta regresiva</string>
-    <string name="empty_description">Agregá un viaje, examen, cumpleaños o cualquier cosa que valga la espera.</string>
+    <string name="empty_title">Todavía no hay eventos</string>
+    <string name="empty_description">Agregá un viaje, examen, cumpleaños, aniversario o cualquier fecha que quieras seguir.</string>
     <string name="data_error_title">Hay un problema con los datos guardados</string>
     <string name="data_error_description">Ya Estamos detuvo la edición para proteger el archivo existente. Restaurá una copia válida desde Acerca de antes de hacer cambios.</string>
     <string name="event_meta">%1$s · %2$s</string>
     <string name="status_days">%1$d días</string>
     <string name="status_tomorrow">Mañana</string>
     <string name="status_today">Hoy</string>
-    <string name="status_today_zero">0 · Hoy</string>
     <string name="status_done">Ya pasó</string>
     <plurals name="status_days_ago">
         <item quantity="one">hace %1$d día</item>
         <item quantity="other">hace %1$d días</item>
     </plurals>
 
-    <string name="editor_new_title">Nueva cuenta regresiva</string>
-    <string name="editor_edit_title">Editar cuenta regresiva</string>
+    <string name="editor_new_title">@string/event_new_title</string>
+    <string name="editor_edit_title">@string/event_edit_title</string>
     <string name="field_type">Tipo</string>
     <string name="field_icon">Ícono</string>
     <string name="field_title">Título</string>
@@ -42,8 +41,8 @@
     <string name="reminder_three_days">3 días antes</string>
     <string name="reminder_seven_days">7 días antes</string>
     <string name="notification_permission_denied">No se otorgó permiso para notificaciones.</string>
-    <string name="title_required">Poné un título para esta cuenta regresiva.</string>
-    <string name="delete_title">¿Eliminar cuenta regresiva?</string>
+    <string name="title_required">Poné un título para este evento.</string>
+    <string name="delete_title">¿Eliminar evento?</string>
     <string name="delete_message">¿Eliminar &quot;%1$s&quot;?</string>
     <string name="data_error_edit_blocked">Ya Estamos no pudo leer de forma segura los datos guardados. La edición está desactivada para evitar sobrescribirlos.</string>
 
@@ -70,18 +69,18 @@
     <string name="event_icon_flag">Bandera</string>
     <string name="event_icon_pin">Ubicación</string>
 
-    <string name="widget_name">Cuenta regresiva de Ya Estamos</string>
-    <string name="widget_description">Una cuenta regresiva liviana y adaptable para la pantalla de inicio.</string>
+    <string name="widget_name">@string/app_name</string>
+    <string name="widget_description">Los días que faltan o pasaron, en tu pantalla de inicio.</string>
     <string name="widget_days_left">días restantes</string>
     <string name="widget_day_ago">día atrás</string>
     <string name="widget_days_ago">días atrás</string>
-    <string name="widget_select_countdown">Elegí una cuenta regresiva</string>
+    <string name="widget_select_countdown">@string/widget_select_event</string>
     <string name="widget_no_upcoming">No hay próximas cuentas regresivas</string>
     <string name="widget_tap_to_configure">Tocá para configurar</string>
-    <string name="widget_config_title">Elegí una cuenta regresiva</string>
+    <string name="widget_config_title">@string/widget_select_event</string>
     <string name="widget_config_description">Elegí qué querés tener a la vista en este widget.</string>
-    <string name="widget_config_empty">Todavía no hay cuentas regresivas. Creá una y después volvé acá.</string>
-    <string name="widget_create_countdown">Crear cuenta regresiva</string>
+    <string name="widget_config_empty">Todavía no hay eventos. Creá uno y después volvé acá.</string>
+    <string name="widget_create_countdown">Crear evento</string>
     <string name="widget_next_countdown">Próxima cuenta regresiva</string>
     <string name="widget_appearance_label">Apariencia</string>
     <string name="widget_appearance_system">Sistema</string>
@@ -95,9 +94,9 @@
     <string name="widget_background_sunset">Atardecer</string>
     <string name="widget_background_six">Cresta</string>
     <string name="widget_add_to_home">Guardar widget</string>
-    <string name="widget_add_from_event">Agregá un widget para esta cuenta regresiva</string>
+    <string name="widget_add_from_event">Agregá un widget para este evento</string>
     <string name="widget_save_before_pin">Guardá los cambios antes de agregar el widget.</string>
-    <string name="widget_open_countdown">Abrí la cuenta regresiva</string>
+    <string name="widget_open_countdown">@string/widget_open_event</string>
     <string name="widget_event_option">%1$s · %2$s</string>
 
     <string name="notification_channel_name">Recordatorios de cuentas regresivas</string>
@@ -111,23 +110,23 @@
 
     <string name="about_version">Versión %1$s</string>
     <string name="about_how_title">Para que sirva de verdad</string>
-    <string name="about_how_body">Tres pasos y después dejá de mirar el calendario. Creá una cuenta regresiva, mantenela apretada para elegir el estilo del widget y dejá que la pantalla de inicio haga el resto.</string>
-    <string name="about_how_steps">1. Creá una cuenta regresiva\n2. Agregá el widget\n3. Dejá de mirar el calendario cada cinco minutos</string>
+    <string name="about_how_body">Tres pasos y después dejá de mirar el calendario. Creá un evento, mantenelo apretado para elegir el estilo del widget y dejá que la pantalla de inicio haga el resto.</string>
+    <string name="about_how_steps">1. Creá un evento\n2. Agregá el widget\n3. Dejá de mirar el calendario cada cinco minutos</string>
     <string name="about_privacy">Ya Estamos no usa cuentas, publicidad, analíticas ni acceso a internet. Tus datos quedan locales salvo que exportes una copia a un proveedor que elijas.</string>
     <string name="backup_title">Copia local</string>
-    <string name="backup_description">Exportá o restaurá tus cuentas regresivas usando un archivo JSON de texto que controlás vos. El lugar donde se guarde depende del proveedor que elijas.</string>
+    <string name="backup_description">Exportá o restaurá tus eventos usando un archivo JSON de texto que controlás vos. El lugar donde se guarde depende del proveedor que elijas.</string>
     <string name="backup_export">Exportar copia</string>
     <string name="backup_import">Importar copia</string>
     <string name="backup_export_success">Copia exportada.</string>
     <string name="backup_export_failed">No se pudo exportar la copia.</string>
-    <string name="backup_import_action">Reemplazar cuentas regresivas</string>
+    <string name="backup_import_action">Reemplazar eventos</string>
     <string name="backup_import_invalid">El archivo no es una copia válida de Ya Estamos.</string>
     <string name="backup_import_failed">No se pudo importar la copia.</string>
     <string name="backup_import_success">Copia importada.</string>
     <string name="backup_import_confirm_title">¿Importar copia?</string>
     <plurals name="backup_import_confirm_message">
-        <item quantity="one">Esto reemplazará tus cuentas regresivas actuales por %1$d cuenta regresiva de la copia.</item>
-        <item quantity="other">Esto reemplazará tus cuentas regresivas actuales por %1$d cuentas regresivas de la copia.</item>
+        <item quantity="one">Esto reemplazará tus eventos actuales por %1$d evento de la copia.</item>
+        <item quantity="other">Esto reemplazará tus eventos actuales por %1$d eventos de la copia.</item>
     </plurals>
     <string name="about_author">Creada por santiagorodriguez.com</string>
     <string name="about_donate">Donar</string>

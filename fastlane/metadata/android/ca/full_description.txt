@@ -1,7 +1,9 @@
 Ja Queda Poc manté les dates importants simples i visibles a la pantalla d’inici.
 
-Crea diversos comptes enrere, tria un tipus d’esdeveniment o una icona personalitzada i afegeix ginys compactes o redimensionables. Cada giny pot seguir un esdeveniment fix o mostrar automàticament el proper compte enrere, amb aparença i fons independents. Els comptes enrere es poden repetir cada setmana, cada mes o cada any. Les repeticions mensuals mantenen el dia original quan existeix i fan servir l’últim dia vàlid als mesos més curts.
+Crea diversos esdeveniments locals i tria si cadascun compta fins a una data futura o des d’una data d’inici. Tria un tipus d’esdeveniment o una icona personalitzada i afegeix ginys compactes o redimensionables. Els ginys fixos funcionen en tots dos sentits, mentre que Proper compte enrere segueix automàticament l’esdeveniment futur més proper que estigui en mode compte enrere.
 
-Els recordatoris locals opcionals poden avisar-te el mateix dia o 1, 3 o 7 dies abans. També pots exportar i restaurar els comptes enrere mitjançant una còpia local en format JSON.
+Els esdeveniments de compte enrere es poden repetir cada setmana, cada mes o cada any. Les repeticions mensuals mantenen el dia original quan existeix i fan servir l’últim dia vàlid als mesos més curts. Els recordatoris locals opcionals poden avisar-te el mateix dia o 1, 3 o 7 dies abans.
+
+Comparteix un esdeveniment com a imatge local, exporta o restaura els esdeveniments amb una còpia JSON i canvia explícitament entre English, Español i Català, o segueix l’idioma del sistema.
 
 Tot queda al dispositiu. Sense comptes, publicitat, analítica, sincronització al núvol ni permís d’Internet.

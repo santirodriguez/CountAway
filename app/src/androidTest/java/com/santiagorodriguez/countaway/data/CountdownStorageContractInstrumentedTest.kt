@@ -3,6 +3,7 @@ package com.santiagorodriguez.countaway.data
 import android.content.ContextWrapper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.ReminderOption
@@ -28,10 +29,13 @@ class CountdownStorageContractInstrumentedTest {
             SCHEMA_3_FIXTURE,
             SCHEMA_4_FIXTURE,
             SCHEMA_5_FIXTURE,
+            SCHEMA_6_FIXTURE,
         )
 
         fixtures.forEach { payload ->
-            assertEquals(1, CountdownStorageCodec.decode(payload).size)
+            val decoded = CountdownStorageCodec.decode(payload)
+            assertEquals(1, decoded.size)
+            assertEquals(CountMode.COUNT_DOWN, decoded.single().countMode)
         }
     }
 
@@ -48,13 +52,55 @@ class CountdownStorageContractInstrumentedTest {
     }
 
     @Test
-    fun currentSchemaKeepsYearlyLeapDayAndRoundTripsSemantically() {
+    fun schema5KeepsYearlyLeapDayAndRoundTripsSemantically() {
         val decoded = CountdownStorageCodec.decode(SCHEMA_5_FIXTURE)
         val event = decoded.single()
 
         assertEquals(RepeatRule.YEARLY, event.repeatRule)
         assertEquals("2024-02-29", event.date.toString())
         assertEquals(decoded, CountdownStorageCodec.decode(CountdownStorageCodec.encode(decoded)))
+    }
+
+    @Test
+    fun schema6RemainsReadableAsCountdownWithExpandedRecurrence() {
+        listOf(
+            SCHEMA_6_WEEKLY_FIXTURE to RepeatRule.WEEKLY,
+            SCHEMA_6_FIXTURE to RepeatRule.MONTHLY,
+        ).forEach { (payload, expectedRule) ->
+            val decoded = CountdownStorageCodec.decode(payload).single()
+            assertEquals(expectedRule, decoded.repeatRule)
+            assertEquals(CountMode.COUNT_DOWN, decoded.countMode)
+        }
+    }
+
+    @Test
+    fun schema7MixedModesRoundTripLosslesslyOnAndroidRuntime() {
+        val events = listOf(
+            event("schema-7-down", "Countdown").copy(
+                reminder = ReminderOption.ONE_DAY,
+                repeatRule = RepeatRule.WEEKLY,
+            ),
+            event("schema-7-up", "Since launch 🚀").copy(countMode = CountMode.COUNT_UP),
+        )
+
+        val payload = CountdownStorageCodec.encode(events)
+        val restored = CountdownStorageCodec.decodeForImport(payload)
+
+        assertEquals(events, restored)
+        assertTrue(payload.contains("\"schemaVersion\":7"))
+        assertTrue(payload.contains("\"countMode\":\"count_down\""))
+        assertTrue(payload.contains("\"countMode\":\"count_up\""))
+    }
+
+    @Test
+    fun schema7RequiresKnownStringCountModeOnAndroidRuntime() {
+        listOf(
+            SCHEMA_7_MISSING_MODE_FIXTURE,
+            SCHEMA_7_UNKNOWN_MODE_FIXTURE,
+            SCHEMA_7_NON_STRING_MODE_FIXTURE,
+        ).forEach { payload ->
+            assertDataProblem(CountdownDataProblem.CORRUPT, payload)
+        }
     }
 
     @Test
@@ -183,6 +229,30 @@ class CountdownStorageContractInstrumentedTest {
     }
 
     @Test
+    fun invalidOrFutureImportLeavesExistingFileBytesUntouched() {
+        withIsolatedRepository { filesDir, repository ->
+            val original = listOf(event("preserved", "Preserved"))
+            repository.save(original)
+            val storageFile = File(filesDir, "countaways.json")
+            val originalBytes = storageFile.readBytes()
+
+            listOf(
+                CountdownDataProblem.CORRUPT to SCHEMA_7_INVALID_COUNT_UP_FIXTURE,
+                CountdownDataProblem.UNSUPPORTED_SCHEMA to FUTURE_SCHEMA_FIXTURE,
+            ).forEach { (expectedProblem, payload) ->
+                try {
+                    repository.importPayload(payload)
+                    throw AssertionError("Expected CountdownDataException")
+                } catch (error: CountdownDataException) {
+                    assertEquals(expectedProblem, error.problem)
+                }
+                assertTrue(originalBytes.contentEquals(storageFile.readBytes()))
+                assertEquals(original, successfulEvents(repository.loadResult()))
+            }
+        }
+    }
+
+    @Test
     fun staleEditorSaveCannotOverwriteNewerEventState() {
         withIsolatedRepository { _, repository ->
             val original = event("shared", "Original")
@@ -190,6 +260,23 @@ class CountdownStorageContractInstrumentedTest {
             val stale = original.copy(title = "Stale")
             repository.save(listOf(original))
             repository.save(listOf(newer))
+
+            assertEquals(
+                CountdownMutationResult.CONFLICT,
+                repository.saveEvent(original, stale),
+            )
+            assertEquals(listOf(newer), successfulEvents(repository.loadResult()))
+        }
+    }
+
+    @Test
+    fun staleEditorSaveCannotOverwriteConcurrentModeChange() {
+        withIsolatedRepository { _, repository ->
+            val original = event("mode-shared", "Original")
+            val newer = original.copy(countMode = CountMode.COUNT_UP)
+            val stale = original.copy(title = "Stale")
+            repository.save(listOf(original))
+            assertEquals(CountdownMutationResult.APPLIED, repository.saveEvent(original, newer))
 
             assertEquals(
                 CountdownMutationResult.CONFLICT,
@@ -424,6 +511,85 @@ class CountdownStorageContractInstrumentedTest {
               ]
             }
         """.trimIndent()
+
+        val SCHEMA_6_WEEKLY_FIXTURE = """
+            {
+              "schemaVersion": 6,
+              "events": [
+                {
+                  "id": "schema-6-weekly",
+                  "title": "Weekly recurrence",
+                  "date": "2026-10-31",
+                  "type": "event",
+                  "iconKey": "calendar",
+                  "reminderKey": "one_day",
+                  "repeatRule": "weekly",
+                  "createdAt": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val SCHEMA_6_FIXTURE = """
+            {
+              "schemaVersion": 6,
+              "events": [
+                {
+                  "id": "schema-6",
+                  "title": "Monthly recurrence",
+                  "date": "2026-10-31",
+                  "type": "event",
+                  "iconKey": "calendar",
+                  "reminderKey": "three_days",
+                  "repeatRule": "monthly",
+                  "createdAt": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val SCHEMA_7_INVALID_COUNT_UP_FIXTURE = """
+            {
+              "schemaVersion": 7,
+              "events": [
+                {
+                  "id": "invalid-count-up",
+                  "title": "Invalid",
+                  "date": "2026-10-31",
+                  "type": "event",
+                  "iconKey": "calendar",
+                  "reminderKey": "one_day",
+                  "repeatRule": "none",
+                  "countMode": "count_up",
+                  "createdAt": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val SCHEMA_7_MISSING_MODE_FIXTURE = """
+            {
+              "schemaVersion": 7,
+              "events": [
+                {
+                  "id": "missing-mode",
+                  "title": "Missing mode",
+                  "date": "2026-10-31",
+                  "type": "event",
+                  "iconKey": "calendar",
+                  "reminderKey": "off",
+                  "repeatRule": "none",
+                  "createdAt": "2020-01-01T00:00:00Z"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val SCHEMA_7_UNKNOWN_MODE_FIXTURE = SCHEMA_7_MISSING_MODE_FIXTURE
+            .replace("\"createdAt\"", "\"countMode\": \"sideways\",\n                  \"createdAt\"")
+
+        val SCHEMA_7_NON_STRING_MODE_FIXTURE = SCHEMA_7_MISSING_MODE_FIXTURE
+            .replace("\"createdAt\"", "\"countMode\": 7,\n                  \"createdAt\"")
 
         val FUTURE_SCHEMA_FIXTURE = """
             {

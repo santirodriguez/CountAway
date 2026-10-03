@@ -1,5 +1,6 @@
 package com.santiagorodriguez.countaway.countdown
 
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.RepeatRule
@@ -46,6 +47,21 @@ class CountdownEventOrderTest {
     }
 
     @Test
+    fun countUpsSitBetweenActiveAndPastCountdownsNewestStartFirst() {
+        val events = listOf(
+            event("past", today.minusDays(1)),
+            event("up-old", today.minusDays(30), countMode = CountMode.COUNT_UP),
+            event("future", today.plusDays(2)),
+            event("up-new", today.minusDays(2), countMode = CountMode.COUNT_UP),
+        )
+
+        assertEquals(
+            listOf("future", "up-new", "up-old", "past"),
+            CountdownEventOrder.sortedForDisplay(events, today).map { it.id },
+        )
+    }
+
+    @Test
     fun equalDatesUseCreationTimeForStableOrdering() {
         val date = today.plusDays(5)
         val older = event("older", date, Instant.parse("2026-01-01T00:00:00Z"))
@@ -62,6 +78,7 @@ class CountdownEventOrderTest {
         date: LocalDate,
         createdAt: Instant = Instant.parse("2026-01-01T00:00:00Z"),
         repeatRule: RepeatRule = RepeatRule.NONE,
+        countMode: CountMode = CountMode.COUNT_DOWN,
     ) = CountdownEvent(
         id = id,
         title = id,
@@ -69,5 +86,6 @@ class CountdownEventOrderTest {
         type = EventType.CUSTOM,
         createdAt = createdAt,
         repeatRule = repeatRule,
+        countMode = countMode,
     )
 }

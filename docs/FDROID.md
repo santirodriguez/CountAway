@@ -111,7 +111,7 @@ Gate B happens after the upstream version under review is public. It must not be
 
 Gate B is complete when F-Droid:
 
-- detects the released versionName/versionCode from its stable tag (1.2.1 / 10 for this candidate; historical 1.1.8 / 8 evidence remains separate);
+- detects the released versionName/versionCode from its stable tag (1.2.2 / 11 for this candidate; historical publication evidence remains separate);
 - builds/reproduces it successfully;
 - indexes it;
 - exposes its official APK publicly.

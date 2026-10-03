@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.2
+
+- Add count-up events for tracking days since a start date across the app, fixed widgets, sharing, and local backups.
+- Keep **Next countdown** focused on upcoming count-down events while fixed widgets support both count directions.
+- Add an explicit, accessible language chooser for English, Español, and Català, including a return-to-System option.
+- Make widget pin callbacks more reliable across supported Android versions and preserve widget configuration identity safely.
+- Improve large-text widget layouts and use neutral event wording where count-up and count-down modes share the same surface.
+- Migrate existing local data automatically to storage schema 7; count-up events intentionally do not use recurrence or reminders.
+- No new permissions, Internet access, accounts, analytics, cloud sync, or runtime dependencies.
+
 ## 1.2.1
 
 - Restore wrapped titles and event icons in narrow, tall widgets when space permits.

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/eventActionsPopup" android:layout_width="236dp" android:layout_height="wrap_content"
+    android:background="@drawable/event_actions_popup_background" android:orientation="vertical" android:padding="10dp">
+    <LinearLayout android:id="@+id/eventActionsPopupHeader" android:layout_width="match_parent" android:layout_height="54dp"
+        android:gravity="center_vertical" android:importantForAccessibility="no" android:orientation="horizontal"
+        android:paddingStart="6dp" android:paddingEnd="6dp">
+        <ImageView android:id="@+id/eventActionsPopupIcon" android:layout_width="36dp" android:layout_height="36dp"
+            android:background="@drawable/icon_container" android:contentDescription="@null" android:padding="8dp"
+            android:scaleType="centerInside" android:tint="@color/accent" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="10dp"
+            android:layout_weight="1" android:orientation="vertical">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/event_actions_label" android:textColor="@color/secondary_text" android:textSize="11sp" />
+            <TextView android:id="@+id/eventActionsPopupTitle" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:ellipsize="end" android:maxLines="1" android:textColor="@color/foreground" android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="6dp"
+        android:layout_marginEnd="6dp" android:layout_marginBottom="4dp" android:background="@color/outline" />
+    <LinearLayout android:id="@+id/home_event_widget" android:layout_width="match_parent" android:layout_height="50dp"
+        android:background="@drawable/event_action_row" android:clickable="true" android:contentDescription="@string/event_action_widget"
+        android:focusable="true" android:gravity="center_vertical" android:orientation="horizontal"
+        android:paddingStart="8dp" android:paddingEnd="10dp">
+        <ImageView android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/icon_container"
+            android:contentDescription="@null" android:padding="7dp" android:src="@drawable/ic_action_widget" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp"
+            android:text="@string/event_action_widget" android:textColor="@color/foreground" android:textSize="15sp" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/home_event_edit" android:layout_width="match_parent" android:layout_height="50dp"
+        android:background="@drawable/event_action_row" android:clickable="true" android:contentDescription="@string/event_action_edit"
+        android:focusable="true" android:gravity="center_vertical" android:orientation="horizontal"
+        android:paddingStart="8dp" android:paddingEnd="10dp">
+        <ImageView android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/icon_container"
+            android:contentDescription="@null" android:padding="7dp" android:src="@drawable/ic_action_edit" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp"
+            android:text="@string/event_action_edit" android:textColor="@color/foreground" android:textSize="15sp" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/home_event_duplicate" android:layout_width="match_parent" android:layout_height="50dp"
+        android:background="@drawable/event_action_row" android:clickable="true" android:contentDescription="@string/event_action_duplicate"
+        android:focusable="true" android:gravity="center_vertical" android:orientation="horizontal"
+        android:paddingStart="8dp" android:paddingEnd="10dp">
+        <ImageView android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/icon_container"
+            android:contentDescription="@null" android:padding="7dp" android:src="@drawable/ic_action_duplicate" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp"
+            android:text="@string/event_action_duplicate" android:textColor="@color/foreground" android:textSize="15sp" />
+    </LinearLayout>
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="6dp"
+        android:layout_marginTop="4dp" android:layout_marginEnd="6dp" android:layout_marginBottom="4dp"
+        android:background="@color/outline" />
+    <LinearLayout android:id="@+id/home_event_delete" android:layout_width="match_parent" android:layout_height="50dp"
+        android:background="@drawable/event_action_row_danger" android:clickable="true" android:contentDescription="@string/action_delete"
+        android:focusable="true" android:gravity="center_vertical" android:orientation="horizontal"
+        android:paddingStart="8dp" android:paddingEnd="10dp">
+        <ImageView android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/event_action_icon_danger"
+            android:contentDescription="@null" android:padding="7dp" android:src="@drawable/ic_action_delete" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp"
+            android:text="@string/action_delete" android:textColor="@color/danger" android:textSize="15sp" />
+    </LinearLayout>
+</LinearLayout>

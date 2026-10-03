@@ -5,7 +5,7 @@ CountAway is **not currently published or configured for Google Play**. This doc
 ## Current readiness baseline
 
 - applicationId: `com.santiagorodriguez.countaway`
-- target release: 1.2.1 / versionCode 10 (from `app/build.gradle.kts`)
+- target release: 1.2.2 / versionCode 11 (from `app/build.gradle.kts`)
 - minSdk: 26
 - targetSdk / compileSdk: 36
 - no Internet permission

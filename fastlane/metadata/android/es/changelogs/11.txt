@@ -1,0 +1,1 @@
+Ahora podés contar en ambos sentidos: hacia una fecha futura o desde una fecha de inicio. Los eventos de cuenta ascendente funcionan en la app, widgets fijos, al compartir y en las copias. El selector de idioma ahora es explícito y accesible, y fijar widgets es más confiable. Tus datos se migran automáticamente; sin permisos nuevos ni Internet.
