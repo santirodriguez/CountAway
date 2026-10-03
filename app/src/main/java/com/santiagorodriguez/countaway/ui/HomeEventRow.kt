@@ -43,7 +43,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
 
     fun bindSectionHeader(label: CharSequence?, accessibilityLabel: CharSequence?) {
         val visible = label != null
-        sectionLabel.text = label.orEmpty()
+        sectionLabel.text = label ?: ""
         sectionLabel.contentDescription = accessibilityLabel
         sectionLabel.visibility = if (visible) View.VISIBLE else View.GONE
         sectionLine.visibility = if (visible) View.VISIBLE else View.GONE
