@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <plurals name="home_days"><item quantity="one">Falta %1$s día</item><item quantity="many">Faltan %1$s días</item><item quantity="other">Faltan %1$s días</item></plurals>
+    <plurals name="home_days_arrival"><item quantity="one">%1$s día</item><item quantity="many">%1$s días</item><item quantity="other">%1$s días</item></plurals>
     <plurals name="home_days_ago"><item quantity="one">Hace %1$s día</item><item quantity="many">Hace %1$s días</item><item quantity="other">Hace %1$s días</item></plurals>
     <plurals name="home_days_since"><item quantity="one">+%1$s día</item><item quantity="many">+%1$s días</item><item quantity="other">+%1$s días</item></plurals>
     <plurals name="home_days_until_start"><item quantity="one">En %1$s día</item><item quantity="many">En %1$s días</item><item quantity="other">En %1$s días</item></plurals>

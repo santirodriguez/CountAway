@@ -35,9 +35,9 @@ class HomePresentationInstrumentedTest {
 
     @Test fun visibleStatusesHaveShortIndependentLocalizedExpectations() = instrumentation.runOnMainSync {
         val expected = mapOf(
-            "en" to listOf("In 84 days", "In 3 days", "In 2 days", "In 1 day", "Today", "20 days ago", "In 24 days", "+0 days", "+15 days"),
-            "es" to listOf("Faltan 84 días", "Faltan 3 días", "Faltan 2 días", "Falta 1 día", "Hoy", "Hace 20 días", "En 24 días", "+0 días", "+15 días"),
-            "ca" to listOf("Falten 84 dies", "Falten 3 dies", "Falten 2 dies", "Falta 1 dia", "Avui", "Fa 20 dies", "D’aquí a 24 dies", "+0 dies", "+15 dies"),
+            "en" to listOf("In 84 days", "3 days", "2 days", "1 day", "Today", "20 days ago", "In 24 days", "+0 days", "+15 days"),
+            "es" to listOf("Faltan 84 días", "3 días", "2 días", "1 día", "Hoy", "Hace 20 días", "En 24 días", "+0 días", "+15 días"),
+            "ca" to listOf("Falten 84 dies", "3 dies", "2 dies", "1 dia", "Avui", "Fa 20 dies", "D’aquí a 24 dies", "+0 dies", "+15 dies"),
         )
         for ((language, labels) in expected) {
             val context = localized(language, 1f, false)
