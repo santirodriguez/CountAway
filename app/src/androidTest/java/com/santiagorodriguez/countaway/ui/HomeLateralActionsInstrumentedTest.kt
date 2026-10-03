@@ -169,8 +169,10 @@ class HomeLateralActionsInstrumentedTest {
                         val center = (menu.top + menu.bottom) / 2
                         assertEquals("Notch must reach the edge", context.getColor(R.color.surface_secondary), pixels.getPixel(x(0), center))
                         assertEquals("Notch must stay shallow", context.getColor(R.color.surface), pixels.getPixel(x(18), center))
-                        assertNotEquals("Notch must stay short", context.getColor(R.color.surface_secondary), pixels.getPixel(x(0), center - dp(context, 18)))
-                        assertNotEquals("Notch must stay short", context.getColor(R.color.surface_secondary), pixels.getPixel(x(0), center + dp(context, 18)))
+                        assertEquals("Notch should leave air above the top dot", context.getColor(R.color.surface_secondary), pixels.getPixel(x(0), center - dp(context, 15)))
+                        assertEquals("Notch should leave air below the bottom dot", context.getColor(R.color.surface_secondary), pixels.getPixel(x(0), center + dp(context, 15)))
+                        assertNotEquals("Notch must remain compact", context.getColor(R.color.surface_secondary), pixels.getPixel(x(0), center - dp(context, 18)))
+                        assertNotEquals("Notch must remain compact", context.getColor(R.color.surface_secondary), pixels.getPixel(x(0), center + dp(context, 18)))
                         // This checks actual child drawing near the edge. Geometry
                         // alone would miss clipping by the row's old end padding.
                         assertEquals("Overflow dots must not be clipped", context.getColor(R.color.accent_text), pixels.getPixel(x(8), center))

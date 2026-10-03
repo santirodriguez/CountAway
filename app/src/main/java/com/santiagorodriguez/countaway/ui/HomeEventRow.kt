@@ -130,9 +130,9 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         val edge = width - notchOutline.strokeWidth / 2f
         val inset = width - dp(14).toFloat()
         val center = (actions.top + actions.bottom) / 2f
-        val top = center - dp(14)
-        val bottom = center + dp(14)
-        val bend = dp(6).toFloat()
+        val top = center - dp(16)
+        val bottom = center + dp(16)
+        val bend = dp(7).toFloat()
         notchCurve.moveTo(edge, top)
         notchCurve.cubicTo(edge, top + bend, inset, top + bend, inset, center)
         notchCurve.cubicTo(inset, bottom - bend, edge, bottom - bend, edge, bottom)
