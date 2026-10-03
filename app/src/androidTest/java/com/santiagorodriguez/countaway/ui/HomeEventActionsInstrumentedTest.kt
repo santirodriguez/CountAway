@@ -158,6 +158,10 @@ class HomeEventActionsInstrumentedTest {
             drain()
             var deleteLabel = ""
             var labels = emptyList<String>()
+            // This assertion validates keyboard/non-touch initial focus. Release acceptance
+            // performs real upgrade taps before instrumentation on API 33, which intentionally
+            // leaves Android in touch mode; touch-opened menus must not be forced to show focus.
+            instrumentation.setInTouchMode(false)
             scenario.onActivity {
                 deleteLabel = it.getString(R.string.action_delete)
                 labels = listOf(R.string.event_action_widget, R.string.event_action_edit,
@@ -172,7 +176,8 @@ class HomeEventActionsInstrumentedTest {
                 val duplicate = widget.rootView.findViewById<View>(R.id.home_event_duplicate)
                 assertTrue("Add widget must appear above Edit", widget.top < edit.top)
                 assertTrue("Edit must appear above Duplicate", edit.top < duplicate.top)
-                assertTrue("Add widget must receive initial popup focus", widget.hasFocus())
+                assertFalse("Keyboard-focus assertion unexpectedly ran in touch mode", widget.isInTouchMode)
+                assertTrue("Add widget must receive initial popup focus in keyboard mode", widget.hasFocus())
             }
             for (id in listOf(R.id.home_event_edit, R.id.home_event_duplicate,
                 R.id.home_event_widget, R.id.home_event_delete)) {
