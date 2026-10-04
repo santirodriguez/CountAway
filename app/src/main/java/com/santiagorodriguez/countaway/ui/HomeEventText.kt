@@ -17,6 +17,9 @@ internal object HomeEventText {
             value.countUpState == CountUpState.STARTS_IN -> R.plurals.home_days_until_start
             value.countUpState == CountUpState.ELAPSED -> R.plurals.home_days_since
             value.countdownStatus == CountdownStatus.DONE -> R.plurals.home_days_ago
+            value.countdownStatus == CountdownStatus.THREE_DAYS ||
+                value.countdownStatus == CountdownStatus.TWO_DAYS ||
+                value.countdownStatus == CountdownStatus.TOMORROW -> R.plurals.home_days_arrival
             else -> R.plurals.home_days
         }
         val number = NumberFormat.getIntegerInstance(context.resources.configuration.locales[0]).format(value.magnitude)

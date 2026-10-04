@@ -29,10 +29,16 @@ class CountdownEventAdapter(
     private val inflater = LayoutInflater.from(context)
     private var items: List<CountdownEvent> = emptyList()
     private var today: LocalDate = CountdownTime.snapshot().today
+    private var showSectionHeaders = false
 
     fun submit(events: List<CountdownEvent>, today: LocalDate) {
         this.items = events
         this.today = today
+        showSectionHeaders = events.asSequence()
+            .map { sectionFor(EventCountResolver.resolve(it, today)) }
+            .distinct()
+            .take(2)
+            .count() > 1
         notifyDataSetChanged()
     }
 
@@ -41,7 +47,8 @@ class CountdownEventAdapter(
     override fun getItemId(position: Int): Long = getItem(position).id.hashCode().toLong()
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        val view = convertView ?: inflater.inflate(R.layout.item_countdown, parent, false)
+        val view = (convertView as? HomeEventRow)
+            ?: inflater.inflate(R.layout.item_countdown, parent, false) as HomeEventRow
         val event = getItem(position)
         val value = EventCountResolver.resolve(event, today)
         view.foreground = null
@@ -73,11 +80,39 @@ class CountdownEventAdapter(
         }
         ArrivalIllustration.bindHome(context, view.findViewById(R.id.eventArrival),
             ArrivalStage.from(value.countdownStatus))
-        view.contentDescription = listOf(event.title, meta, statusView.contentDescription).joinToString(", ")
+        val sectionDescription = bindSectionHeader(view, position, value)
+        view.contentDescription = listOfNotNull(sectionDescription, event.title, meta, statusView.contentDescription)
+            .joinToString(", ")
         bindAddWidgetAction(view, event)
         bindRowActions(view, event)
         return view
     }
+
+    private fun bindSectionHeader(view: HomeEventRow, position: Int, value: com.santiagorodriguez.countaway.countdown.EventCountValue): String? {
+        val section = sectionFor(value)
+        val previous = if (position > 0) sectionFor(EventCountResolver.resolve(items[position - 1], today)) else null
+        if (!showSectionHeaders || previous == section) {
+            view.bindSectionHeader(null, null)
+            return null
+        }
+        val (labelRes, accessibilityRes) = when (section) {
+            HomeSection.UPCOMING -> R.string.home_section_upcoming to R.string.home_section_upcoming_accessibility
+            HomeSection.COUNT_UP -> R.string.home_section_count_up to R.string.home_section_count_up_accessibility
+            HomeSection.PAST -> R.string.home_section_past to R.string.home_section_past_accessibility
+        }
+        val label = context.getString(labelRes)
+        val accessibility = context.getString(accessibilityRes)
+        view.bindSectionHeader(label, accessibility)
+        return accessibility
+    }
+
+    private fun sectionFor(value: com.santiagorodriguez.countaway.countdown.EventCountValue): HomeSection = when {
+        value.countUpState != null -> HomeSection.COUNT_UP
+        value.countdownStatus == com.santiagorodriguez.countaway.countdown.CountdownStatus.DONE -> HomeSection.PAST
+        else -> HomeSection.UPCOMING
+    }
+
+    private enum class HomeSection { UPCOMING, COUNT_UP, PAST }
 
     private fun bindRowActions(view: View, event: CountdownEvent) {
         view.setOnClickListener(onOpenEvent?.let { open ->
