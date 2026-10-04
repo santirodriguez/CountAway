@@ -5,6 +5,7 @@
     <string name="language_english">Anglès</string>
     <string name="language_spanish">Espanyol</string>
     <string name="language_catalan">Català</string>
+    <string name="language_chinese">Xinès</string>
 
     <string name="action_add_countdown">Afegeix compte enrere</string>
     <string name="action_about">Sobre l’app</string>

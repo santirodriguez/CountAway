@@ -12,6 +12,7 @@ object LanguageManager {
     const val ENGLISH = "en"
     const val SPANISH = "es"
     const val CATALAN = "ca"
+    const val CHINESE = "zh-CN"
 
     private const val PREFS_NAME = "countaway_ui"
     private const val KEY_LANGUAGE = "language"

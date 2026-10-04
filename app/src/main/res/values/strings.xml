@@ -5,6 +5,8 @@
     <string name="language_english">English</string>
     <string name="language_spanish">Spanish</string>
     <string name="language_catalan">Catalan</string>
+    <string name="language_chinese">Chinese</string>
+    <string name="language_chinese_short" translatable="false">中</string>
 
     <string name="action_add_countdown">Add countdown</string>
     <string name="action_about">About</string>

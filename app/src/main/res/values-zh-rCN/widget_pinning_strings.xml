@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_add_accessibility_action">添加小组件</string>
+    <string name="widget_pin_setup_title">添加到主屏幕</string>
+    <string name="widget_pin_setup_description">为此倒计时选择一种样式。上次成功添加的样式将作为下次的起点。</string>
+    <string name="widget_pin_setup_add">添加到主屏幕</string>
+    <string name="widget_pin_setup_system_hint">“跟随系统”会使用设备的浅色或深色外观。</string>
+
+    <string name="widget_pin_event_unavailable">此倒计时已不可用。</string>
+    <string name="widget_pin_unavailable_guidance">启动器无法开始添加小组件。请从主屏幕的小组件选择器中添加 CountAway，并检查主屏幕布局是否被锁定。</string>
+    <string name="widget_pin_not_added">未添加小组件。你的选择仍保留在这里。</string>
+    <string name="widget_pin_multiple_detected">CountAway 无法安全识别新添加的小组件。请从主屏幕打开它以进行配置。</string>
+    <string name="widget_pin_conflict">该小组件已经配置过，因此 CountAway 未作更改。</string>
+    <string name="widget_instance_unavailable">该小组件已不可用。</string>
+    <string name="widget_style_summary">样式：%1$s · 外观：%2$s</string>
+</resources>

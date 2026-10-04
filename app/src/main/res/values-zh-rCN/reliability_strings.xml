@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="data_save_failed">无法保存此倒计时。你的更改仍保留在这里。</string>
+    <string name="data_delete_failed">无法删除此倒计时。</string>
+    <string name="data_newer_version_title">较新版本的 CountAway 数据</string>
+    <string name="data_newer_version_description">这些数据由较新版本的 CountAway 创建。请先更新 CountAway，再进行编辑。</string>
+    <string name="data_newer_version_edit_blocked">这些数据由较新版本的 CountAway 创建。请先更新 CountAway，再进行编辑。</string>
+    <string name="widget_data_error">已保存的数据需要处理</string>
+    <string name="widget_data_newer_version">请更新 CountAway 以使用这些数据</string>
+    <string name="widget_open_app">打开 CountAway</string>
+    <string name="backup_import_newer_version">此备份由较新版本的 CountAway 创建。</string>
+    <string name="reminder_schedule_unavailable">此提醒本应在今天之前安排。请选择更晚的日期或更接近的提醒时间。</string>
+    <string name="notification_blocked_title">通知已关闭</string>
+    <string name="notification_blocked_message">提醒将继续保存，但在为 CountAway 开启通知前，Android 不会发送它。</string>
+    <string name="notification_open_settings">打开通知设置</string>
+    <string name="title_too_long">倒计时标题最多可包含 %1$d 个字符。</string>
+    <string name="data_conflict_title">倒计时已更改</string>
+    <string name="data_conflict_message">此倒计时已在其他位置被更改或删除。请重新加载最新保存状态，或继续编辑此草稿。</string>
+    <string name="data_conflict_reload">重新加载</string>
+    <string name="data_conflict_keep_editing">继续编辑</string>
+    <string name="language_follow_system_enabled">正在跟随系统语言。</string>
+    <string name="event_meta_repeating">%1$s · %2$s · %3$s</string>
+    <string name="schedule_next_occurrence">下次发生：%1$s · 每 %2$s 重复。</string>
+    <string name="schedule_next_reminder">下次提醒：%1$s · 大约 09:00。</string>
+    <string name="schedule_month_end_note">在较短的月份中，将在最后一天重复。</string>
+    <string name="schedule_leap_day_note">在非闰年，2 月 29 日会在 2 月 28 日重复。</string>
+    <string name="unsaved_changes_title">放弃未保存的更改？</string>
+    <string name="unsaved_changes_message">此草稿包含尚未保存的更改。</string>
+    <string name="unsaved_changes_discard">放弃</string>
+    <string name="external_action_unavailable">没有可用于执行此操作的应用。</string>
+    <string name="backup_provider_unavailable">没有可用的文档提供程序。</string>
+    <string name="share_unavailable">没有可用于分享此倒计时的应用。</string>
+    <string name="backup_import_confirm_details">导入的事件：%1$d\n当前已保存：%2$d\n\n只会替换倒计时事件，不会恢复小组件的位置。</string>
+    <string name="backup_import_confirm_details_unknown">导入的事件：%1$d\n无法读取当前已保存的数量。\n\n只会替换倒计时事件，不会恢复小组件的位置。</string>
+    <string name="backup_export_current_first">先导出当前数据</string>
+</resources>

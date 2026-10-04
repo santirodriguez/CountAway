@@ -54,6 +54,18 @@
                 android:padding="12dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/flag_catalonia" />
+
+            <TextView
+                android:id="@+id/languageChineseButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/language_chip_inactive"
+                android:contentDescription="@string/language_chinese"
+                android:gravity="center"
+                android:text="@string/language_chinese_short"
+                android:textColor="@color/foreground"
+                android:textSize="18sp" />
         </LinearLayout>
 
         <Space

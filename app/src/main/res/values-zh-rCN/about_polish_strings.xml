@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_version_compact">v%1$s</string>
+    <string name="about_create_countdown">创建倒计时</string>
+    <string name="about_create_countdown_note">选择重要的事，并设置日期。</string>
+    <string name="about_add_widget">长按倒计时</string>
+    <string name="about_add_widget_note">选择一种样式，然后添加到主屏幕。</string>
+    <string name="about_stop_checking">不用再看日历</string>
+    <string name="about_stop_checking_note">这正是它的目的。</string>
+    <string name="about_widget_pin_unavailable">请从主屏幕添加小组件。</string>
+    <string name="backup_description_compact">导出。恢复。未雨绸缪。</string>
+    <string name="backup_export_short">导出</string>
+    <string name="backup_import_short">导入</string>
+    <string name="about_support_project">支持项目</string>
+    <string name="about_author_name">由 Santiago Rodriguez 创建</string>
+    <string name="about_website">santiagorodriguez.com</string>
+    <string name="about_privacy_policy">隐私政策</string>
+    <string name="about_widget_long_press_hint">长按倒计时以选择它的小组件样式。</string>
+    <string name="about_calendar_reaction_1">好了，朋友。没别的事可做了。</string>
+    <string name="about_calendar_reaction_3">你还在这儿。不知道为什么，但你还在这儿。</string>
+    <string name="about_calendar_reaction_7">恭喜，你解锁了开发者选项，哦不对，我们这里没有这个。</string>
+    <string name="about_calendar_reaction_10">如果你把这份坚持用在记日期上，我们今天就能关掉这个应用了。</string>
+    <string name="about_calendar_reaction_20">20 次点击。赤经 6 小时 19 分，赤纬 14 度 22 分……没有发现任何东西。</string>
+    <string name="about_calendar_reaction_50">这已经不好笑了。再点一次就到此为止，好吗？</string>
+    <string name="about_calendar_reaction_100">100 次点击。到此为止。我们不会帮你因为点击一个早已说明没用的按钮而得腕管综合征。</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_preview_label">预览</string>
+    <string name="widget_background_pulse">脉冲</string>
+    <string name="widget_background_breeze">微风</string>
+    <string name="widget_background_ember">余烬</string>
+</resources>

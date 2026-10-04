@@ -81,6 +81,9 @@ class MainActivity : BaseActivity() {
         findViewById<View>(R.id.languageCatalanButton).setOnClickListener {
             selectLanguage(LanguageManager.CATALAN)
         }
+        findViewById<View>(R.id.languageChineseButton).setOnClickListener {
+            selectLanguage(LanguageManager.CHINESE)
+        }
     }
 
     override fun onResume() {
@@ -182,6 +185,7 @@ class MainActivity : BaseActivity() {
         setLanguageButtonState(R.id.languageEnglishButton, explicit && current == LanguageManager.ENGLISH)
         setLanguageButtonState(R.id.languageSpanishButton, explicit && current == LanguageManager.SPANISH)
         setLanguageButtonState(R.id.languageCatalanButton, explicit && current == LanguageManager.CATALAN)
+        setLanguageButtonState(R.id.languageChineseButton, explicit && current == LanguageManager.CHINESE)
     }
 
     private fun showThemePicker() {

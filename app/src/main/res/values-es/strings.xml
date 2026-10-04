@@ -5,6 +5,7 @@
     <string name="language_english">Inglés</string>
     <string name="language_spanish">Español</string>
     <string name="language_catalan">Catalán</string>
+    <string name="language_chinese">Chino</string>
 
     <string name="action_add_countdown">Agregar cuenta regresiva</string>
     <string name="action_about">Acerca de</string>

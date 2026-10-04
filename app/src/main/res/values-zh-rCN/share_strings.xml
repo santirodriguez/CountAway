@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_share">分享</string>
+    <string name="theme_follow_system">跟随系统主题</string>
+    <string name="share_countdown_format">%1$s — %2$s · %3$s</string>
+    <plurals name="share_days_left">
+        <item quantity="other">还剩 %1$d 天</item>
+    </plurals>
+    <string name="share_tomorrow">明天</string>
+    <string name="share_today">今天</string>
+</resources>
