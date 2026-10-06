@@ -1,15 +1,14 @@
 package com.santiagorodriguez.countaway.ui
 
 import android.content.Intent
+import android.os.Build
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Spinner
 import androidx.test.core.app.ActivityScenario
-import androidx.test.espresso.Espresso.closeSoftKeyboard
 import androidx.test.espresso.Espresso.onData
 import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.Espresso.pressBack
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.RootMatchers.isDialog
@@ -135,8 +134,7 @@ class EditorCountModeInstrumentedTest {
             ActivityScenario.launch<EditorActivity>(intent(event)).use { scenario ->
                 drain()
                 chooseMode(scenario, 1)
-                closeSoftKeyboard()
-                pressBack()
+                requestBack(scenario)
                 onView(withText(R.string.unsaved_changes_title)).inRoot(isDialog()).check(matches(isDisplayed()))
                 dialogButton(android.R.id.button2)
                 val newer = event.copy(title = "Concurrent change")
@@ -156,6 +154,22 @@ class EditorCountModeInstrumentedTest {
                 assertEquals(event.date, delivery.deliveredDate(event.id))
             }
         } finally { delivery.remove(event.id) }
+    }
+
+    private fun requestBack(scenario: ActivityScenario<EditorActivity>) {
+        scenario.onActivity { activity ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // API 33+ routes Back through OnBackInvokedCallback. Calling the app handler directly
+                // avoids flaky legacy KEYCODE_BACK injection while exercising the same dirty-draft path.
+                EditorActivity::class.java.getDeclaredMethod("handleBackRequest").apply {
+                    isAccessible = true
+                }.invoke(activity)
+            } else {
+                @Suppress("DEPRECATION")
+                activity.onBackPressed()
+            }
+        }
+        instrumentation.waitForIdleSync()
     }
 
     private fun chooseMode(scenario: ActivityScenario<EditorActivity>, position: Int) {
