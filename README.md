@@ -41,7 +41,7 @@ CountAway skips all that. It counts the days and leaves you alone.
   <tr>
     <td width="33%" valign="top">
       <strong>Count what matters</strong><br /><br />
-      Count down to future dates or count up from a starting date, with custom icons and flexible event tracking.
+      Count down to future dates or count up from a starting date, with custom icons.
     </td>
     <td width="33%" valign="top">
       <strong>Keep it on Home</strong><br /><br />
@@ -57,15 +57,15 @@ CountAway skips all that. It counts the days and leaves you alone.
 ## Highlights
 
 - **Count both ways:** count down to future dates or count up from a start date.
-- **Widget-first:** long-press an event, choose a style, preview it, and add it directly on supported launchers.
-- **Flexible recurrence:** weekly, monthly, or yearly count-down events with sensible short-month handling.
+- **Widget-first:** long-press an event, choose a style, preview it, and add it to Home.
+- **Flexible recurrence:** weekly, monthly, or yearly count-down events.
 - **Nine widget backgrounds:** from clean Classic to Mist, Horizon, Sunset, Ember, Ridge, and more.
 - **Three appearance modes:** System, Light, and Dark for both the app and widgets.
-- **Useful reminders:** optional local notifications before or on the event day for count-down events.
-- **Smart widget behavior:** fixed-event widgets support both count directions; **Next countdown** follows the nearest upcoming count-down event automatically.
-- **Share without the screenshot ritual:** Share turns an event into a Ridge-style PNG card with the same count direction shown in the app.
+- **Useful reminders:** optional local notifications for count-down events.
+- **Smart widgets:** fixed widgets support both directions; **Next countdown** follows the nearest upcoming count-down event.
+- **Share without the screenshot ritual:** Share turns an event into a Ridge-style PNG card.
 - **Local portability:** JSON export/import stays entirely under your control.
-- **Multilingual:** switch explicitly between English, Español, and Català, or follow the system language.
+- **Multilingual:** English, Español, and Català.
 
 ## Screenshots
 

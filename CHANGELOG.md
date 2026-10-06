@@ -3,15 +3,14 @@
 ## 1.2.2
 
 - Add count-up events for tracking days since a start date across the app, fixed widgets, sharing, and local backups.
-- Keep **Next countdown** focused on upcoming count-down events while fixed widgets support both count directions.
-- Add an explicit, accessible language chooser for English, Español, and Català, including a return-to-System option.
-- Make widget pin callbacks more reliable across supported Android versions and preserve widget configuration identity safely.
-- Refine Home cards with a more compact day-count tile, more room for event titles, clearer count-down/count-up grouping, a subtle edge action notch, and polished contextual event actions.
-- Give confirmations and pickers a consistent CountAway dialog treatment, including clearer destructive Delete/Discard actions in light and dark themes.
-- Harden contextual-menu focus and touch behavior across supported Android versions without shrinking the real 48dp action target.
-- Improve large-text widget layouts and use neutral event wording where count-up and count-down modes share the same surface.
-- Migrate existing local data automatically to storage schema 7; count-up events intentionally do not use recurrence or reminders.
-- No new permissions, Internet access, accounts, analytics, cloud sync, or runtime dependencies.
+- Keep **Next countdown** focused on upcoming count-down events while fixed widgets support both directions.
+- Add an accessible language chooser for English, Español, and Català, with a return-to-System option.
+- Make widget pinning more reliable across supported Android versions.
+- Refine Home cards with more compact count tiles, more room for titles, clearer count-down/count-up grouping, and polished event actions.
+- Give confirmations and pickers a consistent CountAway look, with clearer destructive actions in light and dark themes.
+- Improve contextual-menu reliability and accessibility across supported Android versions.
+- Improve large-text widget layouts and shared wording between count-up and count-down surfaces.
+- Migrate existing local data automatically to storage schema 7; count-up events do not repeat or use reminders.
 
 ## 1.2.1
 
