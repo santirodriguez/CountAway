@@ -98,21 +98,25 @@ Canonical repository policy:
 PRIVACY.md
 ```
 
-Current in-app policy URL:
+Current in-app and Play privacy-policy URL:
 
 ```text
-https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md
+https://countaway.cajapersonal.org/privacy/
 ```
 
-The policy is store-neutral and covers CountAway / Ya Estamos / Ja Queda Poc.
+CountAway project site:
 
-Google Play requires the submitted privacy-policy URL to be active, publicly accessible, non-geofenced, non-PDF, and non-editable. Treat the current GitHub-hosted URL as a **pre-submission verification gate**, not as automatically Play-approved. Before the exact release candidate is frozen, either confirm that the current URL satisfies the Play Console review requirement or replace it atomically with a compliant static public policy URL, updating the in-app resource, contract tests, release workflow, and this document together.
+```text
+https://countaway.cajapersonal.org/
+```
 
-CountAway itself has no Internet permission. The About/Help link delegates the URL to an external browser through Android.
+The hosted policy is static, public HTML and is store-neutral across CountAway / Ya Estamos / Ja Queda Poc. It was deployed and manually accepted on 2026-10-06 on the CountAway Hostinger project surface. The canonical policy source text remains `PRIVACY.md` in this repository.
 
-Every actual release-preparation path verifies that the public main-branch policy URL resolves and that the raw main-branch policy has the expected CountAway policy title. This includes the release-branch recovery path: recovery must not prepare a releasable artifact while the app's user-facing privacy URL would still be broken. Release-candidate mode does not require the public URL because it does not prepare or publish a release.
+Google Play requires the submitted privacy-policy URL to be active, publicly accessible, non-geofenced, non-PDF, and non-editable. Treat the hosted URL as a release gate: if the hosting surface moves or its accessibility changes, update the hosted page, in-app resource, contract tests, release workflow, and this document coherently before release preparation.
 
-If the policy is later moved to a dedicated HTTPS page on `santiagorodriguez.com`, first inspect the actual hosting architecture, then update the in-app URL, this document, and the release gate atomically. Do not invent an undocumented Hostinger path.
+CountAway itself has no Internet permission. The About/Help links delegate the project/privacy URLs to an external browser through Android.
+
+Every actual release-preparation path verifies that the hosted project and privacy URLs resolve, that the hosted privacy page exposes the CountAway policy title and all three policy languages, and that the repository policy still contains the canonical multilingual headings. The release-branch recovery path is held to the same gate. Release-candidate mode does not require the public URLs because it does not prepare or publish a release.
 
 ## Data Safety expectation
 
