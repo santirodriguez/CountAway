@@ -18,7 +18,7 @@ object LanguageManager {
     private const val PREFS_NAME = "countaway_ui"
     private const val KEY_LANGUAGE = "language"
 
-    fun supportedLanguages(context: Context): SupportedLanguageCatalog = LanguageCatalog.load(context)
+    internal fun supportedLanguages(context: Context): SupportedLanguageCatalog = LanguageCatalog.load(context)
 
     fun wrap(context: Context): Context {
         val languageTag = explicitLanguageTag(context) ?: return context
