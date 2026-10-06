@@ -30,7 +30,7 @@
     <string name="external_action_unavailable">No hi ha cap app disponible per a aquesta acció.</string>
     <string name="backup_provider_unavailable">No hi ha cap proveïdor de documents disponible.</string>
     <string name="share_unavailable">No hi ha cap app disponible per compartir aquest compte enrere.</string>
-    <string name="backup_import_confirm_details">Esdeveniments de la còpia: %1$d\nDesats actualment: %2$d\n\nNomés se substitueixen els comptes enrere. No es restaura la ubicació dels widgets.</string>
-    <string name="backup_import_confirm_details_unknown">Esdeveniments de la còpia: %1$d\nNo s’ha pogut llegir quants n’hi ha desats ara.\n\nNomés se substitueixen els comptes enrere. No es restaura la ubicació dels widgets.</string>
+    <string name="backup_import_confirm_details">Esdeveniments de la còpia: %1$d\nDesats actualment: %2$d\n\nSe substitueixen tots els esdeveniments actuals. No es restaura la ubicació dels widgets.</string>
+    <string name="backup_import_confirm_details_unknown">Esdeveniments de la còpia: %1$d\nNo s’ha pogut llegir quants n’hi ha desats ara.\n\nSe substitueixen tots els esdeveniments actuals. No es restaura la ubicació dels widgets.</string>
     <string name="backup_export_current_first">Exporta els actuals primer</string>
 </resources>
