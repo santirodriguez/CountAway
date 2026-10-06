@@ -104,7 +104,7 @@ Translation contributions are documented in [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 Created by [Santiago Rodriguez](https://santiagorodriguez.com).
 
-<a href="https://santiagorodriguez.com/donate"><img src="docs/assets/badges/donate.svg" alt="Donate" height="46" /></a>
+<a href="https://cajapersonal.org/donate/"><img src="docs/assets/badges/donate.svg" alt="Donate" height="46" /></a>
 
 ## License
 
