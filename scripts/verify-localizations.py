@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate CountAway's enabled language catalog and Android text resources."""
+"""Validate CountAway's enabled and candidate Android language resources."""
 from pathlib import Path
 import argparse
 import re
@@ -10,6 +10,7 @@ RES = ROOT / "app/src/main/res"
 CATALOG = RES / "xml/supported_languages.xml"
 FORMAT = re.compile(r"%(?:(\d+)\$)?([a-zA-Z%])")
 FORMAT_TYPES = set("bBhHsScCdoxXeEfgGaAtT")
+LANGUAGE_VALUES_DIR = re.compile(r"^values-(?:b\+[A-Za-z0-9+]+|[a-z]{2,3}(?:-r[A-Z]{2})?)$")
 
 
 def die(message):
@@ -96,40 +97,77 @@ def resources(directory):
     return values, nontranslatable
 
 
-def validate():
+def validate_directory(label, directory, baseline, nontranslatable):
+    if not directory.is_dir():
+        die(f"{label}: missing {directory}")
+    current, localized_nontranslatable = resources(directory)
+    accidental = set(current) & nontranslatable
+    if accidental:
+        die(f"{label}: overrides nontranslatable resources: {sorted(accidental)}")
+    missing = set(baseline) - set(current)
+    extra = set(current) - set(baseline)
+    if missing:
+        die(f"{label}: missing resources: {sorted(missing)}")
+    if extra:
+        die(f"{label}: extra resources: {sorted(extra)}")
+    for key, expected in baseline.items():
+        actual = current[key]
+        if expected != actual:
+            die(f"{label}: resource contract mismatch for {key}: {actual} != {expected}")
+    unexpected_nontranslatable = localized_nontranslatable - nontranslatable
+    if unexpected_nontranslatable:
+        die(f"{label}: unexpected translatable=false resources: {sorted(unexpected_nontranslatable)}")
+
+
+def candidate_directories(enabled_qualifiers):
+    return sorted(
+        path for path in RES.iterdir()
+        if path.is_dir()
+        and LANGUAGE_VALUES_DIR.match(path.name)
+        and path.name not in enabled_qualifiers
+    )
+
+
+def validate(resource_dir=None):
     default, languages = load_catalog()
     default_entry = next(item for item in languages if item["tag"] == default)
     baseline, nontranslatable = resources(RES / default_entry["qualifier"])
+
     for language in languages:
-        directory = RES / language["qualifier"]
-        if not directory.is_dir():
-            die(f"{language['tag']}: missing {directory}")
-        current, localized_nontranslatable = resources(directory)
         if language["tag"] == default:
             continue
-        accidental = set(current) & nontranslatable
-        if accidental:
-            die(f"{language['tag']}: overrides nontranslatable resources: {sorted(accidental)}")
-        missing = set(baseline) - set(current)
-        extra = set(current) - set(baseline)
-        if missing:
-            die(f"{language['tag']}: missing resources: {sorted(missing)}")
-        if extra:
-            die(f"{language['tag']}: extra resources: {sorted(extra)}")
-        for key, expected in baseline.items():
-            actual = current[key]
-            if expected != actual:
-                die(f"{language['tag']}: resource contract mismatch for {key}: {actual} != {expected}")
-        unexpected_nontranslatable = localized_nontranslatable - nontranslatable
-        if unexpected_nontranslatable:
-            die(f"{language['tag']}: unexpected translatable=false resources: {sorted(unexpected_nontranslatable)}")
-    print(f"localizations=ok default={default} enabled={','.join(x['tag'] for x in languages)} resources={len(baseline)}")
+        validate_directory(language["tag"], RES / language["qualifier"], baseline, nontranslatable)
+
+    enabled_qualifiers = {item["qualifier"] for item in languages}
+    candidates = candidate_directories(enabled_qualifiers)
+
+    if resource_dir:
+        directory = RES / resource_dir
+        if not LANGUAGE_VALUES_DIR.match(resource_dir):
+            die(f"{resource_dir}: not a supported language values directory")
+        validate_directory(resource_dir, directory, baseline, nontranslatable)
+        if directory not in candidates and resource_dir not in enabled_qualifiers:
+            candidates.append(directory)
+
+    for directory in candidates:
+        validate_directory(f"candidate:{directory.name}", directory, baseline, nontranslatable)
+
+    candidate_names = ",".join(path.name for path in candidates) or "none"
+    print(
+        f"localizations=ok default={default} "
+        f"enabled={','.join(x['tag'] for x in languages)} "
+        f"candidates={candidate_names} resources={len(baseline)}"
+    )
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--print-fdroid-locales", action="store_true")
     parser.add_argument("--print-tags", action="store_true")
+    parser.add_argument(
+        "--resource-dir",
+        help="Validate one language resource directory, e.g. values-b+zh+Hans, without enabling it.",
+    )
     args = parser.parse_args()
     _, languages = load_catalog()
     if args.print_fdroid_locales:
@@ -137,7 +175,7 @@ def main():
     elif args.print_tags:
         print("\n".join(item["tag"] for item in languages))
     else:
-        validate()
+        validate(args.resource_dir)
 
 
 if __name__ == "__main__":
