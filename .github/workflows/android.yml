@@ -119,11 +119,12 @@ jobs:
           set -euo pipefail
           python3 scripts/verify-localizations.py 2>&1 | tee ci-evidence/localization-validation.txt
 
-      - name: Validate reusable Play assets
+      - name: Prepare and validate reusable Play assets
         run: |
           set -euo pipefail
-          python3 scripts/verify-play-assets.py icon fastlane/metadata/android/en-US/images/icon.png
-          python3 scripts/verify-play-assets.py feature fastlane/metadata/android/en-US/images/featureGraphic.png
+          python3 scripts/prepare-play-assets.py --output-dir ci-evidence/play-assets
+          python3 scripts/verify-play-assets.py icon ci-evidence/play-assets/icon.png
+          python3 scripts/verify-play-assets.py feature ci-evidence/play-assets/featureGraphic.png
 
       - name: Validate
         run: ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease bundleRelease --stacktrace
