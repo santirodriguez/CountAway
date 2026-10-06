@@ -739,10 +739,10 @@ jobs:
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
-      PREVIOUS_PUBLIC_VERSION: "1.2.1"
+      PREVIOUS_PUBLIC_VERSION: "1.2.2"
       PREVIOUS_PUBLIC_VERSION_CODE: "11"
       PREVIOUS_PUBLIC_APK_SHA256: "689191b5e25ca97b83bc113a6da8f83565e3d011581d0a990feb5d48b39be7a4"
-      PREVIOUS_PUBLIC_APK_BYTES: "443929"
+      PREVIOUS_PUBLIC_APK_BYTES: "499104"
 
     steps:
       - name: Checkout exact candidate source
