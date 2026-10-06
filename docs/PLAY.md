@@ -214,7 +214,7 @@ Revalidate every declaration against the exact candidate and current Play wordin
 - Advertising ID and sensitive permissions: inspect the merged manifest rather than assuming.
 - Content rating and target audience: complete from actual app content.
 - Health declaration: the form is required even for apps with no health features. CountAway has generic presets such as Smoke-free and Training, so review the exact candidate honestly; if they remain simple date/count presets rather than health tracking/advice, the expected declaration is "My app doesn't provide any health features."
-- Donation link: CountAway now opens `https://cajapersonal.org/donate/`, a static Caja Personal donation page with BTC, EVM (ETH/USDC/USDT) and XMR addresses and no in-app entitlement. Current Play guidance treats a direct tip/contribution to the creator as outside mandatory Play Billing only when 100% goes to the creator and the payment grants no digital content, service, badge, feature, entitlement, or other in-app benefit. Verify the live donation flow still meets that condition before submission.
+- Donation link: current Play guidance treats a direct tip/contribution to the creator as outside mandatory Play Billing only when 100% goes to the creator and the payment grants no digital content, service, badge, feature, entitlement, or other in-app benefit. Verify the live donation flow still meets that condition before submission.
 - Support contact: use a monitored maintainer-provided address; do not invent one in repository metadata.
 - Countries, category/tags, identity/trader/account verification, and any personal-account testing requirement are Console/account decisions.
 
