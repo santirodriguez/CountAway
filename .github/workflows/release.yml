@@ -330,13 +330,27 @@ jobs:
 
           if [[ "${PREPARE_RELEASE}" == "true" ]]; then
             test -s PRIVACY.md
-            PRIVACY_URL="https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md"
-            PRIVACY_RAW_URL="https://raw.githubusercontent.com/santirodriguez/CountAway/main/PRIVACY.md"
+            PROJECT_URL="https://countaway.cajapersonal.org/"
+            PRIVACY_URL="https://countaway.cajapersonal.org/privacy/"
+
+            grep -Fq 'PROJECT_WEBSITE = "https://countaway.cajapersonal.org/"' app/src/main/java/com/santiagorodriguez/countaway/ui/AboutActivity.kt
             grep -Fq "${PRIVACY_URL}" app/src/main/res/values/about_polish_strings.xml
+
+            curl --fail --location --silent --show-error --retry 2               "${PROJECT_URL}"               --output "${RUNNER_TEMP}/countaway-project-site.html"
+            test -s "${RUNNER_TEMP}/countaway-project-site.html"
+            grep -Fq 'Count the days that matter.' "${RUNNER_TEMP}/countaway-project-site.html"
+
             curl --fail --location --silent --show-error --retry 2               "${PRIVACY_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.html"
             test -s "${RUNNER_TEMP}/countaway-privacy-policy.html"
-            curl --fail --location --silent --show-error --retry 2               "${PRIVACY_RAW_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.md"
-            grep -Fqx '# CountAway Privacy Policy' "${RUNNER_TEMP}/countaway-privacy-policy.md"
+            grep -Fq '<title>CountAway Privacy Policy</title>' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            grep -Fq 'English' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            grep -Fq 'Español' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            grep -Fq 'Català' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+
+            grep -Fqx '# CountAway Privacy Policy' PRIVACY.md
+            grep -Fqx '## English' PRIVACY.md
+            grep -Fqx '## Español' PRIVACY.md
+            grep -Fqx '## Català' PRIVACY.md
 
             declare -a SCREENSHOTS=(
               "fastlane/metadata/android/en-US/images/phoneScreenshots/1.png"
