@@ -98,7 +98,7 @@ Requires **JDK 17** and **Android SDK 36**.
 ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease
 ```
 
-Maintainer signing and release steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md). F-Droid preparation and update notes are in [`docs/FDROID.md`](docs/FDROID.md).
+Translation contributions are documented in [`CONTRIBUTING.md`](CONTRIBUTING.md). Maintainer signing and release steps are in [`docs/RELEASING.md`](docs/RELEASING.md), with Google Play preparation in [`docs/PLAY.md`](docs/PLAY.md) and F-Droid notes in [`docs/FDROID.md`](docs/FDROID.md).
 
 ## Author
 
