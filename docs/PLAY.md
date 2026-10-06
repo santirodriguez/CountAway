@@ -1,11 +1,11 @@
-# Google Play readiness
+# Google Play preparation and submission
 
-CountAway is **not currently published or configured for Google Play**. This document records the minimum compatibility contract needed to make a future Play launch straightforward without changing CountAway's existing GitHub/Obtainium or F-Droid distribution model.
+CountAway is being prepared for its first Google Play submission while preserving the existing GitHub/Obtainium and F-Droid distribution model. Repository preparation is distinct from Play Console submission: Console mutations, real signing-key operations, testing tracks, and publication require separate maintainer authority.
 
 ## Current readiness baseline
 
 - applicationId: `com.santiagorodriguez.countaway`
-- target release: 1.2.2 / versionCode 11 (from `app/build.gradle.kts`)
+- target release: 1.2.3 / versionCode 12 (from `app/build.gradle.kts`)
 - minSdk: 26
 - targetSdk / compileSdk: 36
 - no Internet permission
@@ -108,10 +108,10 @@ Based on the current runtime, CountAway is designed so the developer does not co
 - no account system;
 - no analytics or advertising;
 - no Internet permission;
-- countdowns/settings remain local;
+- count-down/count-up events and settings remain local;
 - reminders/widgets are local;
 - backup export/import is explicitly user-directed through Android's document interface;
-- countdown sharing is explicitly user-directed through Android's share sheet.
+- event sharing is explicitly user-directed through Android's share sheet.
 
 This is a readiness assessment, **not a permanently valid Play Console declaration**. Immediately before filling or updating Play Console Data Safety, audit the exact release candidate and current Google definitions again. Any new SDK, permission, network feature, account feature, cloud storage, telemetry, crash reporting, or external service can change the answer.
 
@@ -123,21 +123,24 @@ Keep one global version sequence across every store.
 - `versionName` continues to describe the public semantic release.
 - Do not create a separate Play-only versionCode line unless a concrete future migration requires it and cross-store update behavior is explicitly reviewed.
 
-## Store assets and console setup — deferred
+## Store assets and console setup
 
-The following remain intentionally **outside** CountAway's current Play-readiness scope:
+Play assets are release inputs, not permission to fabricate app UI. Final phone screenshots must be genuine captures of the exact accepted v1.2.3 candidate. The existing 540×1200 source screenshots are retained for repository/F-Droid history but exceed Play's 2:1 long-side ratio gate and must not be uploaded as-is.
 
-- Play-specific screenshots;
-- Play-specific store icon or listing artwork changes;
-- Play Console application creation/configuration;
-- Play App Signing enrollment;
-- Play upload-key generation;
-- Data Safety submission;
-- content rating / target-audience declarations;
-- testing tracks or production rollout;
-- any Google Play badge or Play-specific user-facing copy.
+Required Play export checks:
 
-Before an actual Play submission, prepare compliant store assets separately and verify current Play Console requirements.
+- 512×512 32-bit PNG app icon, at most 1024 KB;
+- 1024×500 feature graphic as JPEG or 24-bit PNG without alpha;
+- at least two genuine phone screenshots, JPEG or RGB PNG, each side 320–3840 px and longest side no more than twice the shortest side;
+- filenames/order/content tied to the exact candidate, including an About/version capture that does not show v1.2.2.
+
+Do not stretch or repaint an old screenshot to satisfy dimensions. Capture a suitable final-candidate viewport and export it without changing the represented UI.
+
+Store locale mapping comes from `app/src/main/res/xml/supported_languages.xml`. Current mapping is English -> Play `en-US`, Spanish -> Play `es-419`, and Catalan -> Play `ca`. F-Droid keeps its existing `en-US` / `es` / `ca` metadata directories; do not rename those directories for Play.
+
+Repository-side PNG exports can be checked with `python3 scripts/verify-play-assets.py <icon|feature|screenshot> <file>...`. JPEG exports remain valid Play inputs and should be inspected with an image tool before submission.
+
+Console application creation/configuration, Play App Signing enrollment, upload-key generation, declarations, tracks, and rollout remain manual consequential gates.
 
 ## Future Play onboarding checklist
 
@@ -159,3 +162,37 @@ No step above is authorized merely by this document. Play Console mutations, sig
 ## Offline language delivery
 
 Language configuration splits are disabled so an EN-only device installation also contains Spanish and Catalan. Density/ABI delivery and generated locale configuration remain unchanged. Existing CI and exact-source RC validation inspect BundleConfig, build an EN-only device-specific APK set with ordinary debug test signing, and verify its packaged language resources. The API 33 RC installs that set and switches to Spanish/Catalan with networking disabled. This test package is not a public release asset or a Play upload artifact.
+
+
+## Manual Play submission path
+
+Use only the exact AAB produced from the accepted release-candidate SHA.
+
+1. Confirm `app/build.gradle.kts` still contains the intended package, versionName and versionCode, and confirm versionCode 12 is unused in Play Console before the first upload.
+2. Record the candidate source SHA and the readiness AAB SHA-256 retained by Actions.
+3. Create or select the dedicated Play **upload key** outside this repository only after explicit maintainer authorization. The upload key is not the CountAway app-signing identity.
+4. Sign the exact reviewed AAB with JAR-compatible AAB signing tooling. Do not use APK-only `apksigner` as the AAB signing procedure.
+5. Recompute the signed AAB SHA-256; inspect its manifest/package/version with bundletool; verify the signing certificate corresponds to the intended upload key; retain only non-secret fingerprints/checksums as evidence.
+6. Upload that exact signed AAB to the authorized track. Do not rebuild between tracks; promote the same reviewed artifact.
+7. Before production, verify the **Play app-signing certificate** is the historical CountAway identity:
+   `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
+   The upload certificate may differ. If Play cannot preserve the app-signing identity required for cross-store updates, stop.
+8. Install a Play-delivered build and verify package/version/signing identity plus update compatibility with the existing CountAway installation before production rollout.
+
+Never commit a keystore, key, password, export bundle, Play credential, or secret. A readiness AAB is not upload-ready until the explicit signing procedure above has been completed.
+
+## Play declarations checklist
+
+Revalidate every declaration against the exact candidate and current Play wording immediately before submission.
+
+- Data Safety: current design is no developer collection/sharing, subject to final candidate audit.
+- Ads: none.
+- App access: no account/login gate.
+- Advertising ID and sensitive permissions: inspect the merged manifest rather than assuming.
+- Content rating and target audience: complete from actual app content.
+- Health declaration: review the app's presets/content rather than blindly selecting "no health features".
+- Donation link: confirm it is a voluntary tip with no digital reward or entitlement before billing-policy sign-off.
+- Support contact: use a monitored maintainer-provided address; do not invent one in repository metadata.
+- Countries, category/tags, identity/trader/account verification, and any personal-account testing requirement are Console/account decisions.
+
+Repository state should describe Play as **prepared**, **submitted**, **in testing**, or **production** accurately. Do not add a Google Play badge before a public listing exists.
