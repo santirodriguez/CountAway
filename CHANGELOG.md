@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.3
+
+- Prepare CountAway's first Google Play submission without changing the existing GitHub, Obtainium, or F-Droid distribution paths.
+- Centralize the enabled-language catalog and add contributor-oriented translation validation while preserving English, Español, and Català behavior.
+- Add script-aware locale matching infrastructure for future languages; Simplified Chinese is not enabled without a fresh complete native-reviewed contribution.
+- Advance release upgrade validation to the published 1.2.2 / versionCode 11 baseline.
+- Update privacy and Play submission documentation for both count-down and count-up events, signing identity, store mappings, declarations, and genuine final-candidate assets.
+- No new runtime permissions, Internet access, analytics, ads, accounts, native code, or app data-schema migration.
+
 ## 1.2.2
 
 - Add count-up events for tracking days since a start date across the app, fixed widgets, sharing, and local backups.
