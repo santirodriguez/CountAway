@@ -19,6 +19,7 @@ class AboutPrivacyContractTest {
         assertTrue(strings.contains("https://countaway.cajapersonal.org/privacy/"))
         assertTrue(activity.contains("R.id.websiteButton"))
         assertTrue(activity.contains("PROJECT_WEBSITE = \"https://countaway.cajapersonal.org/\""))
+        assertTrue(activity.contains("DONATE_WEBSITE = \"https://cajapersonal.org/donate/\""))
         assertTrue(activity.contains("R.id.privacyButton"))
         assertTrue(activity.contains("R.string.privacy_policy_url"))
         assertTrue(policy.contains("# CountAway Privacy Policy"))
