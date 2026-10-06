@@ -332,6 +332,7 @@ jobs:
             test -s PRIVACY.md
             PROJECT_URL="https://countaway.cajapersonal.org/"
             PRIVACY_URL="https://countaway.cajapersonal.org/privacy/"
+            DONATE_URL="https://cajapersonal.org/donate/"
 
             grep -Fq 'PROJECT_WEBSITE = "https://countaway.cajapersonal.org/"' app/src/main/java/com/santiagorodriguez/countaway/ui/AboutActivity.kt
             grep -Fq "${PRIVACY_URL}" app/src/main/res/values/about_polish_strings.xml
@@ -346,6 +347,12 @@ jobs:
             grep -Fq 'English' "${RUNNER_TEMP}/countaway-privacy-policy.html"
             grep -Fq 'Español' "${RUNNER_TEMP}/countaway-privacy-policy.html"
             grep -Fq 'Català' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+
+            grep -Fq 'DONATE_WEBSITE = "https://cajapersonal.org/donate/"' app/src/main/java/com/santiagorodriguez/countaway/ui/AboutActivity.kt
+            curl --fail --location --silent --show-error --retry 2               "${DONATE_URL}"               --output "${RUNNER_TEMP}/countaway-donate.html"
+            test -s "${RUNNER_TEMP}/countaway-donate.html"
+            grep -Fq 'Caja Personal' "${RUNNER_TEMP}/countaway-donate.html"
+            grep -Fq '0xa6953F5bda958F709221186AF449F231C6EFceA4' "${RUNNER_TEMP}/countaway-donate.html"
 
             grep -Fqx '# CountAway Privacy Policy' PRIVACY.md
             grep -Fqx '## English' PRIVACY.md
