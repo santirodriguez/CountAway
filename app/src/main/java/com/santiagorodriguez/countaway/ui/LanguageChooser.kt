@@ -17,31 +17,27 @@ internal class LanguageChooser(
 
     init {
         button.setOnClickListener { show() }
-        button.setOnLongClickListener {
-            show()
-            true
-        }
+        button.setOnLongClickListener { show(); true }
         button.accessibilityDelegate = object : View.AccessibilityDelegate() {
             override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
                 super.onInitializeAccessibilityNodeInfo(host, info)
-                info.addAction(AccessibilityNodeInfo.AccessibilityAction(
-                    AccessibilityNodeInfo.ACTION_LONG_CLICK,
-                    activity.getString(R.string.language_choose),
-                ))
+                info.addAction(
+                    AccessibilityNodeInfo.AccessibilityAction(
+                        AccessibilityNodeInfo.ACTION_LONG_CLICK,
+                        activity.getString(R.string.language_choose),
+                    ),
+                )
             }
         }
     }
 
     fun render() {
+        val catalog = LanguageManager.supportedLanguages(activity)
         val current = LanguageManager.currentLanguageTag(activity)
-        val flagRes = when (current) {
-            LanguageManager.SPANISH -> R.drawable.flag_ar
-            LanguageManager.CATALAN -> R.drawable.flag_catalonia
-            else -> R.drawable.flag_us
-        }
-        val flag = activity.getDrawable(flagRes)?.apply { setBounds(0, 0, dp(24), dp(16)) }
+        val language = catalog.language(current) ?: catalog.language(catalog.defaultTag)
+        val flag = activity.getDrawable(language?.iconRes ?: R.drawable.ic_language)
+            ?.apply { setBounds(0, 0, dp(24), dp(16)) }
         button.setCompoundDrawablesRelative(flag, null, null, null)
-        // Split the actual pixel budget: separately rounded dp paddings can crop the flag.
         val horizontalSpace = (button.layoutParams.width - dp(24)).coerceAtLeast(0)
         button.setPaddingRelative(horizontalSpace / 2, 0, horizontalSpace - horizontalSpace / 2, 0)
         button.compoundDrawablePadding = 0
@@ -54,21 +50,23 @@ internal class LanguageChooser(
         }
         button.contentDescription = activity.getString(
             R.string.language_control_description,
-            endonym(current),
+            endonym(catalog, current),
             activity.getString(stateRes),
         )
     }
 
     private fun show() {
         if (dialog?.isShowing == true || activity.isFinishing || activity.isDestroyed) return
+        val catalog = LanguageManager.supportedLanguages(activity)
         val current = LanguageManager.currentLanguageTag(activity)
-        val tags = listOf(current) + listOf(
-            LanguageManager.ENGLISH, LanguageManager.SPANISH, LanguageManager.CATALAN,
-        ).filter { it != current }
+        val tags = listOf(current) + catalog.tags.filter { it != current }
         val labels = tags.map { tag ->
-            if (tag == current) activity.getString(R.string.language_in_use, endonym(tag)) else endonym(tag)
-        } + activity.getString(R.string.language_system_choice,
-            endonym(LanguageManager.systemLanguageTag(activity)))
+            if (tag == current) activity.getString(R.string.language_in_use, endonym(catalog, tag))
+            else endonym(catalog, tag)
+        } + activity.getString(
+            R.string.language_system_choice,
+            endonym(catalog, LanguageManager.systemLanguageTag(activity)),
+        )
         val followingSystem = LanguageManager.isFollowingSystem(activity)
         val restoreAccessibilityFocus = button.isAccessibilityFocused
         val picker = AlertDialog.Builder(activity)
@@ -95,45 +93,33 @@ internal class LanguageChooser(
 
     private fun restoreButtonFocus(restoreAccessibilityFocus: Boolean) {
         if (activity.isFinishing || activity.isDestroyed) return
-
         var restored = false
         fun restoreOnce() {
             if (restored || activity.isFinishing || activity.isDestroyed) return
             restored = true
             button.requestFocusFromTouch()
             if (restoreAccessibilityFocus) {
-                button.performAccessibilityAction(
-                    AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS,
-                    null,
-                )
+                button.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
             }
         }
-
         if (button.hasWindowFocus()) {
             button.post { restoreOnce() }
             return
         }
-
         val observer = button.viewTreeObserver
         val listener = object : ViewTreeObserver.OnWindowFocusChangeListener {
             override fun onWindowFocusChanged(hasFocus: Boolean) {
                 if (!hasFocus) return
                 val currentObserver = button.viewTreeObserver
-                if (currentObserver.isAlive) {
-                    currentObserver.removeOnWindowFocusChangeListener(this)
-                }
+                if (currentObserver.isAlive) currentObserver.removeOnWindowFocusChangeListener(this)
                 button.post { restoreOnce() }
             }
         }
         observer.addOnWindowFocusChangeListener(listener)
-
-        // Close the race where window focus returns between the initial check and listener registration.
         button.post {
             if (button.hasWindowFocus()) {
                 val currentObserver = button.viewTreeObserver
-                if (currentObserver.isAlive) {
-                    currentObserver.removeOnWindowFocusChangeListener(listener)
-                }
+                if (currentObserver.isAlive) currentObserver.removeOnWindowFocusChangeListener(listener)
                 restoreOnce()
             }
         }
@@ -145,11 +131,8 @@ internal class LanguageChooser(
         dialog = null
     }
 
-    private fun endonym(tag: String): String = when (tag) {
-        LanguageManager.SPANISH -> "Español"
-        LanguageManager.CATALAN -> "Català"
-        else -> "English"
-    }
+    private fun endonym(catalog: SupportedLanguageCatalog, tag: String): String =
+        catalog.language(tag)?.endonym ?: catalog.language(catalog.defaultTag)?.endonym ?: tag
 
     private fun dp(value: Int): Int = (value * activity.resources.displayMetrics.density).toInt()
 }

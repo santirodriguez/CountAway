@@ -36,8 +36,8 @@ jobs:
       BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
       EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
       PACKAGE_ID: "com.santiagorodriguez.countaway"
-      PREVIOUS_PUBLIC_VERSION: "1.2.1"
-      PREVIOUS_PUBLIC_APK_BYTES: "443929"
+      PREVIOUS_PUBLIC_VERSION: "1.2.2"
+      PREVIOUS_PUBLIC_APK_BYTES: "499104"
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
@@ -48,6 +48,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Validate localization sources
+        run: python3 scripts/verify-localizations.py
 
       - name: Resolve release version
         id: version
@@ -300,7 +303,8 @@ jobs:
           grep -Fqx "## ${VERSION}" CHANGELOG.md
           test -s "docs/releases/${VERSION}.md"
           test ! -d "fastlane/metadata/android/en"
-          for locale in en-US es ca; do
+          mapfile -t STORE_LOCALES < <(python3 scripts/verify-localizations.py --print-fdroid-locales)
+          for locale in "${STORE_LOCALES[@]}"; do
             TITLE="fastlane/metadata/android/${locale}/title.txt"
             SHORT_DESCRIPTION="fastlane/metadata/android/${locale}/short_description.txt"
             FULL_DESCRIPTION="fastlane/metadata/android/${locale}/full_description.txt"
@@ -736,8 +740,8 @@ jobs:
       VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
       PREVIOUS_PUBLIC_VERSION: "1.2.1"
-      PREVIOUS_PUBLIC_VERSION_CODE: "10"
-      PREVIOUS_PUBLIC_APK_SHA256: "43e45ddee319c9ee6161988d4f681d13f14d8e93bad4d28a3c28bda1cfbeeffb"
+      PREVIOUS_PUBLIC_VERSION_CODE: "11"
+      PREVIOUS_PUBLIC_APK_SHA256: "689191b5e25ca97b83bc113a6da8f83565e3d011581d0a990feb5d48b39be7a4"
       PREVIOUS_PUBLIC_APK_BYTES: "443929"
 
     steps:
@@ -1017,7 +1021,7 @@ jobs:
             PREVIOUS_APK="candidate/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v${PREVIOUS_PUBLIC_VERSION}/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
-            UPGRADE_PROBE_TITLE="UpgradeProbe122"
+            UPGRADE_PROBE_TITLE="UpgradeProbe123"
 
             curl --fail --location --silent --show-error --retry 2 \
               "${PREVIOUS_APK_URL}" \

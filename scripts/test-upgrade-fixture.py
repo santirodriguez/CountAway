@@ -92,9 +92,9 @@ class UpgradeFixtureDriverTest(unittest.TestCase):
 python3() { command python3 -S "$@"; }
 adb() { python3 fake_adb.py "$@"; }
 sleep() { :; }
-replace_fixture_title UpgradeProbe122
+replace_fixture_title UpgradeProbe123
 tap_fixture_save
-wait_for_text UpgradeProbe122 acceptance-evidence/saved.xml
+wait_for_text UpgradeProbe123 acceptance-evidence/saved.xml
 '''
             syntax = subprocess.run(['bash', '-n'], input=script, text=True, capture_output=True)
             self.assertEqual(0, syntax.returncode, syntax.stderr)
@@ -108,7 +108,7 @@ wait_for_text UpgradeProbe122 acceptance-evidence/saved.xml
     def assert_success(self, initial: dict, attempts: int = 1) -> None:
         result, state, receipt = self.run_fixture(initial)
         self.assertEqual(0, result.returncode, result.stderr)
-        self.assertEqual('UpgradeProbe122', state['actual'])
+        self.assertEqual('UpgradeProbe123', state['actual'])
         self.assertEqual(1, state['save_count'])
         self.assertEqual(attempts, state['typed'])
         self.assertIn('exact_input_verified=true', receipt)
