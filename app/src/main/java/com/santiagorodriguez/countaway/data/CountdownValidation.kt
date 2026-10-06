@@ -1,7 +1,10 @@
 package com.santiagorodriguez.countaway.data
 
 import com.santiagorodriguez.countaway.countdown.CountdownDateDomain
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.ReminderOption
+import com.santiagorodriguez.countaway.model.RepeatRule
 
 object CountdownValidation {
     const val MAX_TITLE_LENGTH = 256
@@ -17,7 +20,11 @@ object CountdownValidation {
                 event.id.isBlank() ||
                 event.title.isBlank() ||
                 !CountdownDateDomain.contains(event.date) ||
-                !ids.add(event.id)
+                !ids.add(event.id) ||
+                (
+                    event.countMode == CountMode.COUNT_UP &&
+                        (event.repeatRule != RepeatRule.NONE || event.reminder != ReminderOption.OFF)
+                )
             ) {
                 throw corruptData()
             }

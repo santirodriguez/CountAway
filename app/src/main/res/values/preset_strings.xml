@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="preset_smoke_free">Smoke-free</string>
+    <string name="preset_new_habit">New habit</string>
+    <string name="preset_training">Training</string>
+    <string name="preset_reading">Reading</string>
+    <string name="preset_project">Project</string>
+    <string name="preset_fresh_start">Fresh start</string>
+    <string name="preset_milestone">Milestone</string>
+    <string name="preset_preserved_type">Current category: %1$s. Choose a preset to change it.</string>
+    <string name="editor_change_icon">Change icon · %1$s</string>
+</resources>

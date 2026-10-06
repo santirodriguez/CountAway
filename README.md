@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>A lightweight Android countdown for the things worth waiting for.</strong>
+  <strong>A lightweight Android day counter for dates worth looking forward to — or remembering.</strong>
 </p>
 
 <p align="center">
@@ -41,7 +41,7 @@ CountAway skips all that. It counts the days and leaves you alone.
   <tr>
     <td width="33%" valign="top">
       <strong>Count what matters</strong><br /><br />
-      Multiple countdowns, custom icons, reminders, and optional weekly, monthly, or yearly recurrence.
+      Count down to future dates or count up from a starting date, with custom icons.
     </td>
     <td width="33%" valign="top">
       <strong>Keep it on Home</strong><br /><br />
@@ -56,15 +56,16 @@ CountAway skips all that. It counts the days and leaves you alone.
 
 ## Highlights
 
-- **Widget-first:** long-press a countdown, choose a style, preview it, and add it directly on supported launchers.
-- **Flexible recurrence:** weekly, monthly, or yearly countdowns with sensible short-month handling.
+- **Count both ways:** count down to future dates or count up from a start date.
+- **Widget-first:** long-press an event, choose a style, preview it, and add it to Home.
+- **Flexible recurrence:** weekly, monthly, or yearly count-down events.
 - **Nine widget backgrounds:** from clean Classic to Mist, Horizon, Sunset, Ember, Ridge, and more.
 - **Three appearance modes:** System, Light, and Dark for both the app and widgets.
-- **Useful reminders:** optional local notifications before or on the event day.
-- **Smart widget behavior:** fixed-event widgets stay fixed; **Next countdown** follows the nearest event automatically.
-- **Share without the screenshot ritual:** Share turns a countdown into a Ridge-style PNG card that follows your current Light/Dark appearance.
+- **Useful reminders:** optional local notifications for count-down events.
+- **Smart widgets:** fixed widgets support both directions; **Next countdown** follows the nearest upcoming count-down event.
+- **Share without the screenshot ritual:** Share turns an event into a Ridge-style PNG card.
 - **Local portability:** JSON export/import stays entirely under your control.
-- **Multilingual:** English, Spanish, and Catalan.
+- **Multilingual:** English, Español, and Català.
 
 ## Screenshots
 
@@ -75,11 +76,11 @@ CountAway skips all that. It counts the days and leaves you alone.
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="CountAway widget configuration" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway home screen in light mode" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway Help and local backup" width="46%" />
 </p>
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" alt="CountAway Help and local backup" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" alt="CountAway home screen in light mode" width="46%" />
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" alt="CountAway home-screen widgets" width="46%" />
 </p>
 
@@ -87,7 +88,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 
 CountAway has no Internet permission, accounts, ads, analytics, or cloud sync.
 
-Your countdowns stay on your device. Revolutionary stuff, apparently.
+Your events stay on your device. Revolutionary stuff, apparently.
 
 ## Build
 

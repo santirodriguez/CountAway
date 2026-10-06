@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="language_choose">Tria la llengua</string>
+    <string name="language_in_use">%1$s · En ús</string>
+    <string name="language_system_choice">Utilitza la llengua del sistema · %1$s</string>
+    <string name="language_state_system">Seguint el sistema</string>
+    <string name="language_state_explicit">Triada per a aquesta aplicació</string>
+    <string name="language_control_description">Llengua: %1$s. %2$s. Tria la llengua.</string>
+    <string name="language_change_failed">No s\'ha pogut canviar la llengua. Torna-ho a provar.</string>
+</resources>

@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import java.net.URI
@@ -112,7 +113,9 @@ object WidgetPinning {
         snapshot.requestToken.hashCode(),
         Intent(context, WidgetPinResultReceiver::class.java)
             .setData(Uri.parse(snapshot.callbackData())),
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        // The launcher supplies EXTRA_APPWIDGET_ID through the success callback.
+        PendingIntent.FLAG_UPDATE_CURRENT or
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0,
     )
 
     private fun requestInternal(

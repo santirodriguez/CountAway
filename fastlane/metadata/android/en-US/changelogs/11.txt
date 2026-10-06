@@ -1,0 +1,1 @@
+Count days in both directions: count down to a future date or count up from a start date. Home cards are cleaner and easier to scan, with clearer groups, more room for titles, and polished event actions. Language switching is explicit, widget pinning is more reliable, and existing data migrates automatically.

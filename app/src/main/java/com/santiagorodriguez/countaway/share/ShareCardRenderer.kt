@@ -6,25 +6,24 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Typeface
-import android.graphics.text.LineBreaker
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextDirectionHeuristics
 import android.text.TextPaint
 import android.text.TextUtils
 import com.santiagorodriguez.countaway.R
-import com.santiagorodriguez.countaway.countdown.CountdownCalculator
-import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownStatus
+import com.santiagorodriguez.countaway.countdown.EventCountResolver
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.RepeatRule
+import com.santiagorodriguez.countaway.ui.EventCountText
 import com.santiagorodriguez.countaway.ui.EventIconPresentation
 import com.santiagorodriguez.countaway.ui.ThemeManager
 import com.santiagorodriguez.countaway.widget.WidgetBackground
 import com.santiagorodriguez.countaway.widget.WidgetBackgroundRenderer
 import com.santiagorodriguez.countaway.widget.WidgetPaletteResolver
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 internal data class ShareCardContent(
@@ -45,45 +44,40 @@ internal object ShareCardContentFactory {
         icon: EventIcon,
         repeatRule: RepeatRule,
         today: LocalDate,
+        countMode: CountMode = CountMode.COUNT_DOWN,
     ): ShareCardContent {
-        val displayDate = CountdownOccurrenceResolver.displayDate(date, repeatRule, today)
-        val value = CountdownCalculator.value(today, displayDate)
-        val primaryText = when (value.status) {
-            CountdownStatus.FUTURE,
-            CountdownStatus.THREE_DAYS,
-            CountdownStatus.TWO_DAYS,
-            -> value.days.coerceAtLeast(0).toString()
+        val value = EventCountResolver.resolve(date, repeatRule, countMode, today)
+        val primaryText = when (value.countdownStatus) {
             CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
             CountdownStatus.TODAY -> context.getString(R.string.status_today)
-            CountdownStatus.DONE -> value.elapsedDays.toString()
+            else -> value.magnitude.toString()
         }
-        val secondaryText = when (value.status) {
-            CountdownStatus.FUTURE,
-            CountdownStatus.THREE_DAYS,
-            CountdownStatus.TWO_DAYS,
-            -> context.getString(R.string.widget_days_left)
-            CountdownStatus.TOMORROW,
-            CountdownStatus.TODAY,
-            -> null
+        val secondaryText = value.countUpState?.let {
+            context.getString(EventCountText.countUpUnit(it, value.magnitude))
+        } ?: when (value.countdownStatus) {
+            CountdownStatus.FUTURE, CountdownStatus.THREE_DAYS, CountdownStatus.TWO_DAYS ->
+                context.getString(R.string.widget_days_left)
             CountdownStatus.DONE -> context.getString(
-                if (value.elapsedDays == 1L) R.string.widget_day_ago else R.string.widget_days_ago,
+                if (value.magnitude == 1L) R.string.widget_day_ago else R.string.widget_days_ago,
             )
+            else -> null
         }
-        val locale = context.resources.configuration.locales[0]
-        val dateText = displayDate.format(
-            DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale),
-        )
-        val recurrenceText = repeatLabelRes(repeatRule)?.let(context::getString)
-
         return ShareCardContent(
             iconRes = EventIconPresentation.drawableRes(icon),
             title = title,
             primaryText = primaryText,
             secondaryText = secondaryText,
-            dateText = dateText,
-            recurrenceText = recurrenceText,
-            date = displayDate,
+            dateText = EventCountText.date(context, value.displayDate, countMode, FormatStyle.LONG),
+            recurrenceText = if (countMode == CountMode.COUNT_UP) null else repeatLabelRes(repeatRule)?.let(context::getString),
+            date = value.displayDate,
         )
+    }
+
+    fun text(context: Context, title: String, date: LocalDate, repeatRule: RepeatRule,
+        today: LocalDate, countMode: CountMode = CountMode.COUNT_DOWN): String {
+        val value = EventCountResolver.resolve(date, repeatRule, countMode, today)
+        return context.getString(R.string.share_countdown_format, title,
+            EventCountText.status(context, value), EventCountText.date(context, value.displayDate, countMode, FormatStyle.LONG))
     }
 
     private fun repeatLabelRes(repeatRule: RepeatRule): Int? = when (repeatRule) {
@@ -102,69 +96,34 @@ internal object ShareCardRenderer {
     fun captureContext(context: Context): Context = context.applicationContext
         .createConfigurationContext(Configuration(context.resources.configuration))
 
-    fun render(
-        context: Context,
-        content: ShareCardContent,
-        dark: Boolean,
-    ): Bitmap {
-        val bitmap = WidgetBackgroundRenderer.renderShareRidge(
-            dark = dark,
-            sizePx = SIZE_PX,
-        )
+    fun render(context: Context, content: ShareCardContent, dark: Boolean): Bitmap {
+        val bitmap = WidgetBackgroundRenderer.renderShareRidge(dark = dark, sizePx = SIZE_PX)
         val canvas = Canvas(bitmap)
         val palette = WidgetPaletteResolver.resolve(WidgetBackground.MONOGRAM, dark)
         val medium = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         val bold = Typeface.create("sans-serif", Typeface.BOLD)
         val scale = SIZE_PX / DESIGN_SIZE_PX
-
         canvas.save()
         canvas.scale(scale, scale)
-
-        drawBrandWordmark(
-            context = context,
-            canvas = canvas,
-        )
-
-        drawIcon(
-            context = context,
-            canvas = canvas,
-            iconRes = content.iconRes,
-            tint = palette.accentTextColor,
-            left = 882,
-            top = 54,
-            size = 122,
-        )
-
+        drawBrandWordmark(context, canvas)
+        drawIcon(context, canvas, content.iconRes, palette.accentTextColor, 882, 54, 122)
         val titlePaint = textPaint(palette.primaryTextColor, 70f, medium)
-        drawTwoLineText(
-            canvas = canvas,
-            text = content.title,
-            paint = titlePaint,
-            x = 76f,
-            firstBaseline = 226f,
-            maxWidth = 900f,
-            lineHeight = 82f,
-        )
-
+        drawTwoLineText(canvas, content.title, titlePaint, 76f, 226f, 900f, 82f)
         val primaryMaxSize = if (content.secondaryText == null) 166f else 270f
         val primaryPaint = textPaint(palette.accentTextColor, primaryMaxSize, bold)
         fitText(primaryPaint, content.primaryText, 900f, minSize = 92f)
         canvas.drawText(content.primaryText, 76f, 590f, primaryPaint)
-
         content.secondaryText?.let { secondary ->
             val secondaryPaint = textPaint(palette.secondaryTextColor, 58f, medium)
+            fitText(secondaryPaint, secondary, 900f, minSize = 32f)
             canvas.drawText(secondary, 84f, 666f, secondaryPaint)
         }
-
         val datePaint = textPaint(palette.primaryTextColor, 50f, medium)
-        val fittedDate = ellipsize(content.dateText, datePaint, 900f)
-        canvas.drawText(fittedDate, 76f, 770f, datePaint)
-
+        canvas.drawText(ellipsize(content.dateText, datePaint, 900f), 76f, 770f, datePaint)
         content.recurrenceText?.let { recurrence ->
             val recurrencePaint = textPaint(palette.secondaryTextColor, 39f, medium)
             canvas.drawText(ellipsize(recurrence, recurrencePaint, 760f), 78f, 828f, recurrencePaint)
         }
-
         canvas.restore()
         return bitmap
     }
@@ -179,51 +138,27 @@ internal object ShareCardRenderer {
         }
     }
 
-    private fun drawBrandWordmark(
-        context: Context,
-        canvas: Canvas,
-    ) {
+    private fun drawBrandWordmark(context: Context, canvas: Canvas) {
         val drawable = context.getDrawable(R.drawable.brand_logo)?.mutate() ?: return
-        drawable.setBounds(
-            28,
-            0,
-            348,
-            200,
-        )
+        drawable.setBounds(28, 0, 348, 200)
         drawable.draw(canvas)
     }
 
-    private fun drawIcon(
-        context: Context,
-        canvas: Canvas,
-        iconRes: Int,
-        tint: Int?,
-        left: Int,
-        top: Int,
-        size: Int,
-    ) {
+    private fun drawIcon(context: Context, canvas: Canvas, iconRes: Int, tint: Int?, left: Int, top: Int, size: Int) {
         val drawable = context.getDrawable(iconRes)?.mutate() ?: return
         tint?.let(drawable::setTint)
         drawable.setBounds(left, top, left + size, top + size)
         drawable.draw(canvas)
     }
 
-    private fun drawTwoLineText(
-        canvas: Canvas,
-        text: String,
-        paint: TextPaint,
-        x: Float,
-        firstBaseline: Float,
-        maxWidth: Float,
-        lineHeight: Float,
-    ) {
+    private fun drawTwoLineText(canvas: Canvas, text: String, paint: TextPaint, x: Float,
+        firstBaseline: Float, maxWidth: Float, lineHeight: Float) {
         if (!text.contains('\n') && !text.contains('\r') &&
             !java.text.Bidi.requiresBidi(text.toCharArray(), 0, text.length) &&
             paint.measureText(text) <= maxWidth) {
             canvas.drawText(text, x, firstBaseline, paint)
             return
         }
-
         val layout = titleLayout(text, paint, maxWidth.toInt(), lineHeight)
         canvas.save()
         canvas.translate(x, firstBaseline - layout.getLineBaseline(0))
@@ -237,31 +172,22 @@ internal object ShareCardRenderer {
             .setTextDirection(TextDirectionHeuristics.FIRSTSTRONG_LTR)
             .setIncludePad(false)
             .setLineSpacing(lineHeight - paint.fontSpacing, 1f)
-            .setBreakStrategy(LineBreaker.BREAK_STRATEGY_SIMPLE)
             .setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NONE)
             .setMaxLines(2)
             .setEllipsize(TextUtils.TruncateAt.END)
             .setEllipsizedWidth(width)
             .build()
 
-    private fun fitText(
-        paint: TextPaint,
-        text: String,
-        maxWidth: Float,
-        minSize: Float,
-    ) {
-        while (paint.textSize > minSize && paint.measureText(text) > maxWidth) {
-            paint.textSize -= 4f
-        }
+    private fun fitText(paint: TextPaint, text: String, maxWidth: Float, minSize: Float) {
+        while (paint.textSize > minSize && paint.measureText(text) > maxWidth) paint.textSize -= 4f
     }
 
     private fun ellipsize(text: String, paint: TextPaint, maxWidth: Float): String =
         TextUtils.ellipsize(text, paint, maxWidth, TextUtils.TruncateAt.END).toString()
 
-    private fun textPaint(color: Int, size: Float, typeface: Typeface): TextPaint =
-        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = color
-            textSize = size
-            this.typeface = typeface
-        }
+    private fun textPaint(color: Int, size: Float, typeface: Typeface): TextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color
+        textSize = size
+        this.typeface = typeface
+    }
 }

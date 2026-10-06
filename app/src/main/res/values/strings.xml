@@ -6,7 +6,7 @@
     <string name="language_spanish">Spanish</string>
     <string name="language_catalan">Catalan</string>
 
-    <string name="action_add_countdown">Add countdown</string>
+    <string name="action_add_countdown">@string/action_add_event</string>
     <string name="action_about">About</string>
     <string name="action_save">Save</string>
     <string name="action_share">Share</string>
@@ -16,15 +16,14 @@
     <string name="theme_switch_to_dark">Switch to dark mode</string>
     <string name="theme_follow_system">Follow system theme</string>
 
-    <string name="empty_title">Nothing to count down yet</string>
-    <string name="empty_description">Add a trip, exam, birthday, or anything else worth waiting for.</string>
+    <string name="empty_title">No events yet</string>
+    <string name="empty_description">Add a trip, exam, birthday, anniversary, or any date worth tracking.</string>
     <string name="data_error_title">Saved data needs attention</string>
     <string name="data_error_description">CountAway stopped editing to protect the existing file. Restore a valid backup from About before making changes.</string>
     <string name="event_meta">%1$s · %2$s</string>
     <string name="status_days">%1$d days</string>
     <string name="status_tomorrow">Tomorrow</string>
     <string name="status_today">Today</string>
-    <string name="status_today_zero">0 · Today</string>
     <string name="status_done">Done</string>
     <plurals name="status_days_ago">
         <item quantity="one">%1$d day ago</item>
@@ -37,8 +36,8 @@
     <string name="share_tomorrow">tomorrow</string>
     <string name="share_today">today</string>
 
-    <string name="editor_new_title">New countdown</string>
-    <string name="editor_edit_title">Edit countdown</string>
+    <string name="editor_new_title">@string/event_new_title</string>
+    <string name="editor_edit_title">@string/event_edit_title</string>
     <string name="field_type">Type</string>
     <string name="field_icon">Icon</string>
     <string name="field_title">Title</string>
@@ -50,8 +49,8 @@
     <string name="reminder_three_days">3 days before</string>
     <string name="reminder_seven_days">7 days before</string>
     <string name="notification_permission_denied">Notification permission was not granted.</string>
-    <string name="title_required">Give this countdown a title.</string>
-    <string name="delete_title">Delete countdown?</string>
+    <string name="title_required">Give this event a title.</string>
+    <string name="delete_title">Delete event?</string>
     <string name="delete_message">Delete &quot;%1$s&quot;?</string>
     <string name="data_error_edit_blocked">CountAway could not safely read its saved data. Editing is disabled to avoid overwriting it.</string>
 
@@ -78,18 +77,18 @@
     <string name="event_icon_flag">Flag</string>
     <string name="event_icon_pin">Pin</string>
 
-    <string name="widget_name">CountAway countdown</string>
-    <string name="widget_description">A lightweight resizable countdown for your home screen.</string>
+    <string name="widget_name">@string/app_name</string>
+    <string name="widget_description">Days until or since your dates, right on your home screen.</string>
     <string name="widget_days_left">days left</string>
     <string name="widget_day_ago">day ago</string>
     <string name="widget_days_ago">days ago</string>
-    <string name="widget_select_countdown">Select countdown</string>
+    <string name="widget_select_countdown">@string/widget_select_event</string>
     <string name="widget_no_upcoming">No upcoming countdown</string>
     <string name="widget_tap_to_configure">Tap to configure</string>
-    <string name="widget_config_title">Choose countdown</string>
+    <string name="widget_config_title">@string/widget_select_event</string>
     <string name="widget_config_description">Choose what this widget should keep an eye on.</string>
-    <string name="widget_config_empty">No countdowns yet. Create one first, then come back here.</string>
-    <string name="widget_create_countdown">Create countdown</string>
+    <string name="widget_config_empty">No events yet. Create one first, then come back here.</string>
+    <string name="widget_create_countdown">Create event</string>
     <string name="widget_next_countdown">Next countdown</string>
     <string name="widget_appearance_label">Appearance</string>
     <string name="widget_appearance_system">System</string>
@@ -103,9 +102,9 @@
     <string name="widget_background_sunset">Sunset</string>
     <string name="widget_background_six">Ridge</string>
     <string name="widget_add_to_home">Save widget</string>
-    <string name="widget_add_from_event">Add widget for this countdown</string>
+    <string name="widget_add_from_event">Add widget for this event</string>
     <string name="widget_save_before_pin">Save your changes before adding the widget.</string>
-    <string name="widget_open_countdown">Open countdown</string>
+    <string name="widget_open_countdown">@string/widget_open_event</string>
     <string name="widget_event_option">%1$s · %2$s</string>
 
     <string name="notification_channel_name">Countdown reminders</string>
@@ -119,23 +118,23 @@
 
     <string name="about_version">Version %1$s</string>
     <string name="about_how_title">Make it useful</string>
-    <string name="about_how_body">Three steps, then stop checking the calendar. Create a countdown, long-press it to choose a widget style, and let the Home screen do the remembering.</string>
-    <string name="about_how_steps">1. Create a countdown\n2. Add the widget\n3. Stop checking the calendar every five minutes</string>
+    <string name="about_how_body">Three steps, then stop checking the calendar. Create an event, long-press it to choose a widget style, and let the Home screen do the remembering.</string>
+    <string name="about_how_steps">1. Create an event\n2. Add the widget\n3. Stop checking the calendar every five minutes</string>
     <string name="about_privacy">CountAway has no accounts, ads, analytics, or network access. Your data stays local unless you export a backup to a provider you choose.</string>
     <string name="backup_title">Local backup</string>
-    <string name="backup_description">Export or restore your countdowns using a plain JSON file you control. Where that file is stored depends on the provider you choose.</string>
+    <string name="backup_description">Export or restore your events using a plain JSON file you control. Where that file is stored depends on the provider you choose.</string>
     <string name="backup_export">Export backup</string>
     <string name="backup_import">Import backup</string>
     <string name="backup_export_success">Backup exported.</string>
     <string name="backup_export_failed">Could not export the backup.</string>
-    <string name="backup_import_action">Replace countdowns</string>
+    <string name="backup_import_action">Replace events</string>
     <string name="backup_import_invalid">This is not a valid CountAway backup.</string>
     <string name="backup_import_failed">Could not import the backup.</string>
     <string name="backup_import_success">Backup imported.</string>
     <string name="backup_import_confirm_title">Import backup?</string>
     <plurals name="backup_import_confirm_message">
-        <item quantity="one">This will replace your current countdowns with %1$d countdown from the backup.</item>
-        <item quantity="other">This will replace your current countdowns with %1$d countdowns from the backup.</item>
+        <item quantity="one">This will replace your current events with %1$d event from the backup.</item>
+        <item quantity="other">This will replace your current events with %1$d events from the backup.</item>
     </plurals>
     <string name="about_author">Created by santiagorodriguez.com</string>
     <string name="about_donate">Donate</string>

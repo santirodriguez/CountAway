@@ -1,1 +1,1 @@
-A lightweight local countdown with home-screen widgets
+Count days to or from dates with local home-screen widgets

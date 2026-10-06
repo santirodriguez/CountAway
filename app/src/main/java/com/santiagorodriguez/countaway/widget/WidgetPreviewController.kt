@@ -8,8 +8,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 internal class WidgetPreviewController(
     private val context: Context,
@@ -18,6 +16,9 @@ internal class WidgetPreviewController(
 ) {
     private var currentSize: WidgetSize? = null
     private var currentHeightDp: Int = 0
+    private var currentStyle: WidgetStyleSelection? = null
+    private var currentDimensions: WidgetPreviewDimensions? = null
+    private var currentContent: WidgetEventContent? = null
     private lateinit var backgroundView: ImageView
     private lateinit var iconView: ImageView
     private lateinit var titleView: TextView
@@ -26,50 +27,35 @@ internal class WidgetPreviewController(
     private lateinit var unitView: TextView
     private lateinit var dateView: TextView
 
-    fun renderStyle(
-        selection: WidgetStyleSelection,
-        dimensions: WidgetPreviewDimensions,
-    ) {
-        val size = dimensions.size
+    fun renderStyle(selection: WidgetStyleSelection, dimensions: WidgetPreviewDimensions) {
         currentHeightDp = dimensions.heightDp
-        ensureLayout(size)
+        currentStyle = selection
+        currentDimensions = dimensions
+        ensureLayout(dimensions.size)
         applyFrame(dimensions)
-
-        val theme = WidgetThemeResolver.resolve(
-            context = context,
-            appearance = selection.appearance,
-            background = selection.background,
-        )
-        backgroundView.setImageBitmap(
-            WidgetBackgroundRenderer.render(
-                context = context.applicationContext,
-                background = selection.background,
-                dark = theme.dark,
-                widthDp = dimensions.widthDp,
-                heightDp = dimensions.heightDp,
-            ),
-        )
+        val theme = WidgetThemeResolver.resolve(context, selection.appearance, selection.background)
+        renderBackground()
         iconView.setColorFilter(theme.accentTextColor)
         titleView.setTextColor(theme.primaryTextColor)
         countView.setTextColor(theme.accentTextColor)
         milestoneView.setTextColor(theme.secondaryTextColor)
         unitView.setTextColor(theme.secondaryTextColor)
         dateView.setTextColor(theme.secondaryTextColor)
+        currentContent?.let(::renderEvent) ?: renderIllustration(null)
+    }
+
+    private fun renderBackground() {
+        val style = currentStyle ?: return
+        val dimensions = currentDimensions ?: return
+        val theme = WidgetThemeResolver.resolve(context, style.appearance, style.background)
+        backgroundView.setImageBitmap(WidgetBackgroundRenderer.render(context.applicationContext,
+            style.background, theme.dark, dimensions.widthDp, dimensions.heightDp))
     }
 
     fun renderEvent(content: WidgetEventContent) {
-        val size = requireNotNull(currentSize)
-        val presentation = WidgetPresentationResolver.resolve(
-            content = content,
-            size = size,
-            fontScale = context.resources.configuration.fontScale,
-            heightDp = currentHeightDp,
-        )
-        val locale = context.resources.configuration.locales[0]
-        val formattedDate = content.date.format(
-            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
-        )
-
+        currentContent = content
+        val presentation = WidgetPresentationResolver.resolve(content, requireNotNull(currentSize),
+            context.resources.configuration.fontScale, currentHeightDp)
         iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
         titleView.visibility = if (presentation.showTitle) View.VISIBLE else View.GONE
         titleView.maxLines = presentation.titleMaxLines
@@ -78,10 +64,22 @@ internal class WidgetPreviewController(
         countView.text = presentation.countText
         unitView.text = presentation.unitRes?.let(context::getString).orEmpty()
         milestoneView.text = presentation.milestone.orEmpty()
-        dateView.text = formattedDate
+        dateView.text = content.dateText(context)
         milestoneView.visibility = if (presentation.showMilestone) View.VISIBLE else View.GONE
         unitView.visibility = if (presentation.showUnit) View.VISIBLE else View.GONE
         dateView.visibility = if (presentation.showDate) View.VISIBLE else View.GONE
+        frame.findViewById<View>(R.id.widgetRoot).contentDescription = content.description(context)
+        renderIllustration(content)
+    }
+
+    private fun renderIllustration(content: WidgetEventContent?) {
+        val dimensions = currentDimensions ?: return
+        if (!WidgetArrivalIllustration.supports(dimensions.size)) return
+        val view = frame.findViewById<ImageView>(R.id.widgetArrival)
+        val resource = content?.let { WidgetArrivalIllustration.resource(context, it, dimensions.size,
+            dimensions.widthDp, dimensions.heightDp) } ?: 0
+        if (resource != 0) view.setImageResource(resource)
+        view.visibility = if (resource == 0) View.GONE else View.VISIBLE
     }
 
     fun renderPlaceholder(
@@ -90,8 +88,9 @@ internal class WidgetPreviewController(
         countText: String = context.getString(R.string.widget_preview_sample_count),
         iconRes: Int = R.drawable.ic_event_calendar,
     ) {
-        val size = requireNotNull(currentSize)
-        val presentation = WidgetPresentationResolver.placeholder(size, context.resources.configuration.fontScale, currentHeightDp)
+        currentContent = null
+        val presentation = WidgetPresentationResolver.placeholder(requireNotNull(currentSize),
+            context.resources.configuration.fontScale, currentHeightDp)
         iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
         titleView.visibility = if (presentation.showTitle) View.VISIBLE else View.GONE
         titleView.maxLines = presentation.titleMaxLines
@@ -104,17 +103,14 @@ internal class WidgetPreviewController(
         milestoneView.visibility = View.GONE
         dateView.visibility = View.GONE
         unitView.visibility = if (presentation.showUnit) View.VISIBLE else View.GONE
+        frame.findViewById<View>(R.id.widgetRoot).contentDescription = "$title, $unit"
+        renderIllustration(null)
     }
 
     private fun ensureLayout(size: WidgetSize) {
         if (currentSize == size && frame.childCount > 0) return
-
         frame.removeAllViews()
-        LayoutInflater.from(context).inflate(
-            WidgetLayoutResolver.layoutRes(size),
-            frame,
-            true,
-        )
+        LayoutInflater.from(context).inflate(WidgetLayoutResolver.layoutRes(size), frame, true)
         backgroundView = frame.findViewById(R.id.widgetBackground)
         iconView = frame.findViewById(R.id.widgetIcon)
         titleView = frame.findViewById(R.id.widgetTitle)
@@ -134,16 +130,8 @@ internal class WidgetPreviewController(
 
     private fun applyFrame(dimensions: WidgetPreviewDimensions) {
         container.post {
-            val fitted = WidgetPreviewSizing.fit(
-                containerWidth = container.width,
-                containerHeight = container.height,
-                dimensions = dimensions,
-            )
-            frame.layoutParams = FrameLayout.LayoutParams(
-                fitted.width,
-                fitted.height,
-                Gravity.CENTER,
-            )
+            val fitted = WidgetPreviewSizing.fit(container.width, container.height, dimensions)
+            frame.layoutParams = FrameLayout.LayoutParams(fitted.width, fitted.height, Gravity.CENTER)
         }
     }
 }

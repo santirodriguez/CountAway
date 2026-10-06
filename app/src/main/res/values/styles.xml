@@ -7,6 +7,36 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/background</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:alertDialogTheme">@style/Theme.CountAway.Dialog.Alert</item>
+        <item name="android:datePickerDialogTheme">@style/Theme.CountAway.Dialog.Alert</item>
+    </style>
+
+    <style name="Theme.CountAway.Dialog.Alert" parent="android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:textColorPrimary">@color/foreground</item>
+        <item name="android:textColorSecondary">@color/secondary_text</item>
+        <item name="android:windowBackground">@drawable/dialog_surface_background</item>
+        <item name="android:windowElevation">14dp</item>
+        <item name="android:textColorAlertDialogListItem">@color/foreground</item>
+        <item name="android:listPreferredItemHeightSmall">48dp</item>
+        <item name="android:buttonStyle">@style/Widget.CountAway.Dialog.Button</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/Widget.CountAway.Dialog.Button</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/Widget.CountAway.Dialog.Button</item>
+        <item name="android:buttonBarNeutralButtonStyle">@style/Widget.CountAway.Dialog.Button</item>
+    </style>
+
+    <style name="Widget.CountAway.Dialog.Button" parent="android:style/Widget.Material.Button.Borderless">
+        <item name="android:background">@drawable/dialog_action_feedback</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:paddingRight">12dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@color/accent_text</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:stateListAnimator">@null</item>
     </style>
 
     <style name="Widget.CountAway.Button.Primary" parent="android:style/Widget.Material.Button">

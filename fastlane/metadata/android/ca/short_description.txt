@@ -1,1 +1,1 @@
-Compte enrere local i lleuger amb ginys per a la pantalla d’inici
+Compta dies fins a una data o des d’una data amb ginys locals

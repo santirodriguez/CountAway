@@ -13,22 +13,22 @@ import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
-import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
+import com.santiagorodriguez.countaway.countdown.EventCountResolver
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.BaseActivity
 import com.santiagorodriguez.countaway.ui.EditorActivity
+import com.santiagorodriguez.countaway.ui.EventCountText
 import com.santiagorodriguez.countaway.ui.InsetUtils
 import com.santiagorodriguez.countaway.ui.SimpleItemSelectedListener
 import com.santiagorodriguez.countaway.ui.TemporalInvalidationController
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 class WidgetConfigActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
@@ -253,13 +253,15 @@ class WidgetConfigActivity : BaseActivity() {
         }
 
         events = CountdownEventOrder.sortedForDisplay((result as CountdownLoadResult.Success).events, today)
-        val locale = resources.configuration.locales[0]
-        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
         val labels = buildList {
             add(getString(R.string.widget_next_countdown))
             addAll(events.map { event ->
-                val displayDate = CountdownOccurrenceResolver.displayDate(event, today)
-                getString(R.string.widget_event_option, event.title, displayDate.format(formatter))
+                val value = EventCountResolver.resolve(event, today)
+                getString(
+                    if (event.countMode == CountMode.COUNT_UP) R.string.widget_count_up_option else R.string.widget_event_option,
+                    event.title,
+                    EventCountText.date(this@WidgetConfigActivity, value.displayDate, event.countMode),
+                )
             })
         }
         eventList.adapter = ArrayAdapter(this, R.layout.item_widget_event, android.R.id.text1, labels)
@@ -346,19 +348,13 @@ class WidgetConfigActivity : BaseActivity() {
             events = events,
             today = today,
         )
-
         if (event != null) {
             previewController.renderEvent(WidgetEventContentFactory.from(event, today))
             return
         }
-
         previewController.renderPlaceholder(
             title = getString(
-                if (selectedMode == WidgetEventSelection.NEXT) {
-                    R.string.widget_no_upcoming
-                } else {
-                    R.string.widget_select_countdown
-                },
+                if (selectedMode == WidgetEventSelection.NEXT) R.string.widget_no_upcoming else R.string.widget_select_event,
             ),
             unit = getString(R.string.widget_tap_to_configure),
             countText = getString(R.string.widget_preview_value),
@@ -380,7 +376,6 @@ class WidgetConfigActivity : BaseActivity() {
             finish()
             return
         }
-
         val appearance = WidgetAppearance.entries[appearanceSpinner.selectedItemPosition]
         val background = WidgetBackground.entries[backgroundSpinner.selectedItemPosition]
         val style = WidgetStyleSelection(appearance = appearance, background = background)
@@ -391,20 +386,13 @@ class WidgetConfigActivity : BaseActivity() {
             background = background,
             eventSelection = selectedMode,
         )
-        if (isNewWidget) {
-            WidgetDefaultsPreferences(applicationContext).save(style)
-        }
-
+        if (isNewWidget) WidgetDefaultsPreferences(applicationContext).save(style)
         val snapshot = CountdownTime.snapshot()
         CountdownIo.execute {
             runCatching { CountdownWidgetProvider.updateWidget(appContext, manager, appWidgetId, snapshot) }
             runCatching { WidgetUpdateScheduler.ensureScheduled(appContext, snapshot) }
         }
-
-        setResult(
-            RESULT_OK,
-            Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId),
-        )
+        setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId))
         finish()
     }
 

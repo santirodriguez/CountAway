@@ -1,6 +1,7 @@
 package com.santiagorodriguez.countaway.data
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.RepeatRule
@@ -14,19 +15,21 @@ import java.time.LocalDate
 @RunWith(AndroidJUnit4::class)
 class CountdownStorageSchemaInstrumentedTest {
     @Test
-    fun expandedRecurrenceWritesSchema6AndRoundTrips() {
+    fun countModeWritesSchema7AndRoundTrips() {
         val event = CountdownEvent(
-            id = "monthly-event",
-            title = "Monthly",
+            id = "count-up-event",
+            title = "Since launch",
             date = LocalDate.of(2026, 1, 31),
             type = EventType.EVENT,
             createdAt = Instant.parse("2026-09-23T00:00:00Z"),
-            repeatRule = RepeatRule.MONTHLY,
+            repeatRule = RepeatRule.NONE,
+            countMode = CountMode.COUNT_UP,
         )
 
         val payload = CountdownStorageCodec.encode(listOf(event))
 
-        assertEquals(6, JSONObject(payload).getInt("schemaVersion"))
+        assertEquals(7, JSONObject(payload).getInt("schemaVersion"))
+        assertEquals("count_up", JSONObject(payload).getJSONArray("events").getJSONObject(0).getString("countMode"))
         assertEquals(listOf(event), CountdownStorageCodec.decode(payload))
     }
 }

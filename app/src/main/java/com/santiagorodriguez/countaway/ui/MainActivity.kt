@@ -4,9 +4,9 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.ListView
-import android.widget.Toast
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
@@ -27,12 +27,18 @@ import java.time.LocalDate
 class MainActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
     private lateinit var adapter: CountdownEventAdapter
+    private lateinit var eventActions: HomeEventActions
     private lateinit var countdownList: ListView
     private lateinit var emptyState: View
     private lateinit var emptyStateIcon: View
     private lateinit var emptyTitle: TextView
     private lateinit var emptyDescription: TextView
     private lateinit var addCountdownButton: Button
+    private lateinit var languageButton: Button
+    private lateinit var languageChooser: LanguageChooser
+    private lateinit var renderedLanguage: String
+    private var restoreLanguageFocus = false
+    private var restoreLanguageAccessibilityFocus = false
     private lateinit var temporalInvalidationController: TemporalInvalidationController
     private var loadGeneration = 0
 
@@ -42,21 +48,27 @@ class MainActivity : BaseActivity() {
         InsetUtils.applySystemBarPadding(findViewById(R.id.mainRoot))
 
         repository = CountdownRepository(this)
-        adapter = CountdownEventAdapter(this, ::openWidgetPinSetup)
+        eventActions = HomeEventActions(this,
+            lastNonConfigurationInstance as? HomeEventActions.Session ?: HomeEventActions.Session(),
+            ::openEditor, ::openWidgetPinSetup,
+        ) { refreshTemporalState(CountdownTime.snapshot()) }
+        adapter = CountdownEventAdapter(this, ::openWidgetPinSetup, ::openEditor, eventActions::show)
         countdownList = findViewById(R.id.countdownList)
         emptyState = findViewById(R.id.emptyState)
         emptyStateIcon = findViewById(R.id.emptyStateIcon)
         emptyTitle = findViewById(R.id.emptyTitle)
         emptyDescription = findViewById(R.id.emptyDescription)
         addCountdownButton = findViewById(R.id.addCountdownButton)
+        languageButton = findViewById(R.id.languageButton)
+        languageChooser = LanguageChooser(this, languageButton)
+        renderedLanguage = LanguageManager.currentLanguageTag(this)
+        restoreLanguageFocus = savedInstanceState?.getBoolean(STATE_LANGUAGE_FOCUS) ?: false
+        restoreLanguageAccessibilityFocus = savedInstanceState?.getBoolean(STATE_LANGUAGE_ACCESSIBILITY_FOCUS) ?: false
         temporalInvalidationController = TemporalInvalidationController(this, ::refreshTemporalState)
 
         countdownList.adapter = adapter
         countdownList.emptyView = emptyState
-        countdownList.setOnItemClickListener { _, _, position, _ ->
-            val event = adapter.getItem(position)
-            startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
-        }
+        countdownList.setOnItemClickListener { _, _, position, _ -> openEditor(adapter.getItem(position)) }
         countdownList.setOnItemLongClickListener { _, _, position, _ ->
             openWidgetPinSetup(adapter.getItem(position))
             true
@@ -65,37 +77,53 @@ class MainActivity : BaseActivity() {
         addCountdownButton.setOnClickListener {
             startActivity(Intent(this, EditorActivity::class.java))
         }
-        findViewById<View>(R.id.themeButton).setOnClickListener {
-            showThemePicker()
-        }
+        findViewById<View>(R.id.themeButton).setOnClickListener { showThemePicker() }
         findViewById<View>(R.id.aboutButton).setOnClickListener {
             startActivity(Intent(this, AboutActivity::class.java))
         }
-
-        findViewById<View>(R.id.languageEnglishButton).setOnClickListener {
-            selectLanguage(LanguageManager.ENGLISH)
-        }
-        findViewById<View>(R.id.languageSpanishButton).setOnClickListener {
-            selectLanguage(LanguageManager.SPANISH)
-        }
-        findViewById<View>(R.id.languageCatalanButton).setOnClickListener {
-            selectLanguage(LanguageManager.CATALAN)
-        }
     }
+
+    override fun onRetainNonConfigurationInstance(): Any = eventActions.session
 
     override fun onResume() {
         super.onResume()
+        if (LanguageManager.currentLanguageTag(this) != renderedLanguage) {
+            recreate()
+            return
+        }
         val snapshot = CountdownTime.snapshot()
         temporalInvalidationController.start(snapshot)
         refreshTemporalState(snapshot)
-        renderLanguageSelection()
+        eventActions.resume()
+        languageChooser.render()
         renderThemeButton()
+        if (restoreLanguageFocus || restoreLanguageAccessibilityFocus) {
+            languageButton.requestFocus()
+            if (restoreLanguageAccessibilityFocus) {
+                languageButton.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
+            }
+            restoreLanguageFocus = false
+            restoreLanguageAccessibilityFocus = false
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(STATE_LANGUAGE_FOCUS, languageButton.hasFocus())
+        outState.putBoolean(STATE_LANGUAGE_ACCESSIBILITY_FOCUS, languageButton.isAccessibilityFocused)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onPause() {
+        eventActions.pause()
         temporalInvalidationController.stop()
         loadGeneration += 1
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        eventActions.close()
+        languageChooser.dismiss()
+        super.onDestroy()
     }
 
     private fun refreshTemporalState(snapshot: CountdownTimeSnapshot) {
@@ -154,6 +182,10 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    private fun openEditor(event: CountdownEvent) {
+        startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
+    }
+
     private fun openWidgetPinSetup(event: CountdownEvent) {
         startActivity(
             Intent(this, WidgetPinSetupActivity::class.java)
@@ -164,24 +196,6 @@ class MainActivity : BaseActivity() {
     private fun setAddEnabled(enabled: Boolean) {
         addCountdownButton.isEnabled = enabled
         addCountdownButton.alpha = if (enabled) 1f else 0.45f
-    }
-
-    private fun selectLanguage(languageTag: String) {
-        val current = LanguageManager.currentLanguageTag(this)
-        if (!LanguageManager.isFollowingSystem(this) && current == languageTag) {
-            LanguageManager.useSystemLanguage(this)
-            Toast.makeText(this, R.string.language_follow_system_enabled, Toast.LENGTH_SHORT).show()
-        } else {
-            LanguageManager.setLanguage(this, languageTag)
-        }
-    }
-
-    private fun renderLanguageSelection() {
-        val current = LanguageManager.currentLanguageTag(this)
-        val explicit = !LanguageManager.isFollowingSystem(this)
-        setLanguageButtonState(R.id.languageEnglishButton, explicit && current == LanguageManager.ENGLISH)
-        setLanguageButtonState(R.id.languageSpanishButton, explicit && current == LanguageManager.SPANISH)
-        setLanguageButtonState(R.id.languageCatalanButton, explicit && current == LanguageManager.CATALAN)
     }
 
     private fun showThemePicker() {
@@ -220,12 +234,8 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun setLanguageButtonState(viewId: Int, selected: Boolean) {
-        findViewById<View>(viewId).apply {
-            isSelected = selected
-            setBackgroundResource(
-                if (selected) R.drawable.language_chip_active else R.drawable.language_chip_inactive,
-            )
-        }
+    private companion object {
+        const val STATE_LANGUAGE_FOCUS = "language_focus"
+        const val STATE_LANGUAGE_ACCESSIBILITY_FOCUS = "language_accessibility_focus"
     }
 }

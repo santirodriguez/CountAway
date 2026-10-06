@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="count_mode_label">Mode</string>
+    <string name="count_mode_down">Compte enrere</string>
+    <string name="count_mode_up">Dies transcorreguts</string>
+    <string name="count_up_start_date">Data d\'inici</string>
+    <string name="count_up_start_date_format">Inici: %1$s</string>
+    <string name="count_up_explanation">Compta els dies des de la data d\'inici. No es repeteix ni envia recordatoris.</string>
+    <string name="count_mode_confirm_title">Comptar els dies transcorreguts?</string>
+    <string name="count_mode_confirm_message">S\'eliminaran la repetició i els recordatoris d\'aquest esborrany. L\'esdeveniment desat no canvia fins que el desis.</string>
+    <string name="count_mode_confirm_action">Canvia el mode</string>
+    <string name="count_up_day_elapsed">dia transcorregut</string>
+    <string name="count_up_days_elapsed">dies transcorreguts</string>
+    <string name="count_up_day_until_start">dia fins a l\'inici</string>
+    <string name="count_up_days_until_start">dies fins a l\'inici</string>
+    <plurals name="count_up_elapsed">
+        <item quantity="one">%1$d dia transcorregut</item>
+        <item quantity="other">%1$d dies transcorreguts</item>
+        <item quantity="many">%1$d dies transcorreguts</item>
+    </plurals>
+    <plurals name="count_up_starts_in">
+        <item quantity="one">Comença d\'aquí a %1$d dia</item>
+        <item quantity="other">Comença d\'aquí a %1$d dies</item>
+        <item quantity="many">Comença d\'aquí a %1$d dies</item>
+    </plurals>
+    <string name="event_new_title">Nou esdeveniment</string>
+    <string name="event_edit_title">Edita l\'esdeveniment</string>
+    <string name="action_add_event">Afegeix un esdeveniment</string>
+    <string name="widget_select_event">Tria un esdeveniment</string>
+    <string name="widget_open_event">Obre l\'esdeveniment</string>
+    <string name="widget_count_up_option">%1$s · Dies transcorreguts · %2$s</string>
+</resources>

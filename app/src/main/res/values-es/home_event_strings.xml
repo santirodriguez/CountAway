@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="home_days"><item quantity="one">Falta %1$s día</item><item quantity="many">Faltan %1$s días</item><item quantity="other">Faltan %1$s días</item></plurals>
+    <plurals name="home_days_arrival"><item quantity="one">%1$s día</item><item quantity="many">%1$s días</item><item quantity="other">%1$s días</item></plurals>
+    <plurals name="home_days_ago"><item quantity="one">Hace %1$s día</item><item quantity="many">Hace %1$s días</item><item quantity="other">Hace %1$s días</item></plurals>
+    <plurals name="home_days_since"><item quantity="one">+%1$s día</item><item quantity="many">+%1$s días</item><item quantity="other">+%1$s días</item></plurals>
+    <plurals name="home_days_until_start"><item quantity="one">En %1$s día</item><item quantity="many">En %1$s días</item><item quantity="other">En %1$s días</item></plurals>
+    <string name="home_start_date">Inicio: %1$s</string>
+    <string name="home_since_date">Desde %1$s</string>
+    <string name="home_section_upcoming">PRÓXIMOS ↓</string>
+    <string name="home_section_count_up">TRANSCURRIDOS ↑</string>
+    <string name="home_section_past">PASADOS ↓</string>
+    <string name="home_section_upcoming_accessibility">Eventos próximos en cuenta regresiva</string>
+    <string name="home_section_count_up_accessibility">Eventos con días transcurridos</string>
+    <string name="home_section_past_accessibility">Eventos pasados en cuenta regresiva</string>
+</resources>

@@ -225,6 +225,7 @@ class AboutActivity : BaseActivity() {
             .setPositiveButton(R.string.backup_import_action) { _, _ -> flow.confirmImport() }
             .setOnCancelListener { flow.cancelConfirmation() }
             .show().also { dialog ->
+                DialogPresentation.polish(dialog)
                 dialog.setOnDismissListener {
                     if (confirmation === dialog) confirmation = null
                     if (resumed) window.decorView.post { renderBackup() }

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.2
+
+- Add count-up events for tracking days since a start date across the app, fixed widgets, sharing, and local backups.
+- Keep **Next countdown** focused on upcoming count-down events while fixed widgets support both directions.
+- Add an accessible language chooser for English, Español, and Català, with a return-to-System option.
+- Make widget pinning more reliable across supported Android versions.
+- Refine Home cards with more compact count tiles, more room for titles, clearer count-down/count-up grouping, and polished event actions.
+- Give confirmations and pickers a consistent CountAway look, with clearer destructive actions in light and dark themes.
+- Improve contextual-menu reliability and accessibility across supported Android versions.
+- Improve large-text widget layouts and shared wording between count-up and count-down surfaces.
+- Migrate existing local data automatically to storage schema 7; count-up events do not repeat or use reminders.
+
 ## 1.2.1
 
 - Restore wrapped titles and event icons in narrow, tall widgets when space permits.
