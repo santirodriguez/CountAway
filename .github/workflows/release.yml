@@ -52,6 +52,12 @@ jobs:
       - name: Validate localization sources
         run: python3 scripts/verify-localizations.py
 
+      - name: Validate reusable Play assets
+        run: |
+          set -euo pipefail
+          python3 scripts/verify-play-assets.py icon fastlane/metadata/android/en-US/images/icon.png
+          python3 scripts/verify-play-assets.py feature fastlane/metadata/android/en-US/images/featureGraphic.png
+
       - name: Resolve release version
         id: version
         env:
