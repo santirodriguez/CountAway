@@ -1,0 +1,1 @@
+Prepara CountAway per a Google Play sense canviar la distribució per GitHub, Obtainium ni F-Droid. La infraestructura de traduccions és més fàcil d’ampliar i validar; continuen habilitats l’anglès, l’espanyol i el català. Les proves d’actualització parteixen de la versió 1.2.2.
