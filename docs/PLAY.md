@@ -16,11 +16,20 @@ CountAway is being prepared for its first Google Play submission while preservin
 
 These are repository invariants unless a future release explicitly reviews and approves a change.
 
+As of 2026-10-06, Google Play requires new phone/tablet apps and app updates submitted after August 31, 2026 to target Android 16 / API 36 or later. CountAway's current `targetSdk = 36` satisfies that submission requirement.
+
+Policy review date: **2026-10-06**. Recheck these sources immediately before any actual Console submission because Play requirements can change.
+
 Official references:
 - Android App Bundles: https://developer.android.com/guide/app-bundle
+- target API requirements: https://support.google.com/googleplay/android-developer/answer/11926878
 - Play App Signing: https://support.google.com/googleplay/android-developer/answer/9842756
-- Google Play user-data/privacy policy: https://support.google.com/googleplay/android-developer/answer/10144311
-- target API requirements: https://developer.android.com/google/play/requirements/target-sdk
+- preview/store assets: https://support.google.com/googleplay/android-developer/answer/9866151
+- Data Safety: https://support.google.com/googleplay/android-developer/answer/10787469
+- privacy policy requirements: https://support.google.com/googleplay/android-developer/answer/18258653
+- Health apps declaration: https://support.google.com/googleplay/android-developer/answer/14738291
+- personal-account testing requirements: https://support.google.com/googleplay/android-developer/answer/14151465
+- payments/tips policy: https://support.google.com/googleplay/android-developer/answer/10281818
 
 ## Distribution architecture
 
@@ -77,6 +86,8 @@ When Play App Signing is eventually configured:
 
 Google documents this as the supported model when an app is distributed in multiple stores and the same signing key is required everywhere.
 
+For a **new** Play app, Google currently defaults to a Google-generated app-signing key. CountAway must not accept that default blindly because it already exists outside Play. Before any Play-delivered build is treated as cross-store compatible, use the Play App Signing path that lets the maintainer provide a copy of CountAway's existing app-signing key, then verify the certificate shown by Play against the historical fingerprint. The separate upload key may and should differ.
+
 Any future Play signing setup must verify the resulting Play app-signing certificate against the historical CountAway identity before production distribution.
 
 ## Privacy policy
@@ -87,13 +98,15 @@ Canonical repository policy:
 PRIVACY.md
 ```
 
-In-app policy URL:
+Current in-app policy URL:
 
 ```text
 https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md
 ```
 
 The policy is store-neutral and covers CountAway / Ya Estamos / Ja Queda Poc.
+
+Google Play requires the submitted privacy-policy URL to be active, publicly accessible, non-geofenced, non-PDF, and non-editable. Treat the current GitHub-hosted URL as a **pre-submission verification gate**, not as automatically Play-approved. Before the exact release candidate is frozen, either confirm that the current URL satisfies the Play Console review requirement or replace it atomically with a compliant static public policy URL, updating the in-app resource, contract tests, release workflow, and this document together.
 
 CountAway itself has no Internet permission. The About/Help link delegates the URL to an external browser through Android.
 
@@ -113,7 +126,9 @@ Based on the current runtime, CountAway is designed so the developer does not co
 - backup export/import is explicitly user-directed through Android's document interface;
 - event sharing is explicitly user-directed through Android's share sheet.
 
-This is a readiness assessment, **not a permanently valid Play Console declaration**. Immediately before filling or updating Play Console Data Safety, audit the exact release candidate and current Google definitions again. Any new SDK, permission, network feature, account feature, cloud storage, telemetry, crash reporting, or external service can change the answer.
+This is a readiness assessment, **not a permanently valid Play Console declaration**. Google defines collection as transmitting user data off the device; local-only processing is outside that collection definition. Even when an app collects or shares no user data, a Data Safety form and privacy-policy link are still required once the app is active on closed/open/production tracks; an app exclusively on internal testing is currently exempt from the Data Safety form.
+
+Immediately before filling or updating Play Console Data Safety, audit the exact release candidate and current Google definitions again. Any new SDK, permission, network feature, account feature, cloud storage, telemetry, crash reporting, or external service can change the answer.
 
 ## Versioning
 
@@ -141,6 +156,8 @@ Store locale mapping comes from `app/src/main/res/xml/supported_languages.xml`. 
 Repository-side PNG exports can be checked with `python3 scripts/verify-play-assets.py <icon|feature|screenshot> <file>...`. JPEG exports remain valid Play inputs and should be inspected with an image tool before submission.
 
 Console application creation/configuration, Play App Signing enrollment, upload-key generation, declarations, tracks, and rollout remain manual consequential gates.
+
+If the developer account is a **personal account created after November 13, 2023**, production access currently requires a closed test with at least 12 testers continuously opted in for at least 14 days, followed by a production-access request in Play Console. Internal testing does not satisfy that production gate. Account type/date must be checked in Play Console; do not assume this requirement applies or does not apply.
 
 ## Future Play onboarding checklist
 
@@ -190,8 +207,8 @@ Revalidate every declaration against the exact candidate and current Play wordin
 - App access: no account/login gate.
 - Advertising ID and sensitive permissions: inspect the merged manifest rather than assuming.
 - Content rating and target audience: complete from actual app content.
-- Health declaration: review the app's presets/content rather than blindly selecting "no health features".
-- Donation link: confirm it is a voluntary tip with no digital reward or entitlement before billing-policy sign-off.
+- Health declaration: the form is required even for apps with no health features. CountAway has generic presets such as Smoke-free and Training, so review the exact candidate honestly; if they remain simple date/count presets rather than health tracking/advice, the expected declaration is "My app doesn't provide any health features."
+- Donation link: current Play guidance treats a direct tip/contribution to the creator as outside mandatory Play Billing only when 100% goes to the creator and the payment grants no digital content, service, badge, feature, entitlement, or other in-app benefit. Verify the live donation flow still meets that condition before submission.
 - Support contact: use a monitored maintainer-provided address; do not invent one in repository metadata.
 - Countries, category/tags, identity/trader/account verification, and any personal-account testing requirement are Console/account decisions.
 
