@@ -30,7 +30,7 @@
     <string name="external_action_unavailable">No hay una app disponible para esta acción.</string>
     <string name="backup_provider_unavailable">No hay un proveedor de documentos disponible.</string>
     <string name="share_unavailable">No hay una app disponible para compartir esta cuenta regresiva.</string>
-    <string name="backup_import_confirm_details">Eventos de la copia: %1$d\nGuardados actualmente: %2$d\n\nSólo se reemplazan las cuentas regresivas. No se restaura la ubicación de los widgets.</string>
-    <string name="backup_import_confirm_details_unknown">Eventos de la copia: %1$d\nNo se pudo leer cuántos hay guardados ahora.\n\nSólo se reemplazan las cuentas regresivas. No se restaura la ubicación de los widgets.</string>
+    <string name="backup_import_confirm_details">Eventos de la copia: %1$d\nGuardados actualmente: %2$d\n\nSe reemplazan todos los eventos actuales. No se restaura la ubicación de los widgets.</string>
+    <string name="backup_import_confirm_details_unknown">Eventos de la copia: %1$d\nNo se pudo leer cuántos hay guardados ahora.\n\nSe reemplazan todos los eventos actuales. No se restaura la ubicación de los widgets.</string>
     <string name="backup_export_current_first">Exportar actuales primero</string>
 </resources>

@@ -30,7 +30,7 @@
     <string name="external_action_unavailable">No app is available for this action.</string>
     <string name="backup_provider_unavailable">No document provider is available.</string>
     <string name="share_unavailable">No app is available to share this countdown.</string>
-    <string name="backup_import_confirm_details">Incoming events: %1$d\nCurrently saved: %2$d\n\nOnly countdown events are replaced. Widget placement is not restored.</string>
-    <string name="backup_import_confirm_details_unknown">Incoming events: %1$d\nThe current saved count could not be read.\n\nOnly countdown events are replaced. Widget placement is not restored.</string>
+    <string name="backup_import_confirm_details">Incoming events: %1$d\nCurrently saved: %2$d\n\nAll current events are replaced. Widget placement is not restored.</string>
+    <string name="backup_import_confirm_details_unknown">Incoming events: %1$d\nThe current saved count could not be read.\n\nAll current events are replaced. Widget placement is not restored.</string>
     <string name="backup_export_current_first">Export current first</string>
 </resources>
