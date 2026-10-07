@@ -42,7 +42,7 @@ if (( $# >= 6 )); then BUNDLETOOL=$6; fi
 if (( $# >= 7 )); then EXPECTED_PACKAGE=$7; fi
 if (( $# >= 8 )); then EXPECTED_VERSION_NAME=$8; fi
 if (( $# >= 9 )); then EXPECTED_VERSION_CODE=$9; fi
-if (( $# >= 10 )); then RECEIPT=$10; fi
+if (( $# >= 10 )); then RECEIPT=${10}; fi
 
 [[ -f "$INPUT" && -s "$INPUT" ]] || fail "Input AAB is missing or empty: $INPUT"
 [[ -f "$KEYSTORE" && -s "$KEYSTORE" ]] || fail "Keystore is missing or empty: $KEYSTORE"
