@@ -197,7 +197,7 @@ Use only the exact AAB produced from the accepted release-candidate SHA.
 4. Sign the exact reviewed AAB with the repository helper, which uses JAR-compatible signing, verifies that the keystore alias matches the supplied public upload certificate, keeps passwords off the command line, leaves the input AAB unchanged, and can revalidate package/version with bundletool:
 
    ```bash
-   scripts/sign-play-bundle.sh \
+   bash scripts/sign-play-bundle.sh \
      CountAway-v<version>-play-readiness.aab \
      CountAway-v<version>-play-upload.aab \
      /secure/path/countaway-play-upload.jks \
