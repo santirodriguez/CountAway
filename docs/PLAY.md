@@ -61,7 +61,7 @@ It contains:
 
 This artifact proves that the exact reviewed source can be packaged as an Android App Bundle. CI validates the bundle with Google's official bundletool, pinned by version and SHA-256, and compares the package, versionName, and versionCode read structurally from the packaged base manifest against the expected release identity. It is not attached to the public GitHub Release.
 
-Until a dedicated Play upload key is configured, do not describe this readiness artifact as the final upload-signed Play bundle.
+A readiness artifact is not upload-ready until the exact reviewed AAB is signed with the dedicated Play upload key and the signed bundle passes the checks below.
 
 Public GitHub releases remain restricted to:
 
@@ -194,8 +194,24 @@ Use only the exact AAB produced from the accepted release-candidate SHA.
 1. Confirm `app/build.gradle.kts` still contains the intended package, versionName and versionCode, and confirm versionCode 12 is unused in Play Console before the first upload.
 2. Record the candidate source SHA and the readiness AAB SHA-256 retained by Actions.
 3. Create or select the dedicated Play **upload key** outside this repository only after explicit maintainer authorization. The upload key is not the CountAway app-signing identity.
-4. Sign the exact reviewed AAB with JAR-compatible AAB signing tooling. Do not use APK-only `apksigner` as the AAB signing procedure.
-5. Recompute the signed AAB SHA-256; inspect its manifest/package/version with bundletool; verify the signing certificate corresponds to the intended upload key; retain only non-secret fingerprints/checksums as evidence.
+4. Sign the exact reviewed AAB with the repository helper, which uses JAR-compatible signing, verifies that the keystore alias matches the supplied public upload certificate, keeps passwords off the command line, leaves the input AAB unchanged, and can revalidate package/version with bundletool:
+
+   ```bash
+   scripts/sign-play-bundle.sh \
+     CountAway-v<version>-play-readiness.aab \
+     CountAway-v<version>-play-upload.aab \
+     /secure/path/countaway-play-upload.jks \
+     countaway-play-upload \
+     /secure/path/countaway-play-upload-certificate.pem \
+     /path/to/bundletool.jar \
+     com.santiagorodriguez.countaway \
+     <version> \
+     <versionCode> \
+     CountAway-v<version>-play-upload.receipt.txt
+   ```
+
+   The helper prompts locally for passwords when the `PLAY_UPLOAD_STORE_PASSWORD` / `PLAY_UPLOAD_KEY_PASSWORD` environment variables are absent. Do not use APK-only `apksigner` for the AAB.
+5. Review the helper receipt and retain the signed AAB SHA-256 plus the public upload-certificate fingerprint as non-secret evidence. The input readiness AAB checksum must remain unchanged, and bundletool must still report the expected package, versionName and versionCode.
 6. Upload that exact signed AAB to the authorized track. Do not rebuild between tracks; promote the same reviewed artifact.
 7. Before production, verify the **Play app-signing certificate** is the historical CountAway identity:
    `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
