@@ -204,8 +204,6 @@ jobs:
           VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' app/build.gradle.kts)"
 
           mkdir -p "${TEST_DIR}"
-          chmod +x scripts/sign-play-bundle.sh
-
           keytool -genkeypair -noprompt \
             -keystore "${TEST_KEYSTORE}" -storetype PKCS12 \
             -storepass countaway-ci-test -keypass countaway-ci-test \
@@ -226,7 +224,7 @@ jobs:
 
           if PLAY_UPLOAD_STORE_PASSWORD=countaway-ci-test \
              PLAY_UPLOAD_KEY_PASSWORD=countaway-ci-test \
-             scripts/sign-play-bundle.sh \
+             bash scripts/sign-play-bundle.sh \
                "${AAB}" "${TEST_DIR}/must-not-exist.aab" \
                "${TEST_KEYSTORE}" upload-test "${WRONG_CERT}" \
                "${BUNDLETOOL_JAR}" "${PACKAGE_ID}" "${VERSION}" "${VERSION_CODE}"; then
@@ -237,7 +235,7 @@ jobs:
 
           PLAY_UPLOAD_STORE_PASSWORD=countaway-ci-test \
           PLAY_UPLOAD_KEY_PASSWORD=countaway-ci-test \
-            scripts/sign-play-bundle.sh \
+            bash scripts/sign-play-bundle.sh \
               "${AAB}" "${SIGNED_AAB}" \
               "${TEST_KEYSTORE}" upload-test "${TEST_CERT}" \
               "${BUNDLETOOL_JAR}" "${PACKAGE_ID}" "${VERSION}" "${VERSION_CODE}" \
