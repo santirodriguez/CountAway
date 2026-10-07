@@ -4,7 +4,7 @@ CountAway keeps translations in ordinary Android XML resources. Translators shou
 
 ## Translate the app
 
-1. Start from the current `release/1.2.3` branch.
+1. Start from the current `main` branch unless a maintainer explicitly asks you to use another active branch.
 2. Copy the complete default `app/src/main/res/values/*.xml` translatable resource set into the correct Android language-qualified `values-...` directory. For Simplified Chinese, use `app/src/main/res/values-b+zh+Hans/`.
 3. Translate the user-facing text while preserving every resource `name`, XML structure, formatting argument index/type (for example `%1$s` or `%2$d`), escaping, and markup.
 4. Keep plurals linguistically correct for the target language. Do not add categories only to mirror English; Android requires an `other` branch.
@@ -12,6 +12,26 @@ CountAway keeps translations in ordinary Android XML resources. Translators shou
 6. Run `python3 scripts/verify-localizations.py`. Candidate language directories are validated even before they are enabled in the release catalog. You can also check one explicitly, for example `python3 scripts/verify-localizations.py --resource-dir values-b+zh+Hans`.
 
 The validator checks completeness, duplicate/type drift, formatting contracts, accidental overrides of non-translatable resources, and the maintained language catalog. Android build/lint remains authoritative for Android resource semantics.
+
+
+## Open a translation pull request
+
+For a new or refreshed translation contribution:
+
+1. Fork CountAway and sync your fork with the current `main` branch.
+2. Create a focused branch such as `translation/zh-hans` or `translation/<language-tag>`.
+3. Commit only the current language resources and closely related linguistic fixes. Do not copy integration code from an older translation PR.
+4. Run the localization validator for your candidate directory and, when practical, the normal repository validation documented in the README.
+5. Open a **new pull request against `main`** unless a maintainer has explicitly directed the contribution to another active branch.
+6. In the PR description, state:
+   - the language and intended BCP 47 tag/script;
+   - whether the translation was written or reviewed by a native/proficient speaker;
+   - any terminology or pluralization choices that need maintainer review;
+   - any optional localized product-name suggestions, with their meaning/tone;
+   - whether machine translation or other tools were used as assistance.
+
+A previous or stale translation PR can still be useful as provenance, but contributors should not rebuild new work on obsolete integration changes. A fresh PR from the current codebase keeps the linguistic contribution reviewable and lets maintainers apply the current integration path.
+
 
 ## Meaning matters
 
