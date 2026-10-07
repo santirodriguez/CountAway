@@ -7,7 +7,7 @@ export LC_ALL=C
 usage() {
   cat <<'USAGE'
 Usage:
-  scripts/sign-play-bundle.sh INPUT_AAB OUTPUT_AAB KEYSTORE ALIAS CERTIFICATE_PEM \
+  bash scripts/sign-play-bundle.sh INPUT_AAB OUTPUT_AAB KEYSTORE ALIAS CERTIFICATE_PEM \
     [BUNDLETOOL_JAR EXPECTED_PACKAGE EXPECTED_VERSION_NAME EXPECTED_VERSION_CODE [RECEIPT]]
 
 Passwords are never accepted as command-line arguments.
