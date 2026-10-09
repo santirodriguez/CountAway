@@ -83,7 +83,7 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 - package, min/target/compile SDKs, and exact manifest permission surface;
 - release runtime dependency report, no app-declared runtime libraries, the expected Kotlin/annotations baseline, and absence of native libraries;
 - presence of R8 mapping and resource shrinking;
-- current APK-size delta against the previous public 1.2.2 APK (443,929 bytes);
+- current APK-size delta against the previous public 1.2.2 APK (499,104 bytes);
 - Play-readiness AAB SHA-256/byte size and basic bundle structure, retained only as internal Actions evidence;
 - compiled instrumentation-test APK and ordinary test/lint reports;
 - screenshot SHA-256s during stable preparation;
@@ -122,7 +122,7 @@ A release-candidate run:
 7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
 8. records APK checksum/size, size deltas, and validation reports;
 9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
-10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs a data-bearing signed 1.2.1 -> candidate upgrade on API 33 using the immutable public 1.2.2 APK digest, creating an event through the public UI and verifying it survives the in-place upgrade, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
+10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs a data-bearing signed 1.2.2 -> candidate upgrade on API 33 using the immutable public 1.2.2 APK digest, creating an event through the public UI and verifying it survives the in-place upgrade, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
 11. uploads the release candidate, validation evidence, reproducibility evidence, per-API acceptance evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:
@@ -134,7 +134,7 @@ CountAway-v<version>.apk.sha256
 
 The signing, verification, test/lint, dependency, size, reproducibility, and R8 artifacts are verification/debug evidence and do not need to be attached to the public release.
 
-Play-readiness validation also builds `bundleRelease` and retains an Android App Bundle plus checksum/evidence as a GitHub Actions artifact. This AAB is **not** a public GitHub release asset and does not replace the signed APK used by GitHub/Obtainium or the existing F-Droid flow. Until a future Play upload key is deliberately configured, treat it as packaging/readiness evidence rather than an upload-ready Play artifact. The AAB gate uses Google's official bundletool, pinned by version and SHA-256, to validate the bundle and compare the package, versionName, and versionCode read structurally from the packaged base manifest against the expected CountAway release identity.
+Play-readiness validation also builds `bundleRelease` and retains an Android App Bundle plus checksum/evidence as a GitHub Actions artifact. This AAB is **not** a public GitHub release asset and does not replace the signed APK used by GitHub/Obtainium or the existing F-Droid flow. Treat it as packaging/readiness evidence rather than an upload-ready Play artifact; the accepted bundle must be separately signed and verified with the dedicated Play upload key, following [`PLAY.md`](PLAY.md). The AAB gate uses Google's official bundletool, pinned by version and SHA-256, to validate the bundle and compare the package, versionName, and versionCode read structurally from the packaged base manifest against the expected CountAway release identity.
 
 ## F-Droid Gate A
 
