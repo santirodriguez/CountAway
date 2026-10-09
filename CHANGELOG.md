@@ -2,11 +2,9 @@
 
 ## 1.2.3
 
-- Prepare CountAway's first Google Play submission without changing the existing GitHub, Obtainium, or F-Droid distribution paths.
-- Centralize the enabled-language catalog and add contributor-oriented translation validation while preserving English, Español, and Català behavior.
-- Add script-aware locale matching to support future language contributions.
-- Advance release upgrade validation to the published 1.2.2 / versionCode 11 baseline.
-- Update privacy and Play submission documentation for both count-down and count-up events, signing identity, store mappings, declarations, and genuine final-candidate assets.
+- Refine language selection around a shared catalog for English, Español, and Català.
+- Update About links to the CountAway website and privacy policy.
+- Add clearer translation contributor guidance and resource validation.
 
 ## 1.2.2
 

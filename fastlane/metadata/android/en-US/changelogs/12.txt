@@ -1,1 +1,1 @@
-Prepare CountAway for Google Play while keeping GitHub, Obtainium, and F-Droid unchanged. Translation infrastructure is easier to extend and validate, with English, Spanish, and Catalan still enabled. Release upgrade checks now start from 1.2.2.
+Language selection now uses a shared catalog for English, Español, and Català. About links now open the CountAway website and privacy policy.
