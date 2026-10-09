@@ -6,6 +6,7 @@ import argparse
 import binascii
 import hashlib
 from pathlib import Path
+import shutil
 import struct
 import zlib
 
@@ -217,9 +218,58 @@ def prepare_feature(source: Path, destination: Path) -> None:
     )
 
 
+
+def stage_phone_screenshots(output: Path) -> None:
+    """Copy six accepted Fastlane screenshots into Play assets without altering bytes."""
+    source = Path("fastlane/metadata/android/en-US/images/phoneScreenshots")
+    if not source.is_dir():
+        fail(f"{source}: missing canonical screenshot directory")
+
+    expected = [f"{i}.png" for i in range(1, 7)]
+    actual = sorted(
+        path.name
+        for path in source.iterdir()
+        if path.is_file() and path.suffix.lower() in (".png", ".jpg", ".jpeg")
+    )
+    if actual != sorted(expected):
+        fail(f"{source}: expected exactly {expected}, got {actual}")
+
+    # Validate every source before writing any staged outputs.
+    for name in expected:
+        path = source / name
+        image = decode_png(path)
+        if (image["width"], image["height"]) != (1080, 1920):
+            fail(
+                f"{path}: CountAway phone screenshots must be authentic "
+                f"1080x1920 captures, got {image['width']}x{image['height']}"
+            )
+        if image["color_type"] != 2:
+            fail(f"{path}: screenshot must be a 24-bit RGB PNG without alpha")
+
+    dest = output / "phoneScreenshots"
+    if dest.exists():
+        extras = sorted(path.name for path in dest.iterdir() if path.is_file() and path.name not in expected)
+        if extras:
+            fail(f"{dest}: unexpected existing staged files {extras}")
+    dest.mkdir(parents=True, exist_ok=True)
+
+    manifest = []
+    for name in expected:
+        original = source / name
+        staged = dest / name
+        shutil.copyfile(original, staged)
+        digest = sha256(original)
+        if sha256(staged) != digest:
+            fail(f"{staged}: staged screenshot differs from canonical source")
+        manifest.append(f"{digest}  phoneScreenshots/{name}")
+        print(f"play_screenshot=staged source={original} output={staged} sha256={digest}")
+
+    (output / "phoneScreenshots.sha256").write_text("\n".join(manifest) + "\n", encoding="utf-8")
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", default="play-assets")
+    parser.add_argument("--include-phone-screenshots", action="store_true")
     args = parser.parse_args()
     output = Path(args.output_dir)
     prepare_icon(
@@ -230,6 +280,8 @@ def main() -> None:
         Path("fastlane/metadata/android/en-US/images/featureGraphic.png"),
         output / "featureGraphic.png",
     )
+    if args.include_phone_screenshots:
+        stage_phone_screenshots(output)
 
 
 if __name__ == "__main__":

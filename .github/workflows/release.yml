@@ -52,6 +52,9 @@ jobs:
       - name: Validate localization sources
         run: python3 scripts/verify-localizations.py
 
+      - name: Self-test Play screenshot staging
+        run: python3 scripts/test-play-screenshot-staging.py
+
       - name: Prepare and validate reusable Play assets
         run: |
           set -euo pipefail

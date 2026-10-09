@@ -159,7 +159,22 @@ Store locale mapping comes from `app/src/main/res/xml/supported_languages.xml`. 
 
 The existing Fastlane icon and feature graphic remain source/distribution assets and are not rewritten merely for Play. CI and the Release workflow create visually identical Play derivatives with `scripts/prepare-play-assets.py`: the 512×512 icon is encoded as 32-bit RGBA with opaque alpha, and the 1024×500 feature graphic is encoded as 24-bit RGB. The generator decodes both source and output and fails if any visible RGB pixel changes. Generated release derivatives are retained under `play-readiness/store-assets/`.
 
-PNG exports can be checked with `python3 scripts/verify-play-assets.py <icon|feature|screenshot> <file>...`. JPEG screenshot exports remain valid Play inputs and should be inspected with an image tool before submission. Final screenshots are not generated or altered by this pipeline; they must still be genuine exact-candidate captures.
+Phone screenshots have a single canonical location for F-Droid, the README, and Play: \`fastlane/metadata/android/en-US/images/phoneScreenshots/1.png\` through \`6.png\`. Replace the outdated sources with six genuine, maintainer-approved 1080x1920 9:16 captures of the exact accepted candidate, encoded as 24-bit RGB PNG without alpha. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. Do not distort, pad, or repaint outdated screen content.
+
+After those screenshots are accepted, stage them for the Play Console from the canonical Fastlane files, preserving byte-for-byte identity:
+
+\`\`\`bash
+python3 scripts/prepare-play-assets.py \
+  --output-dir play-readiness/store-assets \
+  --include-phone-screenshots
+python3 scripts/verify-play-assets.py screenshot \
+  play-readiness/store-assets/phoneScreenshots/*.png
+(cd play-readiness/store-assets && sha256sum -c phoneScreenshots.sha256)
+\`\`\`
+
+The staging option is deliberately **not** enabled by default in Android CI or the release workflow while the old screenshots remain. Enable it atomically with the final accepted screenshot refresh so final-candidate release evidence includes the validated screenshot upload copies. The canonical files are never modified by this helper. Google Play Console still requires the maintainer to upload them; it does not automatically read Fastlane screenshots from GitHub.
+
+PNG exports can be checked with \`python3 scripts/verify-play-assets.py <icon|feature|screenshot> <file>...\`. JPEG screenshot exports remain valid Play inputs and should be inspected with an image tool before submission. Final screenshots are not generated or altered by this pipeline; they must still be genuine exact-candidate captures.
 
 Console application creation/configuration, Play App Signing enrollment, upload-key generation, declarations, tracks, and rollout remain manual consequential gates.
 
