@@ -90,6 +90,10 @@ CountAway has no Internet permission, accounts, ads, analytics, or cloud sync.
 
 Your events stay on your device. Revolutionary stuff, apparently.
 
+## Help improve CountAway
+
+Found a confusing translation, a bug, or an idea worth sharing? See [how to contribute](CONTRIBUTING.md). You don't need Android experience to help with translations and feedback.
+
 ## Build
 
 Requires **JDK 17** and **Android SDK 36**.
@@ -98,7 +102,7 @@ Requires **JDK 17** and **Android SDK 36**.
 ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease
 ```
 
-Translation contributions are documented in [`CONTRIBUTING.md`](CONTRIBUTING.md). Maintainer signing and release steps are in [`docs/RELEASING.md`](docs/RELEASING.md), with Google Play preparation in [`docs/PLAY.md`](docs/PLAY.md) and F-Droid notes in [`docs/FDROID.md`](docs/FDROID.md).
+Maintainer signing and release steps are in [`docs/RELEASING.md`](docs/RELEASING.md), with Google Play preparation in [`docs/PLAY.md`](docs/PLAY.md) and F-Droid notes in [`docs/FDROID.md`](docs/FDROID.md).
 
 ## Author
 
