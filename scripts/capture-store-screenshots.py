@@ -50,9 +50,12 @@ def seed_events():
         event('deadline', 'Project milestone', 35, 'deadline', 'hourglass'),
         event('smokefree', 'Smoke-free', -120, 'custom', 'heart', mode='count_up'),
     ]
-    put_private_file('files/countaways.json', json.dumps({
+    payload = json.dumps({
         'schemaVersion': 7, 'events': events,
-    }, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))
+    }, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+    put_private_file('files/countaways.json', payload)
+    if adb('exec-out', 'run-as', PACKAGE, 'cat', 'files/countaways.json') != payload:
+        raise RuntimeError('Seed event file verification failed')
 
 
 def hierarchy():
@@ -72,16 +75,23 @@ def match(node, *, label=None, view_id=None, foreign=False):
     if view_id and not node.get('resource-id', '').endswith('/' + view_id):
         return False
     if label:
-        fields = (node.get('text', ''), node.get('content-desc', ''))
-        if not any(label.casefold() == field.casefold() for field in fields):
+        expected = label.casefold()
+        displayed = node.get('text', '').strip().casefold()
+        description_items = [
+            item.strip().casefold()
+            for item in node.get('content-desc', '').split(',')
+        ]
+        if displayed != expected and expected not in description_items:
             return False
     return True
 
 
 def locate(*, label=None, view_id=None, foreign=False, timeout=20):
     deadline = time.monotonic() + timeout
+    last_nodes = []
     while time.monotonic() < deadline:
-        for node in hierarchy():
+        last_nodes = hierarchy()
+        for node in last_nodes:
             if match(node, label=label, view_id=view_id, foreign=foreign):
                 coords = BOUNDS.fullmatch(node.get('bounds', ''))
                 if coords:
@@ -89,7 +99,16 @@ def locate(*, label=None, view_id=None, foreign=False, timeout=20):
                     if x2 > x1 and y2 > y1:
                         return ((x1 + x2) // 2, (y1 + y2) // 2)
         time.sleep(0.5)
-    raise RuntimeError(f'Android control not found: {label or view_id}')
+    visible = [
+        {
+            'id': node.get('resource-id', '').split('/')[-1],
+            'text': node.get('text', '')[:80],
+            'description': node.get('content-desc', '')[:130],
+        }
+        for node in last_nodes
+        if node.get('text') or node.get('content-desc')
+    ]
+    raise RuntimeError(f'Android control not found: {label or view_id}; visible={visible[:20]}')
 
 
 def tap(*, label=None, view_id=None, foreign=False, timeout=20):
@@ -168,7 +187,7 @@ def main():
     capture(1)
 
     tap(label="Sophia's birthday")
-    locate(view_id='editorRoot')
+    locate(view_id='titleInput')
     capture(2)
 
     home()
@@ -180,7 +199,7 @@ def main():
 
     home()
     tap(view_id='aboutButton')
-    locate(view_id='aboutRoot')
+    locate(view_id='versionText')
     capture(4)
 
     choose_light_theme()
