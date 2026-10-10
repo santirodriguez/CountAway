@@ -9,12 +9,14 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
 import android.view.ContextThemeWrapper
+import android.view.LayoutInflater
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ListView
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
@@ -212,6 +214,22 @@ class HomeEventActionsInstrumentedTest {
             drain()
             assertTrue(events().isEmpty())
         }
+    }
+
+    @Test fun aShortMenuViewportCanScrollToTheFinalDeleteAction() = instrumentation.runOnMainSync {
+        val theme = ContextThemeWrapper(context, context.applicationInfo.theme)
+        val popup = LayoutInflater.from(theme).inflate(R.layout.event_actions_popup, null) as ScrollView
+        val width = View.MeasureSpec.makeMeasureSpec(dp(theme, 236), View.MeasureSpec.EXACTLY)
+        val height = View.MeasureSpec.makeMeasureSpec(dp(theme, 235), View.MeasureSpec.EXACTLY)
+        popup.measure(width, height)
+        popup.layout(0, 0, popup.measuredWidth, popup.measuredHeight)
+        val share = popup.findViewById<View>(R.id.home_event_share)
+        val delete = popup.findViewById<View>(R.id.home_event_delete)
+        assertTrue("Share should be above Delete", share.top < delete.top)
+        assertTrue("The compact viewport must need scrolling", popup.getChildAt(0).height > popup.height)
+        popup.scrollTo(0, popup.getChildAt(0).height - popup.height)
+        assertTrue("Delete remains clipped at the bottom",
+            delete.bottom <= popup.scrollY + popup.height)
     }
 
     @Test fun sharingFromHomeUsesNativeChooserWithoutMutatingEitherCountMode() = isolated {

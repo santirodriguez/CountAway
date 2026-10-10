@@ -98,12 +98,15 @@ internal class HomeEventActions(
         anchor.getLocationInWindow(location)
         val root = anchor.rootView
         val margin = dp(12)
+        // A fifth action needs scrolling on shorter windows, rather than clipping Delete.
+        val shownHeight = content.measuredHeight.coerceAtMost((root.height - 2 * margin).coerceAtLeast(1))
+        menu.height = shownHeight
         val desiredX = if (anchor.layoutDirection == View.LAYOUT_DIRECTION_RTL) location[0]
             else location[0] + anchor.width - content.measuredWidth
         val maxX = (root.width - content.measuredWidth - margin).coerceAtLeast(margin)
         val x = desiredX.coerceIn(margin, maxX)
-        val desiredY = location[1] + anchor.height / 2 - content.measuredHeight / 2
-        val maxY = (root.height - content.measuredHeight - margin).coerceAtLeast(margin)
+        val desiredY = location[1] + anchor.height / 2 - shownHeight / 2
+        val maxY = (root.height - shownHeight - margin).coerceAtLeast(margin)
         val y = desiredY.coerceIn(margin, maxY)
         menu.showAtLocation(anchor, Gravity.TOP or Gravity.START, x, y)
         val firstAction = content.findViewById<View>(R.id.home_event_widget)

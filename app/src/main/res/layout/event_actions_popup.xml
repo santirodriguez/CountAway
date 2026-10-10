@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/eventActionsPopup" android:layout_width="236dp" android:layout_height="wrap_content"
-    android:background="@drawable/event_actions_popup_background" android:orientation="vertical" android:padding="10dp">
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="236dp" android:layout_height="wrap_content"
+    android:background="@drawable/event_actions_popup_background"
+    android:fillViewport="true" android:verticalScrollBarEnabled="false">
+    <LinearLayout
+        android:id="@+id/eventActionsPopup" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="vertical" android:padding="10dp">
     <LinearLayout android:id="@+id/eventActionsPopupHeader" android:layout_width="match_parent" android:layout_height="54dp"
         android:gravity="center_vertical" android:importantForAccessibility="no" android:orientation="horizontal"
         android:paddingStart="6dp" android:paddingEnd="6dp">
@@ -68,4 +72,5 @@
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="10dp"
             android:text="@string/action_delete" android:textColor="@color/danger" android:textSize="15sp" />
     </LinearLayout>
-</LinearLayout>
+    </LinearLayout>
+</ScrollView>
