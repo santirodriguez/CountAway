@@ -16,7 +16,8 @@
     <string name="backup_import_short">Import</string>
     <string name="about_support_project">Support the project</string>
     <string name="about_author_name">Created by Santiago Rodriguez</string>
-    <string name="about_website">countaway.cajapersonal.org</string>
+    <string name="about_project_links_title" translatable="false">CountAway</string>
+    <string name="about_website">Website</string>
     <string name="about_privacy_policy">Privacy</string>
     <string name="privacy_policy_url" translatable="false">https://countaway.cajapersonal.org/privacy/</string>
     <string name="about_widget_long_press_hint">Long-press a countdown to choose its widget style.</string>

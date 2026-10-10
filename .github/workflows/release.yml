@@ -1155,6 +1155,32 @@ jobs:
 
           chmod +x .countaway-acceptance.sh
 
+      - name: Verify API 36 system image with bounded retries
+        if: matrix.api == 36
+        run: |
+          set -euo pipefail
+          sdkmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          image_dir="${ANDROID_HOME}/system-images/android-36/google_apis/x86_64"
+          package="system-images;android-36;google_apis;x86_64"
+          test -x "${sdkmanager}"
+          "${sdkmanager}" --licenses < <(yes) > /dev/null
+
+          # sdkmanager can return success after a corrupt ZIP warning; verify actual files.
+          for attempt in 1 2 3; do
+            echo "Installing Android 36 system image (attempt ${attempt}/3)"
+            if "${sdkmanager}" --install "${package}" --channel=0 > /dev/null \
+              && test -s "${image_dir}/system.img" \
+              && test -s "${image_dir}/package.xml"; then
+              echo "Android 36 system image is complete"
+              break
+            fi
+            echo "::warning::Android 36 system image download incomplete (attempt ${attempt}/3)"
+            rm -rf "${image_dir}"
+            if (( attempt < 3 )); then sleep $((attempt * 5)); fi
+          done
+          test -s "${image_dir}/system.img"
+          test -s "${image_dir}/package.xml"
+
       - name: Run Android API ${{ matrix.api }} ${{ matrix.job_name }}
         id: emulator
         continue-on-error: ${{ matrix.non_gating }}
