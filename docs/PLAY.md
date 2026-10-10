@@ -172,7 +172,7 @@ python3 scripts/verify-play-assets.py screenshot \
 (cd play-readiness/store-assets && sha256sum -c phoneScreenshots.sha256)
 ```
 
-The staging option is deliberately **not** enabled by default in Android CI or the release workflow while the old screenshots remain. Enable it atomically with the final accepted screenshot refresh so final-candidate release evidence includes the validated screenshot upload copies. The canonical files are never modified by this helper. Google Play Console still requires the maintainer to upload them; it does not automatically read Fastlane screenshots from GitHub.
+Android CI and the release workflow stage all six accepted screenshots, validate their Play-compatible format, and verify that staged file hashes match the canonical sources. The canonical files are never modified by this helper. Google Play Console still requires the maintainer to upload them; it does not automatically read Fastlane screenshots from GitHub.
 
 PNG exports can be checked with `python3 scripts/verify-play-assets.py <icon|feature|screenshot> <file>...`. JPEG screenshot exports remain valid Play inputs and should be inspected with an image tool before submission. Final screenshots are not generated or altered by this pipeline; they must still be genuine exact-candidate captures.
 

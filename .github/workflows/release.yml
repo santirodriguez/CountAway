@@ -58,9 +58,11 @@ jobs:
       - name: Prepare and validate reusable Play assets
         run: |
           set -euo pipefail
-          python3 scripts/prepare-play-assets.py --output-dir play-readiness/store-assets
+          python3 scripts/prepare-play-assets.py --output-dir play-readiness/store-assets --include-phone-screenshots
           python3 scripts/verify-play-assets.py icon play-readiness/store-assets/icon.png
           python3 scripts/verify-play-assets.py feature play-readiness/store-assets/featureGraphic.png
+          python3 scripts/verify-play-assets.py screenshot play-readiness/store-assets/phoneScreenshots/*.png
+          (cd play-readiness/store-assets && sha256sum -c phoneScreenshots.sha256)
 
       - name: Resolve release version
         id: version

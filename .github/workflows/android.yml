@@ -125,9 +125,11 @@ jobs:
       - name: Prepare and validate reusable Play assets
         run: |
           set -euo pipefail
-          python3 scripts/prepare-play-assets.py --output-dir ci-evidence/play-assets
+          python3 scripts/prepare-play-assets.py --output-dir ci-evidence/play-assets --include-phone-screenshots
           python3 scripts/verify-play-assets.py icon ci-evidence/play-assets/icon.png
           python3 scripts/verify-play-assets.py feature ci-evidence/play-assets/featureGraphic.png
+          python3 scripts/verify-play-assets.py screenshot ci-evidence/play-assets/phoneScreenshots/*.png
+          (cd ci-evidence/play-assets && sha256sum -c phoneScreenshots.sha256)
 
       - name: Validate
         run: ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease bundleRelease --stacktrace
