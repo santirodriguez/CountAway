@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="236dp" android:layout_height="wrap_content"
     android:background="@drawable/event_actions_popup_background"
-    android:fillViewport="true" android:verticalScrollBarEnabled="false">
+    android:fillViewport="true" android:scrollbars="none">
     <LinearLayout
         android:id="@+id/eventActionsPopup" android:layout_width="match_parent"
         android:layout_height="wrap_content" android:orientation="vertical" android:padding="10dp">
