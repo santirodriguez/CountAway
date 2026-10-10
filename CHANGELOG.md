@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.3
+
+- Share event cards directly from the Home-screen actions menu without opening the editor.
+- Refine language selection around a shared catalog for English, Español, and Català.
+- Update About links to the CountAway website and privacy policy.
+- Add clearer translation contributor guidance and resource validation.
+
 ## 1.2.2
 
 - Add count-up events for tracking days since a start date across the app, fixed widgets, sharing, and local backups.

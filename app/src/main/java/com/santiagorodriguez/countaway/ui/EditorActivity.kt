@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.NotificationManager
-import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -45,9 +44,7 @@ import com.santiagorodriguez.countaway.model.ReminderOption
 import com.santiagorodriguez.countaway.model.RepeatRule
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationPolicy
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
-import com.santiagorodriguez.countaway.share.ShareCardContentFactory
-import com.santiagorodriguez.countaway.share.ShareCardRenderer
-import com.santiagorodriguez.countaway.share.ShareImageStore
+import com.santiagorodriguez.countaway.share.EventShareLauncher
 import com.santiagorodriguez.countaway.data.CountdownMutations
 import com.santiagorodriguez.countaway.data.EventRevision
 import com.santiagorodriguez.countaway.data.RetainedOperation
@@ -655,50 +652,13 @@ class EditorActivity : BaseActivity() {
             titleInput.error = getString(R.string.title_required)
             return
         }
-        val snapshot = CountdownTime.snapshot()
-        val text = ShareCardContentFactory.text(this, title, selectedDate, selectedRepeatRule,
-            snapshot.today, selectedCountMode)
-        val renderContext = ShareCardRenderer.captureContext(this)
-        val appContext = applicationContext
-        val cardContent = ShareCardContentFactory.create(
-            context = renderContext, title = title, date = selectedDate, icon = selectedIcon,
-            repeatRule = selectedRepeatRule, today = snapshot.today, countMode = selectedCountMode,
-        )
-        val dark = ShareCardRenderer.resolveDark(this)
         shareButton.isEnabled = false
-        CountdownIo.submit(
-            task = {
-                val bitmap = ShareCardRenderer.render(renderContext, cardContent, dark)
-                try { ShareImageStore.write(appContext, bitmap) } finally { bitmap.recycle() }
-            },
-            onComplete = { result ->
-                if (isFinishing || isDestroyed) return@submit
-                shareButton.isEnabled = true
-                val imageUri = result.getOrNull()
-                if (imageUri != null && launchShare(imageShareIntent(title, text, imageUri))) return@submit
-                if (!launchShare(textShareIntent(text))) {
-                    Toast.makeText(this, R.string.share_unavailable, Toast.LENGTH_LONG).show()
-                }
-            },
+        EventShareLauncher.share(
+            activity = this, title = title, date = selectedDate, icon = selectedIcon,
+            repeatRule = selectedRepeatRule, countMode = selectedCountMode,
+            onFinished = { shareButton.isEnabled = true },
         )
     }
-
-    private fun imageShareIntent(title: String, text: String, imageUri: Uri): Intent = Intent(Intent.ACTION_SEND).apply {
-        type = "image/png"
-        putExtra(Intent.EXTRA_STREAM, imageUri)
-        putExtra(Intent.EXTRA_TEXT, text)
-        putExtra(Intent.EXTRA_TITLE, title)
-        clipData = ClipData.newUri(contentResolver, title, imageUri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-
-    private fun textShareIntent(text: String): Intent = Intent(Intent.ACTION_SEND)
-        .setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-
-    private fun launchShare(sendIntent: Intent): Boolean = runCatching {
-        startActivity(Intent.createChooser(sendIntent, getString(R.string.action_share)))
-        true
-    }.getOrDefault(false)
 
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

@@ -40,7 +40,7 @@ class AboutActivity : BaseActivity() {
         findViewById<View>(R.id.addWidgetAction).setOnClickListener { showWidgetSetupHint() }
         findViewById<View>(R.id.stopCheckingAction).setOnClickListener { playCalendarMoment() }
         findViewById<View>(R.id.websiteButton).setOnClickListener {
-            openExternal(PERSONAL_WEBSITE)
+            openExternal(PROJECT_WEBSITE)
         }
         findViewById<View>(R.id.privacyButton).setOnClickListener {
             openExternal(getString(R.string.privacy_policy_url))
@@ -242,7 +242,7 @@ class AboutActivity : BaseActivity() {
     }
 
     private companion object {
-        const val PERSONAL_WEBSITE = "https://santiagorodriguez.com"
+        const val PROJECT_WEBSITE = "https://countaway.cajapersonal.org/"
         const val DONATE_WEBSITE = "https://santiagorodriguez.com/donate"
         const val REQUEST_EXPORT = 5101
         const val REQUEST_IMPORT = 5102

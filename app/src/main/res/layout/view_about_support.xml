@@ -2,78 +2,87 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/surface_card"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:padding="18dp">
+    android:orientation="vertical">
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:breakStrategy="balanced"
-        android:gravity="center"
-        android:lineSpacingExtra="2dp"
-        android:text="@string/about_donate_note"
-        android:textColor="@color/secondary_text"
-        android:textSize="12sp" />
+        android:background="@drawable/surface_card"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="18dp">
 
-    <Button
-        android:id="@+id/donateButton"
-        style="@style/Widget.CountAway.SmallAction"
-        android:layout_width="wrap_content"
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:breakStrategy="balanced"
+            android:gravity="center"
+            android:lineSpacingExtra="2dp"
+            android:text="@string/about_donate_note"
+            android:textColor="@color/secondary_text"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/donateButton"
+            style="@style/Widget.CountAway.SmallAction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/about_support_project" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/projectLinksCard"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="@string/about_support_project" />
+        android:background="@drawable/surface_card"
+        android:orientation="vertical"
+        android:padding="12dp">
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginStart="18dp"
-        android:layout_marginTop="18dp"
-        android:layout_marginEnd="18dp"
-        android:background="@color/outline" />
+        <LinearLayout
+            android:id="@+id/projectLinksRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/websiteButton"
+                style="@style/Widget.CountAway.SmallAction"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:drawableStart="@drawable/ic_about_website"
+                android:drawablePadding="6dp"
+                android:gravity="center"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/about_website" />
+
+            <Button
+                android:id="@+id/privacyButton"
+                style="@style/Widget.CountAway.SmallAction"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:drawableStart="@drawable/ic_about_privacy"
+                android:drawablePadding="6dp"
+                android:gravity="center"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/about_privacy_policy" />
+        </LinearLayout>
+    </LinearLayout>
 
     <TextView
+        android:id="@+id/aboutAuthorCredit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
-        android:fontFamily="sans-serif-medium"
+        android:layout_marginTop="14dp"
         android:gravity="center"
+        android:paddingBottom="6dp"
         android:text="@string/about_author_name"
-        android:textColor="@color/foreground"
-        android:textSize="13sp" />
-
-    <TextView
-        android:id="@+id/websiteButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minHeight="48dp"
-        android:layout_marginTop="2dp"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:clickable="true"
-        android:focusable="true"
-        android:fontFamily="sans-serif-medium"
-        android:gravity="center"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:text="@string/about_website"
-        android:textColor="@color/accent_text"
-        android:textSize="13sp" />
-
-    <TextView
-        android:id="@+id/privacyButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minHeight="48dp"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:clickable="true"
-        android:focusable="true"
-        android:fontFamily="sans-serif-medium"
-        android:gravity="center"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:text="@string/about_privacy_policy"
-        android:textColor="@color/accent_text"
-        android:textSize="13sp" />
-
+        android:textColor="@color/secondary_text"
+        android:textSize="12sp" />
 </LinearLayout>

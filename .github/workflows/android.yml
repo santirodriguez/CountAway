@@ -114,6 +114,23 @@ jobs:
           set -euo pipefail
           python3 scripts/test-upgrade-fixture.py -v 2>&1 | tee ci-evidence/upgrade-fixture-tests.txt
 
+      - name: Validate localization sources
+        run: |
+          set -euo pipefail
+          python3 scripts/verify-localizations.py 2>&1 | tee ci-evidence/localization-validation.txt
+
+      - name: Self-test Play screenshot staging
+        run: python3 scripts/test-play-screenshot-staging.py
+
+      - name: Prepare and validate reusable Play assets
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare-play-assets.py --output-dir ci-evidence/play-assets --include-phone-screenshots
+          python3 scripts/verify-play-assets.py icon ci-evidence/play-assets/icon.png
+          python3 scripts/verify-play-assets.py feature ci-evidence/play-assets/featureGraphic.png
+          python3 scripts/verify-play-assets.py screenshot ci-evidence/play-assets/phoneScreenshots/*.png
+          (cd ci-evidence/play-assets && sha256sum -c phoneScreenshots.sha256)
+
       - name: Validate
         run: ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease bundleRelease --stacktrace
 
@@ -174,6 +191,64 @@ jobs:
             echo "public_release_asset=false"
             echo "play_upload_signing=deferred"
           } > ci-evidence/play-readiness.txt
+
+      - name: Self-test Play AAB upload signing helper
+        run: |
+          set -euo pipefail
+
+          AAB="app/build/outputs/bundle/release/app-release.aab"
+          BUNDLETOOL_JAR="${RUNNER_TEMP}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          TEST_DIR="${RUNNER_TEMP}/play-upload-signing-self-test"
+          TEST_KEYSTORE="${TEST_DIR}/upload-test.p12"
+          TEST_CERT="${TEST_DIR}/upload-test.pem"
+          WRONG_KEYSTORE="${TEST_DIR}/wrong-test.p12"
+          WRONG_CERT="${TEST_DIR}/wrong-test.pem"
+          SIGNED_AAB="${TEST_DIR}/signed.aab"
+          RECEIPT="ci-evidence/play-upload-signing-self-test.txt"
+          VERSION="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' app/build.gradle.kts)"
+          VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' app/build.gradle.kts)"
+
+          mkdir -p "${TEST_DIR}"
+          keytool -genkeypair -noprompt \
+            -keystore "${TEST_KEYSTORE}" -storetype PKCS12 \
+            -storepass countaway-ci-test -keypass countaway-ci-test \
+            -alias upload-test -keyalg RSA -keysize 2048 -validity 2 \
+            -dname "CN=CountAway CI Upload Test"
+          keytool -exportcert -rfc \
+            -keystore "${TEST_KEYSTORE}" -storepass countaway-ci-test \
+            -alias upload-test -file "${TEST_CERT}"
+
+          keytool -genkeypair -noprompt \
+            -keystore "${WRONG_KEYSTORE}" -storetype PKCS12 \
+            -storepass countaway-ci-wrong -keypass countaway-ci-wrong \
+            -alias wrong-test -keyalg RSA -keysize 2048 -validity 2 \
+            -dname "CN=CountAway CI Wrong Test"
+          keytool -exportcert -rfc \
+            -keystore "${WRONG_KEYSTORE}" -storepass countaway-ci-wrong \
+            -alias wrong-test -file "${WRONG_CERT}"
+
+          if PLAY_UPLOAD_STORE_PASSWORD=countaway-ci-test \
+             PLAY_UPLOAD_KEY_PASSWORD=countaway-ci-test \
+             bash scripts/sign-play-bundle.sh \
+               "${AAB}" "${TEST_DIR}/must-not-exist.aab" \
+               "${TEST_KEYSTORE}" upload-test "${WRONG_CERT}" \
+               "${BUNDLETOOL_JAR}" "${PACKAGE_ID}" "${VERSION}" "${VERSION_CODE}"; then
+            echo "Signing helper accepted a mismatched public certificate" >&2
+            exit 1
+          fi
+          test ! -e "${TEST_DIR}/must-not-exist.aab"
+
+          PLAY_UPLOAD_STORE_PASSWORD=countaway-ci-test \
+          PLAY_UPLOAD_KEY_PASSWORD=countaway-ci-test \
+            bash scripts/sign-play-bundle.sh \
+              "${AAB}" "${SIGNED_AAB}" \
+              "${TEST_KEYSTORE}" upload-test "${TEST_CERT}" \
+              "${BUNDLETOOL_JAR}" "${PACKAGE_ID}" "${VERSION}" "${VERSION_CODE}" \
+              "${RECEIPT}"
+
+          test -s "${SIGNED_AAB}"
+          test -s "${RECEIPT}"
+          grep -Fq "bundletool_validation=true" "${RECEIPT}"
 
       - name: Upload validation evidence
         if: always()

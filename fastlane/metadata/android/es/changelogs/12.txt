@@ -1,0 +1,1 @@
+Compartí eventos desde el menú de tres puntos de la pantalla principal, sin abrir el editor. La selección de idioma usa un catálogo unificado para English, Español y Català. Acerca de enlaza al sitio y a la política de privacidad.

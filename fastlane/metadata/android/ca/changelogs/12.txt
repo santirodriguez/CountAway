@@ -1,0 +1,1 @@
+Comparteix esdeveniments des del menú de tres punts de la pantalla principal, sense obrir l'editor. La selecció d'idioma fa servir un catàleg unificat per a English, Español i Català. Sobre l'app enllaça al web i a la política de privadesa.

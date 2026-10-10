@@ -63,7 +63,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 - **Three appearance modes:** System, Light, and Dark for both the app and widgets.
 - **Useful reminders:** optional local notifications for count-down events.
 - **Smart widgets:** fixed widgets support both directions; **Next countdown** follows the nearest upcoming count-down event.
-- **Share without the screenshot ritual:** Share turns an event into a Ridge-style PNG card.
+- **Share without the screenshot ritual:** Send a Ridge-style PNG card from an event's menu or editor.
 - **Local portability:** JSON export/import stays entirely under your control.
 - **Multilingual:** English, Español, and Català.
 
@@ -90,6 +90,10 @@ CountAway has no Internet permission, accounts, ads, analytics, or cloud sync.
 
 Your events stay on your device. Revolutionary stuff, apparently.
 
+## Help improve CountAway
+
+Found a confusing translation, a bug, or an idea worth sharing? See [how to contribute](CONTRIBUTING.md). You don't need Android experience to help with translations and feedback.
+
 ## Build
 
 Requires **JDK 17** and **Android SDK 36**.
@@ -98,7 +102,7 @@ Requires **JDK 17** and **Android SDK 36**.
 ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease
 ```
 
-Maintainer signing and release steps are documented in [`docs/RELEASING.md`](docs/RELEASING.md). F-Droid preparation and update notes are in [`docs/FDROID.md`](docs/FDROID.md).
+Maintainer signing and release steps are in [`docs/RELEASING.md`](docs/RELEASING.md), with Google Play preparation in [`docs/PLAY.md`](docs/PLAY.md) and F-Droid notes in [`docs/FDROID.md`](docs/FDROID.md).
 
 ## Author
 

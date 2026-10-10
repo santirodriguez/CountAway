@@ -1,18 +1,22 @@
 package com.santiagorodriguez.countaway.ui
 
+import android.app.Instrumentation
 import android.content.Context
+import android.content.IntentFilter
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
 import android.view.ContextThemeWrapper
+import android.view.LayoutInflater
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ListView
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
@@ -150,7 +154,7 @@ class HomeEventActionsInstrumentedTest {
         }
     }
 
-    @Test fun menuOffersFourActionsAndDeleteIsCancellableAndConflictSafe() = isolated {
+    @Test fun menuOffersFiveActionsAndDeleteIsCancellableAndConflictSafe() = isolated {
         val source = fixture()
         repository.save(listOf(source))
         val originalBytes = File(context.filesDir, "countaways.json").readBytes()
@@ -165,7 +169,8 @@ class HomeEventActionsInstrumentedTest {
             scenario.onActivity {
                 deleteLabel = it.getString(R.string.action_delete)
                 labels = listOf(R.string.event_action_widget, R.string.event_action_edit,
-                    R.string.event_action_duplicate, R.string.action_delete).map(it::getString)
+                    R.string.event_action_duplicate, R.string.action_share,
+                    R.string.action_delete).map(it::getString)
                 actionButton(it).performClick()
             }
             onView(withId(R.id.eventActionsPopup)).check(matches(isDisplayed()))
@@ -175,12 +180,16 @@ class HomeEventActionsInstrumentedTest {
                 val edit = widget.rootView.findViewById<View>(R.id.home_event_edit)
                 val duplicate = widget.rootView.findViewById<View>(R.id.home_event_duplicate)
                 assertTrue("Add widget must appear above Edit", widget.top < edit.top)
+                val share = widget.rootView.findViewById<View>(R.id.home_event_share)
+                val delete = widget.rootView.findViewById<View>(R.id.home_event_delete)
                 assertTrue("Edit must appear above Duplicate", edit.top < duplicate.top)
+                assertTrue("Duplicate must appear above Share", duplicate.top < share.top)
+                assertTrue("Share must appear above Delete", share.top < delete.top)
                 assertFalse("Keyboard-focus assertion unexpectedly ran in touch mode", widget.isInTouchMode)
                 assertTrue("Add widget must receive initial popup focus in keyboard mode", widget.hasFocus())
             }
             for (id in listOf(R.id.home_event_edit, R.id.home_event_duplicate,
-                R.id.home_event_widget, R.id.home_event_delete)) {
+                R.id.home_event_widget, R.id.home_event_share, R.id.home_event_delete)) {
                 onView(withId(id)).check(matches(isDisplayed()))
             }
             labels.forEach { onView(withText(it)).check(matches(isDisplayed())) }
@@ -204,6 +213,50 @@ class HomeEventActionsInstrumentedTest {
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
             drain()
             assertTrue(events().isEmpty())
+        }
+    }
+
+    @Test fun aShortMenuViewportCanScrollToTheFinalDeleteAction() = instrumentation.runOnMainSync {
+        val theme = ContextThemeWrapper(context, context.applicationInfo.theme)
+        val popup = LayoutInflater.from(theme).inflate(R.layout.event_actions_popup, null) as ScrollView
+        val width = View.MeasureSpec.makeMeasureSpec(dp(theme, 236), View.MeasureSpec.EXACTLY)
+        val height = View.MeasureSpec.makeMeasureSpec(dp(theme, 235), View.MeasureSpec.EXACTLY)
+        popup.measure(width, height)
+        popup.layout(0, 0, popup.measuredWidth, popup.measuredHeight)
+        val share = popup.findViewById<View>(R.id.home_event_share)
+        val delete = popup.findViewById<View>(R.id.home_event_delete)
+        assertTrue("Share should be above Delete", share.top < delete.top)
+        assertTrue("The compact viewport must need scrolling", popup.getChildAt(0).height > popup.height)
+        popup.scrollTo(0, popup.getChildAt(0).height - popup.height)
+        assertTrue("Delete remains clipped at the bottom",
+            delete.bottom <= popup.scrollY + popup.height)
+    }
+
+    @Test fun sharingFromHomeUsesNativeChooserWithoutMutatingEitherCountMode() = isolated {
+        for (mode in CountMode.entries) {
+            val event = fixture().copy(
+                countMode = mode,
+                repeatRule = if (mode == CountMode.COUNT_DOWN) RepeatRule.MONTHLY else RepeatRule.NONE,
+            )
+            repository.save(listOf(event))
+            val unchanged = File(context.filesDir, "countaways.json").readBytes()
+            ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
+                drain()
+                // Blocking chooser monitors must not intercept ActivityScenario startup.
+                val chooserMonitor = Instrumentation.ActivityMonitor(IntentFilter(Intent.ACTION_CHOOSER), null, true)
+                instrumentation.addMonitor(chooserMonitor)
+                try {
+                    scenario.onActivity { actionButton(it).performClick() }
+                    onView(withId(R.id.home_event_share)).perform(click())
+                    drain()
+                    assertTrue("Share did not request Android's native chooser",
+                        instrumentation.checkMonitorHit(chooserMonitor, 1))
+                    assertArrayEquals("Sharing must not write stored events",
+                        unchanged, File(context.filesDir, "countaways.json").readBytes())
+                } finally {
+                    instrumentation.removeMonitor(chooserMonitor)
+                }
+            }
         }
     }
 

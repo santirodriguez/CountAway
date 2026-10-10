@@ -19,6 +19,7 @@ import com.santiagorodriguez.countaway.data.CountdownMutations
 import com.santiagorodriguez.countaway.data.EventRevision
 import com.santiagorodriguez.countaway.data.RetainedOperation
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.share.EventShareLauncher
 
 internal class HomeEventActions(
     private val activity: Activity,
@@ -34,12 +35,13 @@ internal class HomeEventActions(
     private var popup: PopupWindow? = null
     private var confirmation: AlertDialog? = null
     private var resumed = false
+    private var sharing = false
     private val focus = EditorDialogFocus(activity)
 
     init { session.deletion.onChanged = ::consumeResult }
 
     fun show(event: CountdownEvent, anchor: View) {
-        if (!resumed || session.deletion.running || popup != null || confirmation != null) return
+        if (!resumed || sharing || session.deletion.running || popup != null || confirmation != null) return
         focus.capture(anchor)
         val popupParent = anchor.rootView as? ViewGroup ?: return
         val content = LayoutInflater.from(activity).inflate(R.layout.event_actions_popup, popupParent, false)
@@ -76,6 +78,14 @@ internal class HomeEventActions(
                     .putExtra(EditorActivity.EXTRA_SOURCE_REVISION, EventRevision.of(event)),
             )
         }
+        action(R.id.home_event_share) {
+            sharing = true
+            EventShareLauncher.share(
+                activity = activity, title = event.title, date = event.date, icon = event.icon,
+                repeatRule = event.repeatRule, countMode = event.countMode,
+                onFinished = { sharing = false },
+            )
+        }
         action(R.id.home_event_delete) { confirmDelete(event, anchor) }
 
         menu.setOnDismissListener {
@@ -88,12 +98,15 @@ internal class HomeEventActions(
         anchor.getLocationInWindow(location)
         val root = anchor.rootView
         val margin = dp(12)
+        // A fifth action needs scrolling on shorter windows, rather than clipping Delete.
+        val shownHeight = content.measuredHeight.coerceAtMost((root.height - 2 * margin).coerceAtLeast(1))
+        menu.height = shownHeight
         val desiredX = if (anchor.layoutDirection == View.LAYOUT_DIRECTION_RTL) location[0]
             else location[0] + anchor.width - content.measuredWidth
         val maxX = (root.width - content.measuredWidth - margin).coerceAtLeast(margin)
         val x = desiredX.coerceIn(margin, maxX)
-        val desiredY = location[1] + anchor.height / 2 - content.measuredHeight / 2
-        val maxY = (root.height - content.measuredHeight - margin).coerceAtLeast(margin)
+        val desiredY = location[1] + anchor.height / 2 - shownHeight / 2
+        val maxY = (root.height - shownHeight - margin).coerceAtLeast(margin)
         val y = desiredY.coerceIn(margin, maxY)
         menu.showAtLocation(anchor, Gravity.TOP or Gravity.START, x, y)
         val firstAction = content.findViewById<View>(R.id.home_event_widget)

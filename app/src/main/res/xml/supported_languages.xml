@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<languages defaultTag="en">
+    <language tag="en" qualifier="values" endonym="English" icon="@drawable/flag_us" fdroidLocale="en-US" playLocale="en-US" />
+    <language tag="es" qualifier="values-es" endonym="Español" icon="@drawable/flag_ar" fdroidLocale="es" playLocale="es-419" />
+    <language tag="ca" qualifier="values-ca" endonym="Català" icon="@drawable/flag_catalonia" fdroidLocale="ca" playLocale="ca" />
+</languages>

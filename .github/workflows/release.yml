@@ -36,8 +36,8 @@ jobs:
       BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
       EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
       PACKAGE_ID: "com.santiagorodriguez.countaway"
-      PREVIOUS_PUBLIC_VERSION: "1.2.1"
-      PREVIOUS_PUBLIC_APK_BYTES: "443929"
+      PREVIOUS_PUBLIC_VERSION: "1.2.2"
+      PREVIOUS_PUBLIC_APK_BYTES: "499104"
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
@@ -48,6 +48,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Validate localization sources
+        run: python3 scripts/verify-localizations.py
+
+      - name: Self-test Play screenshot staging
+        run: python3 scripts/test-play-screenshot-staging.py
+
+      - name: Prepare and validate reusable Play assets
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare-play-assets.py --output-dir play-readiness/store-assets --include-phone-screenshots
+          python3 scripts/verify-play-assets.py icon play-readiness/store-assets/icon.png
+          python3 scripts/verify-play-assets.py feature play-readiness/store-assets/featureGraphic.png
+          python3 scripts/verify-play-assets.py screenshot play-readiness/store-assets/phoneScreenshots/*.png
+          (cd play-readiness/store-assets && sha256sum -c phoneScreenshots.sha256)
 
       - name: Resolve release version
         id: version
@@ -300,7 +315,8 @@ jobs:
           grep -Fqx "## ${VERSION}" CHANGELOG.md
           test -s "docs/releases/${VERSION}.md"
           test ! -d "fastlane/metadata/android/en"
-          for locale in en-US es ca; do
+          mapfile -t STORE_LOCALES < <(python3 scripts/verify-localizations.py --print-fdroid-locales)
+          for locale in "${STORE_LOCALES[@]}"; do
             TITLE="fastlane/metadata/android/${locale}/title.txt"
             SHORT_DESCRIPTION="fastlane/metadata/android/${locale}/short_description.txt"
             FULL_DESCRIPTION="fastlane/metadata/android/${locale}/full_description.txt"
@@ -319,13 +335,27 @@ jobs:
 
           if [[ "${PREPARE_RELEASE}" == "true" ]]; then
             test -s PRIVACY.md
-            PRIVACY_URL="https://github.com/santirodriguez/CountAway/blob/main/PRIVACY.md"
-            PRIVACY_RAW_URL="https://raw.githubusercontent.com/santirodriguez/CountAway/main/PRIVACY.md"
+            PROJECT_URL="https://countaway.cajapersonal.org/"
+            PRIVACY_URL="https://countaway.cajapersonal.org/privacy/"
+
+            grep -Fq 'PROJECT_WEBSITE = "https://countaway.cajapersonal.org/"' app/src/main/java/com/santiagorodriguez/countaway/ui/AboutActivity.kt
             grep -Fq "${PRIVACY_URL}" app/src/main/res/values/about_polish_strings.xml
+
+            curl --fail --location --silent --show-error --retry 2               "${PROJECT_URL}"               --output "${RUNNER_TEMP}/countaway-project-site.html"
+            test -s "${RUNNER_TEMP}/countaway-project-site.html"
+            grep -Fq 'Count the days that matter.' "${RUNNER_TEMP}/countaway-project-site.html"
+
             curl --fail --location --silent --show-error --retry 2               "${PRIVACY_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.html"
             test -s "${RUNNER_TEMP}/countaway-privacy-policy.html"
-            curl --fail --location --silent --show-error --retry 2               "${PRIVACY_RAW_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.md"
-            grep -Fqx '# CountAway Privacy Policy' "${RUNNER_TEMP}/countaway-privacy-policy.md"
+            grep -Fq '<title>CountAway Privacy Policy</title>' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            grep -Fq 'English' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            grep -Fq 'Español' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            grep -Fq 'Català' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+
+            grep -Fqx '# CountAway Privacy Policy' PRIVACY.md
+            grep -Fqx '## English' PRIVACY.md
+            grep -Fqx '## Español' PRIVACY.md
+            grep -Fqx '## Català' PRIVACY.md
 
             declare -a SCREENSHOTS=(
               "fastlane/metadata/android/en-US/images/phoneScreenshots/1.png"
@@ -735,10 +765,10 @@ jobs:
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
-      PREVIOUS_PUBLIC_VERSION: "1.2.1"
-      PREVIOUS_PUBLIC_VERSION_CODE: "10"
-      PREVIOUS_PUBLIC_APK_SHA256: "43e45ddee319c9ee6161988d4f681d13f14d8e93bad4d28a3c28bda1cfbeeffb"
-      PREVIOUS_PUBLIC_APK_BYTES: "443929"
+      PREVIOUS_PUBLIC_VERSION: "1.2.2"
+      PREVIOUS_PUBLIC_VERSION_CODE: "11"
+      PREVIOUS_PUBLIC_APK_SHA256: "689191b5e25ca97b83bc113a6da8f83565e3d011581d0a990feb5d48b39be7a4"
+      PREVIOUS_PUBLIC_APK_BYTES: "499104"
 
     steps:
       - name: Checkout exact candidate source
@@ -1017,7 +1047,7 @@ jobs:
             PREVIOUS_APK="candidate/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v${PREVIOUS_PUBLIC_VERSION}/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
-            UPGRADE_PROBE_TITLE="UpgradeProbe122"
+            UPGRADE_PROBE_TITLE="UpgradeProbe123"
 
             curl --fail --location --silent --show-error --retry 2 \
               "${PREVIOUS_APK_URL}" \
@@ -1124,6 +1154,32 @@ jobs:
           ACCEPTANCE
 
           chmod +x .countaway-acceptance.sh
+
+      - name: Verify API 36 system image with bounded retries
+        if: matrix.api == 36
+        run: |
+          set -euo pipefail
+          sdkmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+          image_dir="${ANDROID_HOME}/system-images/android-36/google_apis/x86_64"
+          package="system-images;android-36;google_apis;x86_64"
+          test -x "${sdkmanager}"
+          "${sdkmanager}" --licenses < <(yes) > /dev/null
+
+          # sdkmanager can return success after a corrupt ZIP warning; verify actual files.
+          for attempt in 1 2 3; do
+            echo "Installing Android 36 system image (attempt ${attempt}/3)"
+            if "${sdkmanager}" --install "${package}" --channel=0 > /dev/null \
+              && test -s "${image_dir}/system.img" \
+              && test -s "${image_dir}/package.xml"; then
+              echo "Android 36 system image is complete"
+              break
+            fi
+            echo "::warning::Android 36 system image download incomplete (attempt ${attempt}/3)"
+            rm -rf "${image_dir}"
+            if (( attempt < 3 )); then sleep $((attempt * 5)); fi
+          done
+          test -s "${image_dir}/system.img"
+          test -s "${image_dir}/package.xml"
 
       - name: Run Android API ${{ matrix.api }} ${{ matrix.job_name }}
         id: emulator

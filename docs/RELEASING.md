@@ -83,19 +83,19 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 - package, min/target/compile SDKs, and exact manifest permission surface;
 - release runtime dependency report, no app-declared runtime libraries, the expected Kotlin/annotations baseline, and absence of native libraries;
 - presence of R8 mapping and resource shrinking;
-- current APK-size delta against the previous public 1.2.1 APK (443,929 bytes);
+- current APK-size delta against the previous public 1.2.2 APK (499,104 bytes);
 - Play-readiness AAB SHA-256/byte size and basic bundle structure, retained only as internal Actions evidence;
 - compiled instrumentation-test APK and ordinary test/lint reports;
 - screenshot SHA-256s during stable preparation;
 - F-Droid Gate A evidence when preparing a stable draft.
 
-Normal CI executes the complete Android instrumentation suite on API 26 and 36, including Home, editor, storage, language, pinning and widget layout contracts, and retains renders and measurements. Its separate build job runs JVM tests, lint and packaging checks and compiles the instrumentation-test APK. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.2.1 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
+Normal CI executes the complete Android instrumentation suite on API 26 and 36, including Home, editor, storage, language, pinning and widget layout contracts, and retains renders and measurements. Its separate build job runs JVM tests, lint and packaging checks and compiles the instrumentation-test APK. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.2.2 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
 
 API 37 remains an acceptance target, but its hosted-emulator job is explicitly diagnostic and non-gating. Current Android 17 `google_apis_ps16k` images can abort in `SurfaceFlinger`/`mapper.ranchu` on the host-advertised `ReadColorBufferDMA` path, tearing down framework services before CountAway starts; this reproduced with both canary/default-graphics and stable/`swangle_indirect` configurations. The diagnostic retains the best-known stable configuration—platform/system image 37.0, emulator 37.1.11 build 15917651, `swangle_indirect`, 4 GB RAM, and a 420-second boot timeout—and records its outcome without treating it as product acceptance. Reinstate it as a blocking automated gate only after an updated system image/emulator no longer exhibits the framework abort. Until then, a successful physical Android 17/API 37 run is mandatory before release readiness.
 
-API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. On API 33, the upgrade gate installs the immutable public 1.2.1 APK, creates a real event through the public UI, verifies it is visible, upgrades in place to the signed candidate, and verifies that same event remains visible. Physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
+API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. On API 33, the upgrade gate installs the immutable public 1.2.2 APK, creates a real event through the public UI, verifies it is visible, upgrades in place to the signed candidate, and verifies that same event remains visible. Physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
 
-The API 33 fixture driver focuses the title field, clears existing input, enters `UpgradeProbe122`, and verifies that exact input before saving. An empty `EditText` can expose its hint (`Trip`) as XML text, so an empty XML value is not a reliable intermediate assertion. The driver instead requires the exact replacement text, finds an enabled Save button through bounded UI-aware scrolling, and taps it once. Exact saved-title assertions before and after upgrade remain mandatory; malformed input is a fixture failure, not a reason to accept a substring or skip the data-preservation gate. Input and saved-UI evidence are retained for diagnosis.
+The API 33 fixture driver focuses the title field, clears existing input, enters `UpgradeProbe123`, and verifies that exact input before saving. An empty `EditText` can expose its hint (`Trip`) as XML text, so an empty XML value is not a reliable intermediate assertion. The driver instead requires the exact replacement text, finds an enabled Save button through bounded UI-aware scrolling, and taps it once. Exact saved-title assertions before and after upgrade remain mandatory; malformed input is a fixture failure, not a reason to accept a substring or skip the data-preservation gate. Input and saved-UI evidence are retained for diagnosis.
 
 Normal CI also runs `python3 scripts/test-upgrade-fixture.py`. These deterministic tests execute the workflow's own helper functions against simulated ADB responses, including hint-only fields, existing titles, wrong input, bounded retries and single-save behavior. They guard the test driver but do not establish real emulator input or replace the signed-upgrade acceptance run.
 
@@ -122,7 +122,7 @@ A release-candidate run:
 7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
 8. records APK checksum/size, size deltas, and validation reports;
 9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
-10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs a data-bearing signed 1.2.1 -> candidate upgrade on API 33 using the immutable public 1.2.1 APK digest, creating an event through the public UI and verifying it survives the in-place upgrade, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
+10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs a data-bearing signed 1.2.2 -> candidate upgrade on API 33 using the immutable public 1.2.2 APK digest, creating an event through the public UI and verifying it survives the in-place upgrade, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
 11. uploads the release candidate, validation evidence, reproducibility evidence, per-API acceptance evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:
@@ -134,7 +134,7 @@ CountAway-v<version>.apk.sha256
 
 The signing, verification, test/lint, dependency, size, reproducibility, and R8 artifacts are verification/debug evidence and do not need to be attached to the public release.
 
-Play-readiness validation also builds `bundleRelease` and retains an Android App Bundle plus checksum/evidence as a GitHub Actions artifact. This AAB is **not** a public GitHub release asset and does not replace the signed APK used by GitHub/Obtainium or the existing F-Droid flow. Until a future Play upload key is deliberately configured, treat it as packaging/readiness evidence rather than an upload-ready Play artifact. The AAB gate uses Google's official bundletool, pinned by version and SHA-256, to validate the bundle and compare the package, versionName, and versionCode read structurally from the packaged base manifest against the expected CountAway release identity.
+Play-readiness validation also builds `bundleRelease` and retains an Android App Bundle plus checksum/evidence as a GitHub Actions artifact. This AAB is **not** a public GitHub release asset and does not replace the signed APK used by GitHub/Obtainium or the existing F-Droid flow. Treat it as packaging/readiness evidence rather than an upload-ready Play artifact; the accepted bundle must be separately signed and verified with the dedicated Play upload key, following [`PLAY.md`](PLAY.md). The AAB gate uses Google's official bundletool, pinned by version and SHA-256, to validate the bundle and compare the package, versionName, and versionCode read structurally from the packaged base manifest against the expected CountAway release identity.
 
 ## F-Droid Gate A
 
@@ -153,7 +153,7 @@ For CountAway 1.1.8, Gate A was completed on September 22, 2026. Keep these chec
 
 This gate applies even if a release is prepared manually outside the normal checklist. The app itself performs no network check and receives no Internet permission.
 
-Before any actual draft/tag release preparation, the public `main` privacy-policy URL must resolve and the raw policy must match the repository's CountAway policy title. This gate also applies to the documented release-branch recovery path; recovery is not allowed to ship a build with a broken in-app privacy URL.
+Before any actual draft/tag release preparation, `https://countaway.cajapersonal.org/` and `https://countaway.cajapersonal.org/privacy/` must resolve. The hosted privacy page must expose the CountAway policy title and all three policy languages, while the repository's canonical `PRIVACY.md` must retain the matching multilingual policy headings. This gate also applies to the documented release-branch recovery path; recovery is not allowed to ship a build with a broken project or privacy URL.
 
 ## Prepare a draft release
 
@@ -207,7 +207,7 @@ Publishing is intentionally separate from preparation. Before publishing the Git
 - verify an upgrade from the previous public CountAway release preserves countdowns and existing widgets;
 - verify the SHA-256 checksum;
 - verify the signing certificate SHA-256 matches the expected fingerprint above;
-- review APK size against the previous public 1.2.1 release and explain material growth;
+- review APK size against the previous public 1.2.2 release and explain material growth;
 - confirm final release notes, Fastlane metadata, screenshots, and public assets;
 - confirm Gate A remains satisfied;
 - confirm the release is still a draft and targets the intended commit.

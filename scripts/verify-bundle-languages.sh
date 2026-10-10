@@ -5,6 +5,7 @@ bundle=$1
 bundletool=$2
 output=$3
 mkdir -p "$output"
+python3 scripts/verify-localizations.py
 java -jar "$bundletool" dump config --bundle="$bundle" > "$output/bundle-config.json"
 python3 - "$output/bundle-config.json" <<'PYCODE'
 import json, sys
@@ -31,11 +32,23 @@ master="$output/device-en/splits/base-master.apk"
 test -s "$master"
 "$aapt" dump configurations "$master" > "$output/device-en-configurations.txt"
 python3 - "$output" <<'PYCODE'
-import pathlib,re,sys
-p=pathlib.Path(sys.argv[1])
-configs=(p/'device-en-configurations.txt').read_text().splitlines()
-for language in ('es','ca'):
-    assert any(re.match(r'^'+language+r'(-|$)',line.strip()) for line in configs), (language,configs)
-assert not any(re.search(r'base-(en|es|ca)(-|\.)',f.name) for f in (p/'device-en').rglob('*.apk'))
-(p/'language-delivery.txt').write_text('language_splits=false\ndevice_spec_languages=en\npackaged_languages=en,es,ca\nsigning=test_debug_only\n')
+import pathlib, re, sys, xml.etree.ElementTree as ET
+p = pathlib.Path(sys.argv[1])
+catalog = ET.parse("app/src/main/res/xml/supported_languages.xml").getroot()
+default = catalog.attrib["defaultTag"]
+tags = [node.attrib["tag"] for node in catalog.findall("language")]
+configs = (p / "device-en-configurations.txt").read_text().splitlines()
+for tag in tags:
+    if tag == default:
+        continue
+    language = tag.split("-", 1)[0]
+    assert any(re.match(r"^" + re.escape(language) + r"(-|$)", line.strip()) for line in configs), (tag, configs)
+language_re = "|".join(re.escape(tag.split("-", 1)[0]) for tag in tags)
+assert not any(re.search(r"base-(" + language_re + r")(-|\.)", f.name) for f in (p / "device-en").rglob("*.apk"))
+(p / "language-delivery.txt").write_text(
+    "language_splits=false\n"
+    "device_spec_languages=en\n"
+    f"packaged_languages={','.join(tags)}\n"
+    "signing=test_debug_only\n"
+)
 PYCODE

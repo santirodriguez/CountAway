@@ -41,7 +41,7 @@ internal class WidgetPreviewController(
         milestoneView.setTextColor(theme.secondaryTextColor)
         unitView.setTextColor(theme.secondaryTextColor)
         dateView.setTextColor(theme.secondaryTextColor)
-        currentContent?.let(::renderEvent) ?: renderIllustration(null)
+        currentContent?.let(::renderEvent)
     }
 
     private fun renderBackground() {
@@ -69,17 +69,6 @@ internal class WidgetPreviewController(
         unitView.visibility = if (presentation.showUnit) View.VISIBLE else View.GONE
         dateView.visibility = if (presentation.showDate) View.VISIBLE else View.GONE
         frame.findViewById<View>(R.id.widgetRoot).contentDescription = content.description(context)
-        renderIllustration(content)
-    }
-
-    private fun renderIllustration(content: WidgetEventContent?) {
-        val dimensions = currentDimensions ?: return
-        if (!WidgetArrivalIllustration.supports(dimensions.size)) return
-        val view = frame.findViewById<ImageView>(R.id.widgetArrival)
-        val resource = content?.let { WidgetArrivalIllustration.resource(context, it, dimensions.size,
-            dimensions.widthDp, dimensions.heightDp) } ?: 0
-        if (resource != 0) view.setImageResource(resource)
-        view.visibility = if (resource == 0) View.GONE else View.VISIBLE
     }
 
     fun renderPlaceholder(
@@ -104,7 +93,6 @@ internal class WidgetPreviewController(
         dateView.visibility = View.GONE
         unitView.visibility = if (presentation.showUnit) View.VISIBLE else View.GONE
         frame.findViewById<View>(R.id.widgetRoot).contentDescription = "$title, $unit"
-        renderIllustration(null)
     }
 
     private fun ensureLayout(size: WidgetSize) {
