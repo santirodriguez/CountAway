@@ -44,7 +44,7 @@ class ArrivalAccentInstrumentedTest {
         WidgetPreviewDimensions(90, 180), WidgetPreviewDimensions(180, 50),
         WidgetPreviewDimensions(160, 144), WidgetPreviewDimensions(240, 220))
 
-    @Test fun everyStyleKeepsItsBackgroundAndUsesDistinctRecognizableIllustrations() = instrumentation.runOnMainSync {
+    @Test fun homeKeepsDistinctArrivalGlyphsWhileWidgetStylesStayClean() = instrumentation.runOnMainSync {
         val glyphs = ArrivalStage.entries.filter { it != ArrivalStage.NONE }.map { stage ->
             val drawable = context.getDrawable(ArrivalIllustration.resource(stage))!!
             Bitmap.createBitmap(72, 72, Bitmap.Config.ARGB_8888).also { image ->
@@ -67,10 +67,8 @@ class ArrivalAccentInstrumentedTest {
                         today, dimensions).apply(context, FrameLayout(context))
                     layout(context, root, dimensions)
                     assertTrue("Theme must remain intact", base.sameAs(background(root)))
-                    val badge = root.findViewById<ImageView>(R.id.widgetArrival)
-                    assertEquals(View.VISIBLE, badge.visibility)
-                    assertDecorationFits(root, badge)
-                    capture(root, "arrival-art-$background-$dark-$days")
+                    assertOnlyEventAndBackgroundImages(root)
+                    capture(root, "arrival-widget-clean-$background-$dark-$days")
                 }
             } finally { base.recycle() }
         }
@@ -106,9 +104,7 @@ class ArrivalAccentInstrumentedTest {
                         if (view.visibility == View.VISIBLE) assertFits(root, view)
                     }
                     assertEquals(View.GONE, root.findViewById<View>(R.id.widgetMilestone).visibility)
-                    val badge = root.findViewById<ImageView>(R.id.widgetArrival)
-                    if (badge != null && badge.visibility == View.VISIBLE) assertDecorationFits(root, badge)
-                    if (scale == 2f && badge != null) assertEquals(View.GONE, badge.visibility)
+                    assertOnlyEventAndBackgroundImages(root)
                     if (scale == 1f && dimensions == WidgetPreviewDimensions(57, 102)) {
                         assertEquals(View.VISIBLE, title.visibility)
                         assertFalse("Narrow-tall title must remain whole", hasEllipsis(title))
@@ -124,7 +120,7 @@ class ArrivalAccentInstrumentedTest {
         assertTrue(failures.joinToString("\n"), failures.isEmpty())
     }
 
-    @Test fun providerAndPreviewsClearIllustrationsForCountUpErrorEmptyAndResize() = instrumentation.runOnMainSync {
+    @Test fun providerAndEveryPreviewNeverAddArrivalIllustrations() = instrumentation.runOnMainSync {
         val companion = CountdownWidgetProvider.Companion
         val render = companion.javaClass.declaredMethods.single { it.name == "renderForSize" }.apply { isAccessible = true }
         val cache = HashMap<Any, Bitmap>()
@@ -143,32 +139,31 @@ class ArrivalAccentInstrumentedTest {
         val ordinary = rendered(configuration(up.id))
         assertTrue(background(arrival).sameAs(background(approaching)))
         assertTrue(background(arrival).sameAs(background(ordinary)))
-        assertEquals(View.VISIBLE, arrival.findViewById<View>(R.id.widgetArrival).visibility)
-        assertEquals(View.VISIBLE, approaching.findViewById<View>(R.id.widgetArrival).visibility)
-        assertEquals(View.GONE, ordinary.findViewById<View>(R.id.widgetArrival).visibility)
+        for (root in listOf(arrival, approaching, ordinary)) assertOnlyEventAndBackgroundImages(root)
         assertEquals(1, cache.size)
         for (root in listOf(rendered(configuration("missing")),
             rendered(configuration(event.id), WidgetRenderData.Failure(CountdownDataProblem.CORRUPT)))) {
-            assertEquals(View.GONE, root.findViewById<View>(R.id.widgetArrival).visibility)
+            assertOnlyEventAndBackgroundImages(root)
         }
         val next = WidgetConfiguration(null, style.appearance, style.background, WidgetEventSelection.NEXT)
-        assertEquals(View.VISIBLE, rendered(next).findViewById<View>(R.id.widgetArrival).visibility)
+        assertOnlyEventAndBackgroundImages(rendered(next))
         val upOnly = WidgetRenderData.from(CountdownLoadResult.Success(listOf(up)), today)
-        assertEquals(View.GONE, rendered(next, upOnly).findViewById<View>(R.id.widgetArrival).visibility)
+        assertOnlyEventAndBackgroundImages(rendered(next, upOnly))
         val preview = WidgetPreviewFactory.remoteViews(context, event, style, today, WidgetPreviewDimensions(160, 144))
             .apply(context, FrameLayout(context))
         assertTrue(background(arrival).sameAs(background(preview)))
+        assertOnlyEventAndBackgroundImages(preview)
         val frame = FrameLayout(context)
         val controller = WidgetPreviewController(context, FrameLayout(context), frame)
         controller.renderStyle(style, WidgetPreviewDimensions(160, 144))
         controller.renderEvent(WidgetEventContentFactory.from(event, today))
-        assertEquals(View.VISIBLE, frame.findViewById<View>(R.id.widgetArrival).visibility)
+        assertOnlyEventAndBackgroundImages(frame)
         controller.renderStyle(style, WidgetPreviewDimensions(160, 85))
-        assertEquals(View.GONE, frame.findViewById<View>(R.id.widgetArrival).visibility)
+        assertOnlyEventAndBackgroundImages(frame)
         controller.renderStyle(style, WidgetPreviewDimensions(160, 144))
-        assertEquals(View.VISIBLE, frame.findViewById<View>(R.id.widgetArrival).visibility)
+        assertOnlyEventAndBackgroundImages(frame)
         controller.renderPlaceholder("Select event", "Configure")
-        assertEquals(View.GONE, frame.findViewById<View>(R.id.widgetArrival).visibility)
+        assertOnlyEventAndBackgroundImages(frame)
     }
 
     private fun unwrapCount(root: View) {
@@ -197,15 +192,14 @@ class ArrivalAccentInstrumentedTest {
         }
     }
 
-    private fun assertDecorationFits(root: View, badge: ImageView) {
-        assertFits(root, badge)
-        val slot = root.findViewById<View>(R.id.widgetCountArea)
-        val count = root.findViewById<TextView>(R.id.widgetCount)
-        val decoration = bounds(root, badge)
-        assertTrue("Illustration exceeds count slot", bounds(root, slot).contains(decoration))
-        val center = bounds(root, count).exactCenterX()
-        val halfWidth = count.paint.measureText(count.text.toString()) / 2
-        assertTrue("Illustration overlaps count", decoration.left >= center + halfWidth || decoration.right <= center - halfWidth)
+    private fun assertOnlyEventAndBackgroundImages(root: View) {
+        val imageIds = mutableListOf<Int>()
+        fun collect(view: View) {
+            if (view is ImageView) imageIds += view.id
+            if (view is ViewGroup) for (index in 0 until view.childCount) collect(view.getChildAt(index))
+        }
+        collect(root)
+        assertEquals(listOf(R.id.widgetBackground, R.id.widgetIcon).sorted(), imageIds.sorted())
     }
     private fun background(root: View) = (root.findViewById<ImageView>(R.id.widgetBackground).drawable as BitmapDrawable).bitmap
     private fun bounds(root: View, view: View): Rect = Rect(0, 0, view.width, view.height).also {

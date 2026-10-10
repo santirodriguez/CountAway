@@ -192,7 +192,6 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val theme = WidgetThemeResolver.resolve(context, appearance, background)
             val event = (renderData as? WidgetRenderData.Ready)?.resolve(configuration)
             applyTheme(context, views, theme, background, widthDp, heightDp, backgroundCache)
-            WidgetArrivalIllustration.clear(views, size)
 
             when (renderData) {
                 is WidgetRenderData.Failure -> renderDataError(displayContext, views, appWidgetId,
@@ -204,8 +203,6 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                             size = size, heightDp = heightDp)
                     } else {
                         renderEvent(displayContext, views, appWidgetId, event, today, size, heightDp)
-                        WidgetArrivalIllustration.apply(displayContext, views, WidgetEventContentFactory.from(event, today),
-                            size, widthDp, heightDp)
                     }
                 }
             }
