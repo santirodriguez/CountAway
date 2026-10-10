@@ -2,6 +2,7 @@
 
 ## 1.2.3
 
+- Share event cards directly from the Home-screen actions menu without opening the editor.
 - Refine language selection around a shared catalog for English, Español, and Català.
 - Update About links to the CountAway website and privacy policy.
 - Add clearer translation contributor guidance and resource validation.

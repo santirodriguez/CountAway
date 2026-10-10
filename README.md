@@ -63,7 +63,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 - **Three appearance modes:** System, Light, and Dark for both the app and widgets.
 - **Useful reminders:** optional local notifications for count-down events.
 - **Smart widgets:** fixed widgets support both directions; **Next countdown** follows the nearest upcoming count-down event.
-- **Share without the screenshot ritual:** Share turns an event into a Ridge-style PNG card.
+- **Share without the screenshot ritual:** Send a Ridge-style PNG card from an event's menu or editor.
 - **Local portability:** JSON export/import stays entirely under your control.
 - **Multilingual:** English, Español, and Català.
 

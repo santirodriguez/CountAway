@@ -19,6 +19,7 @@ import com.santiagorodriguez.countaway.data.CountdownMutations
 import com.santiagorodriguez.countaway.data.EventRevision
 import com.santiagorodriguez.countaway.data.RetainedOperation
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.share.EventShareLauncher
 
 internal class HomeEventActions(
     private val activity: Activity,
@@ -34,12 +35,13 @@ internal class HomeEventActions(
     private var popup: PopupWindow? = null
     private var confirmation: AlertDialog? = null
     private var resumed = false
+    private var sharing = false
     private val focus = EditorDialogFocus(activity)
 
     init { session.deletion.onChanged = ::consumeResult }
 
     fun show(event: CountdownEvent, anchor: View) {
-        if (!resumed || session.deletion.running || popup != null || confirmation != null) return
+        if (!resumed || sharing || session.deletion.running || popup != null || confirmation != null) return
         focus.capture(anchor)
         val popupParent = anchor.rootView as? ViewGroup ?: return
         val content = LayoutInflater.from(activity).inflate(R.layout.event_actions_popup, popupParent, false)
@@ -74,6 +76,14 @@ internal class HomeEventActions(
                 Intent(activity, EditorActivity::class.java)
                     .putExtra(EditorActivity.EXTRA_DUPLICATE_EVENT_ID, event.id)
                     .putExtra(EditorActivity.EXTRA_SOURCE_REVISION, EventRevision.of(event)),
+            )
+        }
+        action(R.id.home_event_share) {
+            sharing = true
+            EventShareLauncher.share(
+                activity = activity, title = event.title, date = event.date, icon = event.icon,
+                repeatRule = event.repeatRule, countMode = event.countMode,
+                onFinished = { sharing = false },
             )
         }
         action(R.id.home_event_delete) { confirmDelete(event, anchor) }

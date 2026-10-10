@@ -1,1 +1,1 @@
-Language selection now uses a shared catalog for English, Español, and Català. About links now open the CountAway website and privacy policy.
+Share event cards directly from the Home screen's three-dot menu. Language selection uses a shared catalog for English, Español, and Català. About links open the website and privacy policy.

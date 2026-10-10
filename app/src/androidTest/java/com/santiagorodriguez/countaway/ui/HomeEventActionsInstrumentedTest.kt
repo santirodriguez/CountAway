@@ -1,6 +1,8 @@
 package com.santiagorodriguez.countaway.ui
 
+import android.app.Instrumentation
 import android.content.Context
+import android.content.IntentFilter
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
@@ -150,7 +152,7 @@ class HomeEventActionsInstrumentedTest {
         }
     }
 
-    @Test fun menuOffersFourActionsAndDeleteIsCancellableAndConflictSafe() = isolated {
+    @Test fun menuOffersFiveActionsAndDeleteIsCancellableAndConflictSafe() = isolated {
         val source = fixture()
         repository.save(listOf(source))
         val originalBytes = File(context.filesDir, "countaways.json").readBytes()
@@ -165,7 +167,8 @@ class HomeEventActionsInstrumentedTest {
             scenario.onActivity {
                 deleteLabel = it.getString(R.string.action_delete)
                 labels = listOf(R.string.event_action_widget, R.string.event_action_edit,
-                    R.string.event_action_duplicate, R.string.action_delete).map(it::getString)
+                    R.string.event_action_duplicate, R.string.action_share,
+                    R.string.action_delete).map(it::getString)
                 actionButton(it).performClick()
             }
             onView(withId(R.id.eventActionsPopup)).check(matches(isDisplayed()))
@@ -175,12 +178,16 @@ class HomeEventActionsInstrumentedTest {
                 val edit = widget.rootView.findViewById<View>(R.id.home_event_edit)
                 val duplicate = widget.rootView.findViewById<View>(R.id.home_event_duplicate)
                 assertTrue("Add widget must appear above Edit", widget.top < edit.top)
+                val share = widget.rootView.findViewById<View>(R.id.home_event_share)
+                val delete = widget.rootView.findViewById<View>(R.id.home_event_delete)
                 assertTrue("Edit must appear above Duplicate", edit.top < duplicate.top)
+                assertTrue("Duplicate must appear above Share", duplicate.top < share.top)
+                assertTrue("Share must appear above Delete", share.top < delete.top)
                 assertFalse("Keyboard-focus assertion unexpectedly ran in touch mode", widget.isInTouchMode)
                 assertTrue("Add widget must receive initial popup focus in keyboard mode", widget.hasFocus())
             }
             for (id in listOf(R.id.home_event_edit, R.id.home_event_duplicate,
-                R.id.home_event_widget, R.id.home_event_delete)) {
+                R.id.home_event_widget, R.id.home_event_share, R.id.home_event_delete)) {
                 onView(withId(id)).check(matches(isDisplayed()))
             }
             labels.forEach { onView(withText(it)).check(matches(isDisplayed())) }
@@ -204,6 +211,33 @@ class HomeEventActionsInstrumentedTest {
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
             drain()
             assertTrue(events().isEmpty())
+        }
+    }
+
+    @Test fun sharingFromHomeUsesNativeChooserWithoutMutatingEitherCountMode() = isolated {
+        for (mode in CountMode.entries) {
+            val event = fixture().copy(
+                countMode = mode,
+                repeatRule = if (mode == CountMode.COUNT_DOWN) RepeatRule.MONTHLY else RepeatRule.NONE,
+            )
+            repository.save(listOf(event))
+            val unchanged = File(context.filesDir, "countaways.json").readBytes()
+            val chooserMonitor = Instrumentation.ActivityMonitor(IntentFilter(Intent.ACTION_CHOOSER), null, true)
+            instrumentation.addMonitor(chooserMonitor)
+            try {
+                ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
+                    drain()
+                    scenario.onActivity { actionButton(it).performClick() }
+                    onView(withId(R.id.home_event_share)).perform(click())
+                    drain()
+                    assertTrue("Share did not request Android's native chooser",
+                        instrumentation.checkMonitorHit(chooserMonitor, 1))
+                    assertArrayEquals("Sharing must not write stored events",
+                        unchanged, File(context.filesDir, "countaways.json").readBytes())
+                }
+            } finally {
+                instrumentation.removeMonitor(chooserMonitor)
+            }
         }
     }
 
