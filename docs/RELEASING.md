@@ -2,27 +2,34 @@
 
 CountAway releases are built from the repository and signed with a long-lived Android signing key that must never be committed.
 
-## One-time signing key setup
+## Signing identities and custody
 
-Generate the release key on a trusted local machine and keep an offline backup:
+CountAway has **two different signing roles**. Do not interchange them:
 
-```bash
-keytool -genkeypair -v \
-  -keystore countaway-release.jks \
-  -alias countaway \
-  -keyalg RSA \
-  -keysize 4096 \
-  -validity 10000
-```
+| Role | Private keystore | Internal alias | Purpose |
+| --- | --- | --- | --- |
+| Original **app-signing** key | `countaway-release.jks` | `countaway` | Signs GitHub/Obtainium APKs and preserves compatibility with the F-Droid distribution; the same historical signing identity is enrolled in Google Play App Signing for Play-delivered APKs. |
+| Dedicated **Play upload** key | `countaway-play-upload.jks` | `countaway-play-upload` | Signs an AAB submitted to Play. Google authenticates uploads with this key, then signs distributed APKs with the original app-signing identity. It does **not** sign GitHub APKs. |
+
+The original app-signing certificate is identified by SHA-256
+`dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
+The original keystore was generated once and **must never be regenerated or replaced** as a routine release step. If the original keystore is unavailable, stop, restore its exact backup and verify the certificate before signing a release; a new key with the same alias or filename is *not* the same signing identity.
+
+The historical Google PEPK enrollment files `encryptedPrivateKey` (encrypted app-signing key-transfer material) and `certificate.pem` (original app-signing public certificate) are archival inputs, **not** Play upload-key material. The Play upload certificate may be exported again from the upload keystore and is safe to share publicly; the JKS and passwords are not.
+
+Use distinct, clearly labelled backup groups such as `01-original-app-signing/`, `02-play-upload-signing/` and `03-historical-pepk-transfer/`. Preserve original Java aliases and expected certificate fingerprints even when renaming **copies** of keystore files. Maintain a checked, independently recoverable backup plus separately protected passwords before key reset, migration or cleanup. A checksum or another copy on the same disk is not an independent recovery copy.
+
 
 Do not commit, email, or otherwise publish the keystore or its passwords. The repository already ignores `*.jks` and `*.keystore` files.
 
-Store the following repository secrets in GitHub Actions:
+The release workflow uses these **existing original app-signing** GitHub Actions secrets (not the Play upload key). Preserve their names and values unless a separately reviewed migration is required:
 
 - `COUNTAWAY_RELEASE_KEYSTORE_B64`: base64-encoded contents of the keystore
 - `COUNTAWAY_RELEASE_STORE_PASSWORD`: keystore password
 - `COUNTAWAY_RELEASE_KEY_ALIAS`: key alias, normally `countaway`
 - `COUNTAWAY_RELEASE_KEY_PASSWORD`: key password
+
+If deliberately initializing or restoring an Actions secret, the following commands produce **sensitive** base64-encoded private keystore bytes. Never paste their output into logs, PRs, chat, or documentation.
 
 On GNU/Linux, the keystore value can be prepared with:
 

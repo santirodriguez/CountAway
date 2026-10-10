@@ -1,6 +1,6 @@
 # Google Play preparation and submission
 
-CountAway is being prepared for its first Google Play submission while preserving the existing GitHub/Obtainium and F-Droid distribution model. Repository preparation is distinct from Play Console submission: Console mutations, real signing-key operations, testing tracks, and publication require separate maintainer authority.
+CountAway is preparing its first Google Play closed-test submission while preserving the existing GitHub/Obtainium and F-Droid distribution model. Repository preparation is distinct from Play Console submission: upload-key reset, track uploads, and publication remain separate maintainer-controlled operations.
 
 ## Current readiness baseline
 
@@ -72,23 +72,28 @@ CountAway-v<version>.apk.sha256
 
 F-Droid continues to use the existing source/reproducibility/signing contract. The AAB gate must not alter F-Droid metadata, introduce proprietary runtime dependencies, or replace the upstream APK used by GitHub/Obtainium.
 
-## Signing identity — critical cross-store rule
+## Signing identities — cross-store contract
 
-CountAway already has a long-lived Android signing identity. Cross-store update compatibility depends on preserving that identity.
+CountAway is enrolled in **Play App Signing** with the same long-lived **app-signing** identity used by its existing GitHub/F-Droid distribution. Its app-signing certificate SHA-256 must remain:
 
-When Play App Signing is eventually configured:
+```text
+dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a
+```
 
-1. do **not** casually accept a newly generated Play app-signing identity;
-2. choose the Play App Signing path that lets the existing CountAway app-signing key remain the app identity across stores;
-3. transfer only the required copy through Google's supported secure enrollment process;
-4. create a separate Play **upload key** for future AAB uploads;
-5. keep all signing keys, passwords, export files, and credentials out of this repository and out of TEMP-GPT.
+Keep these separate:
 
-Google documents this as the supported model when an app is distributed in multiple stores and the same signing key is required everywhere.
+| Role | Typical local file | Internal alias | Used for |
+| --- | --- | --- | --- |
+| Original app-signing key | `countaway-release.jks` | `countaway` | Direct GitHub APK signing and the historical identity Google uses to sign Play-delivered APKs. |
+| Play **upload** key | `countaway-play-upload.jks` | `countaway-play-upload` | Signing AAB uploads for Google to authenticate. Not the certificate used to sign installed Play APKs. |
+| Public Play upload certificate | `countaway-play-upload-certificate.pem` | N/A | Registering/verifying the upload key with Play. Does not contain private signing material. |
+| Historical PEPK transfer | `encryptedPrivateKey` plus `certificate.pem` | N/A | One-time transfer of the *original app-signing* identity to Play, not the private upload key or a new upload credential. |
 
-For a **new** Play app, Google currently defaults to a Google-generated app-signing key. CountAway must not accept that default blindly because it already exists outside Play. Before any Play-delivered build is treated as cross-store compatible, use the Play App Signing path that lets the maintainer provide a copy of CountAway's existing app-signing key, then verify the certificate shown by Play against the historical fingerprint. The separate upload key may and should differ.
+Play Console displays the currently accepted **Upload key certificate** separately from **App signing key**. Compare the active upload-certificate fingerprint to the certificate exported from the selected local upload JKS **before every Play signing operation**. A pending upload-key reset is not equivalent to activation: wait for Google's specified effective time and verify the new public certificate in Console before uploading. A lost upload JKS requires a replacement upload key, independently verified backup and a **Request upload key reset**; never use **Change app signing key** for this problem.
 
-Any future Play signing setup must verify the resulting Play app-signing certificate against the historical CountAway identity before production distribution.
+**Do not regenerate the original app-signing keystore, replace its Java alias or alter the four historical `COUNTAWAY_RELEASE_*` GitHub Actions secrets to solve an upload-key issue.** Those secrets sign the GitHub APK. Never commit or publish private JKS files, PEPK material or passwords. Preserve independent, restorable backups of both JKS identities and keep the required passwords separately protected.
+
+The same applicationId, original app-signing certificate and an increasing global versionCode preserve cross-store update compatibility; they do **not** establish source-code provenance. Play-distributed APKs are generated from submitted bundles and need not be byte-identical to the GitHub APK. For each authorized upload retain the source commit, unsigned AAB hash, signed AAB hash, active upload-certificate fingerprint, package/version receipt and Play track decision. Play does not require a corresponding GitHub release.
 
 ## Privacy policy
 
@@ -176,26 +181,26 @@ Android CI and the release workflow stage all six accepted screenshots, validate
 
 PNG exports can be checked with `python3 scripts/verify-play-assets.py <icon|feature|screenshot> <file>...`. JPEG screenshot exports remain valid Play inputs and should be inspected with an image tool before submission. Final screenshots are not generated or altered by this pipeline; they must still be genuine exact-candidate captures.
 
-Console application creation/configuration, Play App Signing enrollment, upload-key generation, declarations, tracks, and rollout remain manual consequential gates.
+The Play Console app and historical Play App Signing enrollment already exist. Remaining Console declarations, upload-key reset/activation, testing-track submissions and rollout are separate manual consequential gates.
 
 If the developer account is a **personal account created after November 13, 2023**, production access currently requires a closed test with at least 12 testers continuously opted in for at least 14 days, followed by a production-access request in Play Console. Internal testing does not satisfy that production gate. Account type/date must be checked in Play Console; do not assume this requirement applies or does not apply.
 
-## Future Play onboarding checklist
+## Initial Play closed-test checklist
 
-When the maintainer actually decides to publish:
+Before submitting to a permitted Play testing track:
 
 1. re-audit the exact candidate against current Play policy and target API requirements;
-2. verify the privacy-policy URL is globally accessible and accurate;
+2. verify the privacy-policy URL is publicly accessible and accurate;
 3. stage and inspect the accepted Play store assets;
-4. create/configure the Play Console app using the existing package ID;
-5. enroll in Play App Signing while preserving the historical CountAway app-signing identity;
-6. create a separate upload key and protect it outside the repository;
-7. build/sign the upload AAB using that upload key;
-8. verify Play reports the expected app-signing certificate;
-9. complete Data Safety, content rating, audience/app-access declarations, and any account-specific testing requirement using current Play Console rules;
-10. test Play-delivered APKs and cross-store update behavior before production rollout.
+4. verify the existing Play Console app has the correct package ID;
+5. confirm the already enrolled Play **app-signing certificate** still matches the original CountAway fingerprint;
+6. confirm the current Play **upload certificate** is active and matches the locally preserved upload JKS;
+7. sign the reviewed AAB using the dedicated upload key, keeping the original unsigned artifact unchanged;
+8. complete Data Safety, content rating, audience/app-access declarations, and account-specific testing requirements;
+9. submit only to the separately authorized track and test the Play-delivered APK and cross-store updates;
+10. do not enter production before both the required testing gate and separate maintainer authorization are satisfied.
 
-No step above is authorized merely by this document. Play Console mutations, signing-key operations, testing-track publication, and production release remain separate explicit actions.
+This checklist does not itself authorize Console mutation, track publication or production release.
 
 ## Offline language delivery
 
@@ -208,7 +213,7 @@ Use only the exact AAB produced from the accepted release-candidate SHA.
 
 1. Confirm `app/build.gradle.kts` still contains the intended package, versionName and versionCode, and confirm versionCode 12 is unused in Play Console before the first upload.
 2. Record the candidate source SHA and the readiness AAB SHA-256 retained by Actions.
-3. Create or select the dedicated Play **upload key** outside this repository only after explicit maintainer authorization. The upload key is not the CountAway app-signing identity.
+3. Select the preserved dedicated Play **upload JKS** and compare its public-certificate SHA-256 to the **active Upload key certificate** in Play Console. The upload key is not CountAway's app-signing identity. If access to the registered upload key was lost, first make and verify an independent backup of a new upload key, request an **upload-key reset** using only its public PEM, then wait for Google's confirmed activation before signing/uploading.
 4. Sign the exact reviewed AAB with the repository helper, which uses JAR-compatible signing, verifies that the keystore alias matches the supplied public upload certificate, keeps passwords off the command line, leaves the input AAB unchanged, and can revalidate package/version with bundletool:
 
    ```bash
