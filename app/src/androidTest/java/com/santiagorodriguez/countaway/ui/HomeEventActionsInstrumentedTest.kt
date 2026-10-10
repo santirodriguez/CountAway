@@ -240,11 +240,12 @@ class HomeEventActionsInstrumentedTest {
             )
             repository.save(listOf(event))
             val unchanged = File(context.filesDir, "countaways.json").readBytes()
-            val chooserMonitor = Instrumentation.ActivityMonitor(IntentFilter(Intent.ACTION_CHOOSER), null, true)
-            instrumentation.addMonitor(chooserMonitor)
-            try {
-                ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
-                    drain()
+            ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
+                drain()
+                // Blocking chooser monitors must not intercept ActivityScenario startup.
+                val chooserMonitor = Instrumentation.ActivityMonitor(IntentFilter(Intent.ACTION_CHOOSER), null, true)
+                instrumentation.addMonitor(chooserMonitor)
+                try {
                     scenario.onActivity { actionButton(it).performClick() }
                     onView(withId(R.id.home_event_share)).perform(click())
                     drain()
@@ -252,9 +253,9 @@ class HomeEventActionsInstrumentedTest {
                         instrumentation.checkMonitorHit(chooserMonitor, 1))
                     assertArrayEquals("Sharing must not write stored events",
                         unchanged, File(context.filesDir, "countaways.json").readBytes())
+                } finally {
+                    instrumentation.removeMonitor(chooserMonitor)
                 }
-            } finally {
-                instrumentation.removeMonitor(chooserMonitor)
             }
         }
     }
