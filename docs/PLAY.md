@@ -144,14 +144,14 @@ Keep one global version sequence across every store.
 
 ## Store assets and console setup
 
-Play assets are release inputs, not permission to fabricate app UI. Final phone screenshots must be genuine captures of the exact accepted v1.2.3 candidate. The existing 540×1200 source screenshots are retained for repository/F-Droid history but exceed Play's 2:1 long-side ratio gate and must not be uploaded as-is.
+Play assets are release inputs, not permission to fabricate app UI. The six accepted v1.2.3 phone screenshots are genuine 1080×1920 RGB PNG captures in Fastlane, replacing earlier 540×1200 sources that did not meet Play's 2:1 long-side ratio limit.
 
 Required Play export checks:
 
 - 512×512 32-bit PNG app icon, at most 1024 KB;
 - 1024×500 feature graphic as JPEG or 24-bit PNG without alpha;
 - at least two genuine phone screenshots, JPEG or RGB PNG, each side 320–3840 px and longest side no more than twice the shortest side;
-- filenames/order/content tied to the exact candidate, including an About/version capture that does not show v1.2.2.
+- filenames/order/content tied to the exact candidate, including an About/version capture showing v1.2.3.
 
 Do not stretch or repaint an old screenshot to satisfy dimensions. Capture a suitable final-candidate viewport and export it without changing the represented UI.
 
@@ -159,9 +159,9 @@ Store locale mapping comes from `app/src/main/res/xml/supported_languages.xml`. 
 
 The existing Fastlane icon and feature graphic remain source/distribution assets and are not rewritten merely for Play. CI and the Release workflow create visually identical Play derivatives with `scripts/prepare-play-assets.py`: the 512×512 icon is encoded as 32-bit RGBA with opaque alpha, and the 1024×500 feature graphic is encoded as 24-bit RGB. The generator decodes both source and output and fails if any visible RGB pixel changes. Generated release derivatives are retained under `play-readiness/store-assets/`.
 
-Phone screenshots have a single canonical location for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. Replace the outdated sources with six genuine, maintainer-approved 1080x1920 9:16 captures of the exact accepted candidate, encoded as 24-bit RGB PNG without alpha. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. Do not distort, pad, or repaint outdated screen content.
+Phone screenshots have a single canonical location for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. The six accepted files are genuine, maintainer-approved 1080×1920 (9:16) captures of the reviewed candidate, encoded as 24-bit RGB PNG without alpha. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. Do not distort, pad, or repaint screenshot content.
 
-After those screenshots are accepted, stage them for the Play Console from the canonical Fastlane files, preserving byte-for-byte identity:
+To stage the accepted screenshots for the Play Console, copy them from the canonical Fastlane files while preserving byte-for-byte identity:
 
 ```bash
 python3 scripts/prepare-play-assets.py \
@@ -186,7 +186,7 @@ When the maintainer actually decides to publish:
 
 1. re-audit the exact candidate against current Play policy and target API requirements;
 2. verify the privacy-policy URL is globally accessible and accurate;
-3. prepare the deferred Play store assets;
+3. stage and inspect the accepted Play store assets;
 4. create/configure the Play Console app using the existing package ID;
 5. enroll in Play App Signing while preserving the historical CountAway app-signing identity;
 6. create a separate upload key and protect it outside the repository;
