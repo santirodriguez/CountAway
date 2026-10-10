@@ -29,48 +29,21 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="@string/about_support_project" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginStart="18dp"
-            android:layout_marginTop="18dp"
-            android:layout_marginEnd="18dp"
-            android:background="@color/outline" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="15dp"
-            android:fontFamily="sans-serif-medium"
-            android:gravity="center"
-            android:text="@string/about_author_name"
-            android:textColor="@color/foreground"
-            android:textSize="13sp" />
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/projectLinksCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="12dp"
         android:background="@drawable/surface_card"
         android:orientation="vertical"
-        android:padding="18dp">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:text="@string/about_project_links_title"
-            android:textColor="@color/foreground"
-            android:textSize="17sp" />
+        android:padding="12dp">
 
         <LinearLayout
             android:id="@+id/projectLinksRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
             android:orientation="horizontal">
 
             <Button
@@ -79,6 +52,11 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:drawableStart="@drawable/ic_about_website"
+                android:drawablePadding="6dp"
+                android:gravity="center"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
                 android:text="@string/about_website" />
 
             <Button
@@ -88,8 +66,23 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
+                android:drawableStart="@drawable/ic_about_privacy"
+                android:drawablePadding="6dp"
+                android:gravity="center"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
                 android:text="@string/about_privacy_policy" />
         </LinearLayout>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/aboutAuthorCredit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="center"
+        android:paddingBottom="6dp"
+        android:text="@string/about_author_name"
+        android:textColor="@color/secondary_text"
+        android:textSize="12sp" />
 </LinearLayout>
