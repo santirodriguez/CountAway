@@ -37,12 +37,20 @@ class HistoricalEditorTransportInstrumentedTest {
             ).use { scenario ->
                 drain()
                 scenario.onActivity { activity ->
-                    assertEquals(title, activity.findViewById<EditText>(R.id.titleInput).text.toString())
+                    assertEquals(title, activity.fullEditorTitle())
+                    assertTrue(activity.findViewById<EditText>(R.id.titleInput).text.length < 200)
+                    assertFalse(activity.findViewById<EditText>(R.id.titleInput).isEnabled)
+                    assertEquals(android.view.View.VISIBLE,
+                        activity.findViewById<android.view.View>(R.id.replaceOversizedTitleButton).visibility)
                 }
                 scenario.recreate()
                 drain()
                 scenario.onActivity { activity ->
-                    assertEquals(title, activity.findViewById<EditText>(R.id.titleInput).text.toString())
+                    assertEquals(title, activity.fullEditorTitle())
+                    assertTrue(activity.findViewById<EditText>(R.id.titleInput).text.length < 200)
+                    assertFalse(activity.findViewById<EditText>(R.id.titleInput).isEnabled)
+                    assertEquals(android.view.View.VISIBLE,
+                        activity.findViewById<android.view.View>(R.id.replaceOversizedTitleButton).visibility)
                 }
             }
         }
@@ -72,19 +80,46 @@ class HistoricalEditorTransportInstrumentedTest {
             ).use { scenario ->
                 drain()
                 scenario.onActivity {
-                    val input = it.findViewById<EditText>(R.id.titleInput)
-                    // The current UI caps new titles. Simulate a previously restored
-                    // over-limit draft to exercise the lossless persistence boundary.
-                    input.filters = emptyArray()
-                    input.setText(unsaved)
+                    // Simulate an inherited, previously saved over-limit draft
+                    // without ever putting its full text into Android EditText.
+                    it.setEditorTitle(unsaved)
+                    assertEquals(unsaved, it.fullEditorTitle())
+                    assertTrue(it.findViewById<EditText>(R.id.titleInput).text.length < 200)
                 }
                 scenario.recreate()
                 drain()
                 scenario.onActivity {
-                    assertEquals(unsaved, it.findViewById<EditText>(R.id.titleInput).text.toString())
+                    assertEquals(unsaved, it.fullEditorTitle())
+                    assertTrue(it.findViewById<EditText>(R.id.titleInput).text.length < 200)
                 }
                 assertEquals(event, (repository.loadResult() as CountdownLoadResult.Success)
                     .events.single { it.id == event.id })
+            }
+        }
+    }
+
+    @Test fun replacingAnOversizedHistoricalTitleRequiresExplicitAction() {
+        val title = "Historical-" + "R".repeat(19_000)
+        val event = fixture("replace-" + UUID.randomUUID(), title)
+        withStoredFixture(event) {
+            ActivityScenario.launch<EditorActivity>(
+                Intent(context, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id),
+            ).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    val input = activity.findViewById<EditText>(R.id.titleInput)
+                    assertEquals(title, activity.fullEditorTitle())
+                    assertFalse(input.isEnabled)
+                    activity.findViewById<android.widget.Button>(R.id.replaceOversizedTitleButton).performClick()
+                    assertTrue(input.isEnabled)
+                    assertEquals("", activity.fullEditorTitle())
+                    input.setText("New explicit title")
+                }
+                scenario.recreate()
+                drain()
+                scenario.onActivity { activity ->
+                    assertEquals("New explicit title", activity.fullEditorTitle())
+                }
             }
         }
     }

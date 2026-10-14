@@ -62,6 +62,9 @@ class EditorActivity : BaseActivity() {
     private lateinit var repository: CountdownRepository
     private lateinit var editorRoot: View
     private lateinit var titleInput: EditText
+    private lateinit var oversizedTitleNotice: TextView
+    private lateinit var replaceOversizedTitleButton: Button
+    private var preservedLargeTitle: String? = null
     private lateinit var typeGrid: GridLayout
     private lateinit var choiceLayout: EditorChoiceLayout
     private lateinit var customIconSection: View
@@ -112,6 +115,15 @@ class EditorActivity : BaseActivity() {
         session = lastNonConfigurationInstance as? EditorSession ?: EditorSession(savedInstanceState)
         session.operation.onChanged = { consumeOperation() }
         titleInput = findViewById(R.id.titleInput)
+        oversizedTitleNotice = findViewById(R.id.oversizedTitleNotice)
+        replaceOversizedTitleButton = findViewById(R.id.replaceOversizedTitleButton)
+        replaceOversizedTitleButton.setOnClickListener {
+            if (editorBusy || preservedLargeTitle == null) return@setOnClickListener
+            preservedLargeTitle = null
+            titleInput.setText("")
+            renderOversizedTitleState()
+            titleInput.requestFocus()
+        }
         titleInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
@@ -210,7 +222,7 @@ class EditorActivity : BaseActivity() {
         selectedPreset = null
         autoSuggestedTitle = null
         (existingEvent ?: copy)?.let { event ->
-            titleInput.setText(event.title)
+            setEditorTitle(event.title)
             selectedDate = event.date
             selectedType = event.type
             selectedIcon = event.icon
@@ -279,7 +291,7 @@ class EditorActivity : BaseActivity() {
             outState.putAll(carried)
         }
         if (editorInitialized) {
-            val draftTitle = titleInput.text.toString()
+            val draftTitle = fullEditorTitle()
             if (draftTitle.length > EditorDraftStore.INLINE_CHAR_LIMIT) {
                 val token = EditorDraftStore.save(this, largeTitleToken, draftTitle)
                 largeTitleToken = token
@@ -671,7 +683,7 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun share() {
-        val title = titleInput.text.toString().trim()
+        val title = fullEditorTitle().trim()
         if (title.isEmpty()) {
             titleInput.error = getString(R.string.title_required)
             return
@@ -748,13 +760,14 @@ class EditorActivity : BaseActivity() {
             return
         }
         val snapshot = CountdownTime.snapshot()
-        val title = titleInput.text.toString().trim()
+        val title = fullEditorTitle().trim()
         if (title.isEmpty()) {
             titleInput.error = getString(R.string.title_required)
             return
         }
         val previousTitle = existingEvent?.title?.trim()
-        if (!CountdownValidation.isTitleWithinLimit(title) && title != previousTitle) {
+        if (!CountdownValidation.isTitleWithinLimit(title) && title != previousTitle &&
+            title != preservedLargeTitle?.trim()) {
             titleInput.error = getString(R.string.title_too_long, CountdownValidation.MAX_TITLE_LENGTH)
             return
         }
@@ -816,7 +829,7 @@ class EditorActivity : BaseActivity() {
     private fun restoreEditorState(state: Bundle) {
         val title = state.getString(STATE_TITLE)
             ?: EditorDraftStore.read(this, state.getString(STATE_TITLE_FILE))
-        title?.let(titleInput::setText)
+        title?.let(::setEditorTitle)
         if (title == null && state.containsKey(STATE_TITLE_FILE)) {
             Toast.makeText(this, R.string.data_error_title, Toast.LENGTH_LONG).show()
         }
@@ -869,9 +882,34 @@ class EditorActivity : BaseActivity() {
             .show().also { DialogPresentation.polish(it) }
     }
 
+    /**
+     * Android text layout cannot safely render historical megabyte-scale titles.
+     * Keep the original outside EditText and make replacement an explicit action.
+     */
+    internal fun setEditorTitle(value: String) {
+        preservedLargeTitle = value.takeIf { it.length > EditorDraftStore.INLINE_CHAR_LIMIT }
+        titleInput.setText(
+            if (preservedLargeTitle != null) EventTransport.preview(value, CountdownValidation.MAX_TITLE_LENGTH)
+            else value,
+        )
+        renderOversizedTitleState()
+    }
+
+    internal fun fullEditorTitle(): String = preservedLargeTitle ?: titleInput.text.toString()
+
+    private fun renderOversizedTitleState() {
+        if (!::oversizedTitleNotice.isInitialized || !::replaceOversizedTitleButton.isInitialized) return
+        val isOversized = preservedLargeTitle != null
+        oversizedTitleNotice.visibility = if (isOversized) View.VISIBLE else View.GONE
+        replaceOversizedTitleButton.visibility = if (isOversized) View.VISIBLE else View.GONE
+        titleInput.isEnabled = !editorBusy && !isOversized
+        replaceOversizedTitleButton.isEnabled = !editorBusy
+    }
+
     private fun setEditorBusy(busy: Boolean) {
         editorBusy = busy
         setViewTreeEnabled(editorRoot, !busy)
+        if (::titleInput.isInitialized) renderOversizedTitleState()
     }
 
     private fun setViewTreeEnabled(view: View, enabled: Boolean) {
@@ -936,7 +974,7 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun currentDraft(): EditorDraft = EditorDraft(
-        title = titleInput.text.toString(), date = selectedDate, type = selectedType, icon = selectedIcon,
+        title = fullEditorTitle(), date = selectedDate, type = selectedType, icon = selectedIcon,
         repeatRule = selectedRepeatRule, reminder = selectedReminder, countMode = selectedCountMode,
     )
 

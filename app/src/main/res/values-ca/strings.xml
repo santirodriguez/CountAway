@@ -42,6 +42,8 @@
     <string name="reminder_seven_days">7 dies abans</string>
     <string name="notification_permission_denied">No s’ha concedit el permís de notificacions.</string>
     <string name="title_required">Posa un títol a aquest esdeveniment.</string>
+    <string name="oversized_title_notice">Aquest títol és massa llarg per mostrar-lo sencer. Es conservarà intacte fins que decideixis substituir-lo.</string>
+    <string name="oversized_title_replace">Substitueix el títol</string>
     <string name="delete_title">Vols eliminar l’esdeveniment?</string>
     <string name="delete_message">Vols eliminar &quot;%1$s&quot;?</string>
     <string name="data_error_edit_blocked">Ja Queda Poc no ha pogut llegir de manera segura les dades desades. L’edició està desactivada per evitar sobreescriure-les.</string>
