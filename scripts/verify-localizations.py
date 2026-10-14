@@ -8,8 +8,22 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / "app/src/main/res"
 CATALOG = RES / "xml/supported_languages.xml"
-FORMAT = re.compile(r"%(?:(\d+)\$)?([a-zA-Z%])")
-FORMAT_TYPES = set("bBhHsScCdoxXeEfgGaAtT")
+FORMAT = re.compile(
+    r"%(?:(?P<index>[1-9][0-9]*)\$)?(?P<flags>[-#+ 0,(<]*)"
+    r"(?P<width>[0-9]+)?(?:\.(?P<precision>[0-9]+))?"
+    r"(?P<conversion>[bBhHsScCdoxXeEfgGaAtT%n])"
+)
+FORMAT_TYPES = {
+    "b": "boolean", "h": "hash", "s": "string", "c": "character",
+    "d": "integer", "o": "integer", "x": "integer",
+    "e": "decimal", "f": "decimal", "g": "decimal", "a": "decimal",
+    "t": "datetime",
+}
+DATE_TIME_SUFFIXES = set("HIklMSLNpzZsQBbhAaCYyjmdeRTrDFc")
+PLURAL_QUANTITIES = {"zero", "one", "two", "few", "many", "other"}
+# Android may request a singular without supplying the numeric field in the
+# localized copy. This known exception is limited to one resource/quantity.
+PLURAL_OPTIONAL_ARGUMENTS = {("plurals", "share_days_left", "one")}
 LANGUAGE_VALUES_DIR = re.compile(r"^values-(?:b\+[A-Za-z0-9+]+|[a-z]{2,3}(?:-r[A-Z]{2})?)$")
 
 
@@ -41,21 +55,56 @@ def load_catalog():
 
 
 def signature(text):
-    result = []
+    """Return argument index and compatible Java Formatter conversion families.
+
+    Explicit argument indexes may be reordered; ordinary implicit indexes
+    advance independently of explicit indexes. Escaped percent and %n do not
+    consume arguments. Unsupported or malformed tokens fail instead of being
+    silently dropped from the format contract.
+    """
+    text = text or ""
+    requirements = set()
     implicit = 0
-    for match in FORMAT.finditer(text or ""):
-        kind = match.group(2)
-        if kind == "%":
+    previous = None
+    offset = 0
+    while True:
+        start = text.find("%", offset)
+        if start < 0:
+            break
+        token = FORMAT.match(text, start)
+        if token is None:
+            die(f"unsupported format token near {text[start:start + 12]!r} in {text!r}")
+        index = token.group("index")
+        flags = token.group("flags")
+        width = token.group("width")
+        precision = token.group("precision")
+        kind = token.group("conversion")
+        offset = token.end()
+
+        if kind in {"%", "n"}:
+            if index or "<" in flags or (kind == "n" and (flags or width or precision)) or precision:
+                die(f"invalid literal format token {token.group()!r} in {text!r}")
             continue
-        if kind not in FORMAT_TYPES:
-            die(f"unsupported format token %{kind} in {text!r}")
-        if match.group(1):
-            index = int(match.group(1))
+        if flags.count("<") > 1 or ("<" in flags and index):
+            die(f"invalid previous-argument flag in {text!r}")
+        if "<" in flags:
+            if previous is None:
+                die(f"previous-argument flag has no argument in {text!r}")
+            argument = previous
+        elif index:
+            argument = int(index)
         else:
             implicit += 1
-            index = implicit
-        result.append((index, kind.lower()))
-    return tuple(result)
+            argument = implicit
+        previous = argument
+
+        family = FORMAT_TYPES[kind.lower()]
+        if family == "datetime":
+            if offset >= len(text) or text[offset] not in DATE_TIME_SUFFIXES:
+                die(f"unsupported date/time format near {text[start:start + 12]!r}")
+            offset += 1
+        requirements.add((argument, family))
+    return frozenset(requirements)
 
 
 def resources(directory):
@@ -80,21 +129,35 @@ def resources(directory):
             if node.tag == "string":
                 values[key] = ("string", signature("".join(node.itertext())))
             elif node.tag == "plurals":
-                aggregate = set()
                 branches = {}
                 for item in node.findall("item"):
                     quantity = item.attrib.get("quantity", "")
-                    item_signature = signature("".join(item.itertext()))
-                    branches[quantity] = item_signature
-                    aggregate.update(item_signature)
+                    if quantity not in PLURAL_QUANTITIES or quantity in branches:
+                        die(f"{path}: invalid or duplicate quantity={quantity!r} in plurals/{name}")
+                    branches[quantity] = signature("".join(item.itertext()))
                 if "other" not in branches:
                     die(f"{path}: plurals/{name} is missing quantity=other")
-                values[key] = ("plurals", frozenset(aggregate))
+                values[key] = ("plurals", branches)
             else:
                 values[key] = ("string-array", tuple(
                     signature("".join(item.itertext())) for item in node.findall("item")
                 ))
     return values, nontranslatable
+
+
+def validate_plural_contract(label, key, expected, actual):
+    """Validate every translated branch, allowing locale-specific categories."""
+    fallback = expected["other"]
+    for quantity, actual_signature in actual.items():
+        expected_signature = expected.get(quantity, fallback)
+        allowed = {expected_signature}
+        if (*key, quantity) in PLURAL_OPTIONAL_ARGUMENTS:
+            allowed.add(frozenset())
+        if actual_signature not in allowed:
+            die(
+                f"{label}: plural contract mismatch for {key} quantity={quantity}: "
+                f"{sorted(actual_signature)} not in {[sorted(x) for x in allowed]}"
+            )
 
 
 def validate_directory(label, directory, baseline, nontranslatable):
@@ -112,7 +175,9 @@ def validate_directory(label, directory, baseline, nontranslatable):
         die(f"{label}: extra resources: {sorted(extra)}")
     for key, expected in baseline.items():
         actual = current[key]
-        if expected != actual:
+        if expected[0] == actual[0] == "plurals":
+            validate_plural_contract(label, key, expected[1], actual[1])
+        elif expected != actual:
             die(f"{label}: resource contract mismatch for {key}: {actual} != {expected}")
     unexpected_nontranslatable = localized_nontranslatable - nontranslatable
     if unexpected_nontranslatable:
