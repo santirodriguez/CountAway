@@ -168,6 +168,9 @@ jobs:
           printf 'VERSION_CODE=%s\n' "${VERSION_CODE}" >> "${GITHUB_ENV}"
           printf 'PREPARE_RELEASE=%s\n' "${PREPARE_RELEASE}" >> "${GITHUB_ENV}"
 
+      - name: Require new screenshots for the current release
+        run: python3 scripts/verify-release-screenshots.py --version "${{ steps.version.outputs.version }}"
+
       - name: Set up JDK
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
