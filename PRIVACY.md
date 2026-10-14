@@ -22,9 +22,9 @@ Backup export and import are started explicitly by you. CountAway uses Android's
 
 ### Sharing
 
-When you choose to share an event, CountAway generates a PNG card locally in the app's private cache and passes a temporary read-only content URI to the Android share sheet. CountAway does not send the card to any service by itself.
+When you choose to share an event, CountAway normally creates a PNG card in its private cache and passes a temporary read-only URI to the Android share sheet. For exceptionally long event text, it instead provides the complete text in a temporary read-only text file, along with a shortened preview. CountAway does not upload either file or send it to a service by itself.
 
-Cached share cards older than 24 hours are pruned when CountAway next uses its share-card store, and Android may also clear app cache. A copy sent to another app or service is controlled by that recipient and its own privacy policy.
+Cached share cards and text files older than 24 hours are pruned when CountAway next uses the corresponding share cache. Android may also clear the app cache. A copy sent to another app or service is controlled by that recipient and its own privacy policy.
 
 ### External links
 
@@ -73,9 +73,9 @@ La exportación y la importación de copias se inician únicamente cuando vos la
 
 ### Compartir
 
-Cuando elegís compartir un evento, CountAway genera localmente una tarjeta PNG en la caché privada de la aplicación y entrega al panel de compartir de Android un URI temporal de solo lectura. CountAway no envía la tarjeta a ningún servicio por su cuenta.
+Cuando elegís compartir un evento, CountAway normalmente genera una tarjeta PNG en la caché privada y entrega un URI temporal de solo lectura al panel de compartir de Android. Si el texto del evento es excepcionalmente largo, ofrece en su lugar el texto completo en un archivo de texto temporal de solo lectura, junto con una vista previa abreviada. CountAway no sube ninguno de los archivos ni los envía a servicios por su cuenta.
 
-Las tarjetas de caché con más de 24 horas se eliminan cuando CountAway vuelve a usar su almacén de tarjetas compartidas, y Android también puede limpiar la caché de la aplicación. Una copia enviada a otra aplicación o servicio queda bajo el control de ese destinatario y de su propia política de privacidad.
+Las tarjetas y los archivos de texto de la caché con más de 24 horas se eliminan cuando CountAway vuelve a usar la caché correspondiente. Android también puede limpiar la caché de la aplicación. Una copia enviada a otra aplicación o servicio queda bajo el control de ese destinatario y de su propia política de privacidad.
 
 ### Enlaces externos
 
@@ -124,9 +124,9 @@ L'exportació i la importació de còpies només s'inicien quan tu ho demanes. C
 
 ### Compartir
 
-Quan tries compartir un esdeveniment, CountAway genera localment una targeta PNG a la memòria cau privada de l'aplicació i facilita al full de compartició d'Android un URI temporal de només lectura. CountAway no envia la targeta a cap servei per si mateix.
+Quan tries compartir un esdeveniment, CountAway normalment genera una targeta PNG a la memòria cau privada i facilita un URI temporal de només lectura al full de compartició d'Android. Si el text de l'esdeveniment és excepcionalment llarg, ofereix en lloc seu el text complet en un fitxer de text temporal de només lectura, juntament amb una vista prèvia abreujada. CountAway no puja cap dels fitxers ni els envia a serveis per si mateix.
 
-Les targetes de memòria cau de més de 24 hores s'eliminen quan CountAway torna a utilitzar el magatzem de targetes compartides, i Android també pot netejar la memòria cau de l'aplicació. Una còpia enviada a una altra aplicació o servei queda sota el control d'aquell destinatari i de la seva pròpia política de privacitat.
+Les targetes i els fitxers de text de la memòria cau amb més de 24 hores s'eliminen quan CountAway torna a utilitzar la memòria cau corresponent. Android també pot netejar la memòria cau de l'aplicació. Una còpia enviada a una altra aplicació o servei queda sota el control d'aquell destinatari i de la seva pròpia política de privacitat.
 
 ### Enllaços externs
 

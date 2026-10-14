@@ -1,11 +1,12 @@
 # Google Play preparation and submission
 
-CountAway is preparing its first Google Play closed-test submission while preserving the existing GitHub/Obtainium and F-Droid distribution model. Repository preparation is distinct from Play Console submission: upload-key reset, track uploads, and publication remain separate maintainer-controlled operations.
+CountAway has an existing Google Play app and testing-track history alongside its GitHub/Obtainium and F-Droid distribution. Confirm current testing, upload-key, review, and production-access status in Play Console before acting. Repository preparation does not authorize an upload, track submission, rollout, or publication.
 
 ## Current readiness baseline
 
 - applicationId: `com.santiagorodriguez.countaway`
-- target release: 1.2.3 / versionCode 12 (from `app/build.gradle.kts`)
+- current checked-in build: 1.2.3 / versionCode 12 (from `app/build.gradle.kts`), not yet the 1.2.4 candidate
+- intended next release: 1.2.4; assign its versionCode only after verifying all already used codes in Play Console
 - minSdk: 26
 - targetSdk / compileSdk: 36
 - no Internet permission
@@ -14,7 +15,7 @@ CountAway is preparing its first Google Play closed-test submission while preser
 - existing GitHub/F-Droid signing certificate SHA-256:
   `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`
 
-These are repository invariants unless a future release explicitly reviews and approves a change.
+Package, SDK, signing, permission, dependency, and native-library properties are release constraints unless explicitly reviewed. Version fields are release-specific; the next versionCode is not yet allocated.
 
 As of 2026-10-06, Google Play requires new phone/tablet apps and app updates submitted after August 31, 2026 to target Android 16 / API 36 or later. CountAway's current `targetSdk = 36` satisfies that submission requirement.
 
@@ -39,7 +40,7 @@ Keep one Android application identity and one source tree:
 same source / same applicationId / global versionCode sequence
 ├── GitHub / Obtainium -> signed APK
 ├── F-Droid           -> existing reproducible-build flow
-└── Google Play       -> future signed AAB upload
+└── Google Play       -> separately authorized signed AAB uploads
 ```
 
 Do not add a Play-only product flavor, Google SDK, Play Services dependency, analytics SDK, billing SDK, advertising SDK, or new runtime permission merely to make the project "Play-ready". Add any future store-specific runtime dependency only when an actual product requirement justifies it and F-Droid compatibility has been separately reviewed.
@@ -115,7 +116,7 @@ CountAway project site:
 https://countaway.cajapersonal.org/
 ```
 
-The hosted policy is static, public HTML and is store-neutral across CountAway / Ya Estamos / Ja Queda Poc. It was deployed and manually accepted on 2026-10-06 on the CountAway Hostinger project surface. The canonical policy source text remains `PRIVACY.md` in this repository.
+The hosted policy is static, public HTML and is store-neutral across CountAway / Ya Estamos / Ja Queda Poc. It was deployed and manually accepted on 2026-10-06 on the CountAway Hostinger project surface. The canonical policy source text remains `PRIVACY.md` in this repository. Editing `PRIVACY.md` does not update the hosted page: before a new store submission or public release, verify that the live page matches the current policy in all three languages, including the optional temporary text-file sharing path.
 
 Google Play requires the submitted privacy-policy URL to be active, publicly accessible, non-geofenced, non-PDF, and non-editable. Treat the hosted URL as a release gate: if the hosting surface moves or its accessibility changes, update the hosted page, in-app resource, contract tests, release workflow, and this document coherently before release preparation.
 
@@ -156,7 +157,7 @@ Required Play export checks:
 - 512×512 32-bit PNG app icon, at most 1024 KB;
 - 1024×500 feature graphic as JPEG or 24-bit PNG without alpha;
 - at least two genuine phone screenshots, JPEG or RGB PNG, each side 320–3840 px and longest side no more than twice the shortest side;
-- filenames/order/content tied to the exact candidate, including an About/version capture showing v1.2.3.
+- filenames/order/content tied to the exact candidate, including an About/version capture showing that candidate's actual versionName; the current v1.2.3 captures cannot serve as final v1.2.4 evidence.
 
 Do not stretch or repaint an old screenshot to satisfy dimensions. Capture a suitable final-candidate viewport and export it without changing the represented UI.
 
@@ -164,7 +165,7 @@ Store locale mapping comes from `app/src/main/res/xml/supported_languages.xml`. 
 
 The existing Fastlane icon and feature graphic remain source/distribution assets and are not rewritten merely for Play. CI and the Release workflow create visually identical Play derivatives with `scripts/prepare-play-assets.py`: the 512×512 icon is encoded as 32-bit RGBA with opaque alpha, and the 1024×500 feature graphic is encoded as 24-bit RGB. The generator decodes both source and output and fails if any visible RGB pixel changes. Generated release derivatives are retained under `play-readiness/store-assets/`.
 
-Phone screenshots have a single canonical location for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. The six accepted files are genuine, maintainer-approved 1080×1920 (9:16) captures of the reviewed candidate, encoded as 24-bit RGB PNG without alpha. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. Do not distort, pad, or repaint screenshot content.
+Phone screenshots have a single canonical location for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. The six current files are genuine, maintainer-approved 1080×1920 (9:16) captures of v1.2.3, encoded as 24-bit RGB PNG without alpha. Genuine v1.2.4 captures must be reviewed and committed before using them for that release. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. Do not distort, pad, or repaint screenshot content.
 
 To stage the accepted screenshots for the Play Console, copy them from the canonical Fastlane files while preserving byte-for-byte identity:
 
@@ -181,11 +182,11 @@ Android CI and the release workflow stage all six accepted screenshots, validate
 
 PNG exports can be checked with `python3 scripts/verify-play-assets.py <icon|feature|screenshot> <file>...`. JPEG screenshot exports remain valid Play inputs and should be inspected with an image tool before submission. Final screenshots are not generated or altered by this pipeline; they must still be genuine exact-candidate captures.
 
-The Play Console app and historical Play App Signing enrollment already exist. Remaining Console declarations, upload-key reset/activation, testing-track submissions and rollout are separate manual consequential gates.
+The Play Console app and historical Play App Signing enrollment already exist. Verify the current upload-certificate status, declarations, testing tracks, and production access in the live Console; do not assume a key reset is pending or a testing track is still inactive. New uploads, review submissions, track promotions, and rollout remain separate maintainer-controlled gates.
 
 If the developer account is a **personal account created after November 13, 2023**, production access currently requires a closed test with at least 12 testers continuously opted in for at least 14 days, followed by a production-access request in Play Console. Internal testing does not satisfy that production gate. Account type/date must be checked in Play Console; do not assume this requirement applies or does not apply.
 
-## Initial Play closed-test checklist
+## Play testing-track submission checklist
 
 Before submitting to a permitted Play testing track:
 
@@ -211,7 +212,7 @@ Language configuration splits are disabled so an EN-only device installation als
 
 Use only the exact AAB produced from the accepted release-candidate SHA.
 
-1. Confirm `app/build.gradle.kts` still contains the intended package, versionName and versionCode, and confirm versionCode 12 is unused in Play Console before the first upload.
+1. Confirm `app/build.gradle.kts` contains the intended package, versionName and candidate versionCode. Check all prior Play uploads and testing/production tracks before allocation; use a globally higher unused code. Do not assume versionCode 13 is available or reuse the checked-in code 12 for the next release.
 2. Record the candidate source SHA and the readiness AAB SHA-256 retained by Actions.
 3. Select the preserved dedicated Play **upload JKS** and compare its public-certificate SHA-256 to the **active Upload key certificate** in Play Console. The upload key is not CountAway's app-signing identity. If access to the registered upload key was lost, first make and verify an independent backup of a new upload key, request an **upload-key reset** using only its public PEM, then wait for Google's confirmed activation before signing/uploading.
 4. Sign the exact reviewed AAB with the repository helper, which uses JAR-compatible signing, verifies that the keystore alias matches the supplied public upload certificate, keeps passwords off the command line, leaves the input AAB unchanged, and can revalidate package/version with bundletool:
