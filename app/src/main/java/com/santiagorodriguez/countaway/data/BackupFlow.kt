@@ -101,40 +101,78 @@ class BackupFlow(context: Context, state: Bundle? = null) {
         snapshot = owned
         stage = Stage.VALIDATING
         changed()
-        CountdownIo.submit(task = {
-            val payload = context.contentResolver.openInputStream(uri)?.use(CountdownStorageCodec::readUtf8Payload)
-                ?: error("Unable to open backup")
-            val count = repository.previewImport(payload)
-            val current = (repository.loadResult() as? CountdownLoadResult.Success)?.events?.size
-            owned.write(payload)
-            count to current
-        }, onComplete = { result ->
-            result.onSuccess { (count, current) ->
-                incomingCount = count
-                currentCount = current
-                stage = Stage.CONFIRM
-            }.onFailure {
-                clearSnapshot()
-                stage = Stage.IDLE
-                notice = importFailure(it)
-            }
-            changed()
-        })
+        CountdownIo.submitDocument(
+            task = {
+                context.contentResolver.openInputStream(uri)?.use(CountdownStorageCodec::readUtf8Payload)
+                    ?: error("Unable to open backup")
+            },
+            onComplete = { document ->
+                if (abandoned) {
+                    stage = Stage.IDLE
+                    clearSnapshot()
+                    return@submitDocument
+                }
+                document.fold(
+                    onSuccess = { payload ->
+                        // Preview and snapshot mutation remain on the serialized repository queue.
+                        CountdownIo.submit(
+                            task = {
+                                val count = repository.previewImport(payload)
+                                val current = (repository.loadResult() as? CountdownLoadResult.Success)?.events?.size
+                                owned.write(payload)
+                                count to current
+                            },
+                            onComplete = { result ->
+                                result.onSuccess { (count, current) ->
+                                    incomingCount = count
+                                    currentCount = current
+                                    stage = Stage.CONFIRM
+                                }.onFailure {
+                                    clearSnapshot()
+                                    stage = Stage.IDLE
+                                    notice = importFailure(it)
+                                }
+                                changed()
+                            },
+                        )
+                    },
+                    onFailure = { error ->
+                        clearSnapshot()
+                        stage = Stage.IDLE
+                        notice = importFailure(error)
+                        changed()
+                    },
+                )
+            },
+        )
     }
 
     private fun export(uri: Uri, first: Boolean) {
         stage = if (first) Stage.EXPORTING_FIRST else Stage.EXPORTING
         changed()
-        CountdownIo.submit(task = {
-            val payload = repository.exportPayload()
-            context.contentResolver.openOutputStream(uri, "rwt")?.bufferedWriter(Charsets.UTF_8)?.use {
-                it.write(payload)
-            } ?: error("Unable to open destination")
-        }, onComplete = { result ->
+        val complete: (Result<Unit>) -> Unit = { result ->
             stage = if (first) Stage.CONFIRM else Stage.IDLE
             notice = if (result.isSuccess) R.string.backup_export_success else R.string.backup_export_failed
             changed()
-        })
+        }
+        CountdownIo.submit(
+            task = { repository.exportPayload() },
+            onComplete = { prepared ->
+                prepared.fold(
+                    onSuccess = { payload ->
+                        CountdownIo.submitDocument(
+                            task = {
+                                context.contentResolver.openOutputStream(uri, "rwt")
+                                    ?.bufferedWriter(Charsets.UTF_8)?.use { it.write(payload) }
+                                    ?: error("Unable to open destination")
+                            },
+                            onComplete = complete,
+                        )
+                    },
+                    onFailure = { error -> complete(Result.failure(error)) },
+                )
+            },
+        )
     }
 
     fun confirmImport() {
