@@ -266,7 +266,18 @@ class EditorActivity : BaseActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        if (!editorInitialized) pendingEditorState?.let(outState::putAll)
+        if (!editorInitialized) pendingEditorState?.let { pending ->
+            // Also migrate a large state restored from an earlier app version.
+            val carried = Bundle(pending)
+            val inherited = carried.getString(STATE_TITLE)
+            if (inherited != null && inherited.length > EditorDraftStore.INLINE_CHAR_LIMIT) {
+                val token = EditorDraftStore.save(this, largeTitleToken, inherited)
+                largeTitleToken = token
+                carried.remove(STATE_TITLE)
+                carried.putString(STATE_TITLE_FILE, token)
+            }
+            outState.putAll(carried)
+        }
         if (editorInitialized) {
             val draftTitle = titleInput.text.toString()
             if (draftTitle.length > EditorDraftStore.INLINE_CHAR_LIMIT) {
