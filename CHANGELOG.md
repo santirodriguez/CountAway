@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.4
+
+- Keep local backup imports and exports responsive when a document provider is slow.
+- Continue updating other Home-screen widgets when one widget fails.
+- Improve widget-pinning choices and event actions at enlarged text sizes.
+- Safely navigate, edit, and share unusually large historical event titles and identifiers while preserving the original saved data.
+- Strengthen release-signing output safety and localization format checks.
+
 ## 1.2.3
 
 - Share event cards directly from the Home-screen actions menu without opening the editor.
