@@ -65,9 +65,9 @@ class OptionalTimeStageAContractTest {
     }
 
     @Test fun oneCalendarDayPriorIsNotAlwaysTwentyFourHours() {
-        val event = ZonedDateTime.of(2026, 3, 9, 9, 0, 0, 0, newYork)
+        val event = ZonedDateTime.of(2026, 3, 8, 9, 0, 0, 0, newYork)
         val reminder = event.minusDays(1)
-        assertEquals(LocalDate.of(2026, 3, 8), reminder.toLocalDate())
+        assertEquals(LocalDate.of(2026, 3, 7), reminder.toLocalDate())
         assertEquals(9, reminder.hour)
         assertEquals(23L, Duration.between(reminder, event).toHours())
     }
