@@ -13,12 +13,12 @@
 </p>
 
 <p align="center">
-  <a href="https://f-droid.org/packages/com.santiagorodriguez.countaway/"><img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="54" /></a>
-  &nbsp;&nbsp;
   <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/santirodriguez/CountAway"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54" /></a>
   &nbsp;&nbsp;
+  <a href="https://f-droid.org/packages/com.santiagorodriguez.countaway/"><img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="54" /></a>
+  &nbsp;&nbsp;
   <!-- Staged for v1.2.4: wrap this badge in the verified public Play listing link at final approval. -->
-  <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Google Play badge — public listing pending" height="64" />
+  <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Google Play badge — public listing pending" height="54" />
 </p>
 
 <p align="center">
