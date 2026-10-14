@@ -31,8 +31,9 @@ class ReleaseScreenshotTests(unittest.TestCase):
         checker.verify_fresh_screenshots(version, self.root, self.old)
 
     def test_git_blob_id_matches_git_object_format(self):
-        path = self.root / "1.png"
-        self.assertEqual(self.old["1.png"], checker.git_blob_id(path))
+        path = self.root / "hello.txt"
+        path.write_bytes(b"hello")
+        self.assertEqual("b6fc4c620b67d95f953a5c1c1230aaab5db5a1b0", checker.git_blob_id(path))
         self.assertEqual(40, len(checker.git_blob_id(path)))
 
     def test_rechecking_published_123_is_allowed(self):
