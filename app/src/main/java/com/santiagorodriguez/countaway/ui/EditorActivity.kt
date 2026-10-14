@@ -889,7 +889,7 @@ class EditorActivity : BaseActivity() {
     internal fun setEditorTitle(value: String) {
         preservedLargeTitle = value.takeIf { it.length > EditorDraftStore.INLINE_CHAR_LIMIT }
         titleInput.setText(
-            if (preservedLargeTitle != null) EventTransport.preview(value, CountdownValidation.MAX_TITLE_LENGTH)
+            if (preservedLargeTitle != null) EventTransport.preview(value, minOf(160, CountdownValidation.MAX_TITLE_LENGTH))
             else value,
         )
         renderOversizedTitleState()

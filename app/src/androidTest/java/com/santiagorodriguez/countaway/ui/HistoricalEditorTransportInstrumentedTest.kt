@@ -98,6 +98,26 @@ class HistoricalEditorTransportInstrumentedTest {
         }
     }
 
+    @Test fun savingAnUnchangedHugeHistoricalTitleKeepsTheOriginal() {
+        val title = "Original-" + "K".repeat(1_100_000)
+        val event = fixture("save-long-title-" + UUID.randomUUID(), title)
+        withStoredFixture(event) {
+            ActivityScenario.launch<EditorActivity>(
+                Intent(context, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id),
+            ).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    assertEquals(title, activity.fullEditorTitle())
+                    assertFalse(activity.findViewById<EditText>(R.id.titleInput).isEnabled)
+                    activity.findViewById<android.widget.Button>(R.id.saveButton).performClick()
+                }
+                drain()
+                assertEquals(title, (repository.loadResult() as CountdownLoadResult.Success)
+                    .events.single { it.id == event.id }.title)
+            }
+        }
+    }
+
     @Test fun replacingAnOversizedHistoricalTitleRequiresExplicitAction() {
         val title = "Historical-" + "R".repeat(19_000)
         val event = fixture("replace-" + UUID.randomUUID(), title)
