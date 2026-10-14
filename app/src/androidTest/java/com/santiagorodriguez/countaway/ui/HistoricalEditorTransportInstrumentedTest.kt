@@ -99,7 +99,7 @@ class HistoricalEditorTransportInstrumentedTest {
     }
 
     @Test fun savingAnUnchangedHugeHistoricalTitleKeepsTheOriginal() {
-        val title = "Original-" + "K".repeat(1_100_000)
+        val title = "  Original-" + "K".repeat(1_100_000) + "  "
         val event = fixture("save-long-title-" + UUID.randomUUID(), title)
         withStoredFixture(event) {
             ActivityScenario.launch<EditorActivity>(

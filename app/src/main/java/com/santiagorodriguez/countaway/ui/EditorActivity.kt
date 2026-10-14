@@ -760,7 +760,8 @@ class EditorActivity : BaseActivity() {
             return
         }
         val snapshot = CountdownTime.snapshot()
-        val title = fullEditorTitle().trim()
+        // Preserve every character of an untouched historical title, including whitespace.
+        val title = preservedLargeTitle ?: fullEditorTitle().trim()
         if (title.isEmpty()) {
             titleInput.error = getString(R.string.title_required)
             return
