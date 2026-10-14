@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="stage_a_time_widget_name">CountAway - Time</string>
-    <string name="stage_a_time_widget_description">Time widget prototype</string>
+    <string name="stage_a_time_widget_name" translatable="false">CountAway - Time</string>
+    <string name="stage_a_time_widget_description" translatable="false">Time widget prototype</string>
 </resources>
