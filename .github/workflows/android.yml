@@ -109,6 +109,12 @@ jobs:
             echo "instrumented_tests=compiled_not_executed_in_this_job"
           } > ci-evidence/source.txt
 
+      - name: Test release script safety and formatter contracts
+        run: |
+          set -euo pipefail
+          bash -n scripts/sign-play-bundle.sh
+          python3 -B scripts/test-release-scripts.py -v 2>&1 | tee ci-evidence/release-scripts-tests.txt
+
       - name: Check upgrade fixture driver
         run: |
           set -euo pipefail
