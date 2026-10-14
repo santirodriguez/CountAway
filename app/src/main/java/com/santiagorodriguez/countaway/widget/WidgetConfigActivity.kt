@@ -20,6 +20,7 @@ import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.BaseActivity
@@ -203,7 +204,7 @@ class WidgetConfigActivity : BaseActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         if (!::appearanceSpinner.isInitialized) { super.onSaveInstanceState(outState); return }
         outState.putParcelable(STATE_LIST, eventList.onSaveInstanceState())
-        outState.putString(STATE_EVENT_ID, selectedEventId)
+        outState.putString(STATE_EVENT_ID, selectedEventId?.let(EventTransport::wireId))
         outState.putString(STATE_SELECTION_MODE, selectedMode.name)
         WidgetAppearance.entries.getOrNull(appearanceSpinner.selectedItemPosition)?.let {
             outState.putString(STATE_APPEARANCE, it.name)
@@ -253,13 +254,14 @@ class WidgetConfigActivity : BaseActivity() {
         }
 
         events = CountdownEventOrder.sortedForDisplay((result as CountdownLoadResult.Success).events, today)
+        selectedEventId = EventTransport.resolve(events, selectedEventId)?.id
         val labels = buildList {
             add(getString(R.string.widget_next_countdown))
             addAll(events.map { event ->
                 val value = EventCountResolver.resolve(event, today)
                 getString(
                     if (event.countMode == CountMode.COUNT_UP) R.string.widget_count_up_option else R.string.widget_event_option,
-                    event.title,
+                    EventTransport.preview(event.title),
                     EventCountText.date(this@WidgetConfigActivity, value.displayDate, event.countMode),
                 )
             })

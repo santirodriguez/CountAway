@@ -94,6 +94,25 @@ class WidgetPinCallbackInstrumentedTest {
         }
     }
 
+    @Test
+    fun oversizedHistoricalIdUsesCompactCallbackButPersistsExactOriginal() = withFixture { repository, preferences, event, id, _ ->
+        val longEvent = event.copy(id = "historical-pin-" + "P".repeat(1_100_000))
+        val original = (repository.loadResult() as CountdownLoadResult.Success).events
+        repository.save(original + longEvent)
+        val snapshot = WidgetPinRequestSnapshot.create(longEvent.id,
+            WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.MONOGRAM))
+        assertTrue(snapshot.eventId.length < 100)
+        assertTrue(snapshot.callbackData().length < 400)
+        assertEquals(snapshot, WidgetPinRequestSnapshot.fromCallbackData(snapshot.callbackData()))
+        val callback = WidgetPinning.callbackPendingIntent(context, snapshot)
+        try {
+            send(callback, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
+            assertEquals(longEvent.id, preferences.get(id)?.eventId)
+        } finally {
+            callback.cancel()
+        }
+    }
+
     private fun send(pending: PendingIntent, fillIn: Intent) {
         val finished = CountDownLatch(1)
         pending.send(context, 0, fillIn, { _, _, _, _, _ -> finished.countDown() }, Handler(Looper.getMainLooper()))

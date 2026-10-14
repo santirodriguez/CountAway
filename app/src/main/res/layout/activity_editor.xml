@@ -70,6 +70,25 @@
             android:textSize="16sp" />
 
         <TextView
+            android:id="@+id/oversizedTitleNotice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/oversized_title_notice"
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/replaceOversizedTitleButton"
+            style="@style/Widget.CountAway.EditorControl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/oversized_title_replace"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/modeLabel"
             style="@style/Widget.CountAway.EditorLabel"
             android:labelFor="@id/modeButton"

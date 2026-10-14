@@ -19,11 +19,11 @@ class ShareImageProvider : ContentProvider() {
 
     override fun getType(uri: Uri): String {
         shareFile(uri, requireExists = true)
-        return MIME_TYPE
+        return if (uri.pathSegments.firstOrNull() == PATH_TEXT) "text/plain" else MIME_TYPE
     }
 
     override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
-        if (mode != "r") throw FileNotFoundException("Share images are read-only")
+        if (mode != "r") throw FileNotFoundException("Share files are read-only")
         return ParcelFileDescriptor.open(
             shareFile(uri, requireExists = true),
             ParcelFileDescriptor.MODE_READ_ONLY,
@@ -73,15 +73,19 @@ class ShareImageProvider : ContentProvider() {
             throw FileNotFoundException("Unexpected share URI")
         }
         val segments = uri.pathSegments
-        if (segments.size != 2 || segments[0] != PATH_CARD) {
-            throw FileNotFoundException("Unexpected share path")
-        }
+        if (segments.size != 2) throw FileNotFoundException("Unexpected share path")
         val fileName = segments[1]
-        if (!FILE_NAME_PATTERN.matches(fileName)) {
-            throw FileNotFoundException("Unexpected share filename")
-        }
-
-        val directory = ShareImageStore.directory(providerContext).canonicalFile
+        val directory = when (segments[0]) {
+            PATH_CARD -> {
+                if (!FILE_NAME_PATTERN.matches(fileName)) throw FileNotFoundException("Unexpected share image")
+                ShareImageStore.directory(providerContext)
+            }
+            PATH_TEXT -> {
+                if (!TEXT_NAME_PATTERN.matches(fileName)) throw FileNotFoundException("Unexpected share text")
+                ShareTextStore.directory(providerContext)
+            }
+            else -> throw FileNotFoundException("Unexpected share path")
+        }.canonicalFile
         val file = File(directory, fileName).canonicalFile
         if (file.parentFile != directory || (requireExists && !file.isFile)) {
             throw FileNotFoundException("Share image not found")
@@ -92,7 +96,9 @@ class ShareImageProvider : ContentProvider() {
     companion object {
         private const val MIME_TYPE = "image/png"
         private const val PATH_CARD = "card"
+        private const val PATH_TEXT = "text"
         private val FILE_NAME_PATTERN = Regex("""countaway-share-[0-9]+-[0-9a-fA-F-]+\.png""")
+        private val TEXT_NAME_PATTERN = Regex("""countaway-text-[0-9]+-[0-9a-fA-F-]+\.txt""")
 
         internal fun authority(context: Context): String = "${context.packageName}.share"
 
@@ -100,6 +106,13 @@ class ShareImageProvider : ContentProvider() {
             .scheme("content")
             .authority(authority(context))
             .appendPath(PATH_CARD)
+            .appendPath(file.name)
+            .build()
+
+        internal fun textUriFor(context: Context, file: File): Uri = Uri.Builder()
+            .scheme("content")
+            .authority(authority(context))
+            .appendPath(PATH_TEXT)
             .appendPath(file.name)
             .build()
     }
@@ -141,4 +154,29 @@ internal object ShareImageStore {
             ?.filter { it.isFile && it.lastModified() < cutoff }
             ?.forEach(File::delete)
     }
+}
+
+/** Exposes complete oversized share text by URI, never as a multi-megabyte Intent extra. */
+internal object ShareTextStore {
+    private const val DIRECTORY_NAME = "share-texts"
+    private const val MAX_AGE_MS = 24L * 60L * 60L * 1000L
+
+    fun write(context: Context, text: String): Uri {
+        val directory = directory(context)
+        if (!directory.isDirectory && !directory.mkdirs()) {
+            throw IllegalStateException("Could not create share-text cache")
+        }
+        val cutoff = System.currentTimeMillis() - MAX_AGE_MS
+        directory.listFiles()?.filter { it.isFile && it.lastModified() < cutoff }?.forEach(File::delete)
+        val file = File(directory, "countaway-text-${System.currentTimeMillis()}-${UUID.randomUUID()}.txt")
+        try {
+            FileOutputStream(file).bufferedWriter(Charsets.UTF_8).use { it.write(text) }
+        } catch (error: Exception) {
+            file.delete()
+            throw error
+        }
+        return ShareImageProvider.textUriFor(context, file)
+    }
+
+    internal fun directory(context: Context): File = File(context.cacheDir, DIRECTORY_NAME)
 }

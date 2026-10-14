@@ -14,6 +14,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.ArrivalStage
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.EventCountResolver
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.RepeatRule
 import java.time.LocalDate
@@ -59,7 +60,7 @@ class CountdownEventAdapter(
             setImageResource(EventIconPresentation.drawableRes(event.icon))
             contentDescription = context.getString(EventIconPresentation.labelRes(event.icon))
         }
-        view.findViewById<TextView>(R.id.eventTitle).text = event.title
+        view.findViewById<TextView>(R.id.eventTitle).text = EventTransport.preview(event.title)
         val eventType = context.getString(EventTypePresentation.labelRes(event.type))
         val formattedDate = value.displayDate.format(dateFormatter)
         val meta = when {
@@ -81,7 +82,7 @@ class CountdownEventAdapter(
         ArrivalIllustration.bindHome(context, view.findViewById(R.id.eventArrival),
             ArrivalStage.from(value.countdownStatus))
         val sectionDescription = bindSectionHeader(view, position, value)
-        view.contentDescription = listOfNotNull(sectionDescription, event.title, meta, statusView.contentDescription)
+        view.contentDescription = listOfNotNull(sectionDescription, EventTransport.preview(event.title), meta, statusView.contentDescription)
             .joinToString(", ")
         bindAddWidgetAction(view, event)
         bindRowActions(view, event)
@@ -129,7 +130,7 @@ class CountdownEventAdapter(
         view.findViewById<View>(R.id.eventActions).apply {
             tag = event.id
             visibility = if (onEventActions == null) View.GONE else View.VISIBLE
-            contentDescription = context.getString(R.string.event_actions_description, event.title)
+            contentDescription = context.getString(R.string.event_actions_description, EventTransport.preview(event.title))
             setOnClickListener {
                 if (interactionEnabled(this)) onEventActions?.invoke(event, this)
             }

@@ -6,6 +6,7 @@ import android.content.Context
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.EventTransport
 
 internal enum class WidgetPinFinalizeResult {
     APPLIED,
@@ -27,10 +28,17 @@ internal object WidgetPinFinalizer {
         }
 
         val appContext = context.applicationContext
+        val resolved = if (EventTransport.isReference(snapshot.eventId)) {
+            val events = (CountdownRepository(appContext).loadResult() as? CountdownLoadResult.Success)
+                ?.events ?: return WidgetPinFinalizeResult.EVENT_MISSING
+            val event = EventTransport.resolve(events, snapshot.eventId)
+                ?: return WidgetPinFinalizeResult.EVENT_MISSING
+            snapshot.copy(eventId = event.id)
+        } else snapshot
         val preferences = WidgetPreferences(appContext)
         val existing = preferences.get(appWidgetId)
         if (existing != null) {
-            return if (WidgetPinResultPolicy.matchesSnapshot(existing, snapshot)) {
+            return if (WidgetPinResultPolicy.matchesSnapshot(existing, resolved)) {
                 WidgetDefaultsPreferences(appContext).save(snapshot.style)
                 WidgetPinFinalizeResult.ALREADY_MATCHING
             } else {
@@ -39,7 +47,7 @@ internal object WidgetPinFinalizer {
         }
 
         val eventExists = when (val result = CountdownRepository(appContext).loadResult()) {
-            is CountdownLoadResult.Success -> result.events.any { it.id == snapshot.eventId }
+            is CountdownLoadResult.Success -> result.events.any { it.id == resolved.eventId }
             is CountdownLoadResult.Failure -> false
         }
         if (!WidgetPinResultPolicy.shouldApply(
@@ -53,7 +61,7 @@ internal object WidgetPinFinalizer {
 
         preferences.save(
             appWidgetId = appWidgetId,
-            eventId = snapshot.eventId,
+            eventId = resolved.eventId,
             appearance = snapshot.style.appearance,
             background = snapshot.style.background,
             eventSelection = WidgetEventSelection.FIXED,

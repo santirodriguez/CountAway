@@ -50,6 +50,8 @@
     <string name="reminder_seven_days">7 days before</string>
     <string name="notification_permission_denied">Notification permission was not granted.</string>
     <string name="title_required">Give this event a title.</string>
+    <string name="oversized_title_notice">This title is too large to display fully. The original is preserved unless you choose to replace it.</string>
+    <string name="oversized_title_replace">Replace title</string>
     <string name="delete_title">Delete event?</string>
     <string name="delete_message">Delete &quot;%1$s&quot;?</string>
     <string name="data_error_edit_blocked">CountAway could not safely read its saved data. Editing is disabled to avoid overwriting it.</string>
