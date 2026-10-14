@@ -118,11 +118,17 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val preferences = WidgetPreferences(context)
             val renderData = WidgetRenderData.from(CountdownRepository(context).loadResult(), snapshot.today)
             val backgroundCache = HashMap<BackgroundKey, Bitmap>()
-            appWidgetIds.forEach { appWidgetId ->
-                val views = buildRemoteViews(context, displayContext, manager, appWidgetId,
-                    snapshot.today, preferences.get(appWidgetId), renderData, backgroundCache)
-                manager.updateAppWidget(appWidgetId, views)
-            }
+            WidgetBatchUpdate.forEach(
+                ids = appWidgetIds,
+                update = { appWidgetId ->
+                    val views = buildRemoteViews(context, displayContext, manager, appWidgetId,
+                        snapshot.today, preferences.get(appWidgetId), renderData, backgroundCache)
+                    manager.updateAppWidget(appWidgetId, views)
+                },
+                onFailure = { appWidgetId, failure ->
+                    android.util.Log.e("CountAwayWidget", "Failed to update widget $appWidgetId", failure)
+                },
+            )
         }
 
         private fun buildRemoteViews(
