@@ -65,6 +65,17 @@ class WidgetPinSetupActivity : BaseActivity() {
             loadEvent(eventId)
         }
         appearanceGroup = findViewById(R.id.widgetPinSetupAppearanceGroup)
+        // At large font sizes give every radio label a full-width touch target.
+        if (resources.configuration.fontScale >= 1.5f) {
+            appearanceGroup.orientation = LinearLayout.VERTICAL
+            for (index in 0 until appearanceGroup.childCount) {
+                val button = appearanceGroup.getChildAt(index)
+                val params = button.layoutParams as RadioGroup.LayoutParams
+                params.width = LinearLayout.LayoutParams.MATCH_PARENT
+                params.weight = 0f
+                button.layoutParams = params
+            }
+        }
         backgroundRows = findViewById(R.id.widgetPinSetupBackgroundRows)
         previewController = WidgetPreviewController(
             context = this,
@@ -358,7 +369,9 @@ class WidgetPinSetupActivity : BaseActivity() {
     private fun renderBackgroundChoices() {
         backgroundRows.removeAllViews()
         val appearance = currentSelection().appearance
-        WidgetBackground.entries.chunked(3).forEach { backgrounds ->
+        val columns = if (resources.configuration.fontScale >= 1.3f ||
+            resources.configuration.screenWidthDp < 360) 2 else 3
+        WidgetBackground.entries.chunked(columns).forEach { backgrounds ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
@@ -371,7 +384,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                     },
                 )
             }
-            repeat(3 - backgrounds.size) {
+            repeat(columns - backgrounds.size) {
                 row.addView(
                     FrameLayout(this),
                     LinearLayout.LayoutParams(0, 1, 1f),
@@ -443,7 +456,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                     gravity = Gravity.CENTER
                     setTextColor(getColor(R.color.foreground))
                     textSize = 12f
-                    maxLines = 1
+                    maxLines = 3
                 },
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
