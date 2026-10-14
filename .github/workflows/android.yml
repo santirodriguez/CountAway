@@ -125,8 +125,10 @@ jobs:
           set -euo pipefail
           python3 scripts/verify-localizations.py 2>&1 | tee ci-evidence/localization-validation.txt
 
-      - name: Self-test Play screenshot staging
-        run: python3 scripts/test-play-screenshot-staging.py
+      - name: Self-test Play screenshot staging and release provenance
+        run: |
+          python3 scripts/test-play-screenshot-staging.py
+          python3 scripts/test-release-screenshots.py
 
       - name: Prepare and validate reusable Play assets
         run: |
