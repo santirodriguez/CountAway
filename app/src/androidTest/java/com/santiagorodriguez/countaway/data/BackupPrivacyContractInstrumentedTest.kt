@@ -1,11 +1,17 @@
 package com.santiagorodriguez.countaway.data
 
+import android.Manifest
+import android.content.ComponentName
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import androidx.annotation.XmlRes
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.share.ShareImageProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.xmlpull.v1.XmlPullParser
@@ -35,6 +41,32 @@ class BackupPrivacyContractInstrumentedTest {
         assertEquals(expectedDomains, extractionRules.getValue("cloud-backup"))
         assertEquals(expectedDomains, extractionRules.getValue("device-transfer"))
         assertEquals(expectedDomains, parseFlatExclusions(R.xml.backup_rules))
+    }
+
+    @Test
+    fun installedPrivacySurfaceRequiresOnlyDeclaredPermissionsAndKeepsSharesPrivate() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val packageManager = context.packageManager
+        val requestedPermissions = packageManager.getPackageInfo(
+            context.packageName,
+            PackageManager.GET_PERMISSIONS,
+        ).requestedPermissions?.toSet() ?: emptySet()
+
+        assertEquals(
+            setOf(
+                Manifest.permission.RECEIVE_BOOT_COMPLETED,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ),
+            requestedPermissions,
+        )
+
+        val shareProvider = packageManager.getProviderInfo(
+            ComponentName(context, ShareImageProvider::class.java),
+            0,
+        )
+        assertFalse(shareProvider.exported)
+        assertTrue(shareProvider.grantUriPermissions)
+        assertEquals("${context.packageName}.share", shareProvider.authority)
     }
 
     private fun parseSectionedExclusions(@XmlRes resourceId: Int): Map<String, Set<String>> {
