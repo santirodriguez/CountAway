@@ -43,8 +43,10 @@ def verify_fresh_screenshots(
     if version == PUBLISHED_BASELINE_VERSION:
         return
 
-    stale = [name for name, old_id in baseline.items()
-             if git_blob_id(directory / name) == old_id]
+    # Published screenshots remain stale even if their filenames or order change.
+    published_ids = set(baseline.values())
+    stale = [name for name in baseline
+             if git_blob_id(directory / name) in published_ids]
     if stale:
         raise ValueError(
             f"CountAway {version} still reuses public {PUBLISHED_BASELINE_VERSION} screenshot(s): "
