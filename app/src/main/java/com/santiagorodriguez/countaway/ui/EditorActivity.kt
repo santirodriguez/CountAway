@@ -47,6 +47,7 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.share.EventShareLauncher
 import com.santiagorodriguez.countaway.data.CountdownMutations
 import com.santiagorodriguez.countaway.data.EventRevision
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.data.RetainedOperation
 import java.time.Instant
 import java.time.LocalDate
@@ -99,6 +100,7 @@ class EditorActivity : BaseActivity() {
     private var backCallback: OnBackInvokedCallback? = null
     private var loadGeneration = 0
     private var pendingEditorState: Bundle? = null
+    private var largeTitleToken: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,6 +142,7 @@ class EditorActivity : BaseActivity() {
         }
 
         pendingEditorState = savedInstanceState
+        largeTitleToken = savedInstanceState?.getString(STATE_TITLE_FILE)
         setEditorBusy(true)
         loadEditorData(savedInstanceState)
     }
@@ -180,14 +183,14 @@ class EditorActivity : BaseActivity() {
             finish()
             return
         }
-        existingEvent = requestedEventId?.let { id -> loadedEvents.firstOrNull { it.id == id } }
+        existingEvent = EventTransport.resolve(loadedEvents, requestedEventId)
         if (requestedEventId != null && existingEvent == null) {
             finish()
             return
         }
         // Validate the selected saved snapshot once. A restored copy owns its own draft.
         val copy = if (duplicateEventId != null && !session.initialized) {
-            val source = loadedEvents.firstOrNull { it.id == duplicateEventId }
+            val source = EventTransport.resolve(loadedEvents, duplicateEventId)
             if (source == null || EventRevision.of(source) != intent.getStringExtra(EXTRA_SOURCE_REVISION)) {
                 Toast.makeText(this, R.string.copy_source_changed, Toast.LENGTH_LONG).show()
                 finish()
@@ -265,7 +268,16 @@ class EditorActivity : BaseActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         if (!editorInitialized) pendingEditorState?.let(outState::putAll)
         if (editorInitialized) {
-            outState.putString(STATE_TITLE, titleInput.text.toString())
+            val draftTitle = titleInput.text.toString()
+            if (draftTitle.length > EditorDraftStore.INLINE_CHAR_LIMIT) {
+                val token = EditorDraftStore.save(this, largeTitleToken, draftTitle)
+                largeTitleToken = token
+                outState.putString(STATE_TITLE_FILE, token)
+            } else {
+                outState.putString(STATE_TITLE, draftTitle)
+                EditorDraftStore.delete(this, largeTitleToken)
+                largeTitleToken = null
+            }
             outState.putInt(STATE_TITLE_SELECTION_START, titleInput.selectionStart)
             outState.putInt(STATE_TITLE_SELECTION_END, titleInput.selectionEnd)
             outState.putString(STATE_DATE, selectedDate.toString())
@@ -300,6 +312,7 @@ class EditorActivity : BaseActivity() {
         dateDialog = null
         dialogFocus.clear()
         session.operation.onChanged = null
+        if (isFinishing) EditorDraftStore.delete(this, largeTitleToken)
         temporalInvalidationController.stop()
         unregisterBackCallback()
         loadGeneration += 1
@@ -790,7 +803,12 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun restoreEditorState(state: Bundle) {
-        state.getString(STATE_TITLE)?.let(titleInput::setText)
+        val title = state.getString(STATE_TITLE)
+            ?: EditorDraftStore.read(this, state.getString(STATE_TITLE_FILE))
+        title?.let(titleInput::setText)
+        if (title == null && state.containsKey(STATE_TITLE_FILE)) {
+            Toast.makeText(this, R.string.data_error_title, Toast.LENGTH_LONG).show()
+        }
         if (state.containsKey(STATE_TITLE_SELECTION_START)) {
             titleInput.setSelection(state.getInt(STATE_TITLE_SELECTION_START).coerceIn(0, titleInput.length()),
                 state.getInt(STATE_TITLE_SELECTION_END).coerceIn(0, titleInput.length()))
@@ -943,6 +961,7 @@ class EditorActivity : BaseActivity() {
         const val EXTRA_SOURCE_REVISION = "source_revision"
         private const val REQUEST_NOTIFICATIONS = 2401
         private const val STATE_TITLE = "editor_title"
+        private const val STATE_TITLE_FILE = "editor_title_file"
         private const val STATE_TITLE_SELECTION_START = "editor_title_selection_start"
         private const val STATE_TITLE_SELECTION_END = "editor_title_selection_end"
         private const val STATE_DATE = "editor_date"

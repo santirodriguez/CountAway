@@ -14,6 +14,7 @@ import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.LanguageManager
@@ -84,14 +85,14 @@ object ArrivalNotifier {
             val body: String
             if (daysBefore == 0) {
                 title = displayContext.getString(R.string.notification_arrival_title)
-                body = displayContext.getString(R.string.notification_arrival_body, event.title)
+                body = displayContext.getString(R.string.notification_arrival_body, EventTransport.preview(event.title))
             } else {
                 title = displayContext.getString(R.string.notification_upcoming_title)
                 body = displayContext.resources.getQuantityString(
                     R.plurals.notification_upcoming_body,
                     daysBefore,
                     daysBefore,
-                    event.title,
+                    EventTransport.preview(event.title),
                 )
             }
 
@@ -173,8 +174,8 @@ object ArrivalNotifier {
 
     private fun editPendingIntent(context: Context, eventId: String): PendingIntent {
         val intent = Intent(context, EditorActivity::class.java)
-            .putExtra(EditorActivity.EXTRA_EVENT_ID, eventId)
-            .setData(Uri.parse("countaway://arrival/$eventId"))
+            .putExtra(EditorActivity.EXTRA_EVENT_ID, EventTransport.wireId(eventId))
+            .setData(Uri.parse("countaway://arrival/${EventTransport.wireId(eventId)}"))
         return PendingIntent.getActivity(
             context,
             eventId.hashCode(),

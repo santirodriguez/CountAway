@@ -9,6 +9,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import java.net.URI
 import java.net.URLDecoder
@@ -25,7 +26,7 @@ internal data class WidgetPinRequestSnapshot(
         append("countaway://widget/pin/")
         append(encode(requestToken))
         append("?event=")
-        append(encode(eventId))
+        append(encode(EventTransport.wireId(eventId)))
         append("&appearance=")
         append(encode(style.appearance.storageKey))
         append("&background=")
@@ -39,7 +40,7 @@ internal data class WidgetPinRequestSnapshot(
             requestToken: String = UUID.randomUUID().toString(),
         ): WidgetPinRequestSnapshot = WidgetPinRequestSnapshot(
             requestToken = requestToken,
-            eventId = eventId,
+            eventId = EventTransport.wireId(eventId),
             style = style,
         )
 
@@ -129,7 +130,7 @@ object WidgetPinning {
         val provider = ComponentName(activity, CountdownWidgetProvider::class.java)
         val preview = WidgetPreviewFactory.remoteViews(
             context = activity,
-            event = event,
+            event = event.copy(title = EventTransport.preview(event.title)),
             style = snapshot.style,
         )
         val extras = Bundle().apply {

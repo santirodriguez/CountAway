@@ -16,6 +16,7 @@ import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
@@ -183,13 +184,13 @@ class MainActivity : BaseActivity() {
     }
 
     private fun openEditor(event: CountdownEvent) {
-        startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
+        startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, EventTransport.wireId(event.id)))
     }
 
     private fun openWidgetPinSetup(event: CountdownEvent) {
         startActivity(
             Intent(this, WidgetPinSetupActivity::class.java)
-                .putExtra(WidgetPinSetupActivity.EXTRA_EVENT_ID, event.id),
+                .putExtra(WidgetPinSetupActivity.EXTRA_EVENT_ID, EventTransport.wireId(event.id)),
         )
     }
 

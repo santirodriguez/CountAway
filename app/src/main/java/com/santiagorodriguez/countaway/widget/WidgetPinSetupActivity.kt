@@ -18,6 +18,7 @@ import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.ChoiceAccessibility
 import com.santiagorodriguez.countaway.ui.BaseActivity
@@ -178,7 +179,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                 if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
                 val loaded = (result.getOrNull() as? CountdownLoadResult.Success)
                     ?.events
-                    ?.firstOrNull { it.id == eventId }
+                    ?.let { EventTransport.resolve(it, eventId) }
                 if (loaded == null) {
                     Toast.makeText(
                         this,
@@ -194,7 +195,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                     setImageResource(EventIconPresentation.drawableRes(loaded.icon))
                     contentDescription = getString(EventIconPresentation.labelRes(loaded.icon))
                 }
-                findViewById<TextView>(R.id.widgetPinSetupEventTitle).text = loaded.title
+                findViewById<TextView>(R.id.widgetPinSetupEventTitle).text = EventTransport.preview(loaded.title)
                 setAddEnabled(!awaitingPinResult)
                 updatePreview(CountdownTime.snapshot())
             },
@@ -496,7 +497,7 @@ class WidgetPinSetupActivity : BaseActivity() {
             dimensions = WidgetPreviewSizing.representative(WidgetSize.STANDARD),
         )
         previewController.renderEvent(
-            WidgetEventContentFactory.from(currentEvent, snapshot.today),
+            WidgetEventContentFactory.from(currentEvent.copy(title = EventTransport.preview(currentEvent.title)), snapshot.today),
         )
     }
 

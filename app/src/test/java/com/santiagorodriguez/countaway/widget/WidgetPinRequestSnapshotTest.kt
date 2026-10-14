@@ -48,6 +48,17 @@ class WidgetPinRequestSnapshotTest {
     }
 
     @Test
+    fun historicalLongIdsStayOutOfCallbackUris() {
+        val id = "legacy-" + "X".repeat(1_100_000)
+        val snapshot = WidgetPinRequestSnapshot.create(id,
+            WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.FOREST))
+        assertEquals(74, snapshot.eventId.length)
+        assertEquals(snapshot, WidgetPinRequestSnapshot.fromCallbackData(snapshot.callbackData()))
+        org.junit.Assert.assertTrue(snapshot.callbackData().length < 300)
+        assertNotEquals(id, snapshot.eventId)
+    }
+
+    @Test
     fun malformedOrIncompleteCallbackDataIsRejected() {
         assertNull(WidgetPinRequestSnapshot.fromCallbackData(null))
         assertNull(WidgetPinRequestSnapshot.fromCallbackData(""))
