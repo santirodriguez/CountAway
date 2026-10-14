@@ -72,7 +72,11 @@ class HistoricalEditorTransportInstrumentedTest {
             ).use { scenario ->
                 drain()
                 scenario.onActivity {
-                    it.findViewById<EditText>(R.id.titleInput).setText(unsaved)
+                    val input = it.findViewById<EditText>(R.id.titleInput)
+                    // The current UI caps new titles. Simulate a previously restored
+                    // over-limit draft to exercise the lossless persistence boundary.
+                    input.filters = emptyArray()
+                    input.setText(unsaved)
                 }
                 scenario.recreate()
                 drain()
@@ -98,6 +102,22 @@ class HistoricalEditorTransportInstrumentedTest {
                 scenario.onActivity {
                     assertEquals(event.title,
                         it.findViewById<android.widget.TextView>(R.id.widgetPinSetupEventTitle).text.toString())
+                }
+            }
+        }
+    }
+
+    @Test fun hugeHistoricalEventIdCanBeDuplicatedThroughCompactReference() {
+        val event = fixture("copy-id-" + "C".repeat(1_100_000), "Historical copy source")
+        withStoredFixture(event) {
+            val intent = Intent(context, EditorActivity::class.java)
+                .putExtra(EditorActivity.EXTRA_DUPLICATE_EVENT_ID, EventTransport.wireId(event.id))
+                .putExtra(EditorActivity.EXTRA_SOURCE_REVISION,
+                    com.santiagorodriguez.countaway.data.EventRevision.of(event))
+            ActivityScenario.launch<EditorActivity>(intent).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    assertEquals(event.title, activity.findViewById<EditText>(R.id.titleInput).text.toString())
                 }
             }
         }
