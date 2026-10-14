@@ -49,6 +49,21 @@ class ReleaseScreenshotTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, r"6\.png"):
             self.verify("1.2.4")
 
+    def test_rotated_old_filenames_still_block_next_candidate(self):
+        published = [(self.root / f"{index}.png").read_bytes() for index in range(1, 7)]
+        for index in range(1, 7):
+            (self.root / f"{index}.png").write_bytes(published[index % 6])
+        with self.assertRaisesRegex(ValueError, r"1\\.png.*6\\.png"):
+            self.verify("1.2.4")
+
+    def test_single_old_image_moved_to_another_filename_is_rejected(self):
+        published_six = (self.root / "6.png").read_bytes()
+        for index in range(1, 7):
+            (self.root / f"{index}.png").write_bytes(f"new-1.2.4-capture-{index}".encode())
+        (self.root / "3.png").write_bytes(published_six)
+        with self.assertRaisesRegex(ValueError, r"3\\.png"):
+            self.verify("1.2.4")
+
     def test_six_replaced_screenshots_advance_to_visual_review(self):
         for index in range(1, 7):
             (self.root / f"{index}.png").write_bytes(f"new-1.2.4-capture-{index}".encode())
