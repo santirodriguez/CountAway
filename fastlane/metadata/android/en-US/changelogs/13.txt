@@ -1,0 +1,1 @@
+Backups stay responsive when document providers are slow. Other home-screen widgets keep updating if one fails. Improved large-text widget setup and event actions. Safely edit and share unusually long historical event titles.

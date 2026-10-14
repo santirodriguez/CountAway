@@ -1,0 +1,1 @@
+Las copias de seguridad siguen respondiendo cuando el proveedor de documentos es lento. Los demás widgets se actualizan aunque uno falle. Mejoras en menús y configuración de widgets con texto grande. Edición y uso compartido seguros de títulos históricos muy largos.
