@@ -1,6 +1,7 @@
 package com.santiagorodriguez.countaway.ui
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.view.Gravity
 import android.widget.Button
 import android.widget.LinearLayout
@@ -12,11 +13,13 @@ import com.santiagorodriguez.countaway.R
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class AboutLinksInstrumentedTest {
     @Test fun websiteAndPrivacyAreCompactActionsBelowSupport() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
         ActivityScenario.launch<AboutActivity>(Intent(context, AboutActivity::class.java)).use { scenario ->
             scenario.onActivity { activity ->
                 val card = activity.findViewById<LinearLayout>(R.id.projectLinksCard)
@@ -34,6 +37,9 @@ class AboutLinksInstrumentedTest {
                 val parent = card.parent as LinearLayout
                 assertTrue(parent.indexOfChild(attribution) > parent.indexOfChild(card))
                 assertEquals(activity.getString(R.string.about_author_name), attribution.text.toString())
+                val installedVersion = activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
+                assertEquals(activity.getString(R.string.about_version_compact, installedVersion),
+                    activity.findViewById<TextView>(R.id.versionText).text.toString())
                 assertEquals(Gravity.CENTER_HORIZONTAL, attribution.gravity and Gravity.HORIZONTAL_GRAVITY_MASK)
 
                 assertNotNull(card.background)
@@ -54,6 +60,23 @@ class AboutLinksInstrumentedTest {
                     assertEquals(0, params.width)
                     assertEquals(1f, params.weight, 0f)
                 }
+            }
+            instrumentation.waitForIdleSync()
+            val evidenceDir = File(context.filesDir, "layout-evidence").apply { mkdirs() }
+            val captured = runCatching {
+                val bitmap = instrumentation.uiAutomation.takeScreenshot()
+                    ?: error("UiAutomation screenshot unavailable")
+                try {
+                    File(evidenceDir, "candidate-about-preview.png").outputStream().use { stream ->
+                        check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream))
+                    }
+                } finally {
+                    bitmap.recycle()
+                }
+            }
+            captured.exceptionOrNull()?.let { failure ->
+                File(evidenceDir, "candidate-about-preview-unavailable.txt")
+                    .writeText("screenshot_status=unavailable type=${failure.javaClass.simpleName}\n")
             }
         }
     }
