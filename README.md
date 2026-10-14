@@ -16,6 +16,13 @@
   <a href="https://f-droid.org/packages/com.santiagorodriguez.countaway/"><img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="54" /></a>
   &nbsp;&nbsp;
   <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/santirodriguez/CountAway"><img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54" /></a>
+  &nbsp;&nbsp;
+  <!-- Staged for v1.2.4: wrap this badge in the verified public Play listing link at final approval. -->
+  <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Google Play badge — public listing pending" height="64" />
+</p>
+
+<p align="center">
+  <sub>Google Play: public listing pending. The badge link will be enabled after launch.</sub>
 </p>
 
 <p align="center">
@@ -63,7 +70,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 - **Three appearance modes:** System, Light, and Dark for both the app and widgets.
 - **Useful reminders:** optional local notifications for count-down events.
 - **Smart widgets:** fixed widgets support both directions; **Next countdown** follows the nearest upcoming count-down event.
-- **Share without the screenshot ritual:** Send a Ridge-style PNG card from an event's menu or editor.
+- **Share without the screenshot ritual:** Send a Ridge-style PNG card, or full text for exceptionally long titles.
 - **Local portability:** JSON export/import stays entirely under your control.
 - **Multilingual:** English, Español, and Català.
 

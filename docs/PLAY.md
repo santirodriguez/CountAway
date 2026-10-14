@@ -5,8 +5,9 @@ CountAway has an existing Google Play app and testing-track history alongside it
 ## Current readiness baseline
 
 - applicationId: `com.santiagorodriguez.countaway`
-- current checked-in build: 1.2.3 / versionCode 12 (from `app/build.gradle.kts`), not yet the 1.2.4 candidate
-- intended next release: 1.2.4; assign its versionCode only after verifying all already used codes in Play Console
+- current release-branch candidate: 1.2.4 / **provisional** versionCode 13 (from `app/build.gradle.kts`); no Play upload or reservation implied
+- current GitHub public release and Play closed-test baseline: 1.2.3 / versionCode 12, from the same reviewed source release
+- release order: first move the existing 1.2.3 closed-test build to Google Play Production after actual access/approval; only afterward offer 1.2.4 as its first Production update, coordinated with the separately approved GitHub 1.2.4 release
 - minSdk: 26
 - targetSdk / compileSdk: 36
 - no Internet permission
@@ -15,7 +16,7 @@ CountAway has an existing Google Play app and testing-track history alongside it
 - existing GitHub/F-Droid signing certificate SHA-256:
   `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`
 
-Package, SDK, signing, permission, dependency, and native-library properties are release constraints unless explicitly reviewed. Version fields are release-specific; the next versionCode is not yet allocated.
+Package, SDK, signing, permission, dependency, and native-library properties are release constraints unless explicitly reviewed. The candidate's code 13 is a staging assumption, **not** proof that Play has never consumed it: confirm the globally highest used code before treating it as final or uploading any AAB.
 
 As of 2026-10-06, Google Play requires new phone/tablet apps and app updates submitted after August 31, 2026 to target Android 16 / API 36 or later. CountAway's current `targetSdk = 36` satisfies that submission requirement.
 
@@ -255,4 +256,4 @@ Revalidate every declaration against the exact candidate and current Play wordin
 - Support contact: use a monitored maintainer-provided address; do not invent one in repository metadata.
 - Countries, category/tags, identity/trader/account verification, and any personal-account testing requirement are Console/account decisions.
 
-Repository state should describe Play as **prepared**, **submitted**, **in testing**, or **production** accurately. Do not add a Google Play badge before a public listing exists.
+Repository state should describe Play as **prepared**, **submitted**, **in testing**, or **production** accurately. The release-branch README contains an intentionally **unlinked** preview of Google's official Play badge and an explicit pending-listing notice. Before the final 1.2.4 README review, confirm that 1.2.3 is actually live on Play Production and its public listing works; then wrap that existing badge in the verified listing URL and remove the pending notice. Expected package-derived listing format: `https://play.google.com/store/apps/details?id=com.santiagorodriguez.countaway`. Do not merge an inactive download badge or a broken store URL into `main`.
