@@ -83,7 +83,7 @@ class TimedEventResolverTest {
     }
 
     @Test fun dstDayHasOnlyTwentyThreeElapsedHours() {
-        val target = event.copy(date = LocalDate.of(2026, 3, 8), eventTime = LocalTime.of(9))
+        val target = event.copy(date = LocalDate.of(2026, 3, 8), eventTime = LocalTime.of(9, 0))
         val now = ZonedDateTime.of(2026, 3, 7, 9, 0, 0, 0, zone)
         val value = TimedEventResolver.resolve(target, now)!!
         assertEquals(0L, value.days)
