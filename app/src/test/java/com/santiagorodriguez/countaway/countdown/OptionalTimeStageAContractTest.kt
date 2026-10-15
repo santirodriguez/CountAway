@@ -72,6 +72,14 @@ class OptionalTimeStageAContractTest {
         assertEquals(23L, Duration.between(reminder, event).toHours())
     }
 
+    @Test fun staticDayPrefixIsWrongAfterRollover() {
+        val before = 2L * 86_400L + 1L
+        val after = before - 2L
+        assertEquals(2L, before / 86_400L)
+        assertEquals(1L, after / 86_400L)
+        assertNotEquals(before / 86_400L, after / 86_400L)
+    }
+
     @Test fun monthlyRecurrenceRetainsTheOriginalDayAnchor() {
         val anchor = LocalDate.of(2027, 1, 31)
         val february = CountdownOccurrenceResolver.nextOccurrenceOnOrAfter(
