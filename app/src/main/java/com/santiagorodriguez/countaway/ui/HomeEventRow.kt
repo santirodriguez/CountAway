@@ -104,12 +104,15 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         val besideIcon = (textArea - dp(60)).coerceAtLeast(1)
         stackedIcon = besideIcon < dp(64) || wordWidth > besideIcon
         val textWidth = if (stackedIcon) textArea else besideIcon
-        // Give long event metadata its own full-width row only when large
-        // accessibility text cannot fit next to the icon and day tile.
-        timedMetaFullWidth = timedCompact &&
-            resources.configuration.fontScale >= 1.6f && textWidth < dp(200)
+        // Measure actual line count before selecting the responsive layout.
+        // A wider 411dp screen can still wrap localized date and zone text
+        // into three lines at 200% font size.
         measureText(title, textWidth)
-        measureText(meta, if (timedMetaFullWidth) inner else textWidth)
+        measureText(meta, textWidth)
+        timedMetaFullWidth = timedCompact &&
+            resources.configuration.fontScale >= 1.6f &&
+            (textWidth < dp(200) || (meta.layout?.lineCount ?: 0) > 2)
+        if (timedMetaFullWidth) measureText(meta, inner)
         if (timeDetail.visibility == View.VISIBLE) {
             // Keep the whole clock legible at 200% text: use one compact
             // full-width line below the main title/date/icon/count row.
