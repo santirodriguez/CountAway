@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ android:id="@+id/probeRoot" android:layout_width="match_parent" android:layout_height="match_parent">
+ <ImageView android:id="@+id/probeBackground" android:layout_width="match_parent"
+  android:layout_height="match_parent" android:scaleType="fitXY"
+  android:src="@drawable/widget_background_horizon_dark" android:contentDescription="@null" />
+ <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+  android:orientation="vertical" android:paddingStart="14dp" android:paddingEnd="14dp"
+  android:paddingTop="10dp" android:paddingBottom="9dp">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+   android:orientation="horizontal" android:gravity="center_vertical">
+   <ImageView android:id="@+id/probeIcon" android:layout_width="24dp"
+    android:layout_height="24dp" android:layout_marginEnd="8dp"
+    android:src="@drawable/ic_event_calendar" android:tint="@color/widget_dark_accent"
+    android:contentDescription="@null" />
+   <TextView android:id="@+id/probeTitle" android:layout_width="0dp"
+    android:layout_weight="1" android:layout_height="wrap_content"
+    android:fontFamily="sans-serif-medium" android:text="Viaje a Barcelona"
+    android:textSize="13sp" android:textColor="@color/widget_dark_text"
+    android:maxLines="1" android:ellipsize="end" />
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+   android:layout_weight="1" android:orientation="horizontal" android:gravity="center_vertical">
+   <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:orientation="horizontal" android:gravity="center_vertical">
+    <TextView android:id="@+id/probeDays" android:layout_width="wrap_content"
+     android:layout_height="wrap_content" android:fontFamily="sans-serif-condensed"
+     android:fontFeatureSettings="tnum" android:includeFontPadding="false"
+     android:textStyle="bold" android:textColor="@color/widget_dark_accent"
+     android:textSize="42sp" android:text="3" />
+    <TextView android:id="@+id/probeDayUnit" android:layout_width="wrap_content"
+     android:layout_height="wrap_content" android:layout_marginStart="2dp"
+     android:layout_marginTop="15dp" android:fontFamily="sans-serif-medium"
+     android:textColor="@color/widget_dark_secondary_text" android:textSize="13sp" android:text="d" />
+   </LinearLayout>
+   <FrameLayout android:layout_width="2dp" android:layout_height="48dp"
+    android:layout_marginStart="10dp" android:layout_marginEnd="10dp"
+    android:alpha="0.45" android:background="@color/widget_dark_accent" />
+   <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+    android:layout_weight="1" android:orientation="vertical" android:gravity="center_vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+     android:orientation="horizontal" android:gravity="center_vertical">
+     <TextView android:id="@+id/probeHours" android:layout_width="0dp"
+      android:layout_weight="1" android:layout_height="wrap_content"
+      android:fontFamily="sans-serif-condensed" android:fontFeatureSettings="tnum"
+      android:includeFontPadding="false" android:textStyle="bold" android:textColor="@color/widget_dark_text"
+      android:textSize="16sp" android:text="07h" />
+     <TextView android:id="@+id/probeMinutes" android:layout_width="0dp"
+      android:layout_weight="1" android:layout_height="wrap_content"
+      android:fontFamily="sans-serif-condensed" android:fontFeatureSettings="tnum"
+      android:includeFontPadding="false" android:textColor="@color/widget_dark_text"
+      android:textSize="16sp" android:text="12m" />
+    </LinearLayout>
+    <TextView android:id="@+id/probeSeconds" android:layout_width="match_parent"
+     android:layout_height="wrap_content" android:layout_marginTop="2dp"
+     android:fontFamily="sans-serif-condensed" android:fontFeatureSettings="tnum"
+     android:includeFontPadding="false" android:textStyle="bold"
+     android:textColor="@color/widget_dark_accent" android:textSize="18sp" android:text="05s" />
+   </LinearLayout>
+  </LinearLayout>
+  <TextView android:id="@+id/probeDate" android:layout_width="match_parent"
+   android:layout_height="wrap_content" android:gravity="end"
+   android:fontFamily="sans-serif-medium" android:textColor="@color/widget_dark_secondary_text"
+   android:textSize="11sp" android:text="18 oct. · 16:30" android:maxLines="1"
+   android:ellipsize="end" />
+ </LinearLayout>
+</FrameLayout>
