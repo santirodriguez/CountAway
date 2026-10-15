@@ -44,14 +44,42 @@ class OptionalTimeEditorInstrumentedTest {
                     activity.findViewById<View>(R.id.removeTimeButton).visibility)
                 activity.findViewById<Button>(R.id.timeButton).performClick()
             }
+            var offeredTime: LocalTime? = null
             onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, _ ->
                 val picker = view as TimePicker
-                // Set 24-hour mode before programmatic selection so the native
-                // 12-hour AM/PM UI cannot reinterpret 18:30 as 06:30.
-                picker.setIs24HourView(true)
-                picker.hour = 18
-                picker.minute = 30
-                assertTrue(picker.is24HourView())
+                offeredTime = LocalTime.of(picker.hour, picker.minute)
+            }
+            val expectedTime = requireNotNull(offeredTime)
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            scenario.onActivity { activity ->
+                assertEquals(View.VISIBLE,
+                    activity.findViewById<View>(R.id.removeTimeButton).visibility)
+            }
+            scenario.recreate()
+            drain()
+            scenario.onActivity { activity ->
+                assertEquals(View.VISIBLE,
+                    activity.findViewById<View>(R.id.removeTimeButton).visibility)
+                activity.findViewById<Button>(R.id.saveButton).performClick()
+            }
+            drain()
+            val saved = events().single { it.id == event.id }
+            assertEquals(expectedTime, saved.eventTime)
+            assertNotNull(saved.eventZone)
+        }
+    }
+
+    @Test fun afternoonTimeSurvivesNativePickerAndRecreation() = isolated {
+        val event = fixture().copy(eventTime = LocalTime.of(18, 30),
+            eventZone = ZoneId.of("America/Argentina/Buenos_Aires"))
+        repository.save(original() + event)
+        ActivityScenario.launch<EditorActivity>(intent(event)).use { scenario ->
+            drain()
+            scenario.onActivity { activity ->
+                activity.findViewById<Button>(R.id.timeButton).performClick()
+            }
+            onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, _ ->
+                val picker = view as TimePicker
                 assertEquals(18, picker.hour)
                 assertEquals(30, picker.minute)
             }
@@ -64,9 +92,7 @@ class OptionalTimeEditorInstrumentedTest {
                 activity.findViewById<Button>(R.id.saveButton).performClick()
             }
             drain()
-            val saved = events().single { it.id == event.id }
-            assertEquals(LocalTime.of(18, 30), saved.eventTime)
-            assertNotNull(saved.eventZone)
+            assertEquals(event, events().single { it.id == event.id })
         }
     }
 
