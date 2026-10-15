@@ -730,7 +730,13 @@ class EditorActivity : BaseActivity() {
         if (addingTime) {
             val picker = dialog.window?.decorView?.let(::findTimePicker)
             if (picker != null) {
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+                // The native 12-hour clock can commit its focused hour label as
+                // an AM hour when OK takes focus. Commit that transition now,
+                // then restore the complete hour while OK already owns focus.
+                val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                positiveButton?.requestFocusFromTouch()
+                dialog.updateTime(starting.hour, starting.minute)
+                positiveButton?.setOnClickListener {
                     // Read the displayed 24-hour value before platform validation:
                     // validation may change the AM/PM state on an untouched new picker.
                     // Commit active text input first when the user is editing fields.
