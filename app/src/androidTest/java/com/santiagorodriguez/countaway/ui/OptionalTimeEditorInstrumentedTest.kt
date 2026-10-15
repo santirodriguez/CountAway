@@ -3,6 +3,7 @@ package com.santiagorodriguez.countaway.ui
 import android.content.Intent
 import android.view.View
 import android.widget.Button
+import android.widget.DatePicker
 import android.widget.TimePicker
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
@@ -63,19 +64,24 @@ class OptionalTimeEditorInstrumentedTest {
         }
     }
 
-    @Test fun selectingANonexistentDstTimeDoesNotSave() = isolated {
-        val event = fixture().copy(date = LocalDate.of(2026, 3, 8),
-            eventTime = LocalTime.of(3, 30), eventZone = ZoneId.of("America/New_York"))
+    @Test fun selectingANonexistentDstDateTimeDoesNotSave() = isolated {
+        // Start with a valid 02:30. Changing only the date into a DST gap must
+        // reject the edited event without silently normalizing the wall time.
+        // Use DatePicker so this test cannot alter TimePicker state across tests.
+        val event = fixture().copy(date = LocalDate.of(2026, 3, 9),
+            eventTime = LocalTime.of(2, 30), eventZone = ZoneId.of("America/New_York"))
         repository.save(original() + event)
         ActivityScenario.launch<EditorActivity>(intent(event)).use { scenario ->
             drain()
             scenario.onActivity { activity ->
-                activity.findViewById<Button>(R.id.timeButton).performClick()
+                activity.findViewById<Button>(R.id.dateButton).performClick()
             }
-            onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, _ ->
-                val picker = view as TimePicker
-                picker.hour = 2
-                picker.minute = 30
+            onView(isAssignableFrom(DatePicker::class.java)).inRoot(isDialog()).check { view, _ ->
+                val picker = view as DatePicker
+                picker.updateDate(2026, 2, 8)
+                assertEquals(2026, picker.year)
+                assertEquals(2, picker.month)
+                assertEquals(8, picker.dayOfMonth)
             }
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
             scenario.onActivity { activity ->
