@@ -63,6 +63,30 @@ class OptionalTimeEditorInstrumentedTest {
         }
     }
 
+    @Test fun selectingANonexistentDstTimeDoesNotSave() = isolated {
+        val event = fixture().copy(date = LocalDate.of(2026, 3, 8),
+            eventTime = LocalTime.of(3, 30), eventZone = ZoneId.of("America/New_York"))
+        repository.save(original() + event)
+        ActivityScenario.launch<EditorActivity>(intent(event)).use { scenario ->
+            drain()
+            scenario.onActivity { activity ->
+                activity.findViewById<Button>(R.id.timeButton).performClick()
+            }
+            onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, _ ->
+                val picker = view as TimePicker
+                picker.hour = 2
+                picker.minute = 30
+            }
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            scenario.onActivity { activity ->
+                activity.findViewById<Button>(R.id.saveButton).performClick()
+            }
+            drain()
+            assertEquals(event, events().single { it.id == event.id })
+            scenario.onActivity { activity -> assertFalse(activity.isFinishing) }
+        }
+    }
+
     @Test fun removingTimeDoesNotChangeDateTitleOrIdentity() = isolated {
         val event = fixture().copy(
             eventTime = LocalTime.of(16, 30),

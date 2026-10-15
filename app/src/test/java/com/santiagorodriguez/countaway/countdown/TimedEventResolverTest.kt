@@ -4,6 +4,9 @@ import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.RepeatRule
+import com.santiagorodriguez.countaway.data.CountdownDataException
+import com.santiagorodriguez.countaway.data.CountdownDataProblem
+import com.santiagorodriguez.countaway.data.CountdownValidation
 import org.junit.Assert.*
 import org.junit.Test
 import java.time.Instant
@@ -75,11 +78,28 @@ class TimedEventResolverTest {
         assertEquals(zone, value.target.zone)
     }
 
-    @Test fun dstGapMovesNonexistentWallTimeForwardDeterministically() {
-        val gap = event.copy(date = LocalDate.of(2026, 3, 8), eventTime = LocalTime.of(2, 30))
-        val value = TimedEventResolver.resolve(gap, ZonedDateTime.of(
+    @Test fun recurringDstGapMovesFutureOccurrenceForwardDeterministically() {
+        val weekly = event.copy(date = LocalDate.of(2026, 3, 1),
+            eventTime = LocalTime.of(2, 30), repeatRule = RepeatRule.WEEKLY)
+        val value = TimedEventResolver.resolve(weekly, ZonedDateTime.of(
             2026, 3, 7, 12, 0, 0, 0, zone))!!
+        assertEquals(LocalDate.of(2026, 3, 8), value.occurrenceDate)
         assertEquals(LocalTime.of(3, 30), value.target.toLocalTime())
+    }
+
+    @Test fun impossibleDstGapAnchorIsRejectedBeforePersistence() {
+        val invalid = event.copy(date = LocalDate.of(2026, 3, 8),
+            eventTime = LocalTime.of(2, 30))
+        assertFalse(CountdownValidation.isSelectableTimedOccurrence(
+            invalid.date, invalid.eventTime!!, invalid.eventZone!!))
+        try {
+            CountdownValidation.validateStoredEvents(listOf(invalid))
+            fail("Nonexistent local times must not be persisted")
+        } catch (error: CountdownDataException) {
+            assertEquals(CountdownDataProblem.CORRUPT, error.problem)
+        }
+        assertTrue(CountdownValidation.isSelectableTimedOccurrence(
+            invalid.date, LocalTime.of(3, 30), zone))
     }
 
     @Test fun dstDayHasOnlyTwentyThreeElapsedHours() {

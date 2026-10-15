@@ -5,6 +5,7 @@
     <string name="editor_selected_time">Time: %1$s</string>
     <string name="editor_remove_time">Remove</string>
     <string name="editor_time_zone">Event time: %1$s, zone %2$s</string>
+    <string name="editor_time_dst_gap">The selected time does not exist on that date in the event’s time zone. Choose another time.</string>
     <string name="editor_timed_share_pending">Sharing events with a time is not available yet.</string>
     <string name="timed_remaining">Remaining · %1$s</string>
     <string name="timed_elapsed">Elapsed · %1$s</string>

@@ -837,6 +837,13 @@ class EditorActivity : BaseActivity() {
             titleInput.error = getString(R.string.title_too_long, CountdownValidation.MAX_TITLE_LENGTH)
             return
         }
+        val chosenTime = selectedTime
+        val chosenZone = selectedTimeZone
+        if (chosenTime != null && chosenZone != null &&
+            !CountdownValidation.isSelectableTimedOccurrence(selectedDate, chosenTime, chosenZone)) {
+            Toast.makeText(this, R.string.editor_time_dst_gap, Toast.LENGTH_LONG).show()
+            return
+        }
         if (!canSaveSelectedReminder(snapshot.today)) {
             Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
             return
