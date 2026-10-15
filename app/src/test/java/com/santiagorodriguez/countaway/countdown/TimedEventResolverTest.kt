@@ -26,7 +26,7 @@ class TimedEventResolverTest {
     }
 
     @Test fun fourUnitsAreDecomposedInsteadOfAccumulatedHours() {
-        val target = event.date.atTime(event.eventTime).atZone(zone)
+        val target = event.date.atTime(event.eventTime!!).atZone(zone)
         val now = target.minusDays(3).minusHours(7).minusMinutes(12).minusSeconds(5)
         val value = TimedEventResolver.resolve(event, now)!!
         assertEquals(TimedCountDirection.REMAINING, value.direction)
@@ -55,7 +55,7 @@ class TimedEventResolverTest {
     }
 
     @Test fun subsecondPositiveRemainingRoundsUp() {
-        val target = event.date.atTime(event.eventTime).atZone(zone)
+        val target = event.date.atTime(event.eventTime!!).atZone(zone)
         assertEquals(1L, TimedEventResolver.resolve(event, target.minusNanos(1_000_000))!!.seconds)
         assertEquals(0L, TimedEventResolver.resolve(event, target.plusNanos(1_000_000))!!.seconds)
     }
