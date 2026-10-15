@@ -1,6 +1,8 @@
 package com.santiagorodriguez.countaway.ui
 
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -16,6 +18,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class OptionalTimeHomeInstrumentedTest {
@@ -42,6 +45,7 @@ class OptionalTimeHomeInstrumentedTest {
                     row.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
                     row.layout(0, 0, width, row.measuredHeight)
+                    capture(row, "timed-home-${widthDp}dp-font${(scale * 100).toInt()}")
                     val detail = row.findViewById<TextView>(R.id.eventTimeDetail)
                     val measured = detail.layout
                     assertNotNull("No timed text layout: $scale/$widthDp", measured)
@@ -73,6 +77,23 @@ class OptionalTimeHomeInstrumentedTest {
                 }
             }
         }
+
+    private fun capture(row: View, name: String) {
+        val bitmap = Bitmap.createBitmap(row.width, row.height, Bitmap.Config.ARGB_8888)
+        try {
+            row.draw(Canvas(bitmap))
+            File(context.filesDir, "layout-evidence/stage-b/$name.png").apply {
+                parentFile?.mkdirs()
+                outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            }
+            File(context.filesDir, "layout-evidence/stage-b/home-density.txt").apply {
+                parentFile?.mkdirs()
+                appendText("$name width=${row.width}px height=${row.height}px\\n")
+            }
+        } finally {
+            bitmap.recycle()
+        }
+    }
 
     @Test fun timedRowIsCompactAndRecycledDateOnlyRowDoesNotGainTime() =
         instrumentation.runOnMainSync {
