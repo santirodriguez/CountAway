@@ -72,7 +72,7 @@ class CountdownEventAdapter(
                 val title = EventTransport.preview(event.title)
                 val meta = row.findViewById<TextView>(R.id.eventMeta).text
                 val status = row.findViewById<TextView>(R.id.eventStatus).contentDescription
-                row.contentDescription = listOf(title, meta, text, status).joinToString(", ")
+                row.contentDescription = listOf(title, meta, timeAccessibilityText(event, now), status).joinToString(", ")
             }
         }
     }
@@ -86,7 +86,10 @@ class CountdownEventAdapter(
             R.plurals.timed_days_magnitude, quantity, localized)
     }
 
-    private fun timeText(event: CountdownEvent, now: ZonedDateTime): String {
+    private fun timeText(event: CountdownEvent, now: ZonedDateTime): String =
+        TimedEventResolver.resolve(event, now)?.subday() ?: ""
+
+    private fun timeAccessibilityText(event: CountdownEvent, now: ZonedDateTime): String {
         val value = TimedEventResolver.resolve(event, now) ?: return ""
         val resource = when (value.direction) {
             TimedCountDirection.REMAINING -> R.string.timed_remaining
@@ -158,7 +161,7 @@ class CountdownEventAdapter(
             ArrivalStage.from(value.countdownStatus))
         val sectionDescription = bindSectionHeader(view, position, value)
         view.contentDescription = listOfNotNull(sectionDescription, EventTransport.preview(event.title), meta,
-            if (timed != null) timeText(event, currentTime) else null, statusView.contentDescription)
+            if (timed != null) timeAccessibilityText(event, currentTime) else null, statusView.contentDescription)
             .joinToString(", ")
         bindAddWidgetAction(view, event)
         bindRowActions(view, event)
