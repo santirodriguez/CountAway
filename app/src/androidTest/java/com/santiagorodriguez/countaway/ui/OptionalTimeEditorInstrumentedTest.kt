@@ -46,8 +46,14 @@ class OptionalTimeEditorInstrumentedTest {
             }
             onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, _ ->
                 val picker = view as TimePicker
+                // Set 24-hour mode before programmatic selection so the native
+                // 12-hour AM/PM UI cannot reinterpret 18:30 as 06:30.
+                picker.setIs24HourView(true)
                 picker.hour = 18
                 picker.minute = 30
+                assertTrue(picker.is24HourView())
+                assertEquals(18, picker.hour)
+                assertEquals(30, picker.minute)
             }
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
             scenario.recreate()
