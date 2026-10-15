@@ -74,7 +74,7 @@ class CountdownStorageContractInstrumentedTest {
     }
 
     @Test
-    fun schema7MixedModesRoundTripLosslesslyOnAndroidRuntime() {
+    fun schema8MixedDateOnlyModesRoundTripLosslesslyOnAndroidRuntime() {
         val events = listOf(
             event("schema-7-down", "Countdown").copy(
                 reminder = ReminderOption.ONE_DAY,
@@ -87,7 +87,7 @@ class CountdownStorageContractInstrumentedTest {
         val restored = CountdownStorageCodec.decodeForImport(payload)
 
         assertEquals(events, restored)
-        assertTrue(payload.contains("\"schemaVersion\":7"))
+        assertTrue(payload.contains("\"schemaVersion\":8"))
         assertTrue(payload.contains("\"countMode\":\"count_down\""))
         assertTrue(payload.contains("\"countMode\":\"count_up\""))
     }

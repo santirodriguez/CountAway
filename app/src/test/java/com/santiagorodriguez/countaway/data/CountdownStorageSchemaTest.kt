@@ -8,10 +8,11 @@ import org.junit.Test
 
 class CountdownStorageSchemaTest {
     @Test
-    fun currentSchemaIsVersion7AndSchema6RemainsExplicit() {
+    fun currentSchemaIsVersion8AndSchema7RemainsExplicit() {
         assertEquals(6, CountdownStorageSchema.EXPANDED_RECURRENCE_VERSION)
         assertEquals(7, CountdownStorageSchema.COUNT_MODE_VERSION)
-        assertEquals(7, CountdownStorageSchema.CURRENT_VERSION)
+        assertEquals(8, CountdownStorageSchema.OPTIONAL_TIME_VERSION)
+        assertEquals(8, CountdownStorageSchema.CURRENT_VERSION)
     }
 
     @Test
@@ -23,6 +24,7 @@ class CountdownStorageSchemaTest {
         assertTrue(CountdownStorageSchema.isSupported(CountdownStorageSchema.REPEAT_RULE_VERSION))
         assertTrue(CountdownStorageSchema.isSupported(CountdownStorageSchema.EXPANDED_RECURRENCE_VERSION))
         assertTrue(CountdownStorageSchema.isSupported(CountdownStorageSchema.COUNT_MODE_VERSION))
+        assertTrue(CountdownStorageSchema.isSupported(CountdownStorageSchema.OPTIONAL_TIME_VERSION))
     }
 
     @Test
