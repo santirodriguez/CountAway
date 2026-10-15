@@ -47,14 +47,18 @@ class OptionalTimeEditorInstrumentedTest {
                 activity.findViewById<Button>(R.id.timeButton).performClick()
             }
             var offeredTime: LocalTime? = null
+            var pickerFocusBeforeConfirm = ""
             onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, _ ->
                 val picker = view as TimePicker
                 offeredTime = LocalTime.of(picker.hour, picker.minute)
+                val focused = picker.findFocus()
+                pickerFocusBeforeConfirm = "is24Hour=${picker.is24HourView}; " +
+                    "focused=${focused?.javaClass?.simpleName}; shown=${focused?.isShown}"
             }
             val expectedTime = requireNotNull(offeredTime)
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
             scenario.onActivity { activity ->
-                assertEditorTime(activity, expectedTime, "after dialog confirmation")
+                assertEditorTime(activity, expectedTime, "after dialog confirmation ($pickerFocusBeforeConfirm)")
             }
             scenario.recreate()
             drain()
