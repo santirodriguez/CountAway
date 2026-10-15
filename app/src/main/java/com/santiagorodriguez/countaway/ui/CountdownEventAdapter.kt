@@ -135,7 +135,7 @@ class CountdownEventAdapter(
             text = EventTransport.preview(event.title)
             maxLines = if (timed == null) Int.MAX_VALUE else 2
             ellipsize = if (timed == null) null else TextUtils.TruncateAt.END
-            contentDescription = event.title
+            contentDescription = EventTransport.preview(event.title)
         }
         val eventType = context.getString(EventTypePresentation.labelRes(event.type))
         val dateText = value.displayDate.format(dateFormatter)
