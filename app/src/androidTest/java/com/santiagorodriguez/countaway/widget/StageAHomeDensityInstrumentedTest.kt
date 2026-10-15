@@ -1,6 +1,7 @@
 package com.santiagorodriguez.countaway.widget
 
 import android.text.TextUtils
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
