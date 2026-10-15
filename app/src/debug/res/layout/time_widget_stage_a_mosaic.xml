@@ -39,7 +39,7 @@
                     android:fontFeatureSettings="tnum" android:includeFontPadding="false"
                     android:textSize="29sp" />
             </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="1dp"
+            <FrameLayout android:layout_width="match_parent" android:layout_height="1dp"
                 android:layout_marginTop="4dp" android:layout_marginBottom="5dp"
                 android:background="#669EB7C7" />
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
