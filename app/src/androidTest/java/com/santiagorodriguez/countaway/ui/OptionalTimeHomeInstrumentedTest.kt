@@ -57,6 +57,13 @@ class OptionalTimeHomeInstrumentedTest {
                     val meta = row.findViewById<TextView>(R.id.eventMeta)
                     val tile = row.findViewById<View>(R.id.eventCountTile)
                     if (scale >= 1.6f && widthDp == 320) {
+                        val daysLabel = row.findViewById<HomeCountTextView>(R.id.eventStatus)
+                        val daysLayout = daysLabel.layout
+                        assertNotNull("No day tile text layout", daysLayout)
+                        assertEquals("Days and unit should each have one line",
+                            2, daysLayout!!.lineCount)
+                        assertTrue("Day tile clips its two styled lines",
+                            daysLayout.getLineBottom(1) <= daysLabel.height)
                         assertTrue("Timed metadata must use the available width",
                             meta.width > title.width)
                         assertTrue("Metadata overlaps title at large text",
