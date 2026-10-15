@@ -14,11 +14,13 @@ import android.widget.ListView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.ArrivalStage
+import com.santiagorodriguez.countaway.countdown.CountUpState
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.EventCountResolver
 import com.santiagorodriguez.countaway.countdown.TimedCountDirection
 import com.santiagorodriguez.countaway.countdown.TimedEventResolver
 import com.santiagorodriguez.countaway.data.EventTransport
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.RepeatRule
 import java.time.LocalDate
@@ -109,11 +111,18 @@ class CountdownEventAdapter(
         val event = getItem(position)
         val timed = TimedEventResolver.resolve(event, currentTime)
         view.bindTimedCompact(timed != null)
-        val value = if (timed != null && event.countMode ==
-            com.santiagorodriguez.countaway.model.CountMode.COUNT_DOWN) {
-            EventCountResolver.resolve(
-                timed.occurrenceDate, RepeatRule.NONE, event.countMode, today)
-        } else EventCountResolver.resolve(event, today)
+        val original = EventCountResolver.resolve(event, today)
+        val value = when {
+            timed == null -> original
+            event.countMode == CountMode.COUNT_DOWN ->
+                EventCountResolver.resolve(timed.occurrenceDate, RepeatRule.NONE, event.countMode, today)
+            else -> original.copy(
+                displayDate = timed.occurrenceDate,
+                magnitude = timed.days,
+                countUpState = if (timed.direction == TimedCountDirection.STARTS_IN)
+                    CountUpState.STARTS_IN else CountUpState.ELAPSED,
+            )
+        }
         view.foreground = null
         val locale = context.resources.configuration.locales[0]
         val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
@@ -131,10 +140,17 @@ class CountdownEventAdapter(
         val eventType = context.getString(EventTypePresentation.labelRes(event.type))
         val dateText = value.displayDate.format(dateFormatter)
         val formattedDate = if (timed != null && event.eventTime != null) {
-            dateText + " · " + event.eventTime.format(
+            val clock = event.eventTime.format(
                 DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+            val zone = if (timed.target.zone != currentTime.zone) {
+                " · " + timed.target.format(DateTimeFormatter.ofPattern("z", locale))
+            } else ""
+            dateText + " · " + clock + zone
         } else dateText
         val meta = when {
+            value.countUpState != null && timed != null -> context.getString(
+                if (value.countUpState == CountUpState.STARTS_IN)
+                    R.string.home_start_date else R.string.home_since_date, formattedDate)
             value.countUpState != null -> HomeEventText.startDate(context, value)
             event.repeatRule == RepeatRule.NONE -> context.getString(R.string.event_meta, eventType, formattedDate)
             else -> context.getString(R.string.event_meta_repeating, eventType, formattedDate,
