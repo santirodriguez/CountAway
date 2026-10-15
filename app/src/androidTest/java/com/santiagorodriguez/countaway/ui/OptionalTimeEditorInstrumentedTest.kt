@@ -24,6 +24,8 @@ import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.time.ZoneId
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -52,19 +54,17 @@ class OptionalTimeEditorInstrumentedTest {
             val expectedTime = requireNotNull(offeredTime)
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
             scenario.onActivity { activity ->
-                assertEquals(View.VISIBLE,
-                    activity.findViewById<View>(R.id.removeTimeButton).visibility)
+                assertEditorTime(activity, expectedTime, "after dialog confirmation")
             }
             scenario.recreate()
             drain()
             scenario.onActivity { activity ->
-                assertEquals(View.VISIBLE,
-                    activity.findViewById<View>(R.id.removeTimeButton).visibility)
+                assertEditorTime(activity, expectedTime, "after Activity recreation")
                 activity.findViewById<Button>(R.id.saveButton).performClick()
             }
             drain()
             val saved = events().single { it.id == event.id }
-            assertEquals(expectedTime, saved.eventTime)
+            assertEquals("after repository save", expectedTime, saved.eventTime)
             assertNotNull(saved.eventZone)
         }
     }
@@ -146,6 +146,17 @@ class OptionalTimeEditorInstrumentedTest {
             assertEquals(event.copy(eventTime = null, eventZone = null),
                 events().single { it.id == event.id })
         }
+    }
+
+    private fun assertEditorTime(activity: EditorActivity, expected: LocalTime, stage: String) {
+        val locale = activity.resources.configuration.locales[0]
+        val formatted = expected.format(
+            DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+        val label = activity.findViewById<Button>(R.id.timeButton).text.toString()
+        assertEquals("$stage: time label",
+            activity.getString(R.string.editor_selected_time, formatted), label)
+        assertEquals("$stage: remove-time visibility", View.VISIBLE,
+            activity.findViewById<View>(R.id.removeTimeButton).visibility)
     }
 
     private var initialEvents: List<CountdownEvent> = emptyList()
