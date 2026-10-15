@@ -50,16 +50,19 @@ class CountdownEventAdapter(
         today: LocalDate,
         now: ZonedDateTime = CountdownTime.snapshot().now,
     ) {
-        this.items = events
+        // Keep date-only ordering untouched; time-enabled records require
+        // the next REAL occurrence, not merely the calendar date.
+        this.items = if (events.any { it.eventTime != null })
+            CountdownEventOrder.sortedForDisplay(events, today, now) else events
         this.today = today
         currentTime = now
-        nextTimedBoundary = events.asSequence()
+        nextTimedBoundary = items.asSequence()
             .mapNotNull { TimedEventResolver.resolve(it, now) }
             .filter { it.direction != TimedCountDirection.ELAPSED }
             .map { it.target.toInstant() }
             .filter { it.isAfter(now.toInstant()) }
             .minOrNull()
-        showSectionHeaders = events.asSequence()
+        showSectionHeaders = items.asSequence()
             .map { sectionFor(it, now) }
             .distinct()
             .take(2)
