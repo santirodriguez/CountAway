@@ -35,7 +35,15 @@ class StageAHomeDensityInstrumentedTest {
                 val row = LayoutInflater.from(context)
                     .inflate(R.layout.item_countdown, rows, false) as HomeEventRow
                 row.findViewById<TextView>(R.id.eventTitle).apply {
-                    text = title
+                    val cap = if (scale > 1.5f) 1.25f / scale else 1f
+                    if (cap < 1f) setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f * cap)
+                    val maxToken = 140f * context.resources.displayMetrics.density
+                    text = title.split(' ').joinToString(" ") { token ->
+                        if (paint.measureText(token) > maxToken)
+                            TextUtils.ellipsize(token, paint, maxToken, TextUtils.TruncateAt.END).toString()
+                        else token
+                    }
+                    contentDescription = title
                     maxLines = 2
                     ellipsize = TextUtils.TruncateAt.END
                 }
