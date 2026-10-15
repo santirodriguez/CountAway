@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.ui
 
 import android.content.Context
 import android.graphics.Typeface
+import android.text.TextUtils
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,15 +10,19 @@ import android.view.ViewGroup
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.BaseAdapter
 import android.widget.ImageView
+import android.widget.ListView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.ArrivalStage
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.EventCountResolver
+import com.santiagorodriguez.countaway.countdown.TimedCountDirection
+import com.santiagorodriguez.countaway.countdown.TimedEventResolver
 import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.RepeatRule
 import java.time.LocalDate
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -30,17 +35,51 @@ class CountdownEventAdapter(
     private val inflater = LayoutInflater.from(context)
     private var items: List<CountdownEvent> = emptyList()
     private var today: LocalDate = CountdownTime.snapshot().today
+    private var currentTime: ZonedDateTime = CountdownTime.snapshot().now
     private var showSectionHeaders = false
 
     fun submit(events: List<CountdownEvent>, today: LocalDate) {
         this.items = events
         this.today = today
+        currentTime = CountdownTime.snapshot().now
         showSectionHeaders = events.asSequence()
             .map { sectionFor(EventCountResolver.resolve(it, today)) }
             .distinct()
             .take(2)
             .count() > 1
         notifyDataSetChanged()
+    }
+
+    fun hasTimedEvents(): Boolean = items.any { it.eventTime != null }
+
+    /** Only visible clock labels are updated; no list reload, disk writes or widget work. */
+    fun tickVisible(list: ListView, now: ZonedDateTime) {
+        currentTime = now
+        for (index in 0 until list.childCount) {
+            val eventIndex = list.firstVisiblePosition + index
+            val event = items.getOrNull(eventIndex) ?: continue
+            if (event.eventTime == null) continue
+            val row = list.getChildAt(index) as? HomeEventRow ?: continue
+            val text = timeText(event, now)
+            val detail = row.findViewById<TextView>(R.id.eventTimeDetail)
+            if (detail.text.toString() != text) {
+                detail.text = text
+                val title = EventTransport.preview(event.title)
+                val meta = row.findViewById<TextView>(R.id.eventMeta).text
+                val status = row.findViewById<TextView>(R.id.eventStatus).contentDescription
+                row.contentDescription = listOf(title, meta, text, status).joinToString(", ")
+            }
+        }
+    }
+
+    private fun timeText(event: CountdownEvent, now: ZonedDateTime): String {
+        val value = TimedEventResolver.resolve(event, now) ?: return ""
+        val resource = when (value.direction) {
+            TimedCountDirection.REMAINING -> R.string.timed_remaining
+            TimedCountDirection.STARTS_IN -> R.string.timed_starts_in
+            TimedCountDirection.ELAPSED -> R.string.timed_elapsed
+        }
+        return context.getString(resource, value.subday())
     }
 
     override fun getCount(): Int = items.size
@@ -51,7 +90,13 @@ class CountdownEventAdapter(
         val view = (convertView as? HomeEventRow)
             ?: inflater.inflate(R.layout.item_countdown, parent, false) as HomeEventRow
         val event = getItem(position)
-        val value = EventCountResolver.resolve(event, today)
+        val timed = TimedEventResolver.resolve(event, currentTime)
+        view.bindTimedCompact(timed != null)
+        val value = if (timed != null && event.countMode ==
+            com.santiagorodriguez.countaway.model.CountMode.COUNT_DOWN) {
+            EventCountResolver.resolve(
+                timed.occurrenceDate, RepeatRule.NONE, event.countMode, today)
+        } else EventCountResolver.resolve(event, today)
         view.foreground = null
         val locale = context.resources.configuration.locales[0]
         val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
@@ -60,9 +105,18 @@ class CountdownEventAdapter(
             setImageResource(EventIconPresentation.drawableRes(event.icon))
             contentDescription = context.getString(EventIconPresentation.labelRes(event.icon))
         }
-        view.findViewById<TextView>(R.id.eventTitle).text = EventTransport.preview(event.title)
+        view.findViewById<TextView>(R.id.eventTitle).apply {
+            text = EventTransport.preview(event.title)
+            maxLines = if (timed == null) Int.MAX_VALUE else 2
+            ellipsize = if (timed == null) null else TextUtils.TruncateAt.END
+            contentDescription = event.title
+        }
         val eventType = context.getString(EventTypePresentation.labelRes(event.type))
-        val formattedDate = value.displayDate.format(dateFormatter)
+        val dateText = value.displayDate.format(dateFormatter)
+        val formattedDate = if (timed != null && event.eventTime != null) {
+            dateText + " · " + event.eventTime.format(
+                DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+        } else dateText
         val meta = when {
             value.countUpState != null -> HomeEventText.startDate(context, value)
             event.repeatRule == RepeatRule.NONE -> context.getString(R.string.event_meta, eventType, formattedDate)
@@ -70,6 +124,11 @@ class CountdownEventAdapter(
                 context.getString(repeatLabelRes(event.repeatRule)))
         }
         view.findViewById<TextView>(R.id.eventMeta).text = meta
+        view.findViewById<TextView>(R.id.eventTimeDetail).apply {
+            visibility = if (timed == null) View.GONE else View.VISIBLE
+            text = if (timed == null) "" else timeText(event, currentTime)
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_NONE
+        }
         val statusView = view.findViewById<TextView>(R.id.eventStatus).apply {
             animate().withEndAction(null).cancel()
             text = HomeEventText.status(context, value)
@@ -82,7 +141,8 @@ class CountdownEventAdapter(
         ArrivalIllustration.bindHome(context, view.findViewById(R.id.eventArrival),
             ArrivalStage.from(value.countdownStatus))
         val sectionDescription = bindSectionHeader(view, position, value)
-        view.contentDescription = listOfNotNull(sectionDescription, EventTransport.preview(event.title), meta, statusView.contentDescription)
+        view.contentDescription = listOfNotNull(sectionDescription, EventTransport.preview(event.title), meta,
+            if (timed != null) timeText(event, currentTime) else null, statusView.contentDescription)
             .joinToString(", ")
         bindAddWidgetAction(view, event)
         bindRowActions(view, event)

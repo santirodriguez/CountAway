@@ -20,6 +20,15 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     private val icon: View get() = findViewById(R.id.eventIcon)
     private val title: TextView get() = findViewById(R.id.eventTitle)
     private val meta: TextView get() = findViewById(R.id.eventMeta)
+    private val timeDetail: TextView get() = findViewById(R.id.eventTimeDetail)
+    private var timedCompact = false
+
+    fun bindTimedCompact(enabled: Boolean) {
+        if (timedCompact != enabled) {
+            timedCompact = enabled
+            requestLayout()
+        }
+    }
     private val tile: View get() = findViewById(R.id.eventCountTile)
     private val status: HomeCountTextView get() = findViewById(R.id.eventStatus)
     private val arrival: View get() = findViewById(R.id.eventArrival)
@@ -81,7 +90,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         status.measure(exact(tileWidth), exact(tileHeight - if (showArrival) dp(20) else 0))
 
         val leftWidth = (inner - tileWidth - dp(8)).coerceAtLeast(1)
-        val wordWidth = max(maxWordWidth(title), maxWordWidth(meta))
+        val wordWidth = if (timedCompact) 0 else max(maxWordWidth(title), maxWordWidth(meta))
         // Only a genuine word-fit constraint allows a full-width text band.
         // The count tile never changes width in response to an event or status.
         wideText = leftWidth < dp(80) || (wordWidth > leftWidth && wordWidth <= inner)
@@ -91,7 +100,11 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         val textWidth = if (stackedIcon) textArea else besideIcon
         measureText(title, textWidth)
         measureText(meta, textWidth)
-        val textHeight = title.measuredHeight + dp(3) + meta.measuredHeight
+        if (timeDetail.visibility == View.VISIBLE) {
+            measureText(timeDetail, textWidth)
+        } else timeDetail.measure(exact(0), exact(0))
+        val detailHeight = if (timeDetail.visibility == View.VISIBLE) dp(2) + timeDetail.measuredHeight else 0
+        val textHeight = title.measuredHeight + dp(3) + meta.measuredHeight + detailHeight
         leftHeight = if (stackedIcon) dp(48 + 8) + textHeight else max(dp(48), textHeight)
         contentHeight = if (wideText) leftHeight + dp(8) + tileHeight else max(leftHeight, tileHeight)
         val minimumHeight = suggestedMinimumHeight + if (hasSectionHeader) dp(20) else 0
@@ -111,12 +124,16 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         val inner = contentWidth(width)
         val y = paddingTop + ((height - paddingTop - paddingBottom - contentHeight) / 2).coerceAtLeast(0)
         val leftY = if (wideText) y else y + (contentHeight - leftHeight) / 2
-        val textHeight = title.measuredHeight + dp(3) + meta.measuredHeight
+        val detailHeight = if (timeDetail.visibility == View.VISIBLE) dp(2) + timeDetail.measuredHeight else 0
+        val textHeight = title.measuredHeight + dp(3) + meta.measuredHeight + detailHeight
         place(icon, 0, if (stackedIcon) leftY else leftY + (leftHeight - icon.measuredHeight) / 2)
         val textY = if (stackedIcon) leftY + dp(56) else leftY + (leftHeight - textHeight) / 2
         val textStart = if (stackedIcon) 0 else dp(60)
         place(title, textStart, textY)
         place(meta, textStart, textY + title.measuredHeight + dp(3))
+        if (timeDetail.visibility == View.VISIBLE) {
+            place(timeDetail, textStart, textY + title.measuredHeight + dp(3) + meta.measuredHeight + dp(2))
+        } else timeDetail.layout(0, 0, 0, 0)
         val tileY = if (wideText) y + leftHeight + dp(8) else y + (contentHeight - tile.measuredHeight) / 2
         val tileStart = inner - tile.measuredWidth
         place(tile, tileStart, tileY)
