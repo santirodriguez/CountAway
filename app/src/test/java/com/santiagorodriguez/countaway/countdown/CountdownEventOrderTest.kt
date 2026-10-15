@@ -94,6 +94,22 @@ class CountdownEventOrderTest {
             CountdownEventOrder.sortedForDisplay(events, today, after).map { it.id })
     }
 
+    @Test
+    fun timedWeeklyOccurrenceMovesToNextWeekAfterItsHour() {
+        val zone = ZoneId.of("America/Argentina/Buenos_Aires")
+        val weekly = event("weekly", today.minusWeeks(1), repeatRule = RepeatRule.WEEKLY)
+            .copy(eventTime = LocalTime.of(9, 0), eventZone = zone)
+        val later = event("later-today", today)
+            .copy(eventTime = LocalTime.of(17, 0), eventZone = zone)
+        val events = listOf(weekly, later)
+        val before = ZonedDateTime.of(2026, 8, 7, 8, 0, 0, 0, zone)
+        val after = before.plusHours(2)
+        assertEquals(listOf("weekly", "later-today"),
+            CountdownEventOrder.sortedForDisplay(events, today, before).map { it.id })
+        assertEquals(listOf("later-today", "weekly"),
+            CountdownEventOrder.sortedForDisplay(events, today, after).map { it.id })
+    }
+
     private fun event(
         id: String,
         date: LocalDate,
