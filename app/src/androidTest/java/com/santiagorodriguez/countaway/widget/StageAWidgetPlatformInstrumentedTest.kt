@@ -29,7 +29,7 @@ class StageAWidgetPlatformInstrumentedTest {
         if (Build.VERSION.SDK_INT >= 31) {
             assertEquals(1, providers.first { it.provider == classic }.targetCellWidth)
             assertEquals(1, providers.first { it.provider == classic }.targetCellHeight)
-            assertEquals(2, providers.first { it.provider == experiment }.targetCellWidth)
+            assertEquals(3, providers.first { it.provider == experiment }.targetCellWidth)
             assertEquals(2, providers.first { it.provider == experiment }.targetCellHeight)
         }
         StageAProbeEvidence.report("two_provider_registration=" + names + "\n")
