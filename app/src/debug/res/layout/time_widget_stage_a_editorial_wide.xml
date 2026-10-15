@@ -41,7 +41,7 @@
     android:alpha="0.45" android:background="@color/widget_dark_accent" />
    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
     android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
      android:orientation="horizontal" android:gravity="center_vertical">
      <TextView android:id="@+id/probeHours" android:layout_width="0dp"
       android:layout_weight="1" android:layout_height="wrap_content"
