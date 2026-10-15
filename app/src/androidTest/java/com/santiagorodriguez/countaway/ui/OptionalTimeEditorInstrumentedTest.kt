@@ -9,6 +9,7 @@ import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.matcher.RootMatchers.isDialog
 import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom
 import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownIo
@@ -42,7 +43,7 @@ class OptionalTimeEditorInstrumentedTest {
                     activity.findViewById<View>(R.id.removeTimeButton).visibility)
                 activity.findViewById<Button>(R.id.timeButton).performClick()
             }
-            onView(withId(android.R.id.timePicker)).inRoot(isDialog()).check { view, _ ->
+            onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, _ ->
                 val picker = view as TimePicker
                 picker.hour = 18
                 picker.minute = 30
