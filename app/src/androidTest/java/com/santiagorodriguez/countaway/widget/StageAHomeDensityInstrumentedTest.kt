@@ -48,7 +48,9 @@ class StageAHomeDensityInstrumentedTest {
                     ellipsize = TextUtils.TruncateAt.END
                 }
                 row.findViewById<TextView>(R.id.eventMeta).apply {
-                    text = "18 oct. · 16:30\n07h · 12m · 05s"
+                    if (scale > 1.5f) setTextSize(
+                        TypedValue.COMPLEX_UNIT_SP, 13f * 1.25f / scale)
+                    text = "18 oct. · 16:30\n7h · 12m · 05s"
                     maxLines = 2
                     ellipsize = TextUtils.TruncateAt.END
                 }
