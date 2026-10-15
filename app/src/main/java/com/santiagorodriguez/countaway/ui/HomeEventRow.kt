@@ -84,6 +84,9 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         val actionWidth = if (actions.visibility == View.GONE) 0 else dp(20)
         val actionHeight = if (actions.visibility == View.GONE) 0 else dp(48)
         actions.measure(exact(actionWidth), exact(actionHeight))
+        // Timed events have one numeric line and one unit line in this tile.
+        // Preserve the classic date-only tile's existing reserved height.
+        status.useCompactTimedTile(timedCompact)
         val tileWidth = status.preferredTileWidth().coerceAtMost(inner)
         val tileHeight = status.preferredTileHeight()
         tile.measure(exact(tileWidth), exact(tileHeight))
