@@ -56,7 +56,7 @@ class OptionalTimeHomeInstrumentedTest {
                     val title = row.findViewById<TextView>(R.id.eventTitle)
                     val meta = row.findViewById<TextView>(R.id.eventMeta)
                     val tile = row.findViewById<View>(R.id.eventCountTile)
-                    if (scale >= 1.6f && widthDp == 320) {
+                    if (scale >= 1.6f && widthDp in listOf(320, 411)) {
                         val daysLabel = row.findViewById<HomeCountTextView>(R.id.eventStatus)
                         val daysLayout = daysLabel.layout
                         assertNotNull("No day tile text layout", daysLayout)
