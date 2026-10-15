@@ -21,6 +21,9 @@ object CountdownValidation {
                 event.title.isBlank() ||
                 !CountdownDateDomain.contains(event.date) ||
                 !ids.add(event.id) ||
+                ((event.eventTime == null) != (event.eventZone == null)) ||
+                (event.eventTime?.second ?: 0) != 0 ||
+                (event.eventTime?.nano ?: 0) != 0 ||
                 (
                     event.countMode == CountMode.COUNT_UP &&
                         (event.repeatRule != RepeatRule.NONE || event.reminder != ReminderOption.OFF)

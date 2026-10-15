@@ -2,6 +2,8 @@ package com.santiagorodriguez.countaway.model
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 
 data class CountdownEvent(
     val id: String,
@@ -13,4 +15,6 @@ data class CountdownEvent(
     val createdAt: Instant,
     val repeatRule: RepeatRule = RepeatRule.NONE,
     val countMode: CountMode = CountMode.COUNT_DOWN,
+    val eventTime: LocalTime? = null,
+    val eventZone: ZoneId? = null,
 )
