@@ -62,7 +62,7 @@ class CountdownStorageOptionalTimeInstrumentedTest {
     @Test fun timedFieldsChangeRevisionAndPreserveHistoricalTitles() {
         assertNotEquals(EventRevision.of(original), EventRevision.of(timed))
         assertNotEquals(EventRevision.of(timed),
-            EventRevision.of(timed.copy(eventTime = LocalTime.of(17))))
+            EventRevision.of(timed.copy(eventTime = LocalTime.of(17, 0))))
         val historical = timed.copy(title = "X".repeat(1024))
         assertEquals(listOf(historical),
             CountdownStorageCodec.decodeForImport(CountdownStorageCodec.encode(listOf(historical))))
