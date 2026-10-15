@@ -8,6 +8,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class CountdownEventOrderTest {
     private val today = LocalDate.of(2026, 8, 7)
@@ -71,6 +74,24 @@ class CountdownEventOrderTest {
             listOf("older", "newer"),
             CountdownEventOrder.sortedForDisplay(listOf(newer, older), today).map { it.id },
         )
+    }
+
+    @Test
+    fun timedOneOffReordersAtSelectedHour() {
+        val zone = ZoneId.of("America/Argentina/Buenos_Aires")
+        val morning = event("morning", today).copy(
+            eventTime = LocalTime.of(9, 0), eventZone = zone)
+        val afternoon = event("afternoon", today).copy(
+            eventTime = LocalTime.of(17, 0), eventZone = zone)
+        val countUp = event("up", today.minusDays(2), countMode = CountMode.COUNT_UP)
+        val yesterday = event("yesterday", today.minusDays(1))
+        val events = listOf(yesterday, afternoon, countUp, morning)
+        val before = ZonedDateTime.of(2026, 8, 7, 8, 0, 0, 0, zone)
+        val after = before.plusHours(2)
+        assertEquals(listOf("morning", "afternoon", "up", "yesterday"),
+            CountdownEventOrder.sortedForDisplay(events, today, before).map { it.id })
+        assertEquals(listOf("afternoon", "up", "morning", "yesterday"),
+            CountdownEventOrder.sortedForDisplay(events, today, after).map { it.id })
     }
 
     private fun event(
