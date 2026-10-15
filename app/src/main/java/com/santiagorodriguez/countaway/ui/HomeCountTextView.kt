@@ -20,6 +20,13 @@ import kotlin.math.roundToInt
 /** Keeps semantic copy intact while presenting its number on a separate line. */
 class HomeCountTextView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : TextView(context, attrs) {
     private var tileTextWidth = 0
+    private var compactTimedTile = false
+
+    fun useCompactTimedTile(enabled: Boolean) {
+        if (compactTimedTile == enabled) return
+        compactTimedTile = enabled
+        requestLayout()
+    }
     private val numberPattern = Regex("[+\\-]?\\p{Nd}+(?:[.,\\u00a0\\u202f]\\p{Nd}+)*")
 
     init {
@@ -97,8 +104,10 @@ class HomeCountTextView @JvmOverloads constructor(context: Context, attrs: Attri
             val fm = metrics.fontMetrics
             return fm.bottom - fm.top
         }
+        val labelLines = if (compactTimedTile) 1 else 2
         return maxOf((60f * resources.displayMetrics.density).roundToInt(),
-            (lineHeight(24f) + 2 * lineHeight(10f) + 8f * resources.displayMetrics.density).roundToInt())
+            (lineHeight(24f) + labelLines * lineHeight(10f) +
+                8f * resources.displayMetrics.density).roundToInt())
     }
 
     private fun sp(value: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, value, resources.displayMetrics)
