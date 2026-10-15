@@ -24,6 +24,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.Spinner
+import android.widget.TimePicker
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
@@ -710,12 +711,14 @@ class EditorActivity : BaseActivity() {
         val now = CountdownTime.snapshot()
         val starting = selectedTime ?: now.now.toLocalTime()
         val addingTime = selectedTime == null
-        val initial = if (addingTime) LocalTime.MIDNIGHT else starting
-        val dialog = TimePickerDialog(this, { _, hour, minute ->
+        fun accept(hour: Int, minute: Int) {
             selectedTime = LocalTime.of(hour, minute)
             selectedTimeZone = selectedTimeZone ?: now.zone
             renderTime()
-        }, initial.hour, initial.minute,
+        }
+        val dialog = TimePickerDialog(this, { _, hour, minute ->
+            accept(hour, minute)
+        }, starting.hour, starting.minute,
             android.text.format.DateFormat.is24HourFormat(this))
         timeDialog = dialog
         dialog.setOnDismissListener {
@@ -723,11 +726,32 @@ class EditorActivity : BaseActivity() {
             dialogFocus.restore(timeButton)
         }
         dialog.show()
+
         if (addingTime) {
-            // A new picker may already default to the current hour. Initialize
-            // it through a distinct hour first so 12-hour AM/PM state is updated.
-            dialog.updateTime(starting.hour, starting.minute)
+            val picker = dialog.window?.decorView?.let(::findTimePicker)
+            if (picker != null) {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+                    // Read the displayed 24-hour value before platform validation:
+                    // validation may change the AM/PM state on an untouched new picker.
+                    // Commit active text input first when the user is editing fields.
+                    if (picker.findFocus() is EditText) picker.clearFocus()
+                    val chosen = LocalTime.of(picker.hour, picker.minute)
+                    if (!picker.validateInput()) return@setOnClickListener
+                    accept(chosen.hour, chosen.minute)
+                    dialog.dismiss()
+                }
+            }
         }
+    }
+
+    private fun findTimePicker(view: View): TimePicker? {
+        if (view is TimePicker) return view
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                findTimePicker(view.getChildAt(index))?.let { return it }
+            }
+        }
+        return null
     }
 
     private fun renderTime() {
