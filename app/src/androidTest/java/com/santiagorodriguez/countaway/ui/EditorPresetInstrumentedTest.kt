@@ -20,6 +20,7 @@ import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.data.CountdownStorageCodec
+import com.santiagorodriguez.countaway.data.CountdownStorageSchema
 import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountUpPreset
 import com.santiagorodriguez.countaway.model.CountdownEvent
@@ -232,7 +233,7 @@ class EditorPresetInstrumentedTest {
         }
     }
 
-    @Test fun allTemplatesRoundTripThroughTheUnchangedSchema7Reader() {
+    @Test fun allTemplatesRoundTripThroughCurrentSchemaWithoutTimeFields() {
         val baselineTypes = setOf("trip", "exam", "party", "birthday", "anniversary", "concert", "deadline", "event", "custom")
         val baselineIcons = setOf("airplane", "book", "confetti", "cake", "heart", "music", "hourglass", "calendar", "star", "gift", "flag", "pin")
         val baselineCustomIcons = setOf("star", "gift", "flag", "pin", "heart", "music", "airplane", "calendar")
@@ -242,13 +243,15 @@ class EditorPresetInstrumentedTest {
         }
         val payload = CountdownStorageCodec.encode(fixtures)
         val root = JSONObject(payload)
-        assertEquals(7, root.getInt("schemaVersion"))
+        assertEquals(CountdownStorageSchema.CURRENT_VERSION, root.getInt("schemaVersion"))
         val entries = root.getJSONArray("events")
         for (index in 0 until entries.length()) {
             val event = entries.getJSONObject(index)
             assertTrue(event.getString("type") in baselineTypes)
             assertTrue(event.getString("iconKey") in baselineIcons)
             if (event.getString("type") == "custom") assertTrue(event.getString("iconKey") in baselineCustomIcons)
+            assertFalse(event.has("eventTime"))
+            assertFalse(event.has("eventZone"))
             assertFalse(event.has("preset"))
             assertFalse(event.has("template"))
         }
