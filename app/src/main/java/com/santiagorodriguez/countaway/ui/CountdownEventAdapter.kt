@@ -22,6 +22,7 @@ import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.RepeatRule
 import java.time.LocalDate
+import java.text.NumberFormat
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -64,12 +65,25 @@ class CountdownEventAdapter(
             val detail = row.findViewById<TextView>(R.id.eventTimeDetail)
             if (detail.text.toString() != text) {
                 detail.text = text
+                val statusView = row.findViewById<TextView>(R.id.eventStatus)
+                val days = timeDaysText(event, now)
+                if (statusView.text.toString() != days) statusView.text = days
+                statusView.contentDescription = days
                 val title = EventTransport.preview(event.title)
                 val meta = row.findViewById<TextView>(R.id.eventMeta).text
                 val status = row.findViewById<TextView>(R.id.eventStatus).contentDescription
                 row.contentDescription = listOf(title, meta, text, status).joinToString(", ")
             }
         }
+    }
+
+    private fun timeDaysText(event: CountdownEvent, now: ZonedDateTime): String {
+        val value = TimedEventResolver.resolve(event, now) ?: return ""
+        val quantity = value.days.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+        val localized = NumberFormat.getIntegerInstance(
+            context.resources.configuration.locales[0]).format(value.days)
+        return context.resources.getQuantityString(
+            R.plurals.timed_days_magnitude, quantity, localized)
     }
 
     private fun timeText(event: CountdownEvent, now: ZonedDateTime): String {
@@ -131,8 +145,10 @@ class CountdownEventAdapter(
         }
         val statusView = view.findViewById<TextView>(R.id.eventStatus).apply {
             animate().withEndAction(null).cancel()
-            text = HomeEventText.status(context, value)
-            contentDescription = EventCountText.status(context, value)
+            text = if (timed == null) HomeEventText.status(context, value)
+                else timeDaysText(event, currentTime)
+            contentDescription = if (timed == null) EventCountText.status(context, value)
+                else timeDaysText(event, currentTime)
             setTypeface(typeface, Typeface.BOLD)
             scaleX = 1f
             scaleY = 1f

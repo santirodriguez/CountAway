@@ -9,4 +9,5 @@
     <string name="timed_remaining">Remaining · %1$s</string>
     <string name="timed_elapsed">Elapsed · %1$s</string>
     <string name="timed_starts_in">Starts in · %1$s</string>
+    <plurals name="timed_days_magnitude"><item quantity="one">%1$s day</item><item quantity="other">%1$s days</item></plurals>
 </resources>

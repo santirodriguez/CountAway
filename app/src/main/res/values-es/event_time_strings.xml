@@ -9,4 +9,5 @@
     <string name="timed_remaining">Faltan · %1$s</string>
     <string name="timed_elapsed">Pasaron · %1$s</string>
     <string name="timed_starts_in">Empieza en · %1$s</string>
+    <plurals name="timed_days_magnitude"><item quantity="one">%1$s día</item><item quantity="many">%1$s días</item><item quantity="other">%1$s días</item></plurals>
 </resources>

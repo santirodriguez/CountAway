@@ -9,4 +9,5 @@
     <string name="timed_remaining">Falten · %1$s</string>
     <string name="timed_elapsed">Han passat · %1$s</string>
     <string name="timed_starts_in">Comença d’aquí a · %1$s</string>
+    <plurals name="timed_days_magnitude"><item quantity="one">%1$s dia</item><item quantity="many">%1$s dies</item><item quantity="other">%1$s dies</item></plurals>
 </resources>
