@@ -30,7 +30,7 @@ class StageAEditorialWideInstrumentedTest {
                 R.id.probeHours, R.id.probeMinutes, R.id.probeSeconds, R.id.probeDate)
             val labels = listOf("3", "d", "07h", "12m", "05s", "18 oct. · 16:30")
             ids.zip(labels).forEach { (id, label) -> remote.setTextViewText(id, label) }
-            val root = remote.apply(context, FrameLayout(context))
+            val root = remote.apply(context, FrameLayout(context)) as FrameLayout
             root.contentDescription = title + ", 3 days, 7 hours, 12 minutes, 5 seconds"
             StageAProbeEvidence.layout(root, context, width, height)
             val name = "editorial-wide-" + width + "x" + height + "-font" + (scale * 100).toInt()
