@@ -16,6 +16,8 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.ArrivalStage
 import com.santiagorodriguez.countaway.countdown.CountUpState
 import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.countdown.CountdownStatus
 import com.santiagorodriguez.countaway.countdown.EventCountResolver
 import com.santiagorodriguez.countaway.countdown.TimedCountDirection
 import com.santiagorodriguez.countaway.countdown.TimedEventResolver
@@ -23,6 +25,7 @@ import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.RepeatRule
+import java.time.Instant
 import java.time.LocalDate
 import java.text.NumberFormat
 import java.time.ZonedDateTime
@@ -40,13 +43,24 @@ class CountdownEventAdapter(
     private var today: LocalDate = CountdownTime.snapshot().today
     private var currentTime: ZonedDateTime = CountdownTime.snapshot().now
     private var showSectionHeaders = false
+    private var nextTimedBoundary: Instant? = null
 
-    fun submit(events: List<CountdownEvent>, today: LocalDate) {
+    fun submit(
+        events: List<CountdownEvent>,
+        today: LocalDate,
+        now: ZonedDateTime = CountdownTime.snapshot().now,
+    ) {
         this.items = events
         this.today = today
-        currentTime = CountdownTime.snapshot().now
+        currentTime = now
+        nextTimedBoundary = events.asSequence()
+            .mapNotNull { TimedEventResolver.resolve(it, now) }
+            .filter { it.direction != TimedCountDirection.ELAPSED }
+            .map { it.target.toInstant() }
+            .filter { it.isAfter(now.toInstant()) }
+            .minOrNull()
         showSectionHeaders = events.asSequence()
-            .map { sectionFor(EventCountResolver.resolve(it, today)) }
+            .map { sectionFor(it, now) }
             .distinct()
             .take(2)
             .count() > 1
@@ -57,6 +71,13 @@ class CountdownEventAdapter(
 
     /** Only visible clock labels are updated; no list reload, disk writes or widget work. */
     fun tickVisible(list: ListView, now: ZonedDateTime) {
+        // Crossing a selected HH:mm changes the event's occurrence and section,
+        // not just the ticking characters. Reorder once at that boundary,
+        // without performing disk I/O or re-sorting every second.
+        if (nextTimedBoundary?.let { !now.toInstant().isBefore(it) } == true) {
+            submit(CountdownEventOrder.sortedForDisplay(items, today, now), today, now)
+            return
+        }
         currentTime = now
         for (index in 0 until list.childCount) {
             val eventIndex = list.firstVisiblePosition + index
@@ -114,8 +135,18 @@ class CountdownEventAdapter(
         val original = EventCountResolver.resolve(event, today)
         val value = when {
             timed == null -> original
-            event.countMode == CountMode.COUNT_DOWN ->
-                EventCountResolver.resolve(timed.occurrenceDate, RepeatRule.NONE, event.countMode, today)
+            event.countMode == CountMode.COUNT_DOWN -> {
+                val calendarValue = EventCountResolver.resolve(
+                    timed.occurrenceDate, RepeatRule.NONE, event.countMode, today)
+                calendarValue.copy(
+                    magnitude = timed.days,
+                    countdownStatus = when {
+                        timed.direction == TimedCountDirection.ELAPSED -> CountdownStatus.DONE
+                        calendarValue.countdownStatus == CountdownStatus.DONE -> CountdownStatus.TODAY
+                        else -> calendarValue.countdownStatus
+                    },
+                )
+            }
             else -> original.copy(
                 displayDate = timed.occurrenceDate,
                 magnitude = timed.days,
@@ -175,7 +206,7 @@ class CountdownEventAdapter(
         }
         ArrivalIllustration.bindHome(context, view.findViewById(R.id.eventArrival),
             ArrivalStage.from(value.countdownStatus))
-        val sectionDescription = bindSectionHeader(view, position, value)
+        val sectionDescription = bindSectionHeader(view, position, event)
         view.contentDescription = listOfNotNull(sectionDescription, EventTransport.preview(event.title), meta,
             if (timed != null) timeAccessibilityText(event, currentTime) else null, statusView.contentDescription)
             .joinToString(", ")
@@ -184,9 +215,9 @@ class CountdownEventAdapter(
         return view
     }
 
-    private fun bindSectionHeader(view: HomeEventRow, position: Int, value: com.santiagorodriguez.countaway.countdown.EventCountValue): String? {
-        val section = sectionFor(value)
-        val previous = if (position > 0) sectionFor(EventCountResolver.resolve(items[position - 1], today)) else null
+    private fun bindSectionHeader(view: HomeEventRow, position: Int, event: CountdownEvent): String? {
+        val section = sectionFor(event, currentTime)
+        val previous = if (position > 0) sectionFor(items[position - 1], currentTime) else null
         if (!showSectionHeaders || previous == section) {
             view.bindSectionHeader(null, null)
             return null
@@ -200,6 +231,16 @@ class CountdownEventAdapter(
         val accessibility = context.getString(accessibilityRes)
         view.bindSectionHeader(label, accessibility)
         return accessibility
+    }
+
+    private fun sectionFor(event: CountdownEvent, now: ZonedDateTime): HomeSection {
+        if (event.countMode == CountMode.COUNT_UP) return HomeSection.COUNT_UP
+        val timed = TimedEventResolver.resolve(event, now)
+        if (timed != null) {
+            return if (timed.direction == TimedCountDirection.ELAPSED) HomeSection.PAST
+                else HomeSection.UPCOMING
+        }
+        return sectionFor(EventCountResolver.resolve(event, today))
     }
 
     private fun sectionFor(value: com.santiagorodriguez.countaway.countdown.EventCountValue): HomeSection = when {
