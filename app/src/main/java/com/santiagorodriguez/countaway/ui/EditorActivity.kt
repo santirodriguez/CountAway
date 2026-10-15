@@ -24,6 +24,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.Spinner
+import android.widget.TimePicker
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
@@ -709,10 +710,15 @@ class EditorActivity : BaseActivity() {
         dialogFocus.capture(timeButton)
         val now = CountdownTime.snapshot()
         val starting = selectedTime ?: now.now.toLocalTime()
-        val dialog = TimePickerDialog(this, { _, hour, minute ->
+        fun accept(hour: Int, minute: Int) {
             selectedTime = LocalTime.of(hour, minute)
             selectedTimeZone = selectedTimeZone ?: now.zone
             renderTime()
+        }
+        val dialog = TimePickerDialog(this, { picker, _, _ ->
+            // Fallback for nonstandard platform layouts: commit pending text before reading.
+            picker.clearFocus()
+            accept(picker.hour, picker.minute)
         }, starting.hour, starting.minute,
             android.text.format.DateFormat.is24HourFormat(this))
         timeDialog = dialog
@@ -721,6 +727,28 @@ class EditorActivity : BaseActivity() {
             dialogFocus.restore(timeButton)
         }
         dialog.show()
+
+        // The platform dialog normally validates and notifies BEFORE clearing text focus.
+        // Commit AM/PM and typed fields first; otherwise it can return the wrong half-day.
+        val picker = dialog.window?.decorView?.let(::findTimePicker)
+        if (picker != null) {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+                picker.clearFocus()
+                if (!picker.validateInput()) return@setOnClickListener
+                accept(picker.hour, picker.minute)
+                dialog.dismiss()
+            }
+        }
+    }
+
+    private fun findTimePicker(view: View): TimePicker? {
+        if (view is TimePicker) return view
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                findTimePicker(view.getChildAt(index))?.let { return it }
+            }
+        }
+        return null
     }
 
     private fun renderTime() {
