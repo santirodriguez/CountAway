@@ -49,8 +49,27 @@ class OptionalTimeHomeInstrumentedTest {
                     assertEquals("Timed units cut: $scale/$widthDp", 0, measured.getEllipsisCount(0))
                     assertTrue("Seconds must be last: $scale/$widthDp",
                         detail.text.toString().endsWith("s"))
-                    assertTrue("Timed row is unreasonably tall: $scale/$widthDp",
-                        row.height <= (225f * configured.resources.displayMetrics.density).toInt())
+                    val title = row.findViewById<TextView>(R.id.eventTitle)
+                    val meta = row.findViewById<TextView>(R.id.eventMeta)
+                    val tile = row.findViewById<View>(R.id.eventCountTile)
+                    if (scale >= 1.6f && widthDp == 320) {
+                        assertTrue("Timed metadata must use the available width",
+                            meta.width > title.width)
+                        assertTrue("Metadata overlaps title at large text",
+                            meta.top >= title.bottom)
+                        assertTrue("Metadata overlaps count tile at large text",
+                            meta.top >= tile.bottom)
+                        assertTrue("Timed units overlap metadata at large text",
+                            detail.top >= meta.bottom)
+                        assertTrue("Timed units escape card bounds",
+                            detail.right <= row.width && detail.bottom <= row.height)
+                    }
+                    val maxHeight = (225f * configured.resources.displayMetrics.density).toInt()
+                    assertTrue("Timed row too tall: $scale/$widthDp; height=" +
+                        row.height + "px, max=" + maxHeight + "px, title=" +
+                        title.height + "px, metadata=" + meta.height + "px, clock=" +
+                        detail.height + "px",
+                        row.height <= maxHeight)
                 }
             }
         }
