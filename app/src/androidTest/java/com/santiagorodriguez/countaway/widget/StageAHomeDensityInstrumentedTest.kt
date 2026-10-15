@@ -72,6 +72,9 @@ class StageAHomeDensityInstrumentedTest {
             StageAProbeEvidence.report("home_font=" + scale +
                 " row_heights_dp=" + measuredDp + "\n")
             assertTrue(rows.height > 0)
+            val maximumDp = if (scale > 1.5f) 175 else 135
+            assertTrue("Home rows exceeded compactness budget at fontScale=$scale: $measuredDp",
+                measuredDp.all { it <= maximumDp })
         }
     }
 }
