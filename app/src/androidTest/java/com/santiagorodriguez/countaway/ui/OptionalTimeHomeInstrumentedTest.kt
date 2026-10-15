@@ -103,7 +103,9 @@ class OptionalTimeHomeInstrumentedTest {
             val adapter = CountdownEventAdapter(context)
             adapter.submit(listOf(timed, base), LocalDate.of(2026, 10, 14))
             val parent = FrameLayout(context)
-            val row = adapter.getView(0, null, parent) as HomeEventRow
+            val timedIndex = (0 until adapter.count).single { adapter.getItem(it).id == timed.id }
+            val dateOnlyIndex = (0 until adapter.count).single { adapter.getItem(it).id == base.id }
+            val row = adapter.getView(timedIndex, null, parent) as HomeEventRow
             val detail = row.findViewById<TextView>(R.id.eventTimeDetail)
             assertEquals(View.VISIBLE, detail.visibility)
             assertTrue(detail.text.toString().contains("h"))
@@ -116,7 +118,7 @@ class OptionalTimeHomeInstrumentedTest {
             assertTrue("Timed row unexpectedly tall", row.height <=
                 (175f * context.resources.displayMetrics.density).toInt())
             assertTrue(row.findViewById<View>(R.id.eventCountTile).width > 0)
-            adapter.getView(1, row, parent)
+            adapter.getView(dateOnlyIndex, row, parent)
             assertEquals(View.GONE, row.findViewById<View>(R.id.eventTimeDetail).visibility)
         }
 }
