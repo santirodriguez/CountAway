@@ -45,7 +45,7 @@ class StageAWidgetVisualInstrumentedTest {
                 val effectiveScale = when {
                     scale < 1.75f -> scale
                     width <= 160 -> 1.18f
-                    else -> 1.35f
+                    else -> 1.20f
                 }
                 if (effectiveScale < scale) {
                     val adjust = effectiveScale / scale
@@ -68,7 +68,10 @@ class StageAWidgetVisualInstrumentedTest {
                     sizes.forEach { (id, nominalSp) ->
                         remote.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, nominalSp * adjust)
                     }
-                    remote.setInt(R.id.probeTitle, "setMaxLines", 1)
+                    // Keep sensible title wrapping whenever host space permits.
+                    if (width <= 160 && height <= 160) {
+                        remote.setInt(R.id.probeTitle, "setMaxLines", 1)
+                    }
                 }
                 val root = remote.apply(context, FrameLayout(context))
                 root.contentDescription =
