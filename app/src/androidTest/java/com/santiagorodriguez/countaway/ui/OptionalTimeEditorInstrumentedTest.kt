@@ -43,8 +43,9 @@ class OptionalTimeEditorInstrumentedTest {
                 activity.findViewById<Button>(R.id.timeButton).performClick()
             }
             onView(withId(android.R.id.timePicker)).inRoot(isDialog()).check { view, _ ->
-                (view as TimePicker).hour = 18
-                view.minute = 30
+                val picker = view as TimePicker
+                picker.hour = 18
+                picker.minute = 30
             }
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
             scenario.recreate()
