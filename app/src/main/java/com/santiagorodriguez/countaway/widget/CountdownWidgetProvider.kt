@@ -32,7 +32,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onDisabled(context: Context) {
-        WidgetUpdateScheduler.cancel(context.applicationContext)
+        WidgetUpdateScheduler.ensureScheduled(context.applicationContext)
         super.onDisabled(context)
     }
 

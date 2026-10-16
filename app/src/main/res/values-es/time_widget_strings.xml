@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="time_widget_name">CountAway · Con hora</string>
+    <string name="time_widget_description">Horas totales, minutos y segundos en vivo para un evento con hora.</string>
+    <string name="time_widget_config_title">Widget con hora</string>
+    <string name="time_widget_config_description">Elegí un evento con hora. El contador muestra horas acumuladas, no días y horas separados.</string>
+    <string name="time_widget_no_events">Agregale una hora a un evento para seleccionarlo acá.</string>
+    <string name="time_widget_choose_event">Elegí un evento con hora</string>
+    <string name="time_widget_total_hours">HORAS TOTALES · MIN · SEG</string>
+    <string name="time_widget_far_target">Abrí el evento para ver el tiempo exacto</string>
+    <string name="time_widget_preview_title">Próximo concierto</string>
+    <string name="time_widget_preview_target">18 oct. · 16:30</string>
+</resources>
