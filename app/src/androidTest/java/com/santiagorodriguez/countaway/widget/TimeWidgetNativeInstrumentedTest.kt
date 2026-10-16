@@ -112,6 +112,29 @@ class TimeWidgetNativeInstrumentedTest {
         }
     }
 
+    @Test fun compactHorizonBackgroundKeepsTimerClearWithoutChangingClassicArt() {
+        for (dark in listOf(false, true)) {
+            val classic = WidgetBackgroundRenderer.render(app, WidgetBackground.HORIZON,
+                dark, 240, 180)
+            val timed = WidgetBackgroundRenderer.render(app, WidgetBackground.HORIZON,
+                dark, 240, 180, hideHorizonDisc = true)
+            val cx = (classic.width * (if (dark) 0.79f else 0.73f)).toInt()
+            val cy = (classic.height * (if (dark) 0.63f else 0.72f)).toInt()
+            assertNotEquals("Compact timed Horizon must not paint over the clock",
+                classic.getPixel(cx, cy), timed.getPixel(cx, cy))
+            val unrelated = WidgetBackgroundRenderer.render(app, WidgetBackground.MIST,
+                dark, 240, 180)
+            val unchanged = WidgetBackgroundRenderer.render(app, WidgetBackground.MIST,
+                dark, 240, 180, hideHorizonDisc = true)
+            assertEquals("Other styles must not change for the timed widget",
+                unrelated.getPixel(cx, cy), unchanged.getPixel(cx, cy))
+            classic.recycle()
+            timed.recycle()
+            unrelated.recycle()
+            unchanged.recycle()
+        }
+    }
+
     @Test fun fourDigitNativeHoursFitAtTwoHundredPercentText() = instrumentation.runOnMainSync {
         val zone = ZoneId.of("America/Argentina/Buenos_Aires")
         val now = ZonedDateTime.now(zone)
