@@ -1,0 +1,135 @@
+package com.santiagorodriguez.countaway.widget
+
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
+import android.content.Context
+import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Rect
+import android.view.View
+import android.widget.Chronometer
+import android.widget.FrameLayout
+import android.widget.TextView
+import androidx.test.platform.app.InstrumentationRegistry
+import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
+import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.ui.LanguageManager
+import java.io.File
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.util.Locale
+import kotlin.math.roundToInt
+import org.junit.Assert.*
+import org.junit.Test
+
+class TimeWidgetNativeInstrumentedTest {
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    private val app = instrumentation.targetContext
+    private val snapshot = CountdownTimeSnapshot(
+        ZonedDateTime.of(2026, 10, 16, 12, 0, 0, 0, ZoneId.of("America/Argentina/Buenos_Aires")))
+    private val event = CountdownEvent(
+        id = "concert", title = "Extraordinarily long concert anniversary in Buenos Aires",
+        date = LocalDate.of(2026, 10, 19), eventTime = LocalTime.of(19, 12, 5),
+        eventZone = snapshot.zone, type = EventType.EVENT,
+        createdAt = Instant.parse("2026-09-01T12:00:00Z"),
+    )
+
+    @Test fun newProviderIsIndependentOfTheOriginalOneByOne() {
+        val providers = AppWidgetManager.getInstance(app).installedProviders
+        val classic = providers.first { it.provider == ComponentName(app, CountdownWidgetProvider::class.java) }
+        val timed = providers.first { it.provider == ComponentName(app, TimeWidgetProvider::class.java) }
+        assertNotEquals(classic.provider, timed.provider)
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            assertEquals(1, classic.targetCellWidth)
+            assertEquals(1, classic.targetCellHeight)
+            assertEquals(3, timed.targetCellWidth)
+            assertEquals(2, timed.targetCellHeight)
+        }
+        assertEquals(ComponentName(app, TimeWidgetConfigActivity::class.java), timed.configure)
+    }
+
+    @Test fun nativeClockAndTargetStayVisibleAtMeasuredHostSizes() = instrumentation.runOnMainSync {
+        val sizes = listOf(240 to 180, 280 to 210, 320 to 250)
+        val fonts = listOf(1f, 1.3f, 2f)
+        val themes = listOf(WidgetAppearance.DARK, WidgetAppearance.LIGHT)
+        for ((width, height) in sizes) for (font in fonts) for (appearance in themes) {
+            val context = fontContext(font)
+            val style = WidgetConfiguration(event.id, appearance, WidgetBackground.HORIZON)
+            val remote = TimeWidgetRenderer.render(context, context, 1234, style,
+                event, null, snapshot, width, height, hashMapOf(), interactive = false)
+            val root = remote.apply(context, FrameLayout(context))
+            layout(root, context, width, height)
+            val native = root.findViewById<Chronometer>(R.id.timeWidgetClock)
+            assertEquals(View.VISIBLE, native.visibility)
+            assertTrue("Clock failed to show native H:MM:SS", native.text.toString().contains(":"))
+            assertTrue("More than 24 hours must use total hours: " + native.text,
+                native.text.toString().substringBefore(":").toLongOrNull()?.let { it >= 24L } == true)
+            assertTrue(root.findViewById<TextView>(R.id.timeWidgetDate).text.toString().contains("19"))
+            val name = "native-" + width + "x" + height + "-font" +
+                (font * 100).toInt() + "-" + appearance.storageKey
+            capture(root, name + ".png")
+            val labelIds = listOf(R.id.timeWidgetTitle, R.id.timeWidgetCaption,
+                R.id.timeWidgetClock, R.id.timeWidgetDate)
+            val bounds = labelIds.map { id ->
+                val tv = root.findViewById<TextView>(id)
+                assertTrue(name + " lost a field", tv.visibility == View.VISIBLE && tv.height > 0)
+                assertTrue(name + " clipped all text: " + tv.text, tv.layout != null)
+                val rect = Rect()
+                root.offsetDescendantRectToMyCoords(tv, rect.apply {
+                    set(0, 0, tv.width, tv.height)
+                })
+                assertTrue(name + " outside card: " + tv.text + " " + rect,
+                    rect.left >= 0 && rect.top >= 0 &&
+                        rect.right <= root.width && rect.bottom <= root.height)
+                rect
+            }
+            for (index in bounds.indices) for (other in index + 1 until bounds.size) {
+                assertFalse(name + " overlapping " + index + "/" + other,
+                    Rect.intersects(bounds[index], bounds[other]))
+            }
+        }
+    }
+
+    @Test fun farTargetsNeverDisplayFrozenOrOverflowingSeconds() = instrumentation.runOnMainSync {
+        val distant = event.copy(date = LocalDate.of(2030, 10, 19))
+        val remote = TimeWidgetRenderer.render(app, app, 1234,
+            WidgetConfiguration(distant.id, WidgetAppearance.SYSTEM, WidgetBackground.HORIZON),
+            distant, null, snapshot, 240, 180, hashMapOf(), interactive = false)
+        val root = remote.apply(app, FrameLayout(app))
+        layout(root, app, 240, 180)
+        assertEquals(View.GONE, root.findViewById<Chronometer>(R.id.timeWidgetClock).visibility)
+        assertEquals(View.VISIBLE, root.findViewById<TextView>(R.id.timeWidgetFallback).visibility)
+    }
+
+    private fun fontContext(scale: Float): Context = app.createConfigurationContext(
+        Configuration(app.resources.configuration).apply { fontScale = scale; setLocale(Locale.US) })
+
+    private fun layout(root: View, context: Context, widthDp: Int, heightDp: Int) {
+        val density = context.resources.displayMetrics.density
+        val width = (widthDp * density).roundToInt()
+        val height = (heightDp * density).roundToInt()
+        root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+        root.layout(0, 0, width, height)
+    }
+
+    private fun capture(root: View, name: String) {
+        val file = File(app.filesDir, "layout-evidence/time-widget/" + name)
+        file.parentFile?.mkdirs()
+        val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+        try {
+            root.draw(Canvas(bitmap))
+            file.outputStream().use { stream ->
+                assertTrue("Cannot save native widget screenshot", bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream))
+            }
+        } finally {
+            bitmap.recycle()
+        }
+    }
+}
