@@ -86,7 +86,7 @@ internal object TimeWidgetRenderer {
         views.setTextViewText(R.id.timeWidgetDate, targetText + zoneSuffix)
         views.setViewVisibility(R.id.timeWidgetDate, View.VISIBLE)
         val plan = TimeWidgetClockPolicy.plan(
-            snapshot.now.toInstant(), count.target.toInstant(), SystemClock.elapsedRealtime(), timed.countMode,
+            java.time.Instant.now(), count.target.toInstant(), SystemClock.elapsedRealtime(), timed.countMode,
         )
         if (plan == null) {
             views.setViewVisibility(R.id.timeWidgetClock, View.GONE)
