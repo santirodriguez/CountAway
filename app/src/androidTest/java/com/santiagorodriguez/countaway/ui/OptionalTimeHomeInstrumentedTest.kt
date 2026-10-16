@@ -102,6 +102,45 @@ class OptionalTimeHomeInstrumentedTest {
         }
     }
 
+    @Test fun concertClockAlignsWithDateInsteadOfSittingUnderMusicIcon() =
+        instrumentation.runOnMainSync {
+            val concert = base.copy(id = "concert-time", title = "Concert",
+                type = EventType.CONCERT,
+                eventTime = LocalTime.of(19, 30),
+                eventZone = ZoneId.of("America/Argentina/Buenos_Aires"))
+            for (scale in listOf(1f, 1.3f)) {
+                val configured = context.createConfigurationContext(
+                    Configuration(context.resources.configuration).apply { fontScale = scale })
+                val adapter = CountdownEventAdapter(configured)
+                adapter.submit(listOf(concert), LocalDate.of(2026, 10, 14))
+                for (widthDp in listOf(320, 411)) {
+                    val row = adapter.getView(0, null, FrameLayout(configured)) as HomeEventRow
+                    val width = (widthDp * configured.resources.displayMetrics.density).toInt()
+                    row.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+                    row.layout(0, 0, row.measuredWidth, row.measuredHeight)
+                    val icon = row.findViewById<View>(R.id.eventIcon)
+                    val title = row.findViewById<TextView>(R.id.eventTitle)
+                    val meta = row.findViewById<TextView>(R.id.eventMeta)
+                    val detail = row.findViewById<TextView>(R.id.eventTimeDetail)
+                    val tile = row.findViewById<View>(R.id.eventCountTile)
+                    assertEquals("Clock should share the title/date column: $scale/$widthDp",
+                        title.left, detail.left)
+                    assertTrue("Clock should not sit under the icon: $scale/$widthDp",
+                        detail.left >= icon.right)
+                    assertTrue("Clock should follow event date: $scale/$widthDp",
+                        detail.top >= meta.bottom)
+                    assertTrue("Clock must clear day tile: $scale/$widthDp",
+                        detail.right <= tile.left)
+                    assertEquals("Clock must remain on one line: $scale/$widthDp",
+                        1, requireNotNull(detail.layout).lineCount)
+                    assertEquals("Clock must remain complete: $scale/$widthDp",
+                        0, requireNotNull(detail.layout).getEllipsisCount(0))
+                    capture(row, "concert-timed-home-${widthDp}dp-font${(scale * 100).toInt()}")
+                }
+            }
+        }
+
     @Test fun timedRowIsCompactAndRecycledDateOnlyRowDoesNotGainTime() =
         instrumentation.runOnMainSync {
             val timed = base.copy(

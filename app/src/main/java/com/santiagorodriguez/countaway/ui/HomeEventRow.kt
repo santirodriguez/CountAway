@@ -23,6 +23,7 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
     private val timeDetail: TextView get() = findViewById(R.id.eventTimeDetail)
     private var timedCompact = false
     private var timedMetaFullWidth = false
+    private var timedDetailFullWidth = false
     private var upperHeight = 0
     private var metaBandHeight = 0
 
@@ -114,19 +115,28 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
             (textWidth < dp(200) || (meta.layout?.lineCount ?: 0) > 2)
         if (timedMetaFullWidth) measureText(meta, inner)
         if (timeDetail.visibility == View.VISIBLE) {
-            // Keep the whole clock legible at 200% text: use one compact
-            // full-width line below the main title/date/icon/count row.
-            measureText(timeDetail, if (timedCompact) inner else textWidth)
-        } else timeDetail.measure(exact(0), exact(0))
+            // Prefer the title/date column so the clock belongs to the event,
+            // not to a stray band below its icon. Expand only when it cannot fit.
+            val neededWidth = timeDetail.paint.measureText(timeDetail.text.toString()) +
+                timeDetail.compoundPaddingLeft + timeDetail.compoundPaddingRight
+            timedDetailFullWidth = timedCompact &&
+                (timedMetaFullWidth || stackedIcon || neededWidth > textWidth)
+            measureText(timeDetail, if (timedDetailFullWidth) inner else textWidth)
+        } else {
+            timedDetailFullWidth = false
+            timeDetail.measure(exact(0), exact(0))
+        }
         val inlineDetailHeight =
-            if (!timedCompact && timeDetail.visibility == View.VISIBLE) dp(2) + timeDetail.measuredHeight else 0
+            if (!timedDetailFullWidth && timeDetail.visibility == View.VISIBLE)
+                dp(3) + timeDetail.measuredHeight else 0
         val textHeight = title.measuredHeight + dp(3) +
             (if (timedMetaFullWidth) 0 else meta.measuredHeight) + inlineDetailHeight
         leftHeight = if (stackedIcon) dp(48 + 8) + textHeight else max(dp(48), textHeight)
         upperHeight = if (wideText) leftHeight + dp(8) + tileHeight else max(leftHeight, tileHeight)
         metaBandHeight = if (timedMetaFullWidth) dp(3) + meta.measuredHeight else 0
         val timedBandHeight =
-            if (timedCompact && timeDetail.visibility == View.VISIBLE) dp(3) + timeDetail.measuredHeight else 0
+            if (timedDetailFullWidth && timeDetail.visibility == View.VISIBLE)
+                dp(3) + timeDetail.measuredHeight else 0
         contentHeight = upperHeight + metaBandHeight + timedBandHeight
         val minimumHeight = suggestedMinimumHeight + if (hasSectionHeader) dp(20) else 0
         setMeasuredDimension(resolveSize(width, widthMeasureSpec),
@@ -146,7 +156,8 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
         val y = paddingTop + ((height - paddingTop - paddingBottom - contentHeight) / 2).coerceAtLeast(0)
         val leftY = if (wideText) y else y + (upperHeight - leftHeight) / 2
         val inlineDetailHeight =
-            if (!timedCompact && timeDetail.visibility == View.VISIBLE) dp(2) + timeDetail.measuredHeight else 0
+            if (!timedDetailFullWidth && timeDetail.visibility == View.VISIBLE)
+                dp(3) + timeDetail.measuredHeight else 0
         val textHeight = title.measuredHeight + dp(3) +
             (if (timedMetaFullWidth) 0 else meta.measuredHeight) + inlineDetailHeight
         place(icon, 0, if (stackedIcon) leftY else leftY + (leftHeight - icon.measuredHeight) / 2)
@@ -159,10 +170,11 @@ class HomeEventRow @JvmOverloads constructor(context: Context, attrs: AttributeS
             place(meta, textStart, textY + title.measuredHeight + dp(3))
         }
         if (timeDetail.visibility == View.VISIBLE) {
-            if (timedCompact) {
+            if (timedDetailFullWidth) {
                 place(timeDetail, 0, y + upperHeight + metaBandHeight + dp(3))
             } else {
-                place(timeDetail, textStart, textY + title.measuredHeight + dp(3) + meta.measuredHeight + dp(2))
+                place(timeDetail, textStart,
+                    textY + title.measuredHeight + dp(3) + meta.measuredHeight + dp(3))
             }
         } else timeDetail.layout(0, 0, 0, 0)
         val tileY = if (wideText) y + leftHeight + dp(8) else y + (upperHeight - tile.measuredHeight) / 2
