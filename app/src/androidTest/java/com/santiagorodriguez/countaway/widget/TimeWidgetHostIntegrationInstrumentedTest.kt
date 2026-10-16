@@ -68,7 +68,7 @@ class TimeWidgetHostIntegrationInstrumentedTest {
             drain()
 
             val zone = java.time.ZoneId.systemDefault()
-            val farEnough = ZonedDateTime.now(zone).plusMinutes(3).withNano(0)
+            val farEnough = ZonedDateTime.now(zone).plusMinutes(3).withSecond(0).withNano(0)
             val timed = CountdownEvent(
                 id = "time-host-" + UUID.randomUUID(),
                 title = "Hosted live concert",
@@ -119,14 +119,17 @@ class TimeWidgetHostIntegrationInstrumentedTest {
 
                 // One-off countdown must pass zero as a signed native host timer,
                 // without a per-second app-side update or a false static day prefix.
-                val soon = ZonedDateTime.now(zone).plusSeconds(10).withNano(0)
+                val nowAtBoundary = ZonedDateTime.now(zone)
+                val waitMinutes = if (nowAtBoundary.second >= 50) 2L else 1L
+                val soon = nowAtBoundary.plusMinutes(waitMinutes).withSecond(0).withNano(0)
                 repository.save(original + timed.copy(date = soon.toLocalDate(),
                     eventTime = soon.toLocalTime()) + dateOnly)
                 TimeWidgetProvider.updateWidget(app, manager, timedId)
                 awaitClock(timedView, 5_000) { value ->
-                    value.contains(":") && !value.startsWith("-") && value != second
+                    value.contains(":") && !value.startsWith("-") &&
+                        value.substringBefore(":").toLongOrNull()?.let { it <= 1L } == true
                 }
-                val negative = awaitClock(timedView, 15_000) { it.startsWith("-") }
+                val negative = awaitClock(timedView, 85_000) { it.startsWith("-") }
                 assertTrue("Host did not display signed elapsed time after the target: $negative",
                     negative.startsWith("-"))
                 assertTrue("Classic widget disappeared when time widget crossed zero",
