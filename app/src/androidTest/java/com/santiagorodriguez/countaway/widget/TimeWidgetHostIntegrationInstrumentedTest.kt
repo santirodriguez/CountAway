@@ -108,7 +108,7 @@ class TimeWidgetHostIntegrationInstrumentedTest {
                 CountdownWidgetProvider.updateWidget(app, manager, classicId)
                 instrumentation.waitForIdleSync()
                 val first = awaitClock(timedView, 8_000) { value ->
-                    value.contains(":") && !value.startsWith("-")
+                    value.contains(":") && !isNegativeDuration(value)
                 }
                 assertTrue("Classic provider lost its independent title",
                     awaitText(classicView, R.id.widgetTitle, 8_000).contains("Date-only companion"))
@@ -126,12 +126,12 @@ class TimeWidgetHostIntegrationInstrumentedTest {
                     eventTime = soon.toLocalTime()) + dateOnly)
                 TimeWidgetProvider.updateWidget(app, manager, timedId)
                 awaitClock(timedView, 5_000) { value ->
-                    value.contains(":") && !value.startsWith("-") &&
+                    value.contains(":") && !isNegativeDuration(value) &&
                         value.substringBefore(":").toLongOrNull()?.let { it <= 1L } == true
                 }
-                val negative = awaitClock(timedView, 85_000) { it.startsWith("-") }
+                val negative = awaitClock(timedView, 85_000) { isNegativeDuration(it) }
                 assertTrue("Host did not display signed elapsed time after the target: $negative",
-                    negative.startsWith("-"))
+                    isNegativeDuration(negative))
                 assertTrue("Classic widget disappeared when time widget crossed zero",
                     awaitText(classicView, R.id.widgetTitle, 4_000).contains("Date-only companion"))
                 capture(timedView, "bound-time-after-target.png")
@@ -146,6 +146,10 @@ class TimeWidgetHostIntegrationInstrumentedTest {
             shell("appwidget revokebind --package ${app.packageName} --user $userId")
         }
     }
+
+    /** Chronometer uses the Unicode minus sign on some Android versions. */
+    private fun isNegativeDuration(value: String): Boolean =
+        value.startsWith('-') || value.startsWith('\u2212')
 
     private fun options(width: Int, height: Int) = Bundle().apply {
         putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, width)
