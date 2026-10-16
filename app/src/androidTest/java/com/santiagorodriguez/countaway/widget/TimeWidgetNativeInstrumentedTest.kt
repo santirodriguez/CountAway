@@ -151,6 +151,7 @@ class TimeWidgetNativeInstrumentedTest {
         val root = remote.apply(app, FrameLayout(app)) as FrameLayout
         layout(root, app, 240, 180)
         assertEquals(View.GONE, root.findViewById<Chronometer>(R.id.timeWidgetClock).visibility)
+        assertEquals(View.GONE, root.findViewById<TextView>(R.id.timeWidgetCaption).visibility)
         assertEquals(View.VISIBLE, root.findViewById<TextView>(R.id.timeWidgetFallback).visibility)
     }
 

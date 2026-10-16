@@ -101,6 +101,7 @@ internal object TimeWidgetRenderer {
             clockNow, count.target.toInstant(), SystemClock.elapsedRealtime(), timed.countMode,
         )
         if (plan == null) {
+            views.setViewVisibility(R.id.timeWidgetCaption, View.GONE)
             views.setViewVisibility(R.id.timeWidgetClock, View.GONE)
             views.setViewVisibility(R.id.timeWidgetFallback, View.VISIBLE)
             views.setTextViewText(R.id.timeWidgetFallback,
