@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/probeRoot" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <ImageView android:id="@+id/probeBackground"
+        android:layout_width="match_parent" android:layout_height="match_parent"
+        android:scaleType="fitXY" android:src="@drawable/widget_background_mist_light"
+        android:contentDescription="@null" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+        android:orientation="vertical" android:padding="12dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:gravity="center_vertical" android:orientation="horizontal">
+            <ImageView android:id="@+id/probeIcon" android:layout_width="22dp"
+                android:layout_height="22dp" android:layout_marginEnd="7dp"
+                android:src="@drawable/ic_event_calendar" android:tint="@color/widget_light_accent"
+                android:contentDescription="@null" />
+            <TextView android:id="@+id/probeTitle" android:layout_width="0dp"
+                android:layout_weight="1" android:layout_height="wrap_content"
+                android:text="Trip to Barcelona" android:textColor="@color/widget_light_text"
+                android:fontFamily="sans-serif-medium" android:textSize="13sp"
+                android:ellipsize="end" android:maxLines="2" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+            android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:id="@+id/probeDays" android:layout_width="0dp"
+                    android:layout_weight="1" android:layout_height="wrap_content"
+                    android:text="3d" android:gravity="center"
+                    android:textColor="@color/widget_light_accent"
+                    android:fontFamily="sans-serif-condensed" android:textStyle="bold"
+                    android:fontFeatureSettings="tnum" android:includeFontPadding="false"
+                    android:textSize="39sp" />
+                <TextView android:id="@+id/probeHours" android:layout_width="0dp"
+                    android:layout_weight="1" android:layout_height="wrap_content"
+                    android:text="07h" android:gravity="center"
+                    android:textColor="@color/widget_light_text"
+                    android:fontFamily="sans-serif-condensed" android:textStyle="bold"
+                    android:fontFeatureSettings="tnum" android:includeFontPadding="false"
+                    android:textSize="29sp" />
+            </LinearLayout>
+            <FrameLayout android:layout_width="match_parent" android:layout_height="1dp"
+                android:layout_marginTop="4dp" android:layout_marginBottom="5dp"
+                android:background="#669EB7C7" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:id="@+id/probeMinutes" android:layout_width="0dp"
+                    android:layout_weight="1" android:layout_height="wrap_content"
+                    android:text="12m" android:gravity="center"
+                    android:textColor="@color/widget_light_text"
+                    android:fontFamily="sans-serif-condensed" android:textStyle="bold"
+                    android:fontFeatureSettings="tnum" android:includeFontPadding="false"
+                    android:textSize="27sp" />
+                <TextView android:id="@+id/probeSeconds" android:layout_width="0dp"
+                    android:layout_weight="1" android:layout_height="wrap_content"
+                    android:text="05s" android:gravity="center"
+                    android:textColor="@color/widget_light_accent"
+                    android:fontFamily="sans-serif-condensed" android:textStyle="bold"
+                    android:fontFeatureSettings="tnum" android:includeFontPadding="false"
+                    android:textSize="27sp" />
+            </LinearLayout>
+        </LinearLayout>
+        <TextView android:id="@+id/probeDate" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="18 Oct · 16:30"
+            android:gravity="center" android:textColor="@color/widget_light_secondary_text"
+            android:fontFamily="sans-serif-medium" android:textSize="11sp" android:maxLines="1"
+            android:ellipsize="end" />
+    </LinearLayout>
+</FrameLayout>
