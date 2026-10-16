@@ -55,6 +55,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.UUID
@@ -161,7 +162,7 @@ class EditorActivity : BaseActivity() {
         scheduleSummary = findViewById(R.id.editorScheduleSummary)
         registerBackCallback()
         temporalInvalidationController = TemporalInvalidationController(this) { snapshot ->
-            if (editorInitialized) refreshReminderSpinner(snapshot.today)
+            if (editorInitialized) refreshReminderSpinner(reminderToday(snapshot.now))
         }
 
         pendingEditorState = savedInstanceState
@@ -269,6 +270,7 @@ class EditorActivity : BaseActivity() {
             selectedTime = null
             selectedTimeZone = null
             renderTime()
+            refreshReminderSpinner(CountdownTime.snapshot().today)
         }
         saveButton.setOnClickListener { save() }
         shareButton.setOnClickListener { share() }
@@ -289,7 +291,7 @@ class EditorActivity : BaseActivity() {
         super.onResume()
         val snapshot = CountdownTime.snapshot()
         temporalInvalidationController.start(snapshot)
-        if (editorInitialized) refreshReminderSpinner(snapshot.today)
+        if (editorInitialized) refreshReminderSpinner(reminderToday(snapshot.now))
     }
 
     override fun onPause() {
@@ -480,7 +482,7 @@ class EditorActivity : BaseActivity() {
         renderIconControl()
         renderTitleHint()
         renderDate()
-        refreshReminderSpinner(snapshot.today)
+        refreshReminderSpinner(reminderToday(snapshot.now))
     }
 
     private fun configureRepeatSpinner() {
@@ -494,11 +496,12 @@ class EditorActivity : BaseActivity() {
             if (next == selectedRepeatRule) return@SimpleItemSelectedListener
             selectedRepeatRule = next
             val snapshot = CountdownTime.snapshot()
-            refreshReminderSpinner(snapshot.today)
+            val today = reminderToday(snapshot.now)
+            refreshReminderSpinner(today)
             handleReminderSelectionEffect(ReminderEditorPolicy.repeatChangeEffect(
                 existingEvent = existingEvent, selectedDate = selectedDate, selectedReminder = selectedReminder,
-                selectedRepeatRule = selectedRepeatRule, today = snapshot.today,
-            ), snapshot.today)
+                selectedRepeatRule = selectedRepeatRule, today = today,
+            ), today)
         }
     }
 
@@ -510,18 +513,18 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun configureReminderSpinner() {
-        refreshReminderSpinner(CountdownTime.snapshot().today)
+        refreshReminderSpinner(reminderToday(CountdownTime.snapshot().now))
         reminderSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
             if (!suppressReminderSelection && selectedCountMode == CountMode.COUNT_DOWN) {
                 val next = reminderOptions.getOrNull(position) ?: return@SimpleItemSelectedListener
-                val snapshot = CountdownTime.snapshot()
+                val today = reminderToday(CountdownTime.snapshot().now)
                 val effect = ReminderEditorPolicy.selectionEffect(
                     currentReminder = selectedReminder, nextReminder = next, existingEvent = existingEvent,
-                    selectedDate = selectedDate, today = snapshot.today, selectedRepeatRule = selectedRepeatRule,
+                    selectedDate = selectedDate, today = today, selectedRepeatRule = selectedRepeatRule,
                 )
                 selectedReminder = next
-                refreshReminderSpinner(snapshot.today)
-                handleReminderSelectionEffect(effect, snapshot.today)
+                refreshReminderSpinner(today)
+                handleReminderSelectionEffect(effect, today)
             }
         }
     }
@@ -539,6 +542,10 @@ class EditorActivity : BaseActivity() {
         suppressReminderSelection = false
         renderScheduleSummary(today)
     }
+
+    private fun reminderToday(now: ZonedDateTime): LocalDate =
+        selectedTimeZone?.takeIf { selectedTime != null }
+            ?.let { now.withZoneSameInstant(it).toLocalDate() } ?: now.toLocalDate()
 
     private fun reminderLabel(reminder: ReminderOption): String = when (reminder) {
         ReminderOption.OFF -> getString(R.string.reminder_off)
@@ -677,11 +684,11 @@ class EditorActivity : BaseActivity() {
             dateChosen = true
             renderDate()
             if (selectedDate != previousDate) {
-                val snapshot = CountdownTime.snapshot()
-                refreshReminderSpinner(snapshot.today)
+                val today = reminderToday(CountdownTime.snapshot().now)
+                refreshReminderSpinner(today)
                 if (selectedCountMode == CountMode.COUNT_DOWN) handleReminderSelectionEffect(
                     ReminderEditorPolicy.dateChangeEffect(existingEvent, selectedDate, selectedReminder,
-                        snapshot.today, selectedRepeatRule), snapshot.today,
+                        today, selectedRepeatRule), today,
                 )
             }
         }, selectedDate.year, selectedDate.monthValue - 1, selectedDate.dayOfMonth)
@@ -715,6 +722,7 @@ class EditorActivity : BaseActivity() {
             selectedTime = LocalTime.of(hour, minute)
             selectedTimeZone = selectedTimeZone ?: now.zone
             renderTime()
+            refreshReminderSpinner(reminderToday(CountdownTime.snapshot().now))
         }
         val dialog = TimePickerDialog(this, { _, hour, minute ->
             accept(hour, minute)
@@ -884,7 +892,7 @@ class EditorActivity : BaseActivity() {
             Toast.makeText(this, R.string.editor_time_dst_gap, Toast.LENGTH_LONG).show()
             return
         }
-        if (!canSaveSelectedReminder(snapshot.today)) {
+        if (!canSaveSelectedReminder(reminderToday(snapshot.now))) {
             Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
             return
         }
@@ -1060,7 +1068,17 @@ class EditorActivity : BaseActivity() {
                 repeatLabel(selectedRepeatRule).lowercase(locale))
         }
         ArrivalNotificationPolicy.scheduledDate(selectedDate, selectedRepeatRule, selectedReminder, today)?.let { date ->
-            lines += getString(R.string.schedule_next_reminder, date.format(formatter))
+            val time = selectedTime
+            val zone = selectedTimeZone
+            if (time != null && zone != null) {
+                val scheduled = date.atTime(time).atZone(zone)
+                lines += getString(R.string.schedule_next_reminder_timed,
+                    scheduled.toLocalDate().format(formatter),
+                    scheduled.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale)),
+                    zone.id)
+            } else {
+                lines += getString(R.string.schedule_next_reminder, date.format(formatter))
+            }
         }
         if (selectedRepeatRule == RepeatRule.MONTHLY && selectedDate.dayOfMonth >= 29) {
             lines += getString(R.string.schedule_month_end_note)

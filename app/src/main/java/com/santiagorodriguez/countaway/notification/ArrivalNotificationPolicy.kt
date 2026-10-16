@@ -16,6 +16,14 @@ object ArrivalNotificationPolicy {
         if (event.countMode == CountMode.COUNT_UP) null else
             scheduledDate(event.date, event.repeatRule, event.reminder, today)
 
+    /** Timed reminders follow the event's civil date, never the phone's date abroad. */
+    fun localToday(event: CountdownEvent, now: java.time.ZonedDateTime): LocalDate =
+        event.eventZone?.takeIf { event.eventTime != null }
+            ?.let { now.withZoneSameInstant(it).toLocalDate() } ?: now.toLocalDate()
+
+    fun scheduledDate(event: CountdownEvent, now: java.time.ZonedDateTime): LocalDate? =
+        scheduledDate(event, localToday(event, now))
+
     fun scheduledDate(
         targetDate: LocalDate,
         repeatRule: RepeatRule,
@@ -69,7 +77,9 @@ object ArrivalNotificationPolicy {
             previous.date != updated.date ||
             previous.reminder != updated.reminder ||
             previous.repeatRule != updated.repeatRule ||
-            previous.countMode != updated.countMode
+            previous.countMode != updated.countMode ||
+            previous.eventTime != updated.eventTime ||
+            previous.eventZone != updated.eventZone
 
     internal fun nextPendingDate(
         event: CountdownEvent,

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notification_timed_due_format">%1$s · Due %2$s</string>
+    <string name="schedule_next_reminder_timed">Next reminder: %1$s at %2$s (%3$s)</string>
+</resources>

@@ -15,6 +15,15 @@ internal object ArrivalReminderTiming {
         return if (retry.toLocalDate() != date || !retry.isAfter(now)) now else retry
     }
 
+    fun eventTriggerTime(now: ZonedDateTime, date: LocalDate, time: LocalTime,
+        zone: java.time.ZoneId, lastFailure: Instant? = null): ZonedDateTime {
+        val localNow = now.withZoneSameInstant(zone)
+        val target = date.atTime(time).atZone(zone)
+        if (date != localNow.toLocalDate() || target.toInstant().isAfter(now.toInstant())) return target
+        if (lastFailure == null) return localNow
+        val retry = lastFailure.atZone(zone).plusMinutes(15)
+        return if (retry.toLocalDate() != date || !retry.isAfter(localNow)) localNow else retry
+    }
     data class Plan(val triggerMillis: Long, val date: LocalDate, val zoneId: String)
 
     fun keepEarlier(previous: Plan?, proposed: Plan): Boolean = previous != null &&

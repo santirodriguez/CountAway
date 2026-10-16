@@ -38,12 +38,14 @@ object ArrivalNotificationScheduler {
         }
         val state = ArrivalNotificationState(context)
         val next = events.mapNotNull { event ->
+            val localToday = ArrivalNotificationPolicy.localToday(event, snapshot.now)
             val date = ArrivalNotificationPolicy.nextPendingDate(
-                event, snapshot.today, state::wasDelivered, state::canAttempt,
+                event, localToday, state::wasDelivered, state::canAttempt,
             ) ?: return@mapNotNull null
-            val millis = triggerMillis(snapshot.now, date, state.lastFailure(event, date))
+            val millis = triggerMillis(snapshot.now, date, event, state.lastFailure(event, date))
                 ?: return@mapNotNull null
-            ArrivalReminderTiming.Plan(millis, date, snapshot.now.zone.id)
+            ArrivalReminderTiming.Plan(millis, date,
+                event.eventZone?.takeIf { event.eventTime != null }?.id ?: snapshot.zone.id)
         }.minByOrNull { it.triggerMillis } ?: run {
             cancel(context)
             return
@@ -94,6 +96,26 @@ object ArrivalNotificationScheduler {
 
     internal fun triggerTime(now: ZonedDateTime, eventDate: LocalDate): ZonedDateTime =
         ArrivalReminderTiming.triggerTime(now, eventDate)
+
+    internal fun triggerMillis(
+        now: ZonedDateTime, eventDate: LocalDate,
+        event: com.santiagorodriguez.countaway.model.CountdownEvent,
+        lastFailure: Instant? = null,
+    ): Long? = runCatching {
+        triggerTime(now, eventDate, event, lastFailure).toInstant().toEpochMilli()
+    }.getOrNull()
+
+    internal fun triggerTime(
+        now: ZonedDateTime, eventDate: LocalDate,
+        event: com.santiagorodriguez.countaway.model.CountdownEvent,
+        lastFailure: Instant? = null,
+    ): ZonedDateTime {
+        val time = event.eventTime
+        val zone = event.eventZone
+        return if (time != null && zone != null)
+            ArrivalReminderTiming.eventTriggerTime(now, eventDate, time, zone, lastFailure)
+        else ArrivalReminderTiming.triggerTime(now, eventDate, lastFailure)
+    }
 
     private fun pendingIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(
         context,
