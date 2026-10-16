@@ -23,6 +23,7 @@ import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
+import com.santiagorodriguez.countaway.widget.TimeWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetPinSetupActivity
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
@@ -175,6 +176,7 @@ class MainActivity : BaseActivity() {
 
         CountdownIo.execute {
             runCatching { CountdownWidgetProvider.updateAllWidgets(context, snapshot) }
+            runCatching { TimeWidgetProvider.updateAllWidgets(context, snapshot) }
             runCatching { WidgetUpdateScheduler.ensureScheduled(context, snapshot) }
             runCatching { ArrivalNotificationScheduler.ensureScheduled(context, snapshot) }
         }
