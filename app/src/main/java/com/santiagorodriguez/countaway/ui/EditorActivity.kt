@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -23,6 +24,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.Spinner
+import android.widget.TimePicker
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
@@ -51,6 +53,9 @@ import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.data.RetainedOperation
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.UUID
@@ -70,6 +75,8 @@ class EditorActivity : BaseActivity() {
     private lateinit var customIconSection: View
     private lateinit var iconButton: Button
     private lateinit var dateButton: Button
+    private lateinit var timeButton: Button
+    private lateinit var removeTimeButton: Button
     private lateinit var modeButton: Button
     private lateinit var dialogFocus: EditorDialogFocus
     private lateinit var saveButton: Button
@@ -81,6 +88,8 @@ class EditorActivity : BaseActivity() {
     private lateinit var temporalInvalidationController: TemporalInvalidationController
     private var existingEvent: CountdownEvent? = null
     private var selectedDate: LocalDate = CountdownTime.snapshot().today.plusDays(1)
+    private var selectedTime: LocalTime? = null
+    private var selectedTimeZone: ZoneId? = null
     private var selectedType: EventType = EventType.TRIP
     private var selectedIcon: EventIcon = EventIcon.defaultFor(EventType.TRIP)
     private var selectedRepeatRule: RepeatRule = RepeatRule.NONE
@@ -95,6 +104,7 @@ class EditorActivity : BaseActivity() {
     private var modeDialog: AlertDialog? = null
     private var iconDialog: AlertDialog? = null
     private var dateDialog: DatePickerDialog? = null
+    private var timeDialog: TimePickerDialog? = null
     private var suppressRepeatSelection = false
     private var suppressReminderSelection = false
     private var editorInitialized = false
@@ -140,6 +150,8 @@ class EditorActivity : BaseActivity() {
         customIconSection = findViewById(R.id.customIconSection)
         iconButton = findViewById(R.id.iconButton)
         dateButton = findViewById(R.id.dateButton)
+        timeButton = findViewById(R.id.timeButton)
+        removeTimeButton = findViewById(R.id.removeTimeButton)
         modeButton = findViewById(R.id.modeButton)
         dialogFocus = EditorDialogFocus(this)
         saveButton = findViewById(R.id.saveButton)
@@ -150,7 +162,7 @@ class EditorActivity : BaseActivity() {
         scheduleSummary = findViewById(R.id.editorScheduleSummary)
         registerBackCallback()
         temporalInvalidationController = TemporalInvalidationController(this) { snapshot ->
-            if (editorInitialized) refreshReminderSpinner(snapshot.today)
+            if (editorInitialized) refreshReminderSpinner(reminderToday(snapshot.now))
         }
 
         pendingEditorState = savedInstanceState
@@ -224,6 +236,8 @@ class EditorActivity : BaseActivity() {
         (existingEvent ?: copy)?.let { event ->
             setEditorTitle(event.title)
             selectedDate = event.date
+            selectedTime = event.eventTime
+            selectedTimeZone = event.eventZone
             selectedType = event.type
             selectedIcon = event.icon
             selectedRepeatRule = event.repeatRule
@@ -245,11 +259,19 @@ class EditorActivity : BaseActivity() {
         renderTitleHint()
         renderMode()
         renderDate()
+        renderTime()
         configureRepeatSpinner()
         configureReminderSpinner()
         modeButton.setOnClickListener { showModePicker() }
         iconButton.setOnClickListener { showIconPicker() }
         dateButton.setOnClickListener { showDatePicker() }
+        timeButton.setOnClickListener { showTimePicker() }
+        removeTimeButton.setOnClickListener {
+            selectedTime = null
+            selectedTimeZone = null
+            renderTime()
+            refreshReminderSpinner(CountdownTime.snapshot().today)
+        }
         saveButton.setOnClickListener { save() }
         shareButton.setOnClickListener { share() }
         deleteButton.visibility = if (existingEvent == null) View.GONE else View.VISIBLE
@@ -269,7 +291,7 @@ class EditorActivity : BaseActivity() {
         super.onResume()
         val snapshot = CountdownTime.snapshot()
         temporalInvalidationController.start(snapshot)
-        if (editorInitialized) refreshReminderSpinner(snapshot.today)
+        if (editorInitialized) refreshReminderSpinner(reminderToday(snapshot.now))
     }
 
     override fun onPause() {
@@ -304,6 +326,8 @@ class EditorActivity : BaseActivity() {
             outState.putInt(STATE_TITLE_SELECTION_START, titleInput.selectionStart)
             outState.putInt(STATE_TITLE_SELECTION_END, titleInput.selectionEnd)
             outState.putString(STATE_DATE, selectedDate.toString())
+            outState.putString(STATE_TIME, selectedTime?.toString())
+            outState.putString(STATE_TIME_ZONE, selectedTimeZone?.id)
             outState.putString(STATE_TYPE, selectedType.name)
             outState.putString(STATE_ICON, selectedIcon.name)
             outState.putString(STATE_REPEAT_RULE, selectedRepeatRule.name)
@@ -326,13 +350,14 @@ class EditorActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        listOfNotNull(modeDialog, iconDialog, dateDialog).forEach {
+        listOfNotNull(modeDialog, iconDialog, dateDialog, timeDialog).forEach {
             it.setOnDismissListener(null)
             it.dismiss()
         }
         modeDialog = null
         iconDialog = null
         dateDialog = null
+        timeDialog = null
         dialogFocus.clear()
         session.operation.onChanged = null
         if (isFinishing) EditorDraftStore.delete(this, largeTitleToken)
@@ -457,7 +482,7 @@ class EditorActivity : BaseActivity() {
         renderIconControl()
         renderTitleHint()
         renderDate()
-        refreshReminderSpinner(snapshot.today)
+        refreshReminderSpinner(reminderToday(snapshot.now))
     }
 
     private fun configureRepeatSpinner() {
@@ -471,11 +496,12 @@ class EditorActivity : BaseActivity() {
             if (next == selectedRepeatRule) return@SimpleItemSelectedListener
             selectedRepeatRule = next
             val snapshot = CountdownTime.snapshot()
-            refreshReminderSpinner(snapshot.today)
+            val today = reminderToday(snapshot.now)
+            refreshReminderSpinner(today)
             handleReminderSelectionEffect(ReminderEditorPolicy.repeatChangeEffect(
                 existingEvent = existingEvent, selectedDate = selectedDate, selectedReminder = selectedReminder,
-                selectedRepeatRule = selectedRepeatRule, today = snapshot.today,
-            ), snapshot.today)
+                selectedRepeatRule = selectedRepeatRule, today = today,
+            ), today)
         }
     }
 
@@ -487,18 +513,18 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun configureReminderSpinner() {
-        refreshReminderSpinner(CountdownTime.snapshot().today)
+        refreshReminderSpinner(reminderToday(CountdownTime.snapshot().now))
         reminderSpinner.onItemSelectedListener = SimpleItemSelectedListener { position ->
             if (!suppressReminderSelection && selectedCountMode == CountMode.COUNT_DOWN) {
                 val next = reminderOptions.getOrNull(position) ?: return@SimpleItemSelectedListener
-                val snapshot = CountdownTime.snapshot()
+                val today = reminderToday(CountdownTime.snapshot().now)
                 val effect = ReminderEditorPolicy.selectionEffect(
                     currentReminder = selectedReminder, nextReminder = next, existingEvent = existingEvent,
-                    selectedDate = selectedDate, today = snapshot.today, selectedRepeatRule = selectedRepeatRule,
+                    selectedDate = selectedDate, today = today, selectedRepeatRule = selectedRepeatRule,
                 )
                 selectedReminder = next
-                refreshReminderSpinner(snapshot.today)
-                handleReminderSelectionEffect(effect, snapshot.today)
+                refreshReminderSpinner(today)
+                handleReminderSelectionEffect(effect, today)
             }
         }
     }
@@ -516,6 +542,10 @@ class EditorActivity : BaseActivity() {
         suppressReminderSelection = false
         renderScheduleSummary(today)
     }
+
+    private fun reminderToday(now: ZonedDateTime): LocalDate =
+        selectedTimeZone?.takeIf { selectedTime != null }
+            ?.let { now.withZoneSameInstant(it).toLocalDate() } ?: now.toLocalDate()
 
     private fun reminderLabel(reminder: ReminderOption): String = when (reminder) {
         ReminderOption.OFF -> getString(R.string.reminder_off)
@@ -654,11 +684,11 @@ class EditorActivity : BaseActivity() {
             dateChosen = true
             renderDate()
             if (selectedDate != previousDate) {
-                val snapshot = CountdownTime.snapshot()
-                refreshReminderSpinner(snapshot.today)
+                val today = reminderToday(CountdownTime.snapshot().now)
+                refreshReminderSpinner(today)
                 if (selectedCountMode == CountMode.COUNT_DOWN) handleReminderSelectionEffect(
                     ReminderEditorPolicy.dateChangeEffect(existingEvent, selectedDate, selectedReminder,
-                        snapshot.today, selectedRepeatRule), snapshot.today,
+                        today, selectedRepeatRule), today,
                 )
             }
         }, selectedDate.year, selectedDate.monthValue - 1, selectedDate.dayOfMonth)
@@ -682,7 +712,86 @@ class EditorActivity : BaseActivity() {
         EditorControlIcons.apply(dateButton, EventIconPresentation.drawableRes(EventIcon.CALENDAR))
     }
 
+    private fun showTimePicker() {
+        if (editorBusy || timeDialog?.isShowing == true) return
+        dialogFocus.capture(timeButton)
+        val now = CountdownTime.snapshot()
+        val starting = selectedTime ?: now.now.toLocalTime()
+        fun accept(hour: Int, minute: Int) {
+            selectedTime = LocalTime.of(hour, minute)
+            selectedTimeZone = selectedTimeZone ?: now.zone
+            renderTime()
+            refreshReminderSpinner(reminderToday(CountdownTime.snapshot().now))
+        }
+        val dialog = TimePickerDialog(this, { _, hour, minute ->
+            accept(hour, minute)
+        }, starting.hour, starting.minute,
+            android.text.format.DateFormat.is24HourFormat(this))
+        timeDialog = dialog
+        dialog.setOnDismissListener {
+            if (timeDialog === dialog) timeDialog = null
+            dialogFocus.restore(timeButton)
+        }
+        dialog.show()
+
+        // Both new and existing times need the same native AM/PM confirmation path.
+        val picker = dialog.window?.decorView?.let(::findTimePicker)
+        if (picker != null) {
+            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            // The hour header can commit a 12-hour label when focus changes.
+            // Move focus to OK, then restore the complete hour before confirmation.
+            positiveButton?.isFocusableInTouchMode = true
+            positiveButton?.requestFocus()
+            dialog.updateTime(starting.hour, starting.minute)
+            positiveButton?.setOnClickListener {
+                // Commit active text input before reading the selected time.
+                if (picker.findFocus() is EditText) picker.clearFocus()
+                val chosen = LocalTime.of(picker.hour, picker.minute)
+                if (!picker.validateInput()) return@setOnClickListener
+                accept(chosen.hour, chosen.minute)
+                dialog.dismiss()
+            }
+        }
+    }
+
+    private fun findTimePicker(view: View): TimePicker? {
+        if (view is TimePicker) return view
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                findTimePicker(view.getChildAt(index))?.let { return it }
+            }
+        }
+        return null
+    }
+
+    private fun renderTime() {
+        val value = selectedTime
+        if (value == null) {
+            timeButton.setText(R.string.editor_add_time)
+            timeButton.contentDescription = getString(R.string.editor_add_time)
+            removeTimeButton.visibility = View.GONE
+            return
+        }
+        val locale = resources.configuration.locales[0]
+        val formatted = value.format(
+            DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+        timeButton.text = getString(R.string.editor_selected_time, formatted)
+        val zone = selectedTimeZone
+        val currentZone = CountdownTime.snapshot().zone
+        timeButton.contentDescription = if (zone != null && zone != currentZone) {
+            getString(R.string.editor_time_zone, formatted, zone.id)
+        } else getString(R.string.editor_selected_time, formatted)
+        removeTimeButton.visibility = View.VISIBLE
+    }
+
     private fun share() {
+        val time = selectedTime
+        val zone = selectedTimeZone
+        if (time != null && zone != null &&
+            !CountdownValidation.isSelectableTimedOccurrence(selectedDate, time, zone)) {
+            Toast.makeText(this, R.string.editor_time_dst_gap, Toast.LENGTH_LONG).show()
+            return
+        }
         val title = fullEditorTitle().trim()
         if (title.isEmpty()) {
             titleInput.error = getString(R.string.title_required)
@@ -692,6 +801,7 @@ class EditorActivity : BaseActivity() {
         EventShareLauncher.share(
             activity = this, title = title, date = selectedDate, icon = selectedIcon,
             repeatRule = selectedRepeatRule, countMode = selectedCountMode,
+            eventTime = time, eventZone = zone,
             onFinished = { shareButton.isEnabled = true },
         )
     }
@@ -772,7 +882,14 @@ class EditorActivity : BaseActivity() {
             titleInput.error = getString(R.string.title_too_long, CountdownValidation.MAX_TITLE_LENGTH)
             return
         }
-        if (!canSaveSelectedReminder(snapshot.today)) {
+        val chosenTime = selectedTime
+        val chosenZone = selectedTimeZone
+        if (chosenTime != null && chosenZone != null &&
+            !CountdownValidation.isSelectableTimedOccurrence(selectedDate, chosenTime, chosenZone)) {
+            Toast.makeText(this, R.string.editor_time_dst_gap, Toast.LENGTH_LONG).show()
+            return
+        }
+        if (!canSaveSelectedReminder(reminderToday(snapshot.now))) {
             Toast.makeText(this, R.string.reminder_schedule_unavailable, Toast.LENGTH_LONG).show()
             return
         }
@@ -786,6 +903,8 @@ class EditorActivity : BaseActivity() {
             createdAt = existingEvent?.createdAt ?: session.createdAt,
             repeatRule = selectedRepeatRule,
             countMode = selectedCountMode,
+            eventTime = selectedTime,
+            eventZone = selectedTimeZone,
         )
         val previous = existingEvent
         val revision = session.originalRevision
@@ -841,6 +960,17 @@ class EditorActivity : BaseActivity() {
         state.getString(STATE_DATE)?.let { raw ->
             runCatching { LocalDate.parse(raw) }.getOrNull()?.let { selectedDate = it }
         }
+        selectedTime = state.getString(STATE_TIME)?.let { value ->
+            runCatching { LocalTime.parse(value) }.getOrNull()
+        }
+        selectedTimeZone = state.getString(STATE_TIME_ZONE)?.let { value ->
+            runCatching { ZoneId.of(value) }.getOrNull()
+        }
+        if (selectedTime == null || selectedTimeZone == null) {
+            selectedTime = null
+            selectedTimeZone = null
+        }
+        renderTime()
         state.getString(STATE_TYPE)?.let { raw ->
             EventType.entries.firstOrNull { it.name == raw }?.let { selectedType = it }
         }
@@ -935,7 +1065,17 @@ class EditorActivity : BaseActivity() {
                 repeatLabel(selectedRepeatRule).lowercase(locale))
         }
         ArrivalNotificationPolicy.scheduledDate(selectedDate, selectedRepeatRule, selectedReminder, today)?.let { date ->
-            lines += getString(R.string.schedule_next_reminder, date.format(formatter))
+            val time = selectedTime
+            val zone = selectedTimeZone
+            if (time != null && zone != null) {
+                val scheduled = date.atTime(time).atZone(zone)
+                lines += getString(R.string.schedule_next_reminder_timed,
+                    scheduled.toLocalDate().format(formatter),
+                    scheduled.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale)),
+                    zone.id)
+            } else {
+                lines += getString(R.string.schedule_next_reminder, date.format(formatter))
+            }
         }
         if (selectedRepeatRule == RepeatRule.MONTHLY && selectedDate.dayOfMonth >= 29) {
             lines += getString(R.string.schedule_month_end_note)
@@ -977,14 +1117,17 @@ class EditorActivity : BaseActivity() {
     private fun currentDraft(): EditorDraft = EditorDraft(
         title = fullEditorTitle(), date = selectedDate, type = selectedType, icon = selectedIcon,
         repeatRule = selectedRepeatRule, reminder = selectedReminder, countMode = selectedCountMode,
+        time = selectedTime, zone = selectedTimeZone,
     )
 
     private data class EditorDraft(
         val title: String, val date: LocalDate, val type: EventType, val icon: EventIcon,
         val repeatRule: RepeatRule, val reminder: ReminderOption, val countMode: CountMode,
+        val time: LocalTime?, val zone: ZoneId?,
     ) {
         fun revision(): String = EventRevision.ofFields(title, date.toString(), type.name,
-            icon.name, repeatRule.name, reminder.name, countMode.name)
+            icon.name, repeatRule.name, reminder.name, countMode.name,
+            time?.toString() ?: "", zone?.id ?: "")
     }
 
     private class EditorSession(state: Bundle?) {
@@ -1015,6 +1158,8 @@ class EditorActivity : BaseActivity() {
         private const val STATE_TITLE_SELECTION_START = "editor_title_selection_start"
         private const val STATE_TITLE_SELECTION_END = "editor_title_selection_end"
         private const val STATE_DATE = "editor_date"
+        private const val STATE_TIME = "editor_time"
+        private const val STATE_TIME_ZONE = "editor_time_zone"
         private const val STATE_TYPE = "editor_type"
         private const val STATE_ICON = "editor_icon"
         private const val STATE_REPEAT_RULE = "editor_repeat_rule"

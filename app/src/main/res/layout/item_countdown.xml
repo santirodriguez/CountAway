@@ -61,6 +61,19 @@
         android:textColor="@color/secondary_text"
         android:textSize="13sp" />
 
+    <TextView
+        android:id="@+id/eventTimeDetail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/secondary_text"
+        android:fontFamily="sans-serif-condensed"
+        android:fontFeatureSettings="tnum"
+        android:includeFontPadding="false"
+        android:textSize="12sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:visibility="gone" />
+
     <View
         android:id="@+id/eventCountTile"
         android:layout_width="64dp"

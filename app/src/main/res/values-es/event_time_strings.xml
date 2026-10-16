@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="editor_time_optional">Hora (opcional)</string>
+    <string name="editor_add_time">Agregar hora</string>
+    <string name="editor_selected_time">Hora: %1$s</string>
+    <string name="editor_remove_time">Quitar</string>
+    <string name="editor_time_zone">Hora del evento: %1$s, zona %2$s</string>
+    <string name="editor_time_dst_gap">Esa hora no existe en la fecha elegida para la zona horaria del evento. Elegí otra hora.</string>
+    <string name="editor_timed_share_pending">Todavía no se pueden compartir eventos con hora.</string>
+    <string name="timed_remaining">Faltan · %1$s</string>
+    <string name="timed_elapsed">Pasaron · %1$s</string>
+    <string name="timed_starts_in">Empieza en · %1$s</string>
+    <plurals name="timed_days_magnitude"><item quantity="one">%1$s día</item><item quantity="many">%1$s días</item><item quantity="other">%1$s días</item></plurals>
+</resources>

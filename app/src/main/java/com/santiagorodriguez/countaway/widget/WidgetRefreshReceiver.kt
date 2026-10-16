@@ -26,6 +26,9 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
                     is CountdownLoadResult.Failure -> Unit
                 }
                 CountdownWidgetProvider.updateAllWidgets(appContext, snapshot)
+                runCatching { TimeWidgetProvider.updateAllWidgets(appContext, snapshot) }
+                    .onFailure { android.util.Log.e("CountAwayTimeWidget",
+                        "Time widget refresh failed without affecting classic widgets", it) }
                 WidgetUpdateScheduler.ensureScheduled(appContext, snapshot)
                 if (intent?.action in setOf(Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED,
                         Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED)) {
@@ -42,6 +45,7 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
 internal object WidgetRefreshActionPolicy {
     private val refreshActions = setOf(
         WidgetUpdateScheduler.ACTION_DAILY_REFRESH,
+        TimeWidgetBoundaryScheduler.ACTION_TARGET_BOUNDARY,
         Intent.ACTION_BOOT_COMPLETED,
         Intent.ACTION_MY_PACKAGE_REPLACED,
         Intent.ACTION_TIME_CHANGED,

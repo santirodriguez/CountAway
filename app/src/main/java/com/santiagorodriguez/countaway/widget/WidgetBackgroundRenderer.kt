@@ -31,6 +31,7 @@ object WidgetBackgroundRenderer {
         dark: Boolean,
         widthDp: Int,
         heightDp: Int,
+        hideHorizonDisc: Boolean = false,
     ): Bitmap {
         val density = context.resources.displayMetrics.density
         val rawWidth = (widthDp.coerceAtLeast(1) * density).roundToInt().coerceAtLeast(1)
@@ -78,6 +79,7 @@ object WidgetBackgroundRenderer {
                 width = width.toFloat(),
                 height = height.toFloat(),
                 density = scaledDensity,
+                hideHorizonDisc = hideHorizonDisc,
             )
             canvas.restore()
         }
@@ -90,10 +92,11 @@ object WidgetBackgroundRenderer {
         width: Float,
         height: Float,
         density: Float,
+        hideHorizonDisc: Boolean,
     ) {
         when (background) {
             WidgetBackground.MIST -> drawMist(canvas, dark, width, height, density)
-            WidgetBackground.HORIZON -> drawHorizon(canvas, dark, width, height, density)
+            WidgetBackground.HORIZON -> drawHorizon(canvas, dark, width, height, density, hideHorizonDisc)
             WidgetBackground.FOREST -> drawForest(canvas, dark, width, height, density)
             WidgetBackground.SUNSET -> drawSunset(canvas, dark, width, height, density)
             WidgetBackground.PULSE -> drawPulse(canvas, dark, width, height, density)
@@ -143,6 +146,7 @@ object WidgetBackgroundRenderer {
         width: Float,
         height: Float,
         density: Float,
+        hideDisc: Boolean,
     ) {
         val horizonColor = if (dark) Color.rgb(173, 211, 238) else Color.rgb(102, 145, 173)
         val celestialColor = if (dark) Color.rgb(220, 234, 255) else Color.rgb(236, 166, 78)
@@ -152,12 +156,16 @@ object WidgetBackgroundRenderer {
         val discX = width * if (dark) 0.79f else 0.73f
         val discY = height * if (dark) 0.63f else 0.72f
 
-        canvas.drawCircle(
-            discX,
-            discY,
-            discRadius,
-            fillPaint(celestialColor, if (dark) 26 else 20),
-        )
+        // The compact timed clock needs this area for four-digit total hours.
+        // Classic widgets and non-compact timed widgets retain the original art.
+        if (!hideDisc) {
+            canvas.drawCircle(
+                discX,
+                discY,
+                discRadius,
+                fillPaint(celestialColor, if (dark) 26 else 20),
+            )
+        }
         canvas.drawLine(
             -width * 0.03f,
             horizonY,

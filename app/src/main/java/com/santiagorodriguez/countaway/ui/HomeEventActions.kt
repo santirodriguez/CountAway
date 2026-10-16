@@ -84,6 +84,7 @@ internal class HomeEventActions(
             EventShareLauncher.share(
                 activity = activity, title = event.title, date = event.date, icon = event.icon,
                 repeatRule = event.repeatRule, countMode = event.countMode,
+                eventTime = event.eventTime, eventZone = event.eventZone,
                 onFinished = { sharing = false },
             )
         }

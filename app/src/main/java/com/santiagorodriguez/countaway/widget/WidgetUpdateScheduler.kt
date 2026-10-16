@@ -55,7 +55,8 @@ object WidgetUpdateScheduler {
     private fun hasWidgets(context: Context): Boolean {
         val manager = AppWidgetManager.getInstance(context)
         val component = ComponentName(context, CountdownWidgetProvider::class.java)
-        return manager.getAppWidgetIds(component).isNotEmpty()
+        val timed = ComponentName(context, TimeWidgetProvider::class.java)
+        return manager.getAppWidgetIds(component).isNotEmpty() || manager.getAppWidgetIds(timed).isNotEmpty()
     }
 
     private fun pendingIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(

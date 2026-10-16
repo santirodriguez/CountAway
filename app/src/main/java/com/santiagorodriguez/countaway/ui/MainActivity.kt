@@ -3,6 +3,8 @@ package com.santiagorodriguez.countaway.ui
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
@@ -21,6 +23,7 @@ import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
+import com.santiagorodriguez.countaway.widget.TimeWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetPinSetupActivity
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
@@ -42,6 +45,24 @@ class MainActivity : BaseActivity() {
     private var restoreLanguageAccessibilityFocus = false
     private lateinit var temporalInvalidationController: TemporalInvalidationController
     private var loadGeneration = 0
+    private val clockHandler = Handler(Looper.getMainLooper())
+    private var clockVisible = false
+    private val clockTick = object : Runnable {
+        override fun run() {
+            if (!clockVisible || isFinishing || isDestroyed) return
+            if (adapter.hasTimedEvents()) {
+                adapter.tickVisible(countdownList, CountdownTime.snapshot().now)
+                clockHandler.postDelayed(this, 1_000L)
+            }
+        }
+    }
+
+    private fun scheduleClockTick() {
+        clockHandler.removeCallbacks(clockTick)
+        if (clockVisible && adapter.hasTimedEvents()) {
+            clockHandler.postDelayed(clockTick, 1_000L)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,6 +109,7 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        clockVisible = true
         if (LanguageManager.currentLanguageTag(this) != renderedLanguage) {
             recreate()
             return
@@ -115,6 +137,8 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onPause() {
+        clockVisible = false
+        clockHandler.removeCallbacks(clockTick)
         eventActions.pause()
         temporalInvalidationController.stop()
         loadGeneration += 1
@@ -152,6 +176,7 @@ class MainActivity : BaseActivity() {
 
         CountdownIo.execute {
             runCatching { CountdownWidgetProvider.updateAllWidgets(context, snapshot) }
+            runCatching { TimeWidgetProvider.updateAllWidgets(context, snapshot) }
             runCatching { WidgetUpdateScheduler.ensureScheduled(context, snapshot) }
             runCatching { ArrivalNotificationScheduler.ensureScheduled(context, snapshot) }
         }
@@ -161,6 +186,7 @@ class MainActivity : BaseActivity() {
         when (result) {
             is CountdownLoadResult.Success -> {
                 adapter.submit(CountdownEventOrder.sortedForDisplay(result.events, today), today)
+                scheduleClockTick()
                 emptyStateIcon.visibility = View.VISIBLE
                 emptyTitle.setText(R.string.empty_title)
                 emptyDescription.setText(R.string.empty_description)
@@ -169,6 +195,7 @@ class MainActivity : BaseActivity() {
             }
             is CountdownLoadResult.Failure -> {
                 adapter.submit(emptyList(), today)
+                clockHandler.removeCallbacks(clockTick)
                 emptyStateIcon.visibility = View.GONE
                 if (result.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
                     emptyTitle.setText(R.string.data_newer_version_title)

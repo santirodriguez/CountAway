@@ -15,7 +15,7 @@ import java.time.LocalDate
 @RunWith(AndroidJUnit4::class)
 class CountdownStorageSchemaInstrumentedTest {
     @Test
-    fun countModeWritesSchema7AndRoundTrips() {
+    fun countModeWritesSchema8AndRoundTrips() {
         val event = CountdownEvent(
             id = "count-up-event",
             title = "Since launch",
@@ -28,7 +28,7 @@ class CountdownStorageSchemaInstrumentedTest {
 
         val payload = CountdownStorageCodec.encode(listOf(event))
 
-        assertEquals(7, JSONObject(payload).getInt("schemaVersion"))
+        assertEquals(8, JSONObject(payload).getInt("schemaVersion"))
         assertEquals("count_up", JSONObject(payload).getJSONArray("events").getJSONObject(0).getString("countMode"))
         assertEquals(listOf(event), CountdownStorageCodec.decode(payload))
     }

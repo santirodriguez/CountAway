@@ -18,6 +18,8 @@ import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.LanguageManager
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 class ArrivalNotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -60,17 +62,18 @@ object ArrivalNotifier {
         }
         val state = ArrivalNotificationState(context)
         val dueEvents = events.mapNotNull { event ->
-            val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event, snapshot.today)
+            val localToday = ArrivalNotificationPolicy.localToday(event, snapshot.now)
+            val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event, localToday)
                 ?: return@mapNotNull null
             if (
                 ArrivalNotificationPolicy.isDue(
                     event,
-                    snapshot.today,
+                    localToday,
                     state.deliveredDate(event.id),
                 ) &&
                 state.canAttempt(event, scheduledDate) &&
-                !ArrivalReminderTiming.triggerTime(snapshot.now, scheduledDate,
-                    state.lastFailure(event, scheduledDate)).isAfter(snapshot.now)
+                !ArrivalNotificationScheduler.triggerTime(snapshot.now, scheduledDate,
+                    event, state.lastFailure(event, scheduledDate)).isAfter(snapshot.now)
             ) {
                 event to scheduledDate
             } else {
@@ -96,12 +99,26 @@ object ArrivalNotifier {
                 )
             }
 
+            val dueTime = event.eventTime
+            val dueZone = event.eventZone
+            val detailedBody = if (dueTime != null && dueZone != null) {
+                val occurrence = scheduledDate.plusDays(daysBefore.toLong())
+                    .atTime(dueTime).atZone(dueZone)
+                val locale = displayContext.resources.configuration.locales[0]
+                val dateTime = occurrence.format(
+                    DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+                        .withLocale(locale),
+                )
+                displayContext.getString(R.string.notification_timed_due_format,
+                    body, "$dateTime · ${dueZone.id}")
+            } else body
+
             val notification = Notification.Builder(context, ArrivalNotificationScheduler.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_event_star)
                 .setColor(context.getColor(R.color.accent))
                 .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(Notification.BigTextStyle().bigText(body))
+                .setContentText(detailedBody)
+                .setStyle(Notification.BigTextStyle().bigText(detailedBody))
                 .setCategory(Notification.CATEGORY_REMINDER)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
@@ -151,9 +168,10 @@ object ArrivalNotifier {
     ) {
         val state = ArrivalNotificationState(context)
         val keepTags = events.mapNotNullTo(HashSet()) { event ->
-            val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event, snapshot.today)
+            val localToday = ArrivalNotificationPolicy.localToday(event, snapshot.now)
+            val scheduledDate = ArrivalNotificationPolicy.scheduledDate(event, localToday)
             if (
-                scheduledDate == snapshot.today &&
+                scheduledDate == localToday &&
                 state.deliveredDate(event.id) == scheduledDate
             ) {
                 ArrivalNotificationIdentity.tag(event.id)

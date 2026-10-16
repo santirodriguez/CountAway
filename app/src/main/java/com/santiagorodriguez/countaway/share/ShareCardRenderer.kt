@@ -24,6 +24,9 @@ import com.santiagorodriguez.countaway.widget.WidgetBackground
 import com.santiagorodriguez.countaway.widget.WidgetBackgroundRenderer
 import com.santiagorodriguez.countaway.widget.WidgetPaletteResolver
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.FormatStyle
 
 internal data class ShareCardContent(
@@ -45,7 +48,18 @@ internal object ShareCardContentFactory {
         repeatRule: RepeatRule,
         today: LocalDate,
         countMode: CountMode = CountMode.COUNT_DOWN,
+        eventTime: LocalTime? = null, eventZone: ZoneId? = null,
+        now: ZonedDateTime = com.santiagorodriguez.countaway.countdown.CountdownTime.snapshot().now,
     ): ShareCardContent {
+        if (eventTime != null || eventZone != null) {
+            require(eventTime != null && eventZone != null)
+            val timed = TimedSharePresenter.present(context, date, repeatRule,
+                countMode, eventTime, eventZone, now)
+            return ShareCardContent(EventIconPresentation.drawableRes(icon), title,
+                timed.primary, timed.secondary, timed.timestamp,
+                if (countMode == CountMode.COUNT_UP) null else repeatLabelRes(repeatRule)?.let(context::getString),
+                timed.date)
+        }
         val value = EventCountResolver.resolve(date, repeatRule, countMode, today)
         val primaryText = when (value.countdownStatus) {
             CountdownStatus.TOMORROW -> context.getString(R.string.status_tomorrow)
@@ -74,7 +88,16 @@ internal object ShareCardContentFactory {
     }
 
     fun text(context: Context, title: String, date: LocalDate, repeatRule: RepeatRule,
-        today: LocalDate, countMode: CountMode = CountMode.COUNT_DOWN): String {
+        today: LocalDate, countMode: CountMode = CountMode.COUNT_DOWN,
+        eventTime: LocalTime? = null, eventZone: ZoneId? = null,
+        now: ZonedDateTime = com.santiagorodriguez.countaway.countdown.CountdownTime.snapshot().now): String {
+        if (eventTime != null || eventZone != null) {
+            require(eventTime != null && eventZone != null)
+            val timed = TimedSharePresenter.present(context, date, repeatRule,
+                countMode, eventTime, eventZone, now)
+            return context.getString(R.string.share_countdown_format, title,
+                timed.summary, timed.timestamp)
+        }
         val value = EventCountResolver.resolve(date, repeatRule, countMode, today)
         return context.getString(R.string.share_countdown_format, title,
             EventCountText.status(context, value), EventCountText.date(context, value.displayDate, countMode, FormatStyle.LONG))
