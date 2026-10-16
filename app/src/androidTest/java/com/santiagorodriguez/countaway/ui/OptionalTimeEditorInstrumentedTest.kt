@@ -88,6 +88,9 @@ class OptionalTimeEditorInstrumentedTest {
                 assertEquals(30, picker.minute)
             }
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            scenario.onActivity { activity ->
+                assertEditorTime(activity, LocalTime.of(18, 30), "existing time after OK")
+            }
             scenario.recreate()
             drain()
             scenario.onActivity { activity ->
@@ -97,6 +100,38 @@ class OptionalTimeEditorInstrumentedTest {
             }
             drain()
             assertEquals(event, events().single { it.id == event.id })
+        }
+    }
+
+    @Test fun changingExistingEveningTimePersistsAfterRecreation() = isolated {
+        val event = fixture().copy(eventTime = LocalTime.of(18, 30),
+            eventZone = ZoneId.of("America/Argentina/Buenos_Aires"))
+        repository.save(original() + event)
+        ActivityScenario.launch<EditorActivity>(intent(event)).use { scenario ->
+            drain()
+            scenario.onActivity { activity ->
+                activity.findViewById<Button>(R.id.timeButton).performClick()
+            }
+            onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, _ ->
+                val picker = view as TimePicker
+                picker.hour = 21
+                picker.minute = 45
+                assertEquals(21, picker.hour)
+                assertEquals(45, picker.minute)
+            }
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            scenario.onActivity { activity ->
+                assertEditorTime(activity, LocalTime.of(21, 45), "changed time after OK")
+            }
+            scenario.recreate()
+            drain()
+            scenario.onActivity { activity ->
+                assertEditorTime(activity, LocalTime.of(21, 45), "changed time after recreation")
+                activity.findViewById<Button>(R.id.saveButton).performClick()
+            }
+            drain()
+            assertEquals(event.copy(eventTime = LocalTime.of(21, 45)),
+                events().single { it.id == event.id })
         }
     }
 
