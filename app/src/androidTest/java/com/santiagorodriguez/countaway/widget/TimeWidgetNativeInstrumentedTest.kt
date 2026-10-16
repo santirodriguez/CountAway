@@ -16,7 +16,6 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
-import com.santiagorodriguez.countaway.ui.LanguageManager
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -63,7 +62,7 @@ class TimeWidgetNativeInstrumentedTest {
             val style = WidgetConfiguration(event.id, appearance, WidgetBackground.HORIZON)
             val remote = TimeWidgetRenderer.render(context, context, 1234, style,
                 event, null, snapshot, width, height, hashMapOf(), interactive = false)
-            val root = remote.apply(context, FrameLayout(context))
+            val root = remote.apply(context, FrameLayout(context)) as FrameLayout
             layout(root, context, width, height)
             val native = root.findViewById<Chronometer>(R.id.timeWidgetClock)
             assertEquals(View.VISIBLE, native.visibility)
@@ -101,7 +100,7 @@ class TimeWidgetNativeInstrumentedTest {
         val remote = TimeWidgetRenderer.render(app, app, 1234,
             WidgetConfiguration(distant.id, WidgetAppearance.SYSTEM, WidgetBackground.HORIZON),
             distant, null, snapshot, 240, 180, hashMapOf(), interactive = false)
-        val root = remote.apply(app, FrameLayout(app))
+        val root = remote.apply(app, FrameLayout(app)) as FrameLayout
         layout(root, app, 240, 180)
         assertEquals(View.GONE, root.findViewById<Chronometer>(R.id.timeWidgetClock).visibility)
         assertEquals(View.VISIBLE, root.findViewById<TextView>(R.id.timeWidgetFallback).visibility)
