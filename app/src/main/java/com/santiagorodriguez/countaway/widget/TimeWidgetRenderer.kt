@@ -51,7 +51,7 @@ internal object TimeWidgetRenderer {
         val key = TimeWidgetBackgroundKey(background, theme.dark, widthDp, heightDp)
         val bitmap = cache.getOrPut(key) {
             WidgetBackgroundRenderer.render(context.applicationContext, background, theme.dark, widthDp, heightDp,
-                hideHorizonDisc = widthDp <= 280)
+                hideHorizonDisc = widthDp <= 320)
         }
         views.setImageViewBitmap(R.id.timeWidgetBackground, bitmap)
         views.setInt(R.id.timeWidgetIcon, "setColorFilter", theme.accentTextColor)
