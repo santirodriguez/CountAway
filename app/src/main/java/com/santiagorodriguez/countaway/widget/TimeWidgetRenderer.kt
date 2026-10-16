@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.SystemClock
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
@@ -85,6 +86,12 @@ internal object TimeWidgetRenderer {
         val zoneSuffix = if (count.target.zone != snapshot.zone) " · " + count.target.zone.id else ""
         views.setTextViewText(R.id.timeWidgetDate, targetText + zoneSuffix)
         views.setViewVisibility(R.id.timeWidgetDate, View.VISIBLE)
+        val compactLargeText = displayContext.resources.configuration.fontScale >= 1.6f && heightDp <= 210
+        if (compactLargeText) {
+            views.setViewVisibility(R.id.timeWidgetCaption, View.GONE)
+            views.setTextViewTextSize(R.id.timeWidgetTitle, TypedValue.COMPLEX_UNIT_SP, 12f)
+            views.setTextViewTextSize(R.id.timeWidgetDate, TypedValue.COMPLEX_UNIT_SP, 10f)
+        }
         val plan = TimeWidgetClockPolicy.plan(
             java.time.Instant.now(), count.target.toInstant(), SystemClock.elapsedRealtime(), timed.countMode,
         )
