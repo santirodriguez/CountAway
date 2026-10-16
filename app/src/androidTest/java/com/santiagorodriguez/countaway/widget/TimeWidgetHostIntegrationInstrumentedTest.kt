@@ -23,6 +23,7 @@ import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import com.santiagorodriguez.countaway.data.CountdownMutations
 import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.ui.MainActivity
 import java.io.File
@@ -161,6 +162,116 @@ class TimeWidgetHostIntegrationInstrumentedTest {
             drain()
             shell("appwidget revokebind --package ${app.packageName} --user $userId")
         }
+    }
+
+
+    @Test fun boundNativeCountUpTicksAcrossZeroWithoutProviderRefresh() {
+        val original = (repository.loadResult() as CountdownLoadResult.Success).events
+        val manager = AppWidgetManager.getInstance(app)
+        val preferences = WidgetPreferences(app)
+        val host = AppWidgetHost(app, 1_240_061)
+        val userId = shell("am get-current-user").toInt()
+        var timedId = AppWidgetManager.INVALID_APPWIDGET_ID
+        try {
+            val grant = shell("appwidget grantbind --package " + app.packageName + " --user " + userId)
+            assertTrue("Grant app-widget binding failed: $grant", grant.isBlank())
+            host.deleteHost()
+            timedId = host.allocateAppWidgetId()
+            val component = ComponentName(app, TimeWidgetProvider::class.java)
+            assertTrue(manager.bindAppWidgetIdIfAllowed(timedId, component, options(280, 210)))
+            assertEquals(component, manager.getAppWidgetInfo(timedId)?.provider)
+            drain()
+
+            val zone = java.time.ZoneId.systemDefault()
+            val far = ZonedDateTime.now(zone).plusMinutes(3).withSecond(0).withNano(0)
+            val timed = CountdownEvent(
+                id = "count-up-host-" + UUID.randomUUID(),
+                title = "Hosted count-up event",
+                date = far.toLocalDate(),
+                eventTime = far.toLocalTime(),
+                eventZone = zone,
+                type = EventType.EVENT,
+                countMode = CountMode.COUNT_UP,
+                createdAt = Instant.now(),
+            )
+            repository.save(original + timed)
+            preferences.save(timedId, timed.id, WidgetAppearance.DARK,
+                WidgetBackground.HORIZON, WidgetEventSelection.FIXED)
+
+            ActivityScenario.launch<MainActivity>(Intent(app, MainActivity::class.java)).use { scenario ->
+                lateinit var timedView: AppWidgetHostView
+                scenario.onActivity { activity ->
+                    val container = activity.findViewById<FrameLayout>(android.R.id.content)
+                    timedView = host.createView(activity, timedId, manager.getAppWidgetInfo(timedId))
+                    container.addView(timedView, FrameLayout.LayoutParams(
+                        px(activity, 280), px(activity, 210), Gravity.TOP or Gravity.START))
+                    host.startListening()
+                }
+                TimeWidgetProvider.updateWidget(app, manager, timedId)
+                instrumentation.waitForIdleSync()
+                val first = awaitNativeCountUp(timedView, 10_000, expectNegative = true)
+                capture(timedView, "bound-count-up-before-target.png")
+                SystemClock.sleep(2_200)
+                val second = awaitNativeCountUp(timedView, 5_000, expectNegative = true) {
+                    it != first
+                }
+                assertNotEquals("Count-up host clock failed to tick natively", first, second)
+
+                // Preserve minute-aligned storage while testing a real wall-clock
+                // crossing. No per-second app update or synthetic system clock.
+                val nowAtBoundary = ZonedDateTime.now(zone)
+                val waitMinutes = if (nowAtBoundary.second >= 50) 2L else 1L
+                val soon = nowAtBoundary.plusMinutes(waitMinutes).withSecond(0).withNano(0)
+                repository.save(original + timed.copy(date = soon.toLocalDate(),
+                    eventTime = soon.toLocalTime()))
+                CountdownMutations(app).reconcile()
+                val remaining = awaitNativeCountUp(timedView, 8_000, expectNegative = true) {
+                    it.trimStart('-', '\u2212').substringBefore(':').toLongOrNull()
+                        ?.let { minutes -> minutes <= 1L } == true
+                }
+                assertTrue("Starts-in count-up should show a signed native duration: $remaining",
+                    isNegativeDuration(remaining))
+
+                val elapsed = awaitNativeCountUp(timedView, 85_000, expectNegative = false) {
+                    it.substringAfterLast(':').toLongOrNull()?.let { seconds -> seconds > 0L } == true
+                }
+                assertFalse("Count-up should become elapsed after target: $elapsed",
+                    isNegativeDuration(elapsed))
+                capture(timedView, "bound-count-up-after-target.png")
+                SystemClock.sleep(1_200)
+                val later = awaitNativeCountUp(timedView, 4_000, expectNegative = false) {
+                    it != elapsed
+                }
+                assertNotEquals("Elapsed count-up stopped ticking in the host", elapsed, later)
+            }
+        } finally {
+            runCatching { host.stopListening() }
+            runCatching { host.deleteHost() }
+            if (timedId != AppWidgetManager.INVALID_APPWIDGET_ID) preferences.remove(timedId)
+            repository.save(original)
+            drain()
+            shell("appwidget revokebind --package " + app.packageName + " --user " + userId)
+        }
+    }
+
+    private fun awaitNativeCountUp(view: AppWidgetHostView, timeoutMs: Long,
+        expectNegative: Boolean, accept: (String) -> Boolean = { true }): String {
+        val deadline = SystemClock.uptimeMillis() + timeoutMs
+        var observed = ""
+        while (SystemClock.uptimeMillis() < deadline) {
+            instrumentation.runOnMainSync {
+                val clock = view.findViewById<Chronometer>(R.id.timeWidgetClock)
+                observed = if (clock?.visibility == View.VISIBLE && clock.isShown &&
+                    !clock.isCountDown) clock.text.toString() else ""
+            }
+            if (observed.contains(":") &&
+                isNegativeDuration(observed) == expectNegative && accept(observed)) {
+                return observed
+            }
+            SystemClock.sleep(100)
+        }
+        fail("No count-up host clock (negative=$expectNegative) within $timeoutMs ms; last='$observed'")
+        error("Unreachable")
     }
 
     /** Chronometer uses the Unicode minus sign on some Android versions. */
