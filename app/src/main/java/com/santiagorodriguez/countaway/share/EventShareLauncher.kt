@@ -13,6 +13,8 @@ import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.model.RepeatRule
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 
 /**
  * Shares the same localized card or text fallback from a saved Home event or an editor draft.
@@ -25,10 +27,14 @@ internal object EventShareLauncher {
         icon: EventIcon,
         repeatRule: RepeatRule,
         countMode: CountMode,
+        eventTime: LocalTime? = null,
+        eventZone: ZoneId? = null,
         onFinished: () -> Unit = {},
     ) {
-        val today = CountdownTime.snapshot().today
-        val text = ShareCardContentFactory.text(activity, title, date, repeatRule, today, countMode)
+        val now = CountdownTime.snapshot().now
+        val today = now.toLocalDate()
+        val text = ShareCardContentFactory.text(activity, title, date, repeatRule, today,
+            countMode, eventTime, eventZone, now)
         if (title.length > 16_384 || text.length > 16_384) {
             // The complete text is a read-only private attachment, not a Binder extra.
             val appContext = activity.applicationContext
@@ -49,6 +55,7 @@ internal object EventShareLauncher {
         val content = ShareCardContentFactory.create(
             context = renderContext, title = title, date = date, icon = icon,
             repeatRule = repeatRule, today = today, countMode = countMode,
+            eventTime = eventTime, eventZone = eventZone, now = now,
         )
         val dark = ShareCardRenderer.resolveDark(activity)
         val appContext = activity.applicationContext

@@ -80,14 +80,11 @@ internal class HomeEventActions(
             )
         }
         action(R.id.home_event_share) {
-            if (event.eventTime != null) {
-                Toast.makeText(activity, R.string.editor_timed_share_pending, Toast.LENGTH_LONG).show()
-                return@action
-            }
             sharing = true
             EventShareLauncher.share(
                 activity = activity, title = event.title, date = event.date, icon = event.icon,
                 repeatRule = event.repeatRule, countMode = event.countMode,
+                eventTime = event.eventTime, eventZone = event.eventZone,
                 onFinished = { sharing = false },
             )
         }

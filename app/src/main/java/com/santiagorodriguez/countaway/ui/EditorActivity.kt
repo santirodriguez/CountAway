@@ -792,8 +792,11 @@ class EditorActivity : BaseActivity() {
     }
 
     private fun share() {
-        if (selectedTime != null) {
-            Toast.makeText(this, R.string.editor_timed_share_pending, Toast.LENGTH_LONG).show()
+        val time = selectedTime
+        val zone = selectedTimeZone
+        if (time != null && zone != null &&
+            !CountdownValidation.isSelectableTimedOccurrence(selectedDate, time, zone)) {
+            Toast.makeText(this, R.string.editor_time_dst_gap, Toast.LENGTH_LONG).show()
             return
         }
         val title = fullEditorTitle().trim()
@@ -805,6 +808,7 @@ class EditorActivity : BaseActivity() {
         EventShareLauncher.share(
             activity = this, title = title, date = selectedDate, icon = selectedIcon,
             repeatRule = selectedRepeatRule, countMode = selectedCountMode,
+            eventTime = time, eventZone = zone,
             onFinished = { shareButton.isEnabled = true },
         )
     }

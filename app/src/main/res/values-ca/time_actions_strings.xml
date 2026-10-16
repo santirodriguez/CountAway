@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="notification_timed_due_format">%1$s - Esdeveniment: %2$s</string>
-  <string name="schedule_next_reminder_timed">Proxim recordatori: %1$s a les %2$s (%3$s)</string>
+    <string name="notification_timed_due_format">%1$s · Esdeveniment: %2$s</string>
+    <string name="schedule_next_reminder_timed">Pròxim recordatori: %1$s a les %2$s (%3$s)</string>
+    <string name="share_timed_now">Ara</string>
+    <string name="share_timed_less_than_minute">menys d’1 min</string>
 </resources>
