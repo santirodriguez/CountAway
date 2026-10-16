@@ -56,8 +56,10 @@ class TimeWidgetProvider : AppWidgetProvider() {
         val appContext = context.applicationContext
         val preferences = WidgetPreferences(appContext)
         appWidgetIds.forEach(preferences::remove)
-        updateAllWidgets(appContext)
-        WidgetUpdateScheduler.ensureScheduled(appContext)
+        CountdownIo.execute {
+            updateAllWidgets(appContext)
+            WidgetUpdateScheduler.ensureScheduled(appContext)
+        }
         super.onDeleted(context, appWidgetIds)
     }
 
@@ -77,8 +79,10 @@ class TimeWidgetProvider : AppWidgetProvider() {
                 }
             }
         }
-        updateAllWidgets(appContext)
-        WidgetUpdateScheduler.ensureScheduled(appContext)
+        CountdownIo.execute {
+            updateAllWidgets(appContext)
+            WidgetUpdateScheduler.ensureScheduled(appContext)
+        }
         super.onRestored(context, oldWidgetIds, newWidgetIds)
     }
 
@@ -142,7 +146,7 @@ class TimeWidgetProvider : AppWidgetProvider() {
                     android.util.Log.e("CountAwayTimeWidget", "Failed to update widget " + id, error)
                 },
             )
-            val repeatingTargets = allIds.mapNotNull { id ->
+            val repeatingTargets = allIds.asList().mapNotNull { id ->
                 val config = preferences.get(id)?.takeIf { it.eventSelection == WidgetEventSelection.FIXED }
                 val event = config?.eventId?.let(eventsById::get)
                     ?.takeIf { it.eventTime != null && it.eventZone != null && it.repeatRule != RepeatRule.NONE }
