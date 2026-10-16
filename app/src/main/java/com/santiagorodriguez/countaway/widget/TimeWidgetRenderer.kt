@@ -83,7 +83,7 @@ internal object TimeWidgetRenderer {
 
         views.setImageViewResource(R.id.timeWidgetIcon, EventIconPresentation.drawableRes(timed.icon))
         views.setTextViewText(R.id.timeWidgetTitle, EventTransport.preview(timed.title))
-        views.setTextViewText(R.id.timeWidgetCaption, displayContext.getString(R.string.time_widget_total_hours))
+        views.setTextViewText(R.id.timeWidgetCaption, displayContext.getString(R.string.time_widget_live_timer))
         val targetText = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
             .withLocale(displayContext.resources.configuration.locales[0])
             .format(count.target)

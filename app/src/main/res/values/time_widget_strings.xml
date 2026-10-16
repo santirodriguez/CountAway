@@ -6,7 +6,7 @@
     <string name="time_widget_config_description">Choose one event with a time. The timer shows total hours, not days split from hours.</string>
     <string name="time_widget_no_events">Add a time to an event to select it here.</string>
     <string name="time_widget_choose_event">Choose a timed event</string>
-    <string name="time_widget_total_hours">TOTAL HOURS · MIN · SEC</string>
+    <string name="time_widget_live_timer">LIVE TIMER</string>
     <string name="time_widget_far_target">Open the event for its exact count</string>
     <string name="time_widget_preview_title">Next concert</string>
     <string name="time_widget_preview_target">18 Oct · 16:30</string>

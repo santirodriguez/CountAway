@@ -184,7 +184,7 @@ internal object TimeWidgetBoundaryScheduler {
     private const val WINDOW_MS = 15L * 60L * 1000L
 
     fun schedule(context: Context, targets: List<Instant>, now: Instant) {
-        val next = targets.asSequence().filter { it.isAfter(now) }.minOrNull() ?: run {
+        val next = TimeWidgetBoundaryPlanner.nextUpcoming(targets, now) ?: run {
             cancel(context)
             return
         }
