@@ -73,8 +73,16 @@ class TimeWidgetNativeInstrumentedTest {
             val name = "native-" + width + "x" + height + "-font" +
                 (font * 100).toInt() + "-" + appearance.storageKey
             capture(root, name + ".png")
-            val labelIds = listOf(R.id.timeWidgetTitle, R.id.timeWidgetCaption,
-                R.id.timeWidgetClock, R.id.timeWidgetDate)
+            val compactLargeText = font >= 1.6f && height <= 210
+            val caption = root.findViewById<TextView>(R.id.timeWidgetCaption)
+            assertEquals(name + " total-hours label visibility",
+                if (compactLargeText) View.GONE else View.VISIBLE, caption.visibility)
+            val labelIds = if (compactLargeText) {
+                listOf(R.id.timeWidgetTitle, R.id.timeWidgetClock, R.id.timeWidgetDate)
+            } else {
+                listOf(R.id.timeWidgetTitle, R.id.timeWidgetCaption,
+                    R.id.timeWidgetClock, R.id.timeWidgetDate)
+            }
             val bounds = labelIds.map { id ->
                 val tv = root.findViewById<TextView>(id)
                 assertTrue(name + " lost a field", tv.visibility == View.VISIBLE && tv.height > 0)
@@ -88,6 +96,15 @@ class TimeWidgetNativeInstrumentedTest {
                         rect.right <= root.width && rect.bottom <= root.height)
                 rect
             }
+            // Validate ink, not just measured height: invisible native digits were
+            // the original 200% failure on both API 26 and API 36.
+            val nativeLayout = checkNotNull(native.layout)
+            val ink = Rect()
+            val digits = native.text.toString()
+            native.paint.getTextBounds(digits, 0, digits.length, ink)
+            ink.offset(native.compoundPaddingLeft + nativeLayout.getLineLeft(0).toInt(), native.baseline)
+            assertTrue(name + " native digits clipped " + ink,
+                Rect(0, 0, native.width, native.height).contains(ink))
             for (index in bounds.indices) for (other in index + 1 until bounds.size) {
                 assertFalse(name + " overlapping " + index + "/" + other,
                     Rect.intersects(bounds[index], bounds[other]))
