@@ -734,7 +734,10 @@ class EditorActivity : BaseActivity() {
                 // an AM hour when OK takes focus. Commit that transition now,
                 // then restore the complete hour while OK already owns focus.
                 val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                positiveButton?.requestFocusFromTouch()
+                // Buttons are normally not focusable in touch mode. The hour
+                // header must relinquish focus before the 24-hour value is restored.
+                positiveButton?.isFocusableInTouchMode = true
+                positiveButton?.requestFocus()
                 dialog.updateTime(starting.hour, starting.minute)
                 positiveButton?.setOnClickListener {
                     // Read the displayed 24-hour value before platform validation:
