@@ -93,8 +93,10 @@ class TimeWidgetConfigActivity : BaseActivity() {
             }
         val saved = WidgetPreferences(applicationContext).get(widgetId)
         val defaults = WidgetDefaultsPreferences(applicationContext).get()
-        val style = WidgetStyleSelectionResolver.initial(
-            existing = saved?.let { WidgetStyleSelection(it.appearance, it.background) }, defaults = defaults)
+        // The distinct time widget starts in its editorial Horizon treatment;
+        // existing instances always restore their exact saved appearance/background.
+        val style = saved?.let { WidgetStyleSelection(it.appearance, it.background) }
+            ?: WidgetStyleSelection(defaults.appearance, WidgetBackground.HORIZON)
         selectedId = savedInstanceState?.getString(STATE_EVENT_ID) ?: saved?.eventId
         appearanceSpinner.setSelection(savedInstanceState?.getInt(STATE_APPEARANCE)
             ?: WidgetAppearance.entries.indexOf(style.appearance))

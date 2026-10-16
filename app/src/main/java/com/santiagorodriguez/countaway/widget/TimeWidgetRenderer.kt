@@ -72,7 +72,7 @@ internal object TimeWidgetRenderer {
             views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
             views.setViewVisibility(R.id.timeWidgetDate, View.GONE)
             if (interactive) views.setOnClickPendingIntent(R.id.timeWidgetRoot,
-                configureIntent(context, widgetId))
+                if (problem != null) openAppIntent(context, widgetId) else configureIntent(context, widgetId))
             return views
         }
 
@@ -102,6 +102,14 @@ internal object TimeWidgetRenderer {
         if (interactive) views.setOnClickPendingIntent(R.id.timeWidgetRoot,
             editIntent(context, widgetId, timed.id))
         return views
+    }
+
+    private fun openAppIntent(context: Context, widgetId: Int): PendingIntent {
+        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            ?: Intent(context, TimeWidgetConfigActivity::class.java)
+        intent.setData(Uri.parse("countaway://time-widget/" + widgetId + "/data-error"))
+        return PendingIntent.getActivity(context, 500_000 + widgetId, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
     private fun editIntent(context: Context, widgetId: Int, eventId: String): PendingIntent {
