@@ -174,7 +174,7 @@ class CountdownEventAdapter(
         val eventType = context.getString(EventTypePresentation.labelRes(event.type))
         val dateText = value.displayDate.format(dateFormatter)
         val formattedDate = if (timed != null && event.eventTime != null) {
-            val clock = event.eventTime.format(
+            val clock = timed.target.toLocalTime().format(
                 DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
             val zone = if (timed.target.zone != currentTime.zone) {
                 " · " + timed.target.format(DateTimeFormatter.ofPattern("z", locale))

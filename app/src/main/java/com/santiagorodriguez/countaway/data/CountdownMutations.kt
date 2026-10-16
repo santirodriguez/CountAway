@@ -8,6 +8,7 @@ import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationState
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
+import com.santiagorodriguez.countaway.widget.TimeWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 
 /** Called on CountdownIo: persistence and its follow-up work outlive the initiating UI. */
@@ -52,6 +53,7 @@ class CountdownMutations(context: Context) {
         val time = CountdownTime.snapshot()
         ArrivalNotificationScheduler.invalidatePlan()
         runCatching { CountdownWidgetProvider.updateAllWidgets(context, time) }
+        runCatching { TimeWidgetProvider.updateAllWidgets(context, time) }
         runCatching { WidgetUpdateScheduler.ensureScheduled(context, time) }
         runCatching { ArrivalNotificationScheduler.ensureScheduled(context, time) }
     }

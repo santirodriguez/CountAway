@@ -11,6 +11,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.model.RepeatRule
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,6 +19,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.util.Locale
 import java.io.File
 
 @RunWith(AndroidJUnit4::class)
@@ -28,6 +31,30 @@ class OptionalTimeHomeInstrumentedTest {
         id = "date-only", title = "A very long event title about an upcoming trip with more words",
         date = LocalDate.of(2026, 10, 18), type = EventType.TRIP,
         createdAt = Instant.parse("2026-01-01T00:00:00Z"))
+
+    @Test fun recurringDstGapMetadataUsesResolvedTargetTime() =
+        instrumentation.runOnMainSync {
+            val zone = ZoneId.of("America/New_York")
+            val now = ZonedDateTime.of(2026, 3, 7, 12, 0, 0, 0, zone)
+            val recurring = base.copy(
+                id = "dst-gap-home",
+                title = "Weekly recurrence",
+                date = LocalDate.of(2026, 3, 1),
+                eventTime = LocalTime.of(2, 30),
+                eventZone = zone,
+                repeatRule = RepeatRule.WEEKLY,
+            )
+            val configured = context.createConfigurationContext(
+                Configuration(context.resources.configuration).apply { setLocale(Locale.US) })
+            val adapter = CountdownEventAdapter(configured)
+            adapter.submit(listOf(recurring), now.toLocalDate(), now)
+            val row = adapter.getView(0, null, FrameLayout(configured)) as HomeEventRow
+            val meta = row.findViewById<TextView>(R.id.eventMeta).text.toString()
+            assertTrue("Expected resolved 03:30 after DST gap, got: $meta",
+                meta.contains("3:30"))
+            assertFalse("Home must not show the nonexistent 02:30 local time: $meta",
+                meta.contains("2:30"))
+        }
 
     @Test fun timedRowsKeepEntireClockVisibleWithLargeFonts() =
         instrumentation.runOnMainSync {

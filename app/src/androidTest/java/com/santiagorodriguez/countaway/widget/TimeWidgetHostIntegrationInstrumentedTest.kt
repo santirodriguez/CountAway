@@ -21,6 +21,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.CountdownMutations
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.ui.MainActivity
@@ -124,7 +125,9 @@ class TimeWidgetHostIntegrationInstrumentedTest {
                 val soon = nowAtBoundary.plusMinutes(waitMinutes).withSecond(0).withNano(0)
                 repository.save(original + timed.copy(date = soon.toLocalDate(),
                     eventTime = soon.toLocalTime()) + dateOnly)
-                TimeWidgetProvider.updateWidget(app, manager, timedId)
+                // Exercise the production mutation reconciliation path instead of
+                // manually asking the timed provider to refresh itself.
+                CountdownMutations(app).reconcile()
                 awaitClock(timedView, 5_000) { value ->
                     value.contains(":") && !isNegativeDuration(value) &&
                         value.substringBefore(":").toLongOrNull()?.let { it <= 1L } == true
@@ -135,6 +138,19 @@ class TimeWidgetHostIntegrationInstrumentedTest {
                 assertTrue("Classic widget disappeared when time widget crossed zero",
                     awaitText(classicView, R.id.widgetTitle, 4_000).contains("Date-only companion"))
                 capture(timedView, "bound-time-after-target.png")
+
+                // Removing the selected event must update an already-bound time
+                // widget even when MainActivity never resumes.
+                repository.save(original + dateOnly)
+                CountdownMutations(app).reconcile()
+                val missingTitle = awaitText(timedView, R.id.timeWidgetTitle, 8_000) {
+                    it.isNotBlank() && !it.contains("Hosted live concert")
+                }
+                assertFalse(missingTitle.contains("Hosted live concert"))
+                instrumentation.runOnMainSync {
+                    assertEquals(View.GONE,
+                        timedView.findViewById<Chronometer>(R.id.timeWidgetClock).visibility)
+                }
             }
         } finally {
             runCatching { host.stopListening() }
@@ -178,14 +194,15 @@ class TimeWidgetHostIntegrationInstrumentedTest {
         error("Unreachable")
     }
 
-    private fun awaitText(view: AppWidgetHostView, id: Int, timeoutMs: Long): String {
+    private fun awaitText(view: AppWidgetHostView, id: Int, timeoutMs: Long,
+        accept: (String) -> Boolean = { it.isNotBlank() }): String {
         val deadline = SystemClock.uptimeMillis() + timeoutMs
         var observed = ""
         while (SystemClock.uptimeMillis() < deadline) {
             instrumentation.runOnMainSync {
                 observed = view.findViewById<TextView>(id)?.text?.toString().orEmpty()
             }
-            if (observed.isNotBlank()) return observed
+            if (accept(observed)) return observed
             SystemClock.sleep(100)
         }
         fail("No hosted text for view $id")
