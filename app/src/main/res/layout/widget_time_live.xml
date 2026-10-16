@@ -66,10 +66,6 @@
                 android:gravity="center_vertical"
                 android:textStyle="bold"
                 android:textSize="39sp"
-                android:autoSizeTextType="uniform"
-                android:autoSizeMinTextSize="17sp"
-                android:autoSizeMaxTextSize="39sp"
-                android:autoSizeStepGranularity="1sp"
                 android:singleLine="true"
                 android:ellipsize="none"
                 android:textColor="@color/widget_dark_accent" />

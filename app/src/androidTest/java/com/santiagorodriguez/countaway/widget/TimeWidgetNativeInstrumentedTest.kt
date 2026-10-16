@@ -112,6 +112,37 @@ class TimeWidgetNativeInstrumentedTest {
         }
     }
 
+    @Test fun fourDigitNativeHoursFitAtTwoHundredPercentText() = instrumentation.runOnMainSync {
+        val zone = ZoneId.of("America/Argentina/Buenos_Aires")
+        val now = ZonedDateTime.now(zone)
+        val future = now.plusDays(120)
+        val targetEvent = event.copy(date = future.toLocalDate(),
+            eventTime = future.toLocalTime().withSecond(0).withNano(0), eventZone = zone)
+        val context = fontContext(2f)
+        val configuration = WidgetConfiguration(targetEvent.id, WidgetAppearance.DARK, WidgetBackground.HORIZON)
+        for ((width, height) in listOf(240 to 180, 280 to 210, 320 to 250)) {
+            val views = TimeWidgetRenderer.render(context, context, 1234, configuration,
+                targetEvent, null, CountdownTimeSnapshot(now), width, height,
+                hashMapOf(), interactive = false)
+            val root = views.apply(context, FrameLayout(context)) as FrameLayout
+            layout(root, context, width, height)
+            val clock = root.findViewById<Chronometer>(R.id.timeWidgetClock)
+            assertEquals(View.VISIBLE, clock.visibility)
+            val label = clock.text.toString()
+            assertTrue("Expected four-digit accumulated hours: " + label,
+                label.substringBefore(":").length >= 4)
+            val ink = Rect()
+            clock.paint.getTextBounds(label, 0, label.length, ink)
+            ink.offset(clock.compoundPaddingLeft + checkNotNull(clock.layout).getLineLeft(0).toInt(),
+                clock.baseline)
+            assertTrue("Four-digit native counter clipped at " + width + "dp: " + ink,
+                Rect(0, 0, clock.width, clock.height).contains(ink))
+            assertTrue(root.findViewById<TextView>(R.id.timeWidgetTitle).height > 0)
+            assertTrue(root.findViewById<TextView>(R.id.timeWidgetDate).height > 0)
+            capture(root, "native-four-digit-" + width + "x" + height + "-font200-dark.png")
+        }
+    }
+
     @Test fun farTargetsNeverDisplayFrozenOrOverflowingSeconds() = instrumentation.runOnMainSync {
         val distant = event.copy(date = LocalDate.of(2030, 10, 19))
         val remote = TimeWidgetRenderer.render(app, app, 1234,
