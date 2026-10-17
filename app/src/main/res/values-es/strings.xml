@@ -71,7 +71,7 @@
     <string name="event_icon_flag">Bandera</string>
     <string name="event_icon_pin">Ubicación</string>
 
-    <string name="widget_name">@string/app_name</string>
+    <string name="widget_name">Días · Ya Estamos</string>
     <string name="widget_description">Los días que faltan o pasaron, en tu pantalla de inicio.</string>
     <string name="widget_days_left">días restantes</string>
     <string name="widget_day_ago">día atrás</string>

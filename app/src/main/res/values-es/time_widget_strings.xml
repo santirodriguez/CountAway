@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="time_widget_name">CountAway · Con hora</string>
+    <string name="time_widget_name">Horas en vivo · Ya Estamos</string>
     <string name="time_widget_description">Horas totales, minutos y segundos en vivo para un evento con hora.</string>
-    <string name="time_widget_config_title">Widget con hora</string>
+    <string name="time_widget_config_title">Widget de horas en vivo</string>
     <string name="time_widget_config_description">Elegí un evento con hora. El contador muestra horas acumuladas, no días y horas separados.</string>
     <string name="time_widget_no_events">Agregale una hora a un evento para seleccionarlo acá.</string>
     <string name="time_widget_choose_event">Elegí un evento con hora</string>
