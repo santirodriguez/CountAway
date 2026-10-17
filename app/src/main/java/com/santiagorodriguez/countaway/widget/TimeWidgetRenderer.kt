@@ -162,7 +162,10 @@ internal object TimeWidgetRenderer {
         val availablePixels = (widthDp - 2 * horizontalPaddingDp - 4)
             .coerceAtLeast(1) * metrics.density
         val fit = availablePixels / paint.measureText(widestLabel).coerceAtLeast(1f)
-        return (maximumSizeSp * fit * 0.94f).coerceAtMost(maximumSizeSp)
+        // API 26 glyph bounds at enlarged font settings can exceed Paint's estimate.
+        // Reserve additional ink margin only for accessibility-scaled text.
+        val safetyFactor = if (context.resources.configuration.fontScale >= 1.6f) 0.80f else 0.94f
+        return (maximumSizeSp * fit * safetyFactor).coerceAtMost(maximumSizeSp)
     }
 
     private fun openAppIntent(context: Context, widgetId: Int): PendingIntent {
