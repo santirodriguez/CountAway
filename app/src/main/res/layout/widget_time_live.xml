@@ -32,6 +32,15 @@
                 android:layout_marginEnd="8dp"
                 android:src="@drawable/ic_event_calendar"
                 android:contentDescription="@null" />
+            <ImageView
+                android:id="@+id/timeWidgetBrandLogo"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/launcher_foreground_art"
+                android:contentDescription="@null"
+                android:visibility="gone" />
             <TextView
                 android:id="@+id/timeWidgetTitle"
                 android:layout_width="0dp"
@@ -43,16 +52,6 @@
                 android:textSize="14sp"
                 android:maxLines="3"
                 android:ellipsize="end" />
-            <!-- Reserved for a small secondary CountAway mark; the normal widget stays unchanged. -->
-            <ImageView
-                android:id="@+id/timeWidgetBrandMark"
-                android:layout_width="21dp"
-                android:layout_height="21dp"
-                android:layout_marginStart="5dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/widget_time_brand_mark"
-                android:contentDescription="@null"
-                android:visibility="gone" />
             <ImageView
                 android:id="@+id/timeWidgetLiveDot"
                 android:layout_width="7dp"

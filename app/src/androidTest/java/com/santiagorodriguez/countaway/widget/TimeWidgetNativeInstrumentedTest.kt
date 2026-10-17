@@ -10,6 +10,7 @@ import android.graphics.Rect
 import android.view.View
 import android.widget.Chronometer
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.R
@@ -79,6 +80,12 @@ class TimeWidgetNativeInstrumentedTest {
             val plan = TimeWidgetLayoutPlanner.plan(width, height, font)
             val density = context.resources.displayMetrics.density
             val card = root.findViewById<View>(R.id.timeWidgetContent)
+            val brand = root.findViewById<ImageView>(R.id.timeWidgetBrandLogo)
+            assertEquals(name + " colorful CountAway branding", View.VISIBLE, brand.visibility)
+            assertTrue(name + " missing original brand artwork", brand.drawable != null &&
+                brand.width > 0 && brand.height > 0)
+            assertEquals(name + " event icon must be replaced", View.GONE,
+                root.findViewById<View>(R.id.timeWidgetIcon).visibility)
             assertEquals(name + " horizontal padding", (plan.horizontalPaddingDp * density).roundToInt(),
                 card.paddingLeft)
             assertEquals(name + " vertical padding", (plan.verticalPaddingDp * density).roundToInt(),
@@ -210,6 +217,16 @@ class TimeWidgetNativeInstrumentedTest {
         assertEquals(View.GONE, root.findViewById<TextView>(R.id.timeWidgetCaption).visibility)
         assertEquals(View.VISIBLE, root.findViewById<TextView>(R.id.timeWidgetFallback).visibility)
         assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetLiveDot).visibility)
+    }
+
+    @Test fun placeholderShowsNeutralEventIconAndHidesBrandArt() = instrumentation.runOnMainSync {
+        val remote = TimeWidgetRenderer.render(app, app, 1234,
+            null, null, null, snapshot, 240, 180, hashMapOf(), interactive = false)
+        val root = remote.apply(app, FrameLayout(app)) as FrameLayout
+        layout(root, app, 240, 180)
+        assertEquals(View.VISIBLE, root.findViewById<View>(R.id.timeWidgetIcon).visibility)
+        assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetBrandLogo).visibility)
+        assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetClock).visibility)
     }
 
     private fun fontContext(scale: Float): Context = app.createConfigurationContext(
