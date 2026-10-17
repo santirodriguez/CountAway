@@ -45,6 +45,20 @@ internal object TimeWidgetRenderer {
         interactive: Boolean = true,
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_time_live)
+        val layout = TimeWidgetLayoutPlanner.plan(widthDp, heightDp,
+            displayContext.resources.configuration.fontScale)
+        views.setViewPadding(R.id.timeWidgetContent,
+            layout.horizontalPaddingDp, layout.verticalPaddingDp,
+            layout.horizontalPaddingDp, layout.verticalPaddingDp)
+        views.setInt(R.id.timeWidgetTitle, "setMaxLines", layout.titleLines)
+        views.setTextViewTextSize(R.id.timeWidgetTitle, TypedValue.COMPLEX_UNIT_SP, layout.titleSizeSp)
+        views.setTextViewTextSize(R.id.timeWidgetDate, TypedValue.COMPLEX_UNIT_SP, layout.dateSizeSp)
+        views.setViewVisibility(R.id.timeWidgetDate,
+            if (layout.showDate) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.timeWidgetAccentLine,
+            if (layout.showAccent) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.timeWidgetLiveDot,
+            if (layout.showLiveIndicator) View.VISIBLE else View.GONE)
         val appearance = configuration?.appearance ?: WidgetAppearance.SYSTEM
         val background = configuration?.background ?: WidgetBackground.HORIZON
         val theme = WidgetThemeResolver.resolve(context, appearance, background)
@@ -55,6 +69,8 @@ internal object TimeWidgetRenderer {
         }
         views.setImageViewBitmap(R.id.timeWidgetBackground, bitmap)
         views.setInt(R.id.timeWidgetIcon, "setColorFilter", theme.accentTextColor)
+        views.setInt(R.id.timeWidgetAccentLine, "setColorFilter", theme.accentTextColor)
+        views.setInt(R.id.timeWidgetLiveDot, "setColorFilter", theme.accentTextColor)
         views.setTextColor(R.id.timeWidgetTitle, theme.primaryTextColor)
         views.setTextColor(R.id.timeWidgetCaption, theme.secondaryTextColor)
         views.setTextColor(R.id.timeWidgetClock, theme.accentTextColor)
@@ -74,6 +90,9 @@ internal object TimeWidgetRenderer {
             views.setImageViewResource(R.id.timeWidgetIcon, R.drawable.ic_event_calendar)
             views.setTextViewText(R.id.timeWidgetTitle, displayContext.getString(message))
             views.setTextViewText(R.id.timeWidgetCaption, displayContext.getString(R.string.widget_tap_to_configure))
+            views.setViewVisibility(R.id.timeWidgetCaption, View.VISIBLE)
+            views.setViewVisibility(R.id.timeWidgetAccentLine, View.GONE)
+            views.setViewVisibility(R.id.timeWidgetLiveDot, View.GONE)
             views.setViewVisibility(R.id.timeWidgetClock, View.GONE)
             views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
             views.setViewVisibility(R.id.timeWidgetDate, View.GONE)
@@ -84,19 +103,13 @@ internal object TimeWidgetRenderer {
 
         views.setImageViewResource(R.id.timeWidgetIcon, EventIconPresentation.drawableRes(timed.icon))
         views.setTextViewText(R.id.timeWidgetTitle, EventTransport.preview(timed.title))
-        views.setTextViewText(R.id.timeWidgetCaption, displayContext.getString(R.string.time_widget_live_timer))
+        // The ticking digits identify this as a live timer; omit the old oversized label.
+        views.setViewVisibility(R.id.timeWidgetCaption, View.GONE)
         val targetText = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
             .withLocale(displayContext.resources.configuration.locales[0])
             .format(count.target)
         val zoneSuffix = if (count.target.zone != snapshot.zone) " · " + count.target.zone.id else ""
         views.setTextViewText(R.id.timeWidgetDate, targetText + zoneSuffix)
-        views.setViewVisibility(R.id.timeWidgetDate, View.VISIBLE)
-        val compactLargeText = displayContext.resources.configuration.fontScale >= 1.6f && heightDp <= 210
-        if (compactLargeText) {
-            views.setViewVisibility(R.id.timeWidgetCaption, View.GONE)
-            views.setTextViewTextSize(R.id.timeWidgetTitle, TypedValue.COMPLEX_UNIT_SP, 12f)
-            views.setTextViewTextSize(R.id.timeWidgetDate, TypedValue.COMPLEX_UNIT_SP, 10f)
-        }
         val clockNow = Instant.now()
         val plan = TimeWidgetClockPolicy.plan(
             clockNow, count.target.toInstant(), SystemClock.elapsedRealtime(), timed.countMode,
@@ -111,7 +124,9 @@ internal object TimeWidgetRenderer {
             views.setViewVisibility(R.id.timeWidgetClock, View.VISIBLE)
             views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
             views.setTextViewTextSize(R.id.timeWidgetClock, TypedValue.COMPLEX_UNIT_SP,
-                liveClockTextSizeSp(displayContext, widthDp, clockNow, count.target.toInstant()))
+                liveClockTextSizeSp(displayContext, widthDp,
+                    layout.horizontalPaddingDp, layout.clockMaxSizeSp,
+                    clockNow, count.target.toInstant()))
             views.setChronometer(R.id.timeWidgetClock, plan.elapsedRealtimeBase, null, true)
             views.setChronometerCountDown(R.id.timeWidgetClock, plan.countDown)
         }
@@ -125,7 +140,10 @@ internal object TimeWidgetRenderer {
      * Fit a deliberately wider future sample once, instead of relying on
      * TextView auto-size measured against a shorter initial tick.
      */
-    private fun liveClockTextSizeSp(context: Context, widthDp: Int, now: Instant, target: Instant): Float {
+    private fun liveClockTextSizeSp(
+        context: Context, widthDp: Int, horizontalPaddingDp: Int, maximumSizeSp: Float,
+        now: Instant, target: Instant,
+    ): Float {
         val metrics = context.resources.displayMetrics
         val hoursUntilRefresh = kotlin.math.abs(Duration.between(now, target).seconds) / 3_600L + 48L
         val hourDigits = hoursUntilRefresh.toString().length.coerceAtLeast(2)
@@ -133,11 +151,12 @@ internal object TimeWidgetRenderer {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
             fontFeatureSettings = "tnum"
-            textSize = 39f * metrics.scaledDensity
+            textSize = maximumSizeSp * metrics.scaledDensity
         }
-        val availablePixels = (widthDp - 36).coerceAtLeast(1) * metrics.density
+        val availablePixels = (widthDp - 2 * horizontalPaddingDp - 4)
+            .coerceAtLeast(1) * metrics.density
         val fit = availablePixels / paint.measureText(widestLabel).coerceAtLeast(1f)
-        return (39f * fit * 0.92f).coerceAtMost(39f)
+        return (maximumSizeSp * fit * 0.94f).coerceAtMost(maximumSizeSp)
     }
 
     private fun openAppIntent(context: Context, widgetId: Int): PendingIntent {

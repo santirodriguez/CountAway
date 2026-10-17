@@ -47,14 +47,17 @@ class TimeWidgetNativeInstrumentedTest {
         if (android.os.Build.VERSION.SDK_INT >= 31) {
             assertEquals(1, classic.targetCellWidth)
             assertEquals(1, classic.targetCellHeight)
-            assertEquals(3, timed.targetCellWidth)
+            assertEquals(2, timed.targetCellWidth)
             assertEquals(2, timed.targetCellHeight)
         }
         assertEquals(ComponentName(app, TimeWidgetConfigActivity::class.java), timed.configure)
+        assertTrue("Timed widget should fit a two-column launcher cell", timed.minResizeWidth <= 140)
+        assertTrue("Timed widget should shrink to a one-row height", timed.minResizeHeight <= 84)
     }
 
-    @Test fun nativeClockAndTargetStayVisibleAtMeasuredHostSizes() = instrumentation.runOnMainSync {
-        val sizes = listOf(240 to 180, 280 to 210, 320 to 250)
+    @Test fun nativeClockAndTitleFitCompactWideTallAndLargeHostSizes() = instrumentation.runOnMainSync {
+        val sizes = listOf(160 to 90, 240 to 95, 180 to 120, 160 to 190,
+            240 to 180, 280 to 210, 320 to 250)
         val fonts = listOf(1f, 1.3f, 2f)
         val themes = listOf(WidgetAppearance.DARK, WidgetAppearance.LIGHT)
         for ((width, height) in sizes) for (font in fonts) for (appearance in themes) {
@@ -69,24 +72,29 @@ class TimeWidgetNativeInstrumentedTest {
             assertTrue("Clock failed to show native H:MM:SS", native.text.toString().contains(":"))
             assertTrue("More than 24 hours must use total hours: " + native.text,
                 native.text.toString().substringBefore(":").toLongOrNull()?.let { it >= 24L } == true)
-            assertTrue(root.findViewById<TextView>(R.id.timeWidgetDate).text.toString().contains("19"))
             val name = "native-" + width + "x" + height + "-font" +
                 (font * 100).toInt() + "-" + appearance.storageKey
-            capture(root, name + ".png")
-            val compactLargeText = font >= 1.6f && height <= 210
-            val caption = root.findViewById<TextView>(R.id.timeWidgetCaption)
-            assertEquals(name + " total-hours label visibility",
-                if (compactLargeText) View.GONE else View.VISIBLE, caption.visibility)
-            val labelIds = if (compactLargeText) {
-                listOf(R.id.timeWidgetTitle, R.id.timeWidgetClock, R.id.timeWidgetDate)
-            } else {
-                listOf(R.id.timeWidgetTitle, R.id.timeWidgetCaption,
-                    R.id.timeWidgetClock, R.id.timeWidgetDate)
+            val plan = TimeWidgetLayoutPlanner.plan(width, height, font)
+            val date = root.findViewById<TextView>(R.id.timeWidgetDate)
+            assertTrue(date.text.toString().contains("19"))
+            assertEquals(name + " date visibility",
+                if (plan.showDate) View.VISIBLE else View.GONE, date.visibility)
+            assertEquals(name + " no redundant live caption", View.GONE,
+                root.findViewById<TextView>(R.id.timeWidgetCaption).visibility)
+            assertEquals(name + " decorative accent visibility",
+                if (plan.showAccent) View.VISIBLE else View.GONE,
+                root.findViewById<View>(R.id.timeWidgetAccentLine).visibility)
+            assertEquals(name + " more title lines when available",
+                plan.titleLines, root.findViewById<TextView>(R.id.timeWidgetTitle).maxLines)
+            val labelIds = buildList {
+                add(R.id.timeWidgetTitle)
+                add(R.id.timeWidgetClock)
+                if (plan.showDate) add(R.id.timeWidgetDate)
             }
             val bounds = labelIds.map { id ->
                 val tv = root.findViewById<TextView>(id)
-                assertTrue(name + " lost a field", tv.visibility == View.VISIBLE && tv.height > 0)
-                assertTrue(name + " clipped all text: " + tv.text, tv.layout != null)
+                assertTrue(name + " lost a field: " + id, tv.visibility == View.VISIBLE && tv.height > 0)
+                assertNotNull(name + " missing text layout", tv.layout)
                 val rect = Rect()
                 root.offsetDescendantRectToMyCoords(tv, rect.apply {
                     set(0, 0, tv.width, tv.height)
@@ -96,8 +104,6 @@ class TimeWidgetNativeInstrumentedTest {
                         rect.right <= root.width && rect.bottom <= root.height)
                 rect
             }
-            // Validate ink, not just measured height: invisible native digits were
-            // the original 200% failure on both API 26 and API 36.
             val nativeLayout = checkNotNull(native.layout)
             val ink = Rect()
             val digits = native.text.toString()
@@ -109,6 +115,22 @@ class TimeWidgetNativeInstrumentedTest {
                 assertFalse(name + " overlapping " + index + "/" + other,
                     Rect.intersects(bounds[index], bounds[other]))
             }
+            capture(root, name + ".png")
+        }
+    }
+
+    @Test fun pickerNamesLeadWithDaysOrLiveHoursInAllLanguages() {
+        for ((tag,days,hours) in listOf(
+            Triple("en", "Days", "Live hours"),
+            Triple("es", "Días", "Horas en vivo"),
+            Triple("ca", "Dies", "Hores en directe"),
+        )) {
+            val localized = app.createConfigurationContext(
+                Configuration(app.resources.configuration).apply { setLocale(Locale.forLanguageTag(tag)) })
+            assertTrue(localized.getString(R.string.widget_name).startsWith(days))
+            assertTrue(localized.getString(R.string.time_widget_name).startsWith(hours))
+            assertNotEquals(localized.getString(R.string.widget_name),
+                localized.getString(R.string.time_widget_name))
         }
     }
 
@@ -143,7 +165,7 @@ class TimeWidgetNativeInstrumentedTest {
             eventTime = future.toLocalTime().withSecond(0).withNano(0), eventZone = zone)
         val context = fontContext(2f)
         val configuration = WidgetConfiguration(targetEvent.id, WidgetAppearance.DARK, WidgetBackground.HORIZON)
-        for ((width, height) in listOf(240 to 180, 280 to 210, 320 to 250)) {
+        for ((width, height) in listOf(160 to 90, 160 to 190, 240 to 180, 280 to 210, 320 to 250)) {
             val views = TimeWidgetRenderer.render(context, context, 1234, configuration,
                 targetEvent, null, CountdownTimeSnapshot(now), width, height,
                 hashMapOf(), interactive = false)
@@ -161,7 +183,10 @@ class TimeWidgetNativeInstrumentedTest {
             assertTrue("Four-digit native counter clipped at " + width + "dp: " + ink,
                 Rect(0, 0, clock.width, clock.height).contains(ink))
             assertTrue(root.findViewById<TextView>(R.id.timeWidgetTitle).height > 0)
-            assertTrue(root.findViewById<TextView>(R.id.timeWidgetDate).height > 0)
+            val date = root.findViewById<TextView>(R.id.timeWidgetDate)
+            val showDate = TimeWidgetLayoutPlanner.plan(width, height, 2f).showDate
+            assertEquals(if (showDate) View.VISIBLE else View.GONE, date.visibility)
+            if (showDate) assertTrue(date.height > 0)
             capture(root, "native-four-digit-" + width + "x" + height + "-font200-dark.png")
         }
     }

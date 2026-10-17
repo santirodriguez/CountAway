@@ -79,7 +79,7 @@
     <string name="event_icon_flag">Flag</string>
     <string name="event_icon_pin">Pin</string>
 
-    <string name="widget_name">@string/app_name</string>
+    <string name="widget_name">Days · CountAway</string>
     <string name="widget_description">Days until or since your dates, right on your home screen.</string>
     <string name="widget_days_left">days left</string>
     <string name="widget_day_ago">day ago</string>

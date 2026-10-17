@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="time_widget_name">CountAway · Amb hora</string>
+    <string name="time_widget_name">Hores en directe · Ja Queda Poc</string>
     <string name="time_widget_description">Hores totals, minuts i segons en directe per a un esdeveniment amb hora.</string>
-    <string name="time_widget_config_title">Widget amb hora</string>
+    <string name="time_widget_config_title">Giny d'hores en directe</string>
     <string name="time_widget_config_description">Tria un esdeveniment amb hora. El comptador mostra hores acumulades, no dies i hores separats.</string>
     <string name="time_widget_no_events">Afegeix una hora a un esdeveniment per seleccionar-lo aquí.</string>
     <string name="time_widget_choose_event">Tria un esdeveniment amb hora</string>
