@@ -10,7 +10,7 @@ class TimeWidgetLayoutPlannerTest {
         assertFalse(short.showDate)
         assertFalse(short.showAccent)
         assertFalse(short.showLiveIndicator)
-        assertEquals(32f, short.clockMaxSizeSp)
+        assertEquals(32f, short.clockMaxSizeSp, 0f)
         assertEquals(8, short.verticalPaddingDp)
     }
 
@@ -32,7 +32,7 @@ class TimeWidgetLayoutPlannerTest {
     @Test fun largeTextMakesSpaceForNativeClockWithoutDiscardingRoomyDetails() {
         val medium = TimeWidgetLayoutPlanner.plan(240, 180, 2f)
         val roomy = TimeWidgetLayoutPlanner.plan(280, 210, 2f)
-        assertEquals(12f, medium.titleSizeSp)
+        assertEquals(12f, medium.titleSizeSp, 0f)
         assertEquals(2, medium.titleLines)
         assertFalse(medium.showDate)
         assertTrue(roomy.showDate)
@@ -41,7 +41,7 @@ class TimeWidgetLayoutPlannerTest {
 
     @Test fun largerCardsKeepTheTimerAsTheVisualFocus() {
         val full = TimeWidgetLayoutPlanner.plan(320, 250, 1f)
-        assertEquals(48f, full.clockMaxSizeSp)
+        assertEquals(48f, full.clockMaxSizeSp, 0f)
         assertTrue(full.showDate)
         assertTrue(full.showLiveIndicator)
     }
