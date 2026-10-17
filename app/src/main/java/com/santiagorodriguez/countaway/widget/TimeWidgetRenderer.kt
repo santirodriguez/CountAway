@@ -24,6 +24,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.math.roundToInt
 
 internal data class TimeWidgetBackgroundKey(
     val background: WidgetBackground, val dark: Boolean, val width: Int, val height: Int,
@@ -47,9 +48,13 @@ internal object TimeWidgetRenderer {
         val views = RemoteViews(context.packageName, R.layout.widget_time_live)
         val layout = TimeWidgetLayoutPlanner.plan(widthDp, heightDp,
             displayContext.resources.configuration.fontScale)
+        // The pre-API-37 RemoteViews padding overload expects physical pixels.
+        val density = displayContext.resources.displayMetrics.density
+        val horizontalPaddingPx = (layout.horizontalPaddingDp * density).roundToInt()
+        val verticalPaddingPx = (layout.verticalPaddingDp * density).roundToInt()
         views.setViewPadding(R.id.timeWidgetContent,
-            layout.horizontalPaddingDp, layout.verticalPaddingDp,
-            layout.horizontalPaddingDp, layout.verticalPaddingDp)
+            horizontalPaddingPx, verticalPaddingPx,
+            horizontalPaddingPx, verticalPaddingPx)
         views.setInt(R.id.timeWidgetTitle, "setMaxLines", layout.titleLines)
         views.setTextViewTextSize(R.id.timeWidgetTitle, TypedValue.COMPLEX_UNIT_SP, layout.titleSizeSp)
         views.setTextViewTextSize(R.id.timeWidgetDate, TypedValue.COMPLEX_UNIT_SP, layout.dateSizeSp)

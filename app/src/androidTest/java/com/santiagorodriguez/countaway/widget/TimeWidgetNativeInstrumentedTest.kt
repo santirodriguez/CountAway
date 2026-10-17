@@ -77,6 +77,12 @@ class TimeWidgetNativeInstrumentedTest {
             val name = "native-" + width + "x" + height + "-font" +
                 (font * 100).toInt() + "-" + appearance.storageKey
             val plan = TimeWidgetLayoutPlanner.plan(width, height, font)
+            val density = context.resources.displayMetrics.density
+            val card = root.findViewById<View>(R.id.timeWidgetContent)
+            assertEquals(name + " horizontal padding", (plan.horizontalPaddingDp * density).roundToInt(),
+                card.paddingLeft)
+            assertEquals(name + " vertical padding", (plan.verticalPaddingDp * density).roundToInt(),
+                card.paddingTop)
             val date = root.findViewById<TextView>(R.id.timeWidgetDate)
             assertTrue(date.text.toString().contains("19"))
             assertEquals(name + " date visibility",
