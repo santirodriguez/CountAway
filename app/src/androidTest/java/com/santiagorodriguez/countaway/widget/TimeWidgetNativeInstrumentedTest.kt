@@ -88,8 +88,13 @@ class TimeWidgetNativeInstrumentedTest {
                 root.findViewById<View>(R.id.timeWidgetIcon).visibility)
             assertEquals(name + " horizontal padding", (plan.horizontalPaddingDp * density).roundToInt(),
                 card.paddingLeft)
-            assertEquals(name + " vertical padding", (plan.verticalPaddingDp * density).roundToInt(),
-                card.paddingTop)
+            val baselinePaddingPx = (plan.verticalPaddingDp * density).roundToInt()
+            val liftPx = if (width >= 200 && height < 110 && font >= 1.6f)
+                (4 * density).roundToInt() else 0
+            assertEquals(name + " upper padding", baselinePaddingPx - liftPx, card.paddingTop)
+            assertEquals(name + " lower padding", baselinePaddingPx + liftPx, card.paddingBottom)
+            assertEquals(name + " total vertical padding preserved", 2 * baselinePaddingPx,
+                card.paddingTop + card.paddingBottom)
             val date = root.findViewById<TextView>(R.id.timeWidgetDate)
             assertTrue(date.text.toString().contains("19"))
             assertEquals(name + " date visibility",

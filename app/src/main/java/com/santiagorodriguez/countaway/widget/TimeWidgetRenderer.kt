@@ -51,9 +51,13 @@ internal object TimeWidgetRenderer {
         val density = displayContext.resources.displayMetrics.density
         val horizontalPaddingPx = (layout.horizontalPaddingDp * density).roundToInt()
         val verticalPaddingPx = (layout.verticalPaddingDp * density).roundToInt()
+        // Keep total padding unchanged while lifting oversized text off the bottom edge.
+        val liftPx = if (widthDp >= 200 && heightDp < 110 &&
+            displayContext.resources.configuration.fontScale >= 1.6f
+        ) (4 * density).roundToInt() else 0
         views.setViewPadding(R.id.timeWidgetContent,
-            horizontalPaddingPx, verticalPaddingPx,
-            horizontalPaddingPx, verticalPaddingPx)
+            horizontalPaddingPx, verticalPaddingPx - liftPx,
+            horizontalPaddingPx, verticalPaddingPx + liftPx)
         views.setInt(R.id.timeWidgetTitle, "setMaxLines", layout.titleLines)
         views.setTextViewTextSize(R.id.timeWidgetTitle, TypedValue.COMPLEX_UNIT_SP, layout.titleSizeSp)
         views.setTextViewTextSize(R.id.timeWidgetDate, TypedValue.COMPLEX_UNIT_SP, layout.dateSizeSp)
