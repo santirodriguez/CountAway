@@ -3,7 +3,8 @@ package com.santiagorodriguez.countaway.widget
 /** Choose visual density from the actual host bounds; the clock still ticks natively. */
 internal data class TimeWidgetLayoutPlan(
     val horizontalPaddingDp: Int,
-    val verticalPaddingDp: Int,
+    val topPaddingDp: Int,
+    val bottomPaddingDp: Int,
     val titleLines: Int,
     val titleSizeSp: Float,
     val dateSizeSp: Float,
@@ -18,13 +19,17 @@ internal object TimeWidgetLayoutPlanner {
         val width = widthDp.coerceAtLeast(1)
         val height = heightDp.coerceAtLeast(1)
         val enlarged = fontScale >= 1.6f
+        val veryShortWithLargeText = enlarged && height < 110
+        val standardPadding = when {
+            height < 110 -> 8
+            height < 146 -> 10
+            else -> 13
+        }
         return TimeWidgetLayoutPlan(
             horizontalPaddingDp = if (width < 185) 10 else 15,
-            verticalPaddingDp = when {
-                height < 110 -> 8
-                height < 146 -> 10
-                else -> 13
-            },
+            // Keep the digits unchanged, but raise content away from the rounded bottom edge.
+            topPaddingDp = if (veryShortWithLargeText) 6 else standardPadding,
+            bottomPaddingDp = if (veryShortWithLargeText) 14 else standardPadding,
             titleLines = when {
                 width < 200 && height >= 155 -> 3
                 height >= 132 -> 2
