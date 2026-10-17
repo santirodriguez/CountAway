@@ -209,6 +209,7 @@ class TimeWidgetNativeInstrumentedTest {
         assertEquals(View.GONE, root.findViewById<Chronometer>(R.id.timeWidgetClock).visibility)
         assertEquals(View.GONE, root.findViewById<TextView>(R.id.timeWidgetCaption).visibility)
         assertEquals(View.VISIBLE, root.findViewById<TextView>(R.id.timeWidgetFallback).visibility)
+        assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetLiveDot).visibility)
     }
 
     private fun fontContext(scale: Float): Context = app.createConfigurationContext(
