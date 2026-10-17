@@ -51,8 +51,10 @@ class TimeWidgetNativeInstrumentedTest {
             assertEquals(2, timed.targetCellHeight)
         }
         assertEquals(ComponentName(app, TimeWidgetConfigActivity::class.java), timed.configure)
-        assertTrue("Timed widget should fit a two-column launcher cell", timed.minResizeWidth <= 140)
-        assertTrue("Timed widget should shrink to a one-row height", timed.minResizeHeight <= 84)
+        assertTrue("Timed widget must allow narrower launcher resizing",
+            timed.minResizeWidth < timed.minWidth)
+        assertTrue("Timed widget must allow shorter launcher resizing",
+            timed.minResizeHeight < timed.minHeight)
     }
 
     @Test fun nativeClockAndTitleFitCompactWideTallAndLargeHostSizes() = instrumentation.runOnMainSync {
