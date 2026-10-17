@@ -50,7 +50,7 @@ internal object TimeWidgetRenderer {
         // The pre-API-37 RemoteViews padding overload expects physical pixels.
         val density = displayContext.resources.displayMetrics.density
         val horizontalPaddingPx = (layout.horizontalPaddingDp * density).roundToInt()
-        val verticalPaddingPx = (layout.topPaddingDp * density).roundToInt()
+        val verticalPaddingPx = (layout.verticalPaddingDp * density).roundToInt()
         views.setViewPadding(R.id.timeWidgetContent,
             horizontalPaddingPx, verticalPaddingPx,
             horizontalPaddingPx, verticalPaddingPx)
