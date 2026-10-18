@@ -83,6 +83,20 @@
             android:ellipsize="end"
             android:visibility="gone" />
 
+        <TextView
+            android:id="@+id/timeWidgetLongDays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:fontFamily="sans-serif-condensed"
+            android:fontFeatureSettings="tnum"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textStyle="bold"
+            android:textColor="@color/widget_dark_accent"
+            android:textSize="27sp"
+            android:visibility="gone" />
+
         <Chronometer
             android:id="@+id/timeWidgetClock"
             android:layout_width="match_parent"
@@ -97,6 +111,19 @@
             android:singleLine="true"
             android:ellipsize="none"
             android:textColor="@color/widget_dark_accent" />
+
+        <TextView
+            android:id="@+id/timeWidgetDetailHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:fontFamily="sans-serif"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textSize="10sp"
+            android:textColor="@color/widget_dark_secondary_text"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/timeWidgetFallback"

@@ -56,6 +56,9 @@ class TimeWidgetNativeInstrumentedTest {
             timed.minResizeWidth < timed.minWidth)
         assertTrue("Timed widget must allow shorter launcher resizing",
             timed.minResizeHeight < timed.minHeight)
+        val twoRowHintPx = (95 * app.resources.displayMetrics.density).roundToInt()
+        assertTrue("Default minHeight must fit a two-row launcher cell",
+            timed.minHeight <= twoRowHintPx)
     }
 
     @Test fun nativeClockAndTitleFitCompactWideTallAndLargeHostSizes() = instrumentation.runOnMainSync {
@@ -211,17 +214,55 @@ class TimeWidgetNativeInstrumentedTest {
         }
     }
 
-    @Test fun farTargetsNeverDisplayFrozenOrOverflowingSeconds() = instrumentation.runOnMainSync {
-        val distant = event.copy(date = LocalDate.of(2030, 10, 19))
-        val remote = TimeWidgetRenderer.render(app, app, 1234,
-            WidgetConfiguration(distant.id, WidgetAppearance.SYSTEM, WidgetBackground.HORIZON),
-            distant, null, snapshot, 240, 180, hashMapOf(), interactive = false)
-        val root = remote.apply(app, FrameLayout(app)) as FrameLayout
-        layout(root, app, 240, 180)
-        assertEquals(View.GONE, root.findViewById<Chronometer>(R.id.timeWidgetClock).visibility)
-        assertEquals(View.GONE, root.findViewById<TextView>(R.id.timeWidgetCaption).visibility)
-        assertEquals(View.VISIBLE, root.findViewById<TextView>(R.id.timeWidgetFallback).visibility)
-        assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetLiveDot).visibility)
+    @Test fun historicalAndFutureCenturyCountsAlwaysExposeNumericDays() = instrumentation.runOnMainSync {
+        val zone = ZoneId.of("America/Argentina/Buenos_Aires")
+        val now = ZonedDateTime.now(zone)
+        val cases = listOf(
+            Triple("countup-1985", LocalDate.of(1985, 4, 3),
+                com.santiagorodriguez.countaway.model.CountMode.COUNT_UP),
+            Triple("countdown-1965", LocalDate.of(1965, 8, 15),
+                com.santiagorodriguez.countaway.model.CountMode.COUNT_DOWN),
+            Triple("future-2126", now.plusYears(100).toLocalDate(),
+                com.santiagorodriguez.countaway.model.CountMode.COUNT_DOWN),
+        )
+        for ((tag, date, mode) in cases)
+            for ((width, height) in listOf(160 to 90, 180 to 120, 160 to 190, 240 to 180, 320 to 250))
+                for (font in listOf(1f, 2f)) {
+                    val context = fontContext(font)
+                    val distant = event.copy(title = "Historical birthday and anniversary",
+                        date = date, eventTime = LocalTime.of(9, 25), eventZone = zone, countMode = mode)
+                    val views = TimeWidgetRenderer.render(context, context, 1234,
+                        WidgetConfiguration(distant.id, WidgetAppearance.DARK, WidgetBackground.HORIZON),
+                        distant, null, CountdownTimeSnapshot(now), width, height,
+                        hashMapOf(), interactive = false)
+                    val root = views.apply(context, FrameLayout(context)) as FrameLayout
+                    layout(root, context, width, height)
+                    val name = "$tag-$width" + "x$height-f" + (font * 100).toInt()
+                    val days = root.findViewById<TextView>(R.id.timeWidgetLongDays)
+                    val clock = root.findViewById<Chronometer>(R.id.timeWidgetClock)
+                    assertEquals(name, View.VISIBLE, days.visibility)
+                    assertTrue(name + " missing numeric days", days.text.toString().contains("day"))
+                    assertEquals(name + " no generic fallback", View.GONE,
+                        root.findViewById<View>(R.id.timeWidgetFallback).visibility)
+                    assertEquals(name + " branded", View.VISIBLE,
+                        root.findViewById<View>(R.id.timeWidgetBrandLogo).visibility)
+                    val visible = height >= 115 && (font < 1.6f || height >= 175)
+                    assertEquals(name + " native short clock",
+                        if (visible) View.VISIBLE else View.GONE, clock.visibility)
+                    if (visible) {
+                        assertEquals(mode == com.santiagorodriguez.countaway.model.CountMode.COUNT_DOWN,
+                            clock.isCountDown)
+                        assertTrue(name + " missing native seconds", clock.text.contains(":"))
+                    }
+                    for (v in listOf(days, root.findViewById<TextView>(R.id.timeWidgetTitle))) {
+                        val rect = Rect(0, 0, v.width, v.height)
+                        root.offsetDescendantRectToMyCoords(v, rect)
+                        assertTrue(name + " truncated field bounds " + rect,
+                            rect.left >= 0 && rect.top >= 0 &&
+                                rect.right <= root.width && rect.bottom <= root.height)
+                    }
+                    capture(root, "long-range-" + name + ".png")
+                }
     }
 
     @Test fun placeholderShowsNeutralEventIconAndHidesBrandArt() = instrumentation.runOnMainSync {

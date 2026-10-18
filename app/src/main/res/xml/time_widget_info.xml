@@ -5,7 +5,7 @@
     android:initialLayout="@layout/widget_time_live"
     android:previewLayout="@layout/widget_time_preview"
     android:minWidth="150dp"
-    android:minHeight="115dp"
+    android:minHeight="90dp"
     android:minResizeWidth="140dp"
     android:minResizeHeight="84dp"
     android:targetCellWidth="2"

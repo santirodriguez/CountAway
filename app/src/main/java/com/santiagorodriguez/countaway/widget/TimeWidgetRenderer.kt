@@ -23,6 +23,8 @@ import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.text.NumberFormat
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 internal data class TimeWidgetBackgroundKey(
@@ -71,6 +73,8 @@ internal object TimeWidgetRenderer {
         // Explicit state changes remain correct when Android re-applies RemoteViews.
         views.setViewVisibility(R.id.timeWidgetBrandLogo, View.GONE)
         views.setViewVisibility(R.id.timeWidgetIcon, View.VISIBLE)
+        views.setViewVisibility(R.id.timeWidgetLongDays, View.GONE)
+        views.setViewVisibility(R.id.timeWidgetDetailHint, View.GONE)
         val appearance = configuration?.appearance ?: WidgetAppearance.SYSTEM
         val background = configuration?.background ?: WidgetBackground.HORIZON
         val theme = WidgetThemeResolver.resolve(context, appearance, background)
@@ -86,6 +90,8 @@ internal object TimeWidgetRenderer {
         views.setTextColor(R.id.timeWidgetTitle, theme.primaryTextColor)
         views.setTextColor(R.id.timeWidgetCaption, theme.secondaryTextColor)
         views.setTextColor(R.id.timeWidgetClock, theme.accentTextColor)
+        views.setTextColor(R.id.timeWidgetLongDays, theme.accentTextColor)
+        views.setTextColor(R.id.timeWidgetDetailHint, theme.secondaryTextColor)
         views.setTextColor(R.id.timeWidgetFallback, theme.accentTextColor)
         views.setTextColor(R.id.timeWidgetDate, theme.secondaryTextColor)
 
@@ -127,14 +133,7 @@ internal object TimeWidgetRenderer {
         val plan = TimeWidgetClockPolicy.plan(
             clockNow, count.target.toInstant(), SystemClock.elapsedRealtime(), timed.countMode,
         )
-        if (plan == null) {
-            views.setViewVisibility(R.id.timeWidgetLiveDot, View.GONE)
-            views.setViewVisibility(R.id.timeWidgetCaption, View.GONE)
-            views.setViewVisibility(R.id.timeWidgetClock, View.GONE)
-            views.setViewVisibility(R.id.timeWidgetFallback, View.VISIBLE)
-            views.setTextViewText(R.id.timeWidgetFallback,
-                displayContext.getString(R.string.time_widget_far_target))
-        } else {
+        if (plan != null) {
             views.setViewVisibility(R.id.timeWidgetClock, View.VISIBLE)
             views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
             views.setTextViewTextSize(R.id.timeWidgetClock, TypedValue.COMPLEX_UNIT_SP,
@@ -143,6 +142,66 @@ internal object TimeWidgetRenderer {
                     clockNow, count.target.toInstant()))
             views.setChronometer(R.id.timeWidgetClock, plan.elapsedRealtimeBase, null, true)
             views.setChronometerCountDown(R.id.timeWidgetClock, plan.countDown)
+        } else {
+            val longRange = TimeWidgetLongRangePolicy.plan(clockNow, count.target.toInstant(),
+                SystemClock.elapsedRealtime(), timed.countMode)
+            if (longRange == null) {
+                views.setViewVisibility(R.id.timeWidgetLiveDot, View.GONE)
+                views.setViewVisibility(R.id.timeWidgetClock, View.GONE)
+                views.setViewVisibility(R.id.timeWidgetFallback, View.VISIBLE)
+                views.setTextViewText(R.id.timeWidgetFallback,
+                    displayContext.getString(R.string.time_widget_far_target))
+            } else {
+                val fontScale = displayContext.resources.configuration.fontScale
+                val largeFont = fontScale >= 1.6f
+                val showSubday = heightDp >= 115 && (!largeFont || heightDp >= 175)
+                val showDate = heightDp >= 210 && (!largeFont || heightDp >= 255)
+                val showAccent = heightDp >= 165 && (!largeFont || heightDp >= 235)
+                val showHint = !showSubday && heightDp >= 100 && widthDp >= 200 &&
+                    fontScale < 1.6f
+                val signedNumber = (if (longRange.signedDays < 0L) "-" else "") +
+                    NumberFormat.getIntegerInstance(displayContext.resources.configuration.locales[0])
+                        .format(abs(longRange.signedDays))
+                val dayLabel = displayContext.getString(R.string.time_widget_long_days, signedNumber)
+                views.setTextViewText(R.id.timeWidgetLongDays, dayLabel)
+                views.setTextViewTextSize(R.id.timeWidgetLongDays, TypedValue.COMPLEX_UNIT_SP,
+                    fittedLongDaySizeSp(displayContext, widthDp, layout.horizontalPaddingDp,
+                        dayLabel, when {
+                            heightDp < 110 && largeFont -> 16f
+                            largeFont -> 20f
+                            heightDp < 120 -> 27f
+                            else -> 30f
+                        }))
+                views.setViewVisibility(R.id.timeWidgetLongDays, View.VISIBLE)
+                views.setViewVisibility(R.id.timeWidgetAccentLine,
+                    if (showAccent) View.VISIBLE else View.GONE)
+                views.setViewVisibility(R.id.timeWidgetDate,
+                    if (showDate) View.VISIBLE else View.GONE)
+                views.setViewVisibility(R.id.timeWidgetClock,
+                    if (showSubday) View.VISIBLE else View.GONE)
+                views.setViewVisibility(R.id.timeWidgetLiveDot,
+                    if (showSubday && layout.showLiveIndicator) View.VISIBLE else View.GONE)
+                views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
+                views.setViewVisibility(R.id.timeWidgetDetailHint,
+                    if (showHint) View.VISIBLE else View.GONE)
+                if (showHint) {
+                    views.setTextViewText(R.id.timeWidgetDetailHint,
+                        displayContext.getString(R.string.time_widget_expand_details))
+                }
+                if (showSubday) {
+                    // Native seconds stay within a single day at render.
+                    // The existing daily refresh re-normalizes the day portion.
+                    views.setTextViewTextSize(R.id.timeWidgetClock, TypedValue.COMPLEX_UNIT_SP,
+                        liveClockTextSizeSp(displayContext, widthDp,
+                            layout.horizontalPaddingDp,
+                            if (largeFont) 16f else if (heightDp < 150) 18f else 23f,
+                            clockNow, clockNow.plusSeconds(36L * 3_600L)))
+                    views.setChronometer(R.id.timeWidgetClock,
+                        longRange.subdayClock.elapsedRealtimeBase, null, true)
+                    views.setChronometerCountDown(R.id.timeWidgetClock,
+                        longRange.subdayClock.countDown)
+                }
+            }
         }
         if (interactive) views.setOnClickPendingIntent(R.id.timeWidgetRoot,
             editIntent(context, widgetId, timed.id))
@@ -174,6 +233,20 @@ internal object TimeWidgetRenderer {
         // Reserve additional ink margin only for accessibility-scaled text.
         val safetyFactor = if (context.resources.configuration.fontScale >= 1.6f) 0.80f else 0.94f
         return (maximumSizeSp * fit * safetyFactor).coerceAtMost(maximumSizeSp)
+    }
+
+    private fun fittedLongDaySizeSp(
+        context: Context, widthDp: Int, paddingDp: Int, text: String, maxSp: Float,
+    ): Float {
+        val metrics = context.resources.displayMetrics
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
+            fontFeatureSettings = "tnum"
+            textSize = maxSp * metrics.scaledDensity
+        }
+        val available = (widthDp - 2 * paddingDp - 4).coerceAtLeast(1) * metrics.density
+        return (maxSp * available / paint.measureText(text).coerceAtLeast(1f) * 0.94f)
+            .coerceAtMost(maxSp)
     }
 
     private fun openAppIntent(context: Context, widgetId: Int): PendingIntent {

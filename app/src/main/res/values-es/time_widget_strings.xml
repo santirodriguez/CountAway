@@ -7,6 +7,8 @@
     <string name="time_widget_no_events">Agregale una hora a un evento para seleccionarlo acá.</string>
     <string name="time_widget_choose_event">Elegí un evento con hora</string>
     <string name="time_widget_live_timer">CONTADOR EN VIVO</string>
+    <string name="time_widget_long_days">%1$s días</string>
+    <string name="time_widget_expand_details">Ampliá para ver horas</string>
     <string name="time_widget_far_target">Abrí el evento para ver el tiempo exacto</string>
     <string name="time_widget_preview_title">Próximo concierto</string>
     <string name="time_widget_preview_target">18 oct. · 16:30</string>

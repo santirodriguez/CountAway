@@ -137,7 +137,7 @@ class TimeWidgetProvider : AppWidgetProvider() {
                     val fallback = views ?: TimeWidgetRenderer.render(
                         context, displayContext, id, configuration, event, problem, snapshot,
                         options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 150).coerceAtLeast(1),
-                        options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 115).coerceAtLeast(1),
+                        options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 90).coerceAtLeast(1),
                         backgroundCache,
                     )
                     manager.updateAppWidget(id, fallback)
