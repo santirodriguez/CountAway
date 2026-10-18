@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="time_widget_name">Hores en directe · Ja Queda Poc</string>
-    <string name="time_widget_description">Hores totals, minuts i segons en directe per a un esdeveniment amb hora.</string>
+    <string name="time_widget_description">Comptadors en directe per a esdeveniments amb hora, amb dies per a dates llunyanes.</string>
     <string name="time_widget_config_title">Giny de temps en directe</string>
-    <string name="time_widget_config_description">Tria un esdeveniment amb hora. El comptador mostra hores acumulades, no dies i hores separats.</string>
+    <string name="time_widget_config_description">Tria un esdeveniment amb hora. Les dates properes mostren hores totals; les llunyanes, dies i un rellotge en directe si hi ha espai.</string>
     <string name="time_widget_no_events">Afegeix una hora a un esdeveniment per seleccionar-lo aquí.</string>
     <string name="time_widget_choose_event">Tria un esdeveniment amb hora</string>
     <string name="time_widget_live_timer">COMPTADOR EN DIRECTE</string>

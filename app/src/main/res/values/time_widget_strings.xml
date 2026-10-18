@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="time_widget_name">Live hours · CountAway</string>
-    <string name="time_widget_description">Live total hours, minutes and seconds for a timed event.</string>
+    <string name="time_widget_description">Live counts for timed events, with days for distant dates.</string>
     <string name="time_widget_config_title">Live hours widget</string>
-    <string name="time_widget_config_description">Choose one event with a time. The timer shows total hours, not days split from hours.</string>
+    <string name="time_widget_config_description">Choose a timed event. Nearby dates show total hours; distant dates show days and a live clock when space allows.</string>
     <string name="time_widget_no_events">Add a time to an event to select it here.</string>
     <string name="time_widget_choose_event">Choose a timed event</string>
     <string name="time_widget_live_timer">LIVE TIMER</string>
