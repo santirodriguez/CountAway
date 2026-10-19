@@ -151,14 +151,14 @@ Keep one global version sequence across every store.
 
 ## Store assets and console setup
 
-Play assets are release inputs, not permission to fabricate app UI. The six accepted v1.2.3 phone screenshots are genuine 1080×1920 RGB PNG captures in Fastlane, replacing earlier 540×1200 sources that did not meet Play's 2:1 long-side ratio limit.
+Play assets are release inputs, not permission to fabricate app UI. The six accepted v1.2.4 phone screenshots are genuine 1080×1920 RGB PNG captures in Fastlane. They replace the v1.2.3 screenshots; no screen content was fabricated or retouched.
 
 Required Play export checks:
 
 - 512×512 32-bit PNG app icon, at most 1024 KB;
 - 1024×500 feature graphic as JPEG or 24-bit PNG without alpha;
 - at least two genuine phone screenshots, JPEG or RGB PNG, each side 320–3840 px and longest side no more than twice the shortest side;
-- filenames/order/content tied to the exact candidate, including an About/version capture showing that candidate's actual versionName; the current v1.2.3 captures cannot serve as final v1.2.4 evidence.
+- filenames/order/content tied to the exact candidate, including an About/version capture showing that candidate's actual versionName; never reuse a previous release's screenshots as evidence for the new version.
 
 Do not stretch or repaint an old screenshot to satisfy dimensions. Capture a suitable final-candidate viewport and export it without changing the represented UI.
 
@@ -166,7 +166,7 @@ Store locale mapping comes from `app/src/main/res/xml/supported_languages.xml`. 
 
 The existing Fastlane icon and feature graphic remain source/distribution assets and are not rewritten merely for Play. CI and the Release workflow create visually identical Play derivatives with `scripts/prepare-play-assets.py`: the 512×512 icon is encoded as 32-bit RGBA with opaque alpha, and the 1024×500 feature graphic is encoded as 24-bit RGB. The generator decodes both source and output and fails if any visible RGB pixel changes. Generated release derivatives are retained under `play-readiness/store-assets/`.
 
-Phone screenshots have a single canonical location for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. The six current files are genuine, maintainer-approved 1080×1920 (9:16) captures of v1.2.3, encoded as 24-bit RGB PNG without alpha. Genuine v1.2.4 captures must be reviewed and committed before using them for that release. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. Do not distort, pad, or repaint screenshot content.
+Phone screenshots have a single canonical location for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. The six current files are genuine, maintainer-approved 1080×1920 (9:16) captures of v1.2.4, encoded as 24-bit RGB PNG without alpha. Their conversion from indexed PNG preserved every visible RGB pixel. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. Later versions need their own accepted current-version captures; never distort, pad, or repaint screenshot content.
 
 To stage the accepted screenshots for the Play Console, copy them from the canonical Fastlane files while preserving byte-for-byte identity:
 
