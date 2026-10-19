@@ -23,6 +23,8 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 import kotlin.math.roundToInt
 import org.junit.Assert.*
@@ -62,15 +64,22 @@ class TimeWidgetNativeInstrumentedTest {
     }
 
     @Test fun nativeClockAndTitleFitCompactWideTallAndLargeHostSizes() = instrumentation.runOnMainSync {
+        // Keep the native total-hours assertion independent of the calendar date on CI.
+        val now = ZonedDateTime.now(snapshot.zone)
+        val target = now.plusDays(7).withSecond(0).withNano(0)
+        val liveEvent = event.copy(date = target.toLocalDate(), eventTime = target.toLocalTime())
+        val liveSnapshot = CountdownTimeSnapshot(now)
+        val expectedTarget = DateTimeFormatter.ofLocalizedDateTime(
+            FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(Locale.US).format(target)
         val sizes = listOf(160 to 90, 240 to 95, 180 to 120, 160 to 190,
             240 to 180, 280 to 210, 320 to 250)
         val fonts = listOf(1f, 1.3f, 2f)
         val themes = listOf(WidgetAppearance.DARK, WidgetAppearance.LIGHT)
         for ((width, height) in sizes) for (font in fonts) for (appearance in themes) {
             val context = fontContext(font)
-            val style = WidgetConfiguration(event.id, appearance, WidgetBackground.HORIZON)
+            val style = WidgetConfiguration(liveEvent.id, appearance, WidgetBackground.HORIZON)
             val remote = TimeWidgetRenderer.render(context, context, 1234, style,
-                event, null, snapshot, width, height, hashMapOf(), interactive = false)
+                liveEvent, null, liveSnapshot, width, height, hashMapOf(), interactive = false)
             val root = remote.apply(context, FrameLayout(context)) as FrameLayout
             layout(root, context, width, height)
             val native = root.findViewById<Chronometer>(R.id.timeWidgetClock)
@@ -99,7 +108,7 @@ class TimeWidgetNativeInstrumentedTest {
             assertEquals(name + " total vertical padding preserved", 2 * baselinePaddingPx,
                 card.paddingTop + card.paddingBottom)
             val date = root.findViewById<TextView>(R.id.timeWidgetDate)
-            assertTrue(date.text.toString().contains("19"))
+            assertEquals("target date", expectedTarget, date.text.toString())
             assertEquals(name + " date visibility",
                 if (plan.showDate) View.VISIBLE else View.GONE, date.visibility)
             assertEquals(name + " no redundant live caption", View.GONE,
