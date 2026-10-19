@@ -2,6 +2,8 @@ Ja Queda Poc manté les dates importants simples i visibles a la pantalla d’in
 
 Crea diversos esdeveniments locals i tria si cadascun compta fins a una data futura o des d’una data d’inici. Tria un tipus d’esdeveniment o una icona personalitzada i afegeix ginys compactes o redimensionables. Els ginys fixos funcionen en tots dos sentits, mentre que Proper compte enrere segueix automàticament l’esdeveniment futur més proper que estigui en mode compte enrere.
 
+Afegeix una hora opcional a un esdeveniment per veure hores, minuts i segons en directe a la pantalla principal. Un giny específic per als esdeveniments amb hora acompanya els ginys clàssics que compten dies. Per a dates llunyanes, pot mostrar dies i un rellotge en directe si hi ha espai.
+
 Els esdeveniments de compte enrere es poden repetir cada setmana, cada mes o cada any. Les repeticions mensuals mantenen el dia original quan existeix i fan servir l’últim dia vàlid als mesos més curts. Els recordatoris locals opcionals poden avisar-te el mateix dia o 1, 3 o 7 dies abans.
 
 Comparteix un esdeveniment com a imatge local, exporta o restaura els esdeveniments amb una còpia JSON i canvia explícitament entre English, Español i Català, o segueix l’idioma del sistema.

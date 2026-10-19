@@ -1,1 +1,1 @@
-Las copias de seguridad siguen respondiendo cuando el proveedor de documentos es lento. Los demás widgets se actualizan aunque uno falle. Mejoras en menús y configuración de widgets con texto grande. Edición y uso compartido seguros de títulos históricos muy largos.
+Agregá una hora opcional a tus eventos para ver horas, minutos y segundos en vivo en la pantalla principal. Un widget exclusivo para eventos con hora se suma a los widgets clásicos de días. Mejoras en las copias de seguridad, la actualización de widgets y el texto grande.
