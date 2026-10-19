@@ -2,6 +2,8 @@ Ya Estamos mantiene tus fechas importantes simples y visibles en la pantalla de 
 
 Creá múltiples eventos locales y elegí si cada uno cuenta hacia una fecha futura o desde una fecha de inicio. Elegí un tipo de evento o un ícono personalizado y agregá widgets compactos o redimensionables. Los widgets fijos funcionan en ambos sentidos, mientras que Próxima cuenta regresiva sigue automáticamente el evento futuro más cercano que esté en modo cuenta regresiva.
 
+Agregale una hora opcional a un evento para ver horas, minutos y segundos en vivo en la pantalla principal. Un widget exclusivo para eventos con hora acompaña a los widgets clásicos que cuentan días. Para fechas lejanas, puede mostrar días y un reloj en vivo cuando hay espacio.
+
 Los eventos de cuenta regresiva pueden repetirse cada semana, cada mes o cada año. Las repeticiones mensuales mantienen el día original cuando existe y usan el último día válido en los meses más cortos. Los recordatorios locales opcionales pueden avisarte el mismo día o 1, 3 o 7 días antes.
 
 Compartí un evento como imagen local, exportá o restaurá tus eventos con una copia JSON y cambiá explícitamente entre English, Español y Català, o seguí el idioma del sistema.

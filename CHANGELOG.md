@@ -2,11 +2,12 @@
 
 ## 1.2.4
 
-- Keep local backup imports and exports responsive when a document provider is slow.
-- Continue updating other Home-screen widgets when one widget fails.
-- Improve widget-pinning choices and event actions at enlarged text sizes.
-- Safely navigate, edit, and share unusually large historical event titles and identifiers while preserving the original saved data.
-- Strengthen release-signing output safety and localization format checks.
+- Add optional times to countdown and count-up events, with live hours, minutes, and seconds on Home while leaving date-only events unchanged.
+- Add a dedicated live-hours home-screen widget for timed events, separate from the classic day-count widgets.
+- Adapt the new widget to different sizes, with days and a running clock for distant dates when space allows.
+- Keep local backup imports and exports responsive with slow document providers, and keep other widgets updating if one fails.
+- Improve widget setup and event actions with larger text, and safely handle unusually long historical event titles and identifiers.
+- Strengthen release-signing output safety and localization checks.
 
 ## 1.2.3
 

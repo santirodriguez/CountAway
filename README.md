@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <strong>A lightweight Android day counter for dates worth looking forward to — or remembering.</strong>
+  <strong>A lightweight Android counter for dates worth looking forward to — or remembering.</strong>
 </p>
 
 <p align="center">
-  Pick a date. Put it on your home screen. Get on with your life.
+  Pick a date. Add a time if you want. Put it on your home screen. Get on with your life.
 </p>
 
 <p align="center">
@@ -48,11 +48,11 @@ CountAway skips all that. It counts the days and leaves you alone.
   <tr>
     <td width="33%" valign="top">
       <strong>Count what matters</strong><br /><br />
-      Count down to future dates or count up from a starting date, with custom icons.
+      Count down to future dates or count up from a starting date, with custom icons and optional times.
     </td>
     <td width="33%" valign="top">
       <strong>Keep it on Home</strong><br /><br />
-      Responsive widgets from compact 1×1 to wide layouts, fixed events or an automatic <strong>Next countdown</strong>.
+      Classic day-count widgets, plus a dedicated live-hours widget for events with a time.
     </td>
     <td width="33%" valign="top">
       <strong>Keep it yours</strong><br /><br />
@@ -64,6 +64,8 @@ CountAway skips all that. It counts the days and leaves you alone.
 ## Highlights
 
 - **Count both ways:** count down to future dates or count up from a start date.
+- **Optional event times:** show live hours, minutes, and seconds, or keep counting calendar days.
+- **Two kinds of widgets:** classic day-count widgets and a dedicated live-hours widget for timed events.
 - **Widget-first:** long-press an event, choose a style, preview it, and add it to Home.
 - **Flexible recurrence:** weekly, monthly, or yearly count-down events.
 - **Nine widget backgrounds:** from clean Classic to Mist, Horizon, Sunset, Ember, Ridge, and more.
@@ -77,18 +79,18 @@ CountAway skips all that. It counts the days and leaves you alone.
 ## Screenshots
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" alt="CountAway home screen in dark mode" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="CountAway countdown editor with recurrence" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" alt="CountAway Home in dark mode with countdown and count-up events" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="CountAway event editor with an optional Add time control" width="46%" />
 </p>
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="CountAway widget configuration" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway Help and local backup" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="CountAway classic day-widget style configuration" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway About screen showing version 1.2.4 and local backups" width="46%" />
 </p>
 
 <p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" alt="CountAway home screen in light mode" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" alt="CountAway home-screen widgets" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" alt="CountAway Home in light mode" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" alt="CountAway classic and live-hours widgets on an Android home screen" width="46%" />
 </p>
 
 ## Privacy, by design

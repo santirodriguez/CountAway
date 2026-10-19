@@ -75,7 +75,7 @@ class TimeWidgetLifecycleInstrumentedTest {
         }
     }
 
-    @Test fun localizedRendererKeepsSavedZoneAndNeutralCaptionAfterDeviceTravel() =
+    @Test fun localizedRendererKeepsSavedZoneWithoutRedundantCaptionAfterDeviceTravel() =
         instrumentation.runOnMainSync {
             val eventZone = ZoneId.of("Europe/Paris")
             val target = ZonedDateTime.now(eventZone).plusDays(4)
@@ -104,8 +104,7 @@ class TimeWidgetLifecycleInstrumentedTest {
                     val caption = root.findViewById<TextView>(R.id.timeWidgetCaption)
                     val date = root.findViewById<TextView>(R.id.timeWidgetDate)
                     val clock = root.findViewById<Chronometer>(R.id.timeWidgetClock)
-                    assertEquals(tag, localized.getString(R.string.time_widget_live_timer),
-                        caption.text.toString())
+                    assertEquals("No live-caption duplication: " + tag, View.GONE, caption.visibility)
                     assertTrue(tag + " target zone missing: " + date.text,
                         date.text.toString().contains("Europe/Paris"))
                     assertEquals(View.VISIBLE, clock.visibility)

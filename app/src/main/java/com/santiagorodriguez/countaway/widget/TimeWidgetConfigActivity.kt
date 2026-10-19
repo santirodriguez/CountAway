@@ -198,13 +198,13 @@ class TimeWidgetConfigActivity : BaseActivity() {
         val event = events.firstOrNull { it.id == selectedId }
         val views = TimeWidgetRenderer.render(
             this, this, widgetId, configuration, event, null, CountdownTime.snapshot(),
-            240, 180, hashMapOf(), interactive = false)
+            180, 140, hashMapOf(), interactive = false)
         runCatching {
             preview.removeAllViews()
             preview.addView(views.apply(this, preview))
             previewContainer.post {
                 val fit = WidgetPreviewSizing.fit(previewContainer.width, previewContainer.height,
-                    WidgetPreviewDimensions(240, 180))
+                    WidgetPreviewDimensions(180, 140))
                 preview.layoutParams = FrameLayout.LayoutParams(fit.width, fit.height, Gravity.CENTER)
             }
         }.onFailure { android.util.Log.w("CountAwayTimeWidget", "Preview unavailable", it) }
