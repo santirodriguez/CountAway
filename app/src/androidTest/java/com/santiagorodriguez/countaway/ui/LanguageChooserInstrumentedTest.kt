@@ -98,6 +98,7 @@ class LanguageChooserInstrumentedTest {
                 assertTrue(button.performLongClick())
             }
             onView(withText("Choose language")).inRoot(isDialog()).check(matches(isDisplayed()))
+            DialogEvidenceCapture.save(instrumentation, "language-en-dark")
             onView(withText("Español")).inRoot(isDialog()).check(matches(isDisplayed()))
             onView(withText("Català")).inRoot(isDialog()).check(matches(isDisplayed()))
             pressBack()

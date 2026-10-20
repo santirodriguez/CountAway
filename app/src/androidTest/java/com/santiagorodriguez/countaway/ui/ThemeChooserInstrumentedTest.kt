@@ -49,6 +49,7 @@ class ThemeChooserInstrumentedTest {
             }
             onView(withId(R.id.themeButton)).perform(click())
             onView(withText("$system\n$effectiveTheme")).inRoot(isDialog()).check(matches(isDisplayed()))
+            DialogEvidenceCapture.save(instrumentation, "appearance-dark")
             onView(withText(dark)).inRoot(isDialog()).check(matches(isChecked()))
             for (label in listOf(light, dark)) {
                 onView(withText(label)).inRoot(isDialog()).check { view, error ->
@@ -62,6 +63,7 @@ class ThemeChooserInstrumentedTest {
             scenario.onActivity { assertEquals(ThemeManager.AppTheme.LIGHT, ThemeManager.currentTheme(it)) }
             onView(withId(R.id.themeButton)).perform(click())
             onView(withText(light)).inRoot(isDialog()).check(matches(isChecked()))
+            DialogEvidenceCapture.save(instrumentation, "appearance-light")
             onView(withText(startsWith("$system\n"))).inRoot(isDialog()).perform(click())
             instrumentation.waitForIdleSync()
             scenario.onActivity { assertEquals(ThemeManager.AppTheme.SYSTEM, ThemeManager.currentTheme(it)) }
