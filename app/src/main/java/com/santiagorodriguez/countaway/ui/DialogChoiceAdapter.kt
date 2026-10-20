@@ -47,7 +47,8 @@ internal class DialogChoiceAdapter(
                 )
             }
         } ?: choice.title
-        val drawable = context.getDrawable(choice.iconRes)?.apply {
+        val drawable = context.getDrawable(choice.iconRes)?.mutate()?.apply {
+            if (!choice.flagIcon) setTint(context.getColor(R.color.secondary_text))
             setBounds(
                 0, 0,
                 dp(if (choice.flagIcon) 30 else 24),
