@@ -59,23 +59,28 @@ internal class LanguageChooser(
         if (dialog?.isShowing == true || activity.isFinishing || activity.isDestroyed) return
         val catalog = LanguageManager.supportedLanguages(activity)
         val current = LanguageManager.currentLanguageTag(activity)
-        val tags = listOf(current) + catalog.tags.filter { it != current }
-        val labels = tags.map { tag ->
-            if (tag == current) activity.getString(R.string.language_in_use, endonym(catalog, tag))
-            else endonym(catalog, tag)
-        } + activity.getString(
-            R.string.language_system_choice,
-            endonym(catalog, LanguageManager.systemLanguageTag(activity)),
-        )
+        val languages = catalog.languages
+        val choices = listOf(
+            DialogChoice(
+                title = activity.getString(R.string.language_follow_system),
+                iconRes = R.drawable.ic_language,
+                subtitle = endonym(catalog, LanguageManager.systemLanguageTag(activity)),
+            ),
+        ) + languages.map { language ->
+            DialogChoice(title = language.endonym, iconRes = language.iconRes, flagIcon = true)
+        }
         val followingSystem = LanguageManager.isFollowingSystem(activity)
+        val selected = if (followingSystem) 0 else {
+            languages.indexOfFirst { it.tag == current }.takeIf { it >= 0 }?.plus(1) ?: 0
+        }
         val restoreAccessibilityFocus = button.isAccessibilityFocused
         val picker = AlertDialog.Builder(activity)
             .setTitle(R.string.language_choose)
-            .setSingleChoiceItems(labels.toTypedArray(), if (followingSystem) tags.size else 0) { selectedDialog, which ->
+            .setSingleChoiceItems(DialogChoiceAdapter(activity, choices), selected) { selectedDialog, which ->
                 selectedDialog.dismiss()
                 runCatching {
-                    if (which == tags.size) LanguageManager.useSystemLanguage(activity)
-                    else LanguageManager.setLanguage(activity, tags[which])
+                    if (which == 0) LanguageManager.useSystemLanguage(activity)
+                    else LanguageManager.setLanguage(activity, languages[which - 1].tag)
                 }.onFailure {
                     Toast.makeText(activity, R.string.language_change_failed, Toast.LENGTH_LONG).show()
                 }
