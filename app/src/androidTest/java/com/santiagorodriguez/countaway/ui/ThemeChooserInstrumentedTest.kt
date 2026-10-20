@@ -1,6 +1,7 @@
 package com.santiagorodriguez.countaway.ui
 
 import android.content.Context
+import android.content.res.Configuration
 import android.os.SystemClock
 import android.widget.CheckedTextView
 import androidx.test.core.app.ActivityScenario
@@ -36,13 +37,18 @@ class ThemeChooserInstrumentedTest {
             lateinit var system: String
             lateinit var light: String
             lateinit var dark: String
+            lateinit var effectiveTheme: String
             scenario.onActivity {
                 system = it.getString(R.string.widget_appearance_system)
                 light = it.getString(R.string.widget_appearance_light)
                 dark = it.getString(R.string.widget_appearance_dark)
+                val systemIsDark = (it.applicationContext.resources.configuration.uiMode and
+                    Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                val systemLabel = if (systemIsDark) dark else light
+                effectiveTheme = it.getString(R.string.theme_system_current, systemLabel)
             }
             onView(withId(R.id.themeButton)).perform(click())
-            onView(withText(startsWith("$system\n"))).inRoot(isDialog()).check(matches(isDisplayed()))
+            onView(withText("$system\n$effectiveTheme")).inRoot(isDialog()).check(matches(isDisplayed()))
             onView(withText(dark)).inRoot(isDialog()).check(matches(isChecked()))
             for (label in listOf(light, dark)) {
                 onView(withText(label)).inRoot(isDialog()).check { view, error ->

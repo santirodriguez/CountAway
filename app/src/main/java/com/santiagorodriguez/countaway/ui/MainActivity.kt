@@ -232,8 +232,8 @@ class MainActivity : BaseActivity() {
         val focus = EditorDialogFocus(this).apply { capture(anchor) }
         val themes = ThemeManager.AppTheme.entries
         // An explicit app theme overrides the Activity; the application keeps the system night mode.
-        val systemIsDark = applicationContext.resources.configuration.uiMode and
-            Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        val systemIsDark = (applicationContext.resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val systemMode = if (systemIsDark) R.string.widget_appearance_dark
             else R.string.widget_appearance_light
         val choices = listOf(
