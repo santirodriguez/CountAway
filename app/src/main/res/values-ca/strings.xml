@@ -133,4 +133,6 @@
     <string name="about_author">Creada per santiagorodriguez.com</string>
     <string name="about_donate">Dona</string>
     <string name="about_donate_note">Si això t’ha estalviat mirar el calendari dotze vegades al dia, pots col·laborar amb la noble causa de continuar simplificant coses que no haurien de ser complicades.</string>
+    <string name="language_follow_system">Idioma del dispositiu</string>
+    <string name="theme_system_current">Actualment: %1$s</string>
 </resources>

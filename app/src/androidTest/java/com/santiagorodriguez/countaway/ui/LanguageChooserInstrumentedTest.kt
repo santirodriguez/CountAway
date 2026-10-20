@@ -8,21 +8,26 @@ import android.os.LocaleList
 import android.os.SystemClock
 import android.view.KeyEvent
 import android.widget.Button
+import android.widget.CheckedTextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.Espresso.onData
 import androidx.test.espresso.Espresso.pressBack
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.pressKey
 import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.matcher.RootMatchers.isDialog
 import androidx.test.espresso.matcher.ViewMatchers.hasFocus
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.isChecked
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.R
 import org.hamcrest.Matchers.startsWith
+import org.hamcrest.Matchers.anything
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -124,7 +129,7 @@ class LanguageChooserInstrumentedTest {
             var original: MainActivity? = null
             scenario.onActivity { original = it }
             onView(withId(R.id.languageButton)).perform(click())
-            onView(withText("English · In use")).inRoot(isDialog()).perform(click())
+            onView(withText("English")).inRoot(isDialog()).perform(click())
             instrumentation.waitForIdleSync()
             scenario.onActivity {
                 assertSame(original, it)
@@ -140,6 +145,29 @@ class LanguageChooserInstrumentedTest {
             onView(withText(startsWith("Use system language"))).inRoot(isDialog()).perform(click())
             instrumentation.waitForIdleSync()
             scenario.onActivity { assertTrue(LanguageManager.isFollowingSystem(it)) }
+        }
+    }
+
+    @Test
+    fun chooserShowsFixedOrderFlagsAndCheckedState() = withLanguageState {
+        selectEnglish()
+        ActivityScenario.launch(MainActivity::class.java).use {
+            onView(withId(R.id.languageButton)).perform(click())
+            onData(anything()).inRoot(isDialog()).atPosition(0)
+                .check(matches(withText(startsWith("Use system language"))))
+            for ((index, name) in listOf("English", "Español", "Català").withIndex()) {
+                onData(anything()).inRoot(isDialog()).atPosition(index + 1)
+                    .check(matches(withText(name)))
+                onView(withText(name)).inRoot(isDialog()).check { view, error ->
+                    if (error != null) throw error
+                    val row = view as CheckedTextView
+                    assertTrue(row.compoundDrawablesRelative[0] != null)
+                    assertTrue(row.compoundDrawablesRelative[0]!!.bounds.width() > 0)
+                    assertEquals(index == 0, row.isChecked)
+                }
+            }
+            onView(withText("English · In use")).inRoot(isDialog()).check(doesNotExist())
+            pressBack()
         }
     }
 

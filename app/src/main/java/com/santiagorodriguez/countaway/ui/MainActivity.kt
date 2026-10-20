@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.ui
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -227,21 +228,33 @@ class MainActivity : BaseActivity() {
     }
 
     private fun showThemePicker() {
+        val anchor = findViewById<View>(R.id.themeButton)
+        val focus = EditorDialogFocus(this).apply { capture(anchor) }
         val themes = ThemeManager.AppTheme.entries
-        val labels = arrayOf(
-            getString(R.string.widget_appearance_system),
-            getString(R.string.widget_appearance_light),
-            getString(R.string.widget_appearance_dark),
+        // An explicit app theme overrides the Activity; the application keeps the system night mode.
+        val systemIsDark = applicationContext.resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        val systemMode = if (systemIsDark) R.string.widget_appearance_dark
+            else R.string.widget_appearance_light
+        val choices = listOf(
+            DialogChoice(
+                title = getString(R.string.widget_appearance_system),
+                iconRes = R.drawable.ic_theme_device,
+                subtitle = getString(R.string.theme_system_current, getString(systemMode)),
+            ),
+            DialogChoice(getString(R.string.widget_appearance_light), R.drawable.ic_theme_sun),
+            DialogChoice(getString(R.string.widget_appearance_dark), R.drawable.ic_theme_moon),
         )
-        val selected = themes.indexOf(ThemeManager.currentTheme(this))
-        AlertDialog.Builder(this)
+        val picker = AlertDialog.Builder(this)
             .setTitle(R.string.widget_appearance_label)
-            .setSingleChoiceItems(labels, selected) { dialog, which ->
+            .setSingleChoiceItems(DialogChoiceAdapter(this, choices), themes.indexOf(ThemeManager.currentTheme(this))) { dialog, which ->
                 dialog.dismiss()
                 ThemeManager.setTheme(this, themes[which])
             }
             .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .create()
+        picker.setOnDismissListener { focus.restore(anchor) }
+        picker.show()
     }
 
     private fun renderThemeButton() {
