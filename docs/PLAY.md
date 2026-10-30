@@ -6,8 +6,8 @@ CountAway has an existing Google Play app and testing-track history alongside it
 
 - applicationId: `com.santiagorodriguez.countaway`
 - current release-branch candidate: 1.2.4 / **provisional** versionCode 13 (from `app/build.gradle.kts`); no Play upload or reservation implied
-- current GitHub public release and Play closed-test baseline: 1.2.3 / versionCode 12, from the same reviewed source release
-- release order: first move the existing 1.2.3 closed-test build to Google Play Production after actual access/approval; only afterward offer 1.2.4 as its first Production update, coordinated with the separately approved GitHub 1.2.4 release
+- current GitHub public release and first Play Production baseline: 1.2.3 / versionCode 12, from the same reviewed source release (Production availability reported by the maintainer on 2026-10-30 after a non-tester installation)
+- release order: 1.2.3 / code 12 reached Play Production first; 1.2.4 remains the proposed first Production update, subject to its own approvals for repository merge, GitHub release, Play upload signing, review submission, and rollout
 - minSdk: 26
 - targetSdk / compileSdk: 36
 - no Internet permission
@@ -256,4 +256,4 @@ Revalidate every declaration against the exact candidate and current Play wordin
 - Support contact: use a monitored maintainer-provided address; do not invent one in repository metadata.
 - Countries, category/tags, identity/trader/account verification, and any personal-account testing requirement are Console/account decisions.
 
-Repository state should describe Play as **prepared**, **submitted**, **in testing**, or **production** accurately. The release-branch README contains an intentionally **unlinked** preview of Google's official Play badge and an explicit pending-listing notice. Before the final 1.2.4 README review, confirm that 1.2.3 is actually live on Play Production and its public listing works; then wrap that existing badge in the verified listing URL and remove the pending notice. Expected package-derived listing format: `https://play.google.com/store/apps/details?id=com.santiagorodriguez.countaway`. Do not merge an inactive download badge or a broken store URL into `main`.
+Repository state should describe Play as **prepared**, **submitted**, **in testing**, or **production** accurately. With the first 1.2.3 Production availability reported by the maintainer, the release-branch README now links the existing official Google Play badge to `https://play.google.com/store/apps/details?id=com.santiagorodriguez.countaway` instead of presenting a pending-listing notice. Before any new Play submission, recheck the actual Console Production track, public listing and globally used versionCodes; do not merge an inactive or broken store URL into `main`.
