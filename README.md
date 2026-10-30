@@ -17,13 +17,9 @@
   &nbsp;&nbsp;
   <a href="https://f-droid.org/packages/com.santiagorodriguez.countaway/"><img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="54" /></a>
   &nbsp;&nbsp;
-  <!-- Staged for v1.2.4: wrap this badge in the verified public Play listing link at final approval. -->
-  <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Google Play badge — public listing pending" height="54" />
+  <a href="https://play.google.com/store/apps/details?id=com.santiagorodriguez.countaway"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="54" /></a>
 </p>
 
-<p align="center">
-  <sub>Google Play: public listing pending. The badge link will be enabled after launch.</sub>
-</p>
 
 <p align="center">
   <a href="https://github.com/santirodriguez/CountAway/releases"><img src="https://img.shields.io/badge/GitHub-signed%20APK%20releases-181717?style=for-the-badge&logo=github&logoColor=white" alt="Signed APK releases on GitHub" /></a>
