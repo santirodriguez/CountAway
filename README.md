@@ -109,11 +109,11 @@ Requires **JDK 17** and **Android SDK 36**.
 
 Maintainer signing and release steps are in [`docs/RELEASING.md`](docs/RELEASING.md), with Google Play preparation in [`docs/PLAY.md`](docs/PLAY.md) and F-Droid notes in [`docs/FDROID.md`](docs/FDROID.md).
 
-## Author
+## Support
 
-Created by [Santiago Rodriguez](https://santiagorodriguez.com).
+CountAway is a [Caja Personal](https://cajapersonal.org/) project.
 
-<a href="https://santiagorodriguez.com/donate"><img src="docs/assets/badges/donate.svg" alt="Donate" height="46" /></a>
+<a href="https://cajapersonal.org/donate/"><img src="docs/assets/badges/donate.svg" alt="Donate" height="46" /></a>
 
 ## License
 
