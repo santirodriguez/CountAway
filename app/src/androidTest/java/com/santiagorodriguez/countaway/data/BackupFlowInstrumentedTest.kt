@@ -48,7 +48,7 @@ class BackupFlowInstrumentedTest {
             val destination = if (validDestination) File(context.cacheDir, "export.json")
                 else File(context.cacheDir, "absent/child/export.json")
             main { flow.pickExport(true); flow.pickerResult(Uri.fromFile(destination)) }
-            drain()
+            awaitFlow(flow)
             assertEquals(BackupFlow.Stage.CONFIRM, flow.stage)
             assertEquals(if (validDestination) R.string.backup_export_success else R.string.backup_export_failed,
                 flow.takeNotice())
@@ -69,7 +69,7 @@ class BackupFlowInstrumentedTest {
         try {
             main { flow.pickImport(); flow.pickerResult(Uri.fromFile(source)); flow.abandon() }
         } finally { release.countDown() }
-        drain()
+        awaitFlow(flow)
         assertEquals(1, context.cacheDir.listFiles()!!.count { it.name.startsWith("pending-countaway-import-") })
         assertEquals(payload(), independent.readPayload())
         independent.clear()
@@ -103,7 +103,7 @@ class BackupFlowInstrumentedTest {
             val source = File(context.cacheDir, "bad.json").apply { writeText(contents) }
             val flow = BackupFlow(context)
             main { flow.pickImport(); flow.pickerResult(Uri.fromFile(source)) }
-            drain()
+            awaitFlow(flow)
             assertEquals(BackupFlow.Stage.IDLE, flow.stage)
             assertEquals("Approved", events(context).single().title)
         }
@@ -146,7 +146,7 @@ class BackupFlowInstrumentedTest {
         val source = File(context.cacheDir, "source.json").apply { writeText(payload()) }
         val flow = BackupFlow(context)
         main { flow.pickImport(); flow.pickerResult(Uri.fromFile(source)) }
-        drain()
+        awaitFlow(flow)
         assertEquals(BackupFlow.Stage.CONFIRM, flow.stage)
         return flow
     }
@@ -155,6 +155,16 @@ class BackupFlowInstrumentedTest {
         LocalDate.of(2027, 1, 1), EventType.EVENT, createdAt = Instant.parse("2026-01-01T00:00:00Z"))))
     private fun events(context: Context) = (CountdownRepository(context).loadResult() as CountdownLoadResult.Success).events
     private fun main(task: () -> Unit) = instrumentation.runOnMainSync(task)
+    private fun awaitFlow(flow: BackupFlow) {
+        val deadline = android.os.SystemClock.uptimeMillis() + 15_000L
+        while (flow.busy && android.os.SystemClock.uptimeMillis() < deadline) {
+            instrumentation.waitForIdleSync()
+            Thread.sleep(30)
+        }
+        assertFalse("Backup provider task did not finish", flow.busy)
+        drain()
+    }
+
     private fun drain() {
         val done = CountDownLatch(1)
         CountdownIo.submit({ Unit }) { done.countDown() }

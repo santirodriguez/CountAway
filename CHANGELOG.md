@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.4
+
+- Add optional times to countdown and count-up events, with live hours, minutes, and seconds on Home while leaving date-only events unchanged.
+- Add a dedicated live-hours home-screen widget for timed events, separate from the classic day-count widgets.
+- Adapt the new widget to different sizes, with days and a running clock for distant dates when space allows.
+- Keep local backup imports and exports responsive with slow document providers, and keep other widgets updating if one fails.
+- Improve widget setup and event actions with larger text, and safely handle unusually long historical event titles and identifiers.
+- Strengthen release-signing output safety and localization checks.
+
 ## 1.2.3
 
 - Share event cards directly from the Home-screen actions menu without opening the editor.

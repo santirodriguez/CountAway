@@ -16,4 +16,14 @@ class ArrivalNotificationIdentityTest {
             ArrivalNotificationIdentity.tag(second),
         )
     }
+    @Test
+    fun largeHistoricalIdUsesBoundedNotificationIdentity() {
+        val longId = "historical-" + "N".repeat(1_100_000)
+        val first = ArrivalNotificationIdentity.tag(longId)
+        assertEquals(74, first.length)
+        assertEquals(first, ArrivalNotificationIdentity.tag(longId))
+        assertNotEquals(first, ArrivalNotificationIdentity.tag(longId + "!"))
+        assertEquals("legacy", ArrivalNotificationIdentity.tag("legacy"))
+    }
+
 }

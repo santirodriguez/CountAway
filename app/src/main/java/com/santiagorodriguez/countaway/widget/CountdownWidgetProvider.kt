@@ -18,6 +18,7 @@ import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.LanguageManager
@@ -31,7 +32,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onDisabled(context: Context) {
-        WidgetUpdateScheduler.cancel(context.applicationContext)
+        WidgetUpdateScheduler.ensureScheduled(context.applicationContext)
         super.onDisabled(context)
     }
 
@@ -118,11 +119,17 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             val preferences = WidgetPreferences(context)
             val renderData = WidgetRenderData.from(CountdownRepository(context).loadResult(), snapshot.today)
             val backgroundCache = HashMap<BackgroundKey, Bitmap>()
-            appWidgetIds.forEach { appWidgetId ->
-                val views = buildRemoteViews(context, displayContext, manager, appWidgetId,
-                    snapshot.today, preferences.get(appWidgetId), renderData, backgroundCache)
-                manager.updateAppWidget(appWidgetId, views)
-            }
+            WidgetBatchUpdate.forEach(
+                ids = appWidgetIds,
+                update = { appWidgetId ->
+                    val views = buildRemoteViews(context, displayContext, manager, appWidgetId,
+                        snapshot.today, preferences.get(appWidgetId), renderData, backgroundCache)
+                    manager.updateAppWidget(appWidgetId, views)
+                },
+                onFailure = { appWidgetId, failure ->
+                    android.util.Log.e("CountAwayWidget", "Failed to update widget $appWidgetId", failure)
+                },
+            )
         }
 
         private fun buildRemoteViews(
@@ -211,7 +218,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
 
         private fun renderEvent(context: Context, views: RemoteViews, appWidgetId: Int,
             event: CountdownEvent, today: LocalDate, size: WidgetSize, heightDp: Int) {
-            WidgetRemoteViewsPresentation.applyEvent(context, views, WidgetEventContentFactory.from(event, today),
+            WidgetRemoteViewsPresentation.applyEvent(context, views, WidgetEventContentFactory.from(event.copy(title = EventTransport.preview(event.title)), today),
                 size, context.resources.configuration.fontScale, heightDp)
             views.setOnClickPendingIntent(R.id.widgetRoot, editPendingIntent(context, appWidgetId, event.id))
         }
@@ -260,8 +267,8 @@ class CountdownWidgetProvider : AppWidgetProvider() {
 
         private fun editPendingIntent(context: Context, appWidgetId: Int, eventId: String): PendingIntent {
             val intent = Intent(context, EditorActivity::class.java)
-                .putExtra(EditorActivity.EXTRA_EVENT_ID, eventId)
-                .setData(Uri.parse("countaway://widget/$appWidgetId/event/$eventId"))
+                .putExtra(EditorActivity.EXTRA_EVENT_ID, EventTransport.wireId(eventId))
+                .setData(Uri.parse("countaway://widget/$appWidgetId/event/${EventTransport.wireId(eventId)}"))
             return PendingIntent.getActivity(context, appWidgetId, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }

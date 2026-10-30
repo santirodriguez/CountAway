@@ -1,0 +1,1 @@
+Agregá una hora opcional a tus eventos para ver horas, minutos y segundos en vivo en la pantalla principal. Un widget exclusivo para eventos con hora se suma a los widgets clásicos de días. Mejoras en las copias de seguridad, la actualización de widgets y el texto grande.

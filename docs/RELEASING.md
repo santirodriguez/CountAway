@@ -2,27 +2,34 @@
 
 CountAway releases are built from the repository and signed with a long-lived Android signing key that must never be committed.
 
-## One-time signing key setup
+## Signing identities and custody
 
-Generate the release key on a trusted local machine and keep an offline backup:
+CountAway has **two different signing roles**. Do not interchange them:
 
-```bash
-keytool -genkeypair -v \
-  -keystore countaway-release.jks \
-  -alias countaway \
-  -keyalg RSA \
-  -keysize 4096 \
-  -validity 10000
-```
+| Role | Private keystore | Internal alias | Purpose |
+| --- | --- | --- | --- |
+| Original **app-signing** key | `countaway-release.jks` | `countaway` | Signs GitHub/Obtainium APKs and preserves compatibility with the F-Droid distribution; the same historical signing identity is enrolled in Google Play App Signing for Play-delivered APKs. |
+| Dedicated **Play upload** key | `countaway-play-upload.jks` | `countaway-play-upload` | Signs an AAB submitted to Play. Google authenticates uploads with this key, then signs distributed APKs with the original app-signing identity. It does **not** sign GitHub APKs. |
+
+The original app-signing certificate is identified by SHA-256
+`dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
+The original keystore was generated once and **must never be regenerated or replaced** as a routine release step. If the original keystore is unavailable, stop, restore its exact backup and verify the certificate before signing a release; a new key with the same alias or filename is *not* the same signing identity.
+
+The historical Google PEPK enrollment files `encryptedPrivateKey` (encrypted app-signing key-transfer material) and `certificate.pem` (original app-signing public certificate) are archival inputs, **not** Play upload-key material. The Play upload certificate may be exported again from the upload keystore and is safe to share publicly; the JKS and passwords are not.
+
+Use distinct, clearly labelled backup groups such as `01-original-app-signing/`, `02-play-upload-signing/` and `03-historical-pepk-transfer/`. Preserve original Java aliases and expected certificate fingerprints even when renaming **copies** of keystore files. Maintain a checked, independently recoverable backup plus separately protected passwords before key reset, migration or cleanup. A checksum or another copy on the same disk is not an independent recovery copy.
+
 
 Do not commit, email, or otherwise publish the keystore or its passwords. The repository already ignores `*.jks` and `*.keystore` files.
 
-Store the following repository secrets in GitHub Actions:
+The release workflow uses these **existing original app-signing** GitHub Actions secrets (not the Play upload key). Preserve their names and values unless a separately reviewed migration is required:
 
 - `COUNTAWAY_RELEASE_KEYSTORE_B64`: base64-encoded contents of the keystore
 - `COUNTAWAY_RELEASE_STORE_PASSWORD`: keystore password
 - `COUNTAWAY_RELEASE_KEY_ALIAS`: key alias, normally `countaway`
 - `COUNTAWAY_RELEASE_KEY_PASSWORD`: key password
+
+If deliberately initializing or restoring an Actions secret, the following commands produce **sensitive** base64-encoded private keystore bytes. Never paste their output into logs, PRs, chat, or documentation.
 
 On GNU/Linux, the keystore value can be prepared with:
 
@@ -83,17 +90,17 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 - package, min/target/compile SDKs, and exact manifest permission surface;
 - release runtime dependency report, no app-declared runtime libraries, the expected Kotlin/annotations baseline, and absence of native libraries;
 - presence of R8 mapping and resource shrinking;
-- current APK-size delta against the previous public 1.2.2 APK (499,104 bytes);
+- current APK-size delta against the previous public 1.2.3 APK (503,480 bytes);
 - Play-readiness AAB SHA-256/byte size and basic bundle structure, retained only as internal Actions evidence;
 - compiled instrumentation-test APK and ordinary test/lint reports;
 - screenshot SHA-256s during stable preparation;
 - F-Droid Gate A evidence when preparing a stable draft.
 
-Normal CI executes the complete Android instrumentation suite on API 26 and 36, including Home, editor, storage, language, pinning and widget layout contracts, and retains renders and measurements. Its separate build job runs JVM tests, lint and packaging checks and compiles the instrumentation-test APK. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.2.2 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
+Normal CI executes the complete Android instrumentation suite on API 26 and 36, including Home, editor, storage, language, pinning and widget layout contracts, and retains renders and measurements. Its separate build job runs JVM tests, lint and packaging checks and compiles the instrumentation-test APK. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.2.3 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
 
 API 37 remains an acceptance target, but its hosted-emulator job is explicitly diagnostic and non-gating. Current Android 17 `google_apis_ps16k` images can abort in `SurfaceFlinger`/`mapper.ranchu` on the host-advertised `ReadColorBufferDMA` path, tearing down framework services before CountAway starts; this reproduced with both canary/default-graphics and stable/`swangle_indirect` configurations. The diagnostic retains the best-known stable configuration—platform/system image 37.0, emulator 37.1.11 build 15917651, `swangle_indirect`, 4 GB RAM, and a 420-second boot timeout—and records its outcome without treating it as product acceptance. Reinstate it as a blocking automated gate only after an updated system image/emulator no longer exhibits the framework abort. Until then, a successful physical Android 17/API 37 run is mandatory before release readiness.
 
-API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. On API 33, the upgrade gate installs the immutable public 1.2.2 APK, creates a real event through the public UI, verifies it is visible, upgrades in place to the signed candidate, and verifies that same event remains visible. Physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
+API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. On API 33, the upgrade gate installs the immutable public 1.2.3 APK, creates a real event through the public UI, verifies it is visible, upgrades in place to the signed candidate, and verifies that same event remains visible. Physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
 
 The API 33 fixture driver focuses the title field, clears existing input, enters `UpgradeProbe123`, and verifies that exact input before saving. An empty `EditText` can expose its hint (`Trip`) as XML text, so an empty XML value is not a reliable intermediate assertion. The driver instead requires the exact replacement text, finds an enabled Save button through bounded UI-aware scrolling, and taps it once. Exact saved-title assertions before and after upgrade remain mandatory; malformed input is a fixture failure, not a reason to accept a substring or skip the data-preservation gate. Input and saved-UI evidence are retained for diagnosis.
 
@@ -122,7 +129,7 @@ A release-candidate run:
 7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
 8. records APK checksum/size, size deltas, and validation reports;
 9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
-10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs a data-bearing signed 1.2.2 -> candidate upgrade on API 33 using the immutable public 1.2.2 APK digest, creating an event through the public UI and verifying it survives the in-place upgrade, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
+10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs a data-bearing signed 1.2.3 -> candidate upgrade on API 33 using the immutable public 1.2.3 APK digest, creating an event through the public UI and verifying it survives the in-place upgrade, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
 11. uploads the release candidate, validation evidence, reproducibility evidence, per-API acceptance evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:
@@ -207,7 +214,7 @@ Publishing is intentionally separate from preparation. Before publishing the Git
 - verify an upgrade from the previous public CountAway release preserves countdowns and existing widgets;
 - verify the SHA-256 checksum;
 - verify the signing certificate SHA-256 matches the expected fingerprint above;
-- review APK size against the previous public 1.2.2 release and explain material growth;
+- review APK size against the previous public 1.2.3 release and explain material growth;
 - confirm final release notes, Fastlane metadata, screenshots, and public assets;
 - confirm Gate A remains satisfied;
 - confirm the release is still a draft and targets the intended commit.

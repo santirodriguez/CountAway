@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="time_widget_name">Hores en directe · Ja Queda Poc</string>
+    <string name="time_widget_description">Comptadors en directe per a esdeveniments amb hora, amb dies per a dates llunyanes.</string>
+    <string name="time_widget_config_title">Giny de temps en directe</string>
+    <string name="time_widget_config_description">Tria un esdeveniment amb hora. Les dates properes mostren hores totals; les llunyanes, dies i un rellotge en directe si hi ha espai.</string>
+    <string name="time_widget_no_events">Afegeix una hora a un esdeveniment per seleccionar-lo aquí.</string>
+    <string name="time_widget_choose_event">Tria un esdeveniment amb hora</string>
+    <string name="time_widget_live_timer">COMPTADOR EN DIRECTE</string>
+    <string name="time_widget_long_days">%1$s dies</string>
+    <string name="time_widget_expand_details">Amplia per veure hores</string>
+    <string name="time_widget_far_target">Obre l\'esdeveniment per veure el temps exacte</string>
+    <string name="time_widget_preview_title">Pròxim concert</string>
+    <string name="time_widget_preview_target">18 oct. · 16:30</string>
+</resources>

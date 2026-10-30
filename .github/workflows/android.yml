@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - 'release/**'
 
 permissions:
   contents: read
@@ -46,11 +47,37 @@ jobs:
           PACKAGE=com.santiagorodriguez.countaway
           adb install -r app/build/outputs/apk/debug/app-debug.apk
           adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          # Validate Android evidence streams before publishing the artifact.
           collect() {
-            adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence share-evidence > layout-evidence/renders.tar || true
+            local test_status="$1"
+            trap - EXIT
             adb logcat -d > layout-evidence/logcat.txt || true
+            local attempt=1
+            local capture_ok=0
+            while (( attempt <= 3 )); do
+              rm -f layout-evidence/renders.pending.tar
+              if adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence share-evidence \
+                    > layout-evidence/renders.pending.tar &&
+                 tar -tf layout-evidence/renders.pending.tar > layout-evidence/render-manifest.txt &&
+                 grep -Eq '^layout-evidence/.*\.png$' layout-evidence/render-manifest.txt; then
+                mv layout-evidence/renders.pending.tar layout-evidence/renders.tar
+                capture_ok=1
+                break
+              fi
+              echo "Render transfer attempt $attempt failed or returned truncated/empty evidence" >&2
+              attempt=$((attempt + 1))
+              sleep 2
+            done
+            if (( capture_ok == 0 )); then
+              printf 'render_capture=failed\n' > layout-evidence/render-capture.txt
+              echo "No valid Android render evidence after three attempts" >&2
+              exit 1
+            fi
+            printf 'render_capture=verified\ntar_entries=%s\n' \
+              "$(wc -l < layout-evidence/render-manifest.txt)" > layout-evidence/render-capture.txt
+            exit "$test_status"
           }
-          trap collect EXIT
+          trap 'collect "$?"' EXIT
           echo 'scope=complete_android_instrumentation_suite' > layout-evidence/test-classes.txt
           adb shell am instrument -w \
             "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
@@ -109,6 +136,12 @@ jobs:
             echo "instrumented_tests=compiled_not_executed_in_this_job"
           } > ci-evidence/source.txt
 
+      - name: Test release script safety and formatter contracts
+        run: |
+          set -euo pipefail
+          bash -n scripts/sign-play-bundle.sh
+          python3 -B scripts/test-release-scripts.py -v 2>&1 | tee ci-evidence/release-scripts-tests.txt
+
       - name: Check upgrade fixture driver
         run: |
           set -euo pipefail
@@ -119,8 +152,10 @@ jobs:
           set -euo pipefail
           python3 scripts/verify-localizations.py 2>&1 | tee ci-evidence/localization-validation.txt
 
-      - name: Self-test Play screenshot staging
-        run: python3 scripts/test-play-screenshot-staging.py
+      - name: Self-test Play screenshot staging and release provenance
+        run: |
+          python3 scripts/test-play-screenshot-staging.py
+          python3 scripts/test-release-screenshots.py
 
       - name: Prepare and validate reusable Play assets
         run: |

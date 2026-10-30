@@ -9,6 +9,7 @@ object EventRevision {
     fun of(event: CountdownEvent): String = ofFields(
         event.id, event.title, event.date.toString(), event.type.name, event.icon.name,
         event.reminder.name, event.createdAt.toString(), event.repeatRule.name, event.countMode.name,
+        event.eventTime?.toString() ?: "", event.eventZone?.id ?: "",
     )
 
     fun ofFields(vararg fields: String): String {

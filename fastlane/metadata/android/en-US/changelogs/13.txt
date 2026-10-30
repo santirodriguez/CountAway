@@ -1,0 +1,1 @@
+Add optional times to events, with live hours, minutes and seconds on Home. A dedicated live-hours widget for timed events joins the classic day-count widgets. The new widget adapts to different sizes and distant dates. Improved local backup responsiveness, widget updates and large-text layouts.

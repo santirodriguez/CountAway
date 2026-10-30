@@ -17,6 +17,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownMutationResult
 import com.santiagorodriguez.countaway.data.CountdownMutations
 import com.santiagorodriguez.countaway.data.EventRevision
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.data.RetainedOperation
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.share.EventShareLauncher
@@ -45,10 +46,10 @@ internal class HomeEventActions(
         focus.capture(anchor)
         val popupParent = anchor.rootView as? ViewGroup ?: return
         val content = LayoutInflater.from(activity).inflate(R.layout.event_actions_popup, popupParent, false)
-        content.contentDescription = activity.getString(R.string.event_actions_description, event.title)
+        content.contentDescription = activity.getString(R.string.event_actions_description, EventTransport.preview(event.title))
         content.findViewById<ImageView>(R.id.eventActionsPopupIcon)
             .setImageResource(EventIconPresentation.drawableRes(event.icon))
-        content.findViewById<TextView>(R.id.eventActionsPopupTitle).text = event.title
+        content.findViewById<TextView>(R.id.eventActionsPopupTitle).text = EventTransport.preview(event.title)
 
         val menu = PopupWindow(content, ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT, true).apply {
@@ -74,7 +75,7 @@ internal class HomeEventActions(
         action(R.id.home_event_duplicate) {
             activity.startActivity(
                 Intent(activity, EditorActivity::class.java)
-                    .putExtra(EditorActivity.EXTRA_DUPLICATE_EVENT_ID, event.id)
+                    .putExtra(EditorActivity.EXTRA_DUPLICATE_EVENT_ID, EventTransport.wireId(event.id))
                     .putExtra(EditorActivity.EXTRA_SOURCE_REVISION, EventRevision.of(event)),
             )
         }
@@ -83,6 +84,7 @@ internal class HomeEventActions(
             EventShareLauncher.share(
                 activity = activity, title = event.title, date = event.date, icon = event.icon,
                 repeatRule = event.repeatRule, countMode = event.countMode,
+                eventTime = event.eventTime, eventZone = event.eventZone,
                 onFinished = { sharing = false },
             )
         }

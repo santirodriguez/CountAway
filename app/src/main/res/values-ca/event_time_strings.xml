@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="editor_time_optional">Hora (opcional)</string>
+    <string name="editor_add_time">Afegeix una hora</string>
+    <string name="editor_selected_time">Hora: %1$s</string>
+    <string name="editor_remove_time">Treu</string>
+    <string name="editor_time_zone">Hora de l’esdeveniment: %1$s, zona %2$s</string>
+    <string name="editor_time_dst_gap">Aquesta hora no existeix en la data seleccionada a la zona horària de l’esdeveniment. Tria una altra hora.</string>
+    <string name="editor_timed_share_pending">Encara no es poden compartir esdeveniments amb hora.</string>
+    <string name="timed_remaining">Falten · %1$s</string>
+    <string name="timed_elapsed">Han passat · %1$s</string>
+    <string name="timed_starts_in">Comença d’aquí a · %1$s</string>
+    <plurals name="timed_days_magnitude"><item quantity="one">%1$s dia</item><item quantity="many">%1$s dies</item><item quantity="other">%1$s dies</item></plurals>
+</resources>

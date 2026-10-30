@@ -50,6 +50,8 @@
     <string name="reminder_seven_days">7 days before</string>
     <string name="notification_permission_denied">Notification permission was not granted.</string>
     <string name="title_required">Give this event a title.</string>
+    <string name="oversized_title_notice">This title is too large to display fully. The original is preserved unless you choose to replace it.</string>
+    <string name="oversized_title_replace">Replace title</string>
     <string name="delete_title">Delete event?</string>
     <string name="delete_message">Delete &quot;%1$s&quot;?</string>
     <string name="data_error_edit_blocked">CountAway could not safely read its saved data. Editing is disabled to avoid overwriting it.</string>
@@ -77,7 +79,7 @@
     <string name="event_icon_flag">Flag</string>
     <string name="event_icon_pin">Pin</string>
 
-    <string name="widget_name">@string/app_name</string>
+    <string name="widget_name">Days · CountAway</string>
     <string name="widget_description">Days until or since your dates, right on your home screen.</string>
     <string name="widget_days_left">days left</string>
     <string name="widget_day_ago">day ago</string>
@@ -139,4 +141,6 @@
     <string name="about_author">Created by santiagorodriguez.com</string>
     <string name="about_donate">Donate</string>
     <string name="about_donate_note">If this saved you from checking the calendar twelve times a day, you can support the noble cause of keeping simple things simple.</string>
+    <string name="language_follow_system">Use system language</string>
+    <string name="theme_system_current">Currently: %1$s</string>
 </resources>

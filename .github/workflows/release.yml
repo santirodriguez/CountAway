@@ -36,8 +36,8 @@ jobs:
       BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
       EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
       PACKAGE_ID: "com.santiagorodriguez.countaway"
-      PREVIOUS_PUBLIC_VERSION: "1.2.2"
-      PREVIOUS_PUBLIC_APK_BYTES: "499104"
+      PREVIOUS_PUBLIC_VERSION: "1.2.3"
+      PREVIOUS_PUBLIC_APK_BYTES: "503480"
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
@@ -167,6 +167,10 @@ jobs:
           printf 'VERSION=%s\n' "${VERSION}" >> "${GITHUB_ENV}"
           printf 'VERSION_CODE=%s\n' "${VERSION_CODE}" >> "${GITHUB_ENV}"
           printf 'PREPARE_RELEASE=%s\n' "${PREPARE_RELEASE}" >> "${GITHUB_ENV}"
+
+      - name: Require fresh screenshots before drafting or publishing
+        if: steps.version.outputs.prepare_release == 'true'
+        run: python3 scripts/verify-release-screenshots.py --version "${{ steps.version.outputs.version }}"
 
       - name: Set up JDK
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
@@ -765,10 +769,10 @@ jobs:
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
-      PREVIOUS_PUBLIC_VERSION: "1.2.2"
-      PREVIOUS_PUBLIC_VERSION_CODE: "11"
-      PREVIOUS_PUBLIC_APK_SHA256: "689191b5e25ca97b83bc113a6da8f83565e3d011581d0a990feb5d48b39be7a4"
-      PREVIOUS_PUBLIC_APK_BYTES: "499104"
+      PREVIOUS_PUBLIC_VERSION: "1.2.3"
+      PREVIOUS_PUBLIC_VERSION_CODE: "12"
+      PREVIOUS_PUBLIC_APK_SHA256: "9c3556382058add92f455ff714205adab8cc1c8946b5c87a620e1c678229afbf"
+      PREVIOUS_PUBLIC_APK_BYTES: "503480"
 
     steps:
       - name: Checkout exact candidate source

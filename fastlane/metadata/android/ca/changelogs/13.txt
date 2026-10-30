@@ -1,0 +1,1 @@
+Afegeix una hora opcional als esdeveniments i consulta hores, minuts i segons en directe a la pantalla principal. Un giny específic per als esdeveniments amb hora se suma als ginys clàssics de dies. Millores en les còpies de seguretat, l'actualització dels ginys i el text gran.

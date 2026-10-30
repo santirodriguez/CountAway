@@ -42,6 +42,8 @@
     <string name="reminder_seven_days">7 dies abans</string>
     <string name="notification_permission_denied">No s’ha concedit el permís de notificacions.</string>
     <string name="title_required">Posa un títol a aquest esdeveniment.</string>
+    <string name="oversized_title_notice">Aquest títol és massa llarg per mostrar-lo sencer. Es conservarà intacte fins que decideixis substituir-lo.</string>
+    <string name="oversized_title_replace">Substitueix el títol</string>
     <string name="delete_title">Vols eliminar l’esdeveniment?</string>
     <string name="delete_message">Vols eliminar &quot;%1$s&quot;?</string>
     <string name="data_error_edit_blocked">Ja Queda Poc no ha pogut llegir de manera segura les dades desades. L’edició està desactivada per evitar sobreescriure-les.</string>
@@ -69,7 +71,7 @@
     <string name="event_icon_flag">Bandera</string>
     <string name="event_icon_pin">Ubicació</string>
 
-    <string name="widget_name">@string/app_name</string>
+    <string name="widget_name">Dies · Ja Queda Poc</string>
     <string name="widget_description">Els dies que falten o han passat, a la pantalla d’inici.</string>
     <string name="widget_days_left">dies que falten</string>
     <string name="widget_day_ago">dia enrere</string>
@@ -131,4 +133,6 @@
     <string name="about_author">Creada per santiagorodriguez.com</string>
     <string name="about_donate">Dona</string>
     <string name="about_donate_note">Si això t’ha estalviat mirar el calendari dotze vegades al dia, pots col·laborar amb la noble causa de continuar simplificant coses que no haurien de ser complicades.</string>
+    <string name="language_follow_system">Idioma del dispositiu</string>
+    <string name="theme_system_current">Actualment: %1$s</string>
 </resources>

@@ -1,0 +1,206 @@
+package com.santiagorodriguez.countaway.ui
+
+import android.content.Intent
+import android.widget.EditText
+import androidx.test.core.app.ActivityScenario
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.data.CountdownIo
+import com.santiagorodriguez.countaway.data.CountdownLoadResult
+import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.CountdownStorageCodec
+import com.santiagorodriguez.countaway.data.EventTransport
+import com.santiagorodriguez.countaway.model.CountdownEvent
+import com.santiagorodriguez.countaway.model.EventType
+import org.junit.Assert.*
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.time.Instant
+import java.time.LocalDate
+import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
+@RunWith(AndroidJUnit4::class)
+class HistoricalEditorTransportInstrumentedTest {
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    private val context = instrumentation.targetContext
+    private val repository = CountdownRepository(context)
+
+    @Test fun validHistoricalLargeTitleSurvivesRealEditorRecreationWithoutDataLoss() {
+        val title = "Historical-" + "A".repeat(1_150_000)
+        val event = fixture("large-title-" + UUID.randomUUID(), title)
+        withStoredFixture(event) {
+            ActivityScenario.launch<EditorActivity>(
+                Intent(context, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, EventTransport.wireId(event.id)),
+            ).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    assertEquals(title, activity.fullEditorTitle())
+                    assertTrue(activity.findViewById<EditText>(R.id.titleInput).text.length < 200)
+                    assertFalse(activity.findViewById<EditText>(R.id.titleInput).isEnabled)
+                    assertEquals(android.view.View.VISIBLE,
+                        activity.findViewById<android.view.View>(R.id.replaceOversizedTitleButton).visibility)
+                }
+                scenario.recreate()
+                drain()
+                scenario.onActivity { activity ->
+                    assertEquals(title, activity.fullEditorTitle())
+                    assertTrue(activity.findViewById<EditText>(R.id.titleInput).text.length < 200)
+                    assertFalse(activity.findViewById<EditText>(R.id.titleInput).isEnabled)
+                    assertEquals(android.view.View.VISIBLE,
+                        activity.findViewById<android.view.View>(R.id.replaceOversizedTitleButton).visibility)
+                }
+            }
+        }
+    }
+
+    @Test fun validHistoricalLargeIdCanOpenEditorViaActualActivityIntent() {
+        val id = "long-id-" + "B".repeat(1_100_000)
+        val event = fixture(id, "Historical identifier")
+        withStoredFixture(event) {
+            ActivityScenario.launch<EditorActivity>(
+                Intent(context, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, EventTransport.wireId(event.id)),
+            ).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    assertEquals(event.title, activity.findViewById<EditText>(R.id.titleInput).text.toString())
+                }
+            }
+        }
+    }
+
+    @Test fun oversizedUnsavedEditorTitleSurvivesRecreationWithoutChangingStoredEvent() {
+        val event = fixture("draft-test-" + UUID.randomUUID(), "Original title")
+        val unsaved = "Unsaved historical draft-" + "Z".repeat(1_100_000)
+        withStoredFixture(event) {
+            ActivityScenario.launch<EditorActivity>(
+                Intent(context, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id),
+            ).use { scenario ->
+                drain()
+                scenario.onActivity {
+                    // Simulate an inherited, previously saved over-limit draft
+                    // without ever putting its full text into Android EditText.
+                    it.setEditorTitle(unsaved)
+                    assertEquals(unsaved, it.fullEditorTitle())
+                    assertTrue(it.findViewById<EditText>(R.id.titleInput).text.length < 200)
+                }
+                scenario.recreate()
+                drain()
+                scenario.onActivity {
+                    assertEquals(unsaved, it.fullEditorTitle())
+                    assertTrue(it.findViewById<EditText>(R.id.titleInput).text.length < 200)
+                }
+                assertEquals(event, (repository.loadResult() as CountdownLoadResult.Success)
+                    .events.single { it.id == event.id })
+            }
+        }
+    }
+
+    @Test fun savingAnUnchangedHugeHistoricalTitleKeepsTheOriginal() {
+        val title = "  Original-" + "K".repeat(1_100_000) + "  "
+        val event = fixture("save-long-title-" + UUID.randomUUID(), title)
+        withStoredFixture(event) {
+            ActivityScenario.launch<EditorActivity>(
+                Intent(context, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id),
+            ).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    assertEquals(title, activity.fullEditorTitle())
+                    assertFalse(activity.findViewById<EditText>(R.id.titleInput).isEnabled)
+                    activity.findViewById<android.widget.Button>(R.id.saveButton).performClick()
+                }
+                drain()
+                assertEquals(title, (repository.loadResult() as CountdownLoadResult.Success)
+                    .events.single { it.id == event.id }.title)
+            }
+        }
+    }
+
+    @Test fun replacingAnOversizedHistoricalTitleRequiresExplicitAction() {
+        val title = "Historical-" + "R".repeat(19_000)
+        val event = fixture("replace-" + UUID.randomUUID(), title)
+        withStoredFixture(event) {
+            ActivityScenario.launch<EditorActivity>(
+                Intent(context, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id),
+            ).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    val input = activity.findViewById<EditText>(R.id.titleInput)
+                    assertEquals(title, activity.fullEditorTitle())
+                    assertFalse(input.isEnabled)
+                    activity.findViewById<android.widget.Button>(R.id.replaceOversizedTitleButton).performClick()
+                    assertTrue(input.isEnabled)
+                    assertEquals("", activity.fullEditorTitle())
+                    input.setText("New explicit title")
+                }
+                scenario.recreate()
+                drain()
+                scenario.onActivity { activity ->
+                    assertEquals("New explicit title", activity.fullEditorTitle())
+                }
+            }
+        }
+    }
+
+    @Test fun oversizedHistoricalIdCanOpenRealWidgetPinSetup() {
+        val event = fixture("widget-id-" + "W".repeat(1_100_000), "Widget historical title")
+        withStoredFixture(event) {
+            val wire = EventTransport.wireId(event.id)
+            assertTrue(wire.length < 100)
+            ActivityScenario.launch<com.santiagorodriguez.countaway.widget.WidgetPinSetupActivity>(
+                Intent(context, com.santiagorodriguez.countaway.widget.WidgetPinSetupActivity::class.java)
+                    .putExtra(com.santiagorodriguez.countaway.widget.WidgetPinSetupActivity.EXTRA_EVENT_ID, wire),
+            ).use { scenario ->
+                drain()
+                scenario.onActivity {
+                    assertEquals(event.title,
+                        it.findViewById<android.widget.TextView>(R.id.widgetPinSetupEventTitle).text.toString())
+                }
+            }
+        }
+    }
+
+    @Test fun hugeHistoricalEventIdCanBeDuplicatedThroughCompactReference() {
+        val event = fixture("copy-id-" + "C".repeat(1_100_000), "Historical copy source")
+        withStoredFixture(event) {
+            val intent = Intent(context, EditorActivity::class.java)
+                .putExtra(EditorActivity.EXTRA_DUPLICATE_EVENT_ID, EventTransport.wireId(event.id))
+                .putExtra(EditorActivity.EXTRA_SOURCE_REVISION,
+                    com.santiagorodriguez.countaway.data.EventRevision.of(event))
+            ActivityScenario.launch<EditorActivity>(intent).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    assertEquals(event.title, activity.findViewById<EditText>(R.id.titleInput).text.toString())
+                }
+            }
+        }
+    }
+
+    private fun withStoredFixture(event: CountdownEvent, test: () -> Unit) {
+        val baseline = (repository.loadResult() as CountdownLoadResult.Success).events
+        val originalPayload = CountdownStorageCodec.encode(baseline)
+        try {
+            val candidate = baseline + event
+            assertEquals(candidate, CountdownStorageCodec.decodeForImport(CountdownStorageCodec.encode(candidate)))
+            repository.save(candidate)
+            test()
+            assertEquals(event, (repository.loadResult() as CountdownLoadResult.Success).events.single { it.id == event.id })
+        } finally {
+            repository.importPayload(originalPayload)
+        }
+    }
+
+    private fun fixture(id: String, title: String) = CountdownEvent(
+        id = id, title = title, date = LocalDate.of(2027, 6, 1),
+        type = EventType.EVENT, createdAt = Instant.EPOCH,
+    )
+
+    private fun drain() {
+        val complete = CountDownLatch(1)
+        CountdownIo.submit({ Unit }) { complete.countDown() }
+        assertTrue(complete.await(15, TimeUnit.SECONDS))
+        instrumentation.waitForIdleSync()
+    }
+}

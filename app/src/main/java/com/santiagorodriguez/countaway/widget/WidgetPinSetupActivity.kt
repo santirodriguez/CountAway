@@ -18,6 +18,7 @@ import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.ChoiceAccessibility
 import com.santiagorodriguez.countaway.ui.BaseActivity
@@ -65,6 +66,17 @@ class WidgetPinSetupActivity : BaseActivity() {
             loadEvent(eventId)
         }
         appearanceGroup = findViewById(R.id.widgetPinSetupAppearanceGroup)
+        // At large font sizes give every radio label a full-width touch target.
+        if (resources.configuration.fontScale >= 1.5f) {
+            appearanceGroup.orientation = LinearLayout.VERTICAL
+            for (index in 0 until appearanceGroup.childCount) {
+                val button = appearanceGroup.getChildAt(index)
+                val params = button.layoutParams as RadioGroup.LayoutParams
+                params.width = LinearLayout.LayoutParams.MATCH_PARENT
+                params.weight = 0f
+                button.layoutParams = params
+            }
+        }
         backgroundRows = findViewById(R.id.widgetPinSetupBackgroundRows)
         previewController = WidgetPreviewController(
             context = this,
@@ -167,7 +179,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                 if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
                 val loaded = (result.getOrNull() as? CountdownLoadResult.Success)
                     ?.events
-                    ?.firstOrNull { it.id == eventId }
+                    ?.let { EventTransport.resolve(it, eventId) }
                 if (loaded == null) {
                     Toast.makeText(
                         this,
@@ -183,7 +195,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                     setImageResource(EventIconPresentation.drawableRes(loaded.icon))
                     contentDescription = getString(EventIconPresentation.labelRes(loaded.icon))
                 }
-                findViewById<TextView>(R.id.widgetPinSetupEventTitle).text = loaded.title
+                findViewById<TextView>(R.id.widgetPinSetupEventTitle).text = EventTransport.preview(loaded.title)
                 setAddEnabled(!awaitingPinResult)
                 updatePreview(CountdownTime.snapshot())
             },
@@ -358,7 +370,9 @@ class WidgetPinSetupActivity : BaseActivity() {
     private fun renderBackgroundChoices() {
         backgroundRows.removeAllViews()
         val appearance = currentSelection().appearance
-        WidgetBackground.entries.chunked(3).forEach { backgrounds ->
+        val columns = if (resources.configuration.fontScale >= 1.3f ||
+            resources.configuration.screenWidthDp < 360) 2 else 3
+        WidgetBackground.entries.chunked(columns).forEach { backgrounds ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
@@ -371,7 +385,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                     },
                 )
             }
-            repeat(3 - backgrounds.size) {
+            repeat(columns - backgrounds.size) {
                 row.addView(
                     FrameLayout(this),
                     LinearLayout.LayoutParams(0, 1, 1f),
@@ -443,7 +457,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                     gravity = Gravity.CENTER
                     setTextColor(getColor(R.color.foreground))
                     textSize = 12f
-                    maxLines = 1
+                    maxLines = 3
                 },
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -483,7 +497,7 @@ class WidgetPinSetupActivity : BaseActivity() {
             dimensions = WidgetPreviewSizing.representative(WidgetSize.STANDARD),
         )
         previewController.renderEvent(
-            WidgetEventContentFactory.from(currentEvent, snapshot.today),
+            WidgetEventContentFactory.from(currentEvent.copy(title = EventTransport.preview(currentEvent.title)), snapshot.today),
         )
     }
 

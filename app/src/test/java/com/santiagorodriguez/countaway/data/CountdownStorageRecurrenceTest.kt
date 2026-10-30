@@ -30,6 +30,7 @@ class CountdownStorageRecurrenceTest {
             CountdownStorageSchema.REPEAT_RULE_VERSION,
             CountdownStorageSchema.EXPANDED_RECURRENCE_VERSION,
             CountdownStorageSchema.COUNT_MODE_VERSION,
+            CountdownStorageSchema.OPTIONAL_TIME_VERSION,
         ).forEach { schemaVersion ->
             RepeatRule.entries.forEach { repeatRule ->
                 assertEquals(

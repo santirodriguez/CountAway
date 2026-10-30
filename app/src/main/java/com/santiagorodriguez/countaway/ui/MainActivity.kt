@@ -2,7 +2,10 @@ package com.santiagorodriguez.countaway.ui
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
@@ -16,10 +19,12 @@ import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
 import com.santiagorodriguez.countaway.notification.ArrivalNotifier
 import com.santiagorodriguez.countaway.widget.CountdownWidgetProvider
+import com.santiagorodriguez.countaway.widget.TimeWidgetProvider
 import com.santiagorodriguez.countaway.widget.WidgetPinSetupActivity
 import com.santiagorodriguez.countaway.widget.WidgetUpdateScheduler
 import java.time.LocalDate
@@ -41,6 +46,24 @@ class MainActivity : BaseActivity() {
     private var restoreLanguageAccessibilityFocus = false
     private lateinit var temporalInvalidationController: TemporalInvalidationController
     private var loadGeneration = 0
+    private val clockHandler = Handler(Looper.getMainLooper())
+    private var clockVisible = false
+    private val clockTick = object : Runnable {
+        override fun run() {
+            if (!clockVisible || isFinishing || isDestroyed) return
+            if (adapter.hasTimedEvents()) {
+                adapter.tickVisible(countdownList, CountdownTime.snapshot().now)
+                clockHandler.postDelayed(this, 1_000L)
+            }
+        }
+    }
+
+    private fun scheduleClockTick() {
+        clockHandler.removeCallbacks(clockTick)
+        if (clockVisible && adapter.hasTimedEvents()) {
+            clockHandler.postDelayed(clockTick, 1_000L)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,6 +110,7 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        clockVisible = true
         if (LanguageManager.currentLanguageTag(this) != renderedLanguage) {
             recreate()
             return
@@ -114,6 +138,8 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onPause() {
+        clockVisible = false
+        clockHandler.removeCallbacks(clockTick)
         eventActions.pause()
         temporalInvalidationController.stop()
         loadGeneration += 1
@@ -151,6 +177,7 @@ class MainActivity : BaseActivity() {
 
         CountdownIo.execute {
             runCatching { CountdownWidgetProvider.updateAllWidgets(context, snapshot) }
+            runCatching { TimeWidgetProvider.updateAllWidgets(context, snapshot) }
             runCatching { WidgetUpdateScheduler.ensureScheduled(context, snapshot) }
             runCatching { ArrivalNotificationScheduler.ensureScheduled(context, snapshot) }
         }
@@ -160,6 +187,7 @@ class MainActivity : BaseActivity() {
         when (result) {
             is CountdownLoadResult.Success -> {
                 adapter.submit(CountdownEventOrder.sortedForDisplay(result.events, today), today)
+                scheduleClockTick()
                 emptyStateIcon.visibility = View.VISIBLE
                 emptyTitle.setText(R.string.empty_title)
                 emptyDescription.setText(R.string.empty_description)
@@ -168,6 +196,7 @@ class MainActivity : BaseActivity() {
             }
             is CountdownLoadResult.Failure -> {
                 adapter.submit(emptyList(), today)
+                clockHandler.removeCallbacks(clockTick)
                 emptyStateIcon.visibility = View.GONE
                 if (result.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA) {
                     emptyTitle.setText(R.string.data_newer_version_title)
@@ -183,13 +212,13 @@ class MainActivity : BaseActivity() {
     }
 
     private fun openEditor(event: CountdownEvent) {
-        startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, event.id))
+        startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, EventTransport.wireId(event.id)))
     }
 
     private fun openWidgetPinSetup(event: CountdownEvent) {
         startActivity(
             Intent(this, WidgetPinSetupActivity::class.java)
-                .putExtra(WidgetPinSetupActivity.EXTRA_EVENT_ID, event.id),
+                .putExtra(WidgetPinSetupActivity.EXTRA_EVENT_ID, EventTransport.wireId(event.id)),
         )
     }
 
@@ -199,21 +228,33 @@ class MainActivity : BaseActivity() {
     }
 
     private fun showThemePicker() {
+        val anchor = findViewById<View>(R.id.themeButton)
+        val focus = EditorDialogFocus(this).apply { capture(anchor) }
         val themes = ThemeManager.AppTheme.entries
-        val labels = arrayOf(
-            getString(R.string.widget_appearance_system),
-            getString(R.string.widget_appearance_light),
-            getString(R.string.widget_appearance_dark),
+        // An explicit app theme overrides the Activity; the application keeps the system night mode.
+        val systemIsDark = (applicationContext.resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val systemMode = if (systemIsDark) R.string.widget_appearance_dark
+            else R.string.widget_appearance_light
+        val choices = listOf(
+            DialogChoice(
+                title = getString(R.string.widget_appearance_system),
+                iconRes = R.drawable.ic_theme_device,
+                subtitle = getString(R.string.theme_system_current, getString(systemMode)),
+            ),
+            DialogChoice(getString(R.string.widget_appearance_light), R.drawable.ic_theme_sun),
+            DialogChoice(getString(R.string.widget_appearance_dark), R.drawable.ic_theme_moon),
         )
-        val selected = themes.indexOf(ThemeManager.currentTheme(this))
-        AlertDialog.Builder(this)
+        val picker = AlertDialog.Builder(this)
             .setTitle(R.string.widget_appearance_label)
-            .setSingleChoiceItems(labels, selected) { dialog, which ->
+            .setSingleChoiceItems(DialogChoiceAdapter(this, choices), themes.indexOf(ThemeManager.currentTheme(this))) { dialog, which ->
                 dialog.dismiss()
                 ThemeManager.setTheme(this, themes[which])
             }
             .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            .create()
+        picker.setOnDismissListener { focus.restore(anchor) }
+        picker.show()
     }
 
     private fun renderThemeButton() {

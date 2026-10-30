@@ -15,6 +15,8 @@ import java.nio.charset.CharacterCodingException
 import java.nio.charset.CodingErrorAction
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 
 enum class CountdownDataProblem {
     CORRUPT,
@@ -34,7 +36,8 @@ object CountdownStorageSchema {
     const val REPEAT_RULE_VERSION = 5
     const val EXPANDED_RECURRENCE_VERSION = 6
     const val COUNT_MODE_VERSION = 7
-    const val CURRENT_VERSION = COUNT_MODE_VERSION
+    const val OPTIONAL_TIME_VERSION = 8
+    const val CURRENT_VERSION = OPTIONAL_TIME_VERSION
 
     fun isSupported(version: Int): Boolean = version in LEGACY_VERSION..CURRENT_VERSION
 
@@ -53,6 +56,7 @@ object CountdownStorageSchema {
         REPEAT_RULE_VERSION,
         EXPANDED_RECURRENCE_VERSION,
         COUNT_MODE_VERSION,
+        OPTIONAL_TIME_VERSION,
         -> rawStorageKey?.let(RepeatRule::fromStorageKey)
         else -> null
     }
@@ -65,7 +69,9 @@ object CountdownStorageSchema {
         REPEAT_RULE_VERSION,
         EXPANDED_RECURRENCE_VERSION,
         -> CountMode.COUNT_DOWN
-        COUNT_MODE_VERSION -> rawStorageKey?.let(CountMode::fromStorageKey)
+        COUNT_MODE_VERSION,
+        OPTIONAL_TIME_VERSION,
+        -> rawStorageKey?.let(CountMode::fromStorageKey)
         else -> null
     }
 }
@@ -167,6 +173,7 @@ object CountdownStorageCodec {
             CountdownStorageSchema.REPEAT_RULE_VERSION,
             CountdownStorageSchema.EXPANDED_RECURRENCE_VERSION,
             CountdownStorageSchema.COUNT_MODE_VERSION,
+            CountdownStorageSchema.OPTIONAL_TIME_VERSION,
             -> EventType.fromStorageKey(rawType)
             else -> null
         } ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
@@ -181,6 +188,7 @@ object CountdownStorageCodec {
             CountdownStorageSchema.REPEAT_RULE_VERSION,
             CountdownStorageSchema.EXPANDED_RECURRENCE_VERSION,
             CountdownStorageSchema.COUNT_MODE_VERSION,
+            CountdownStorageSchema.OPTIONAL_TIME_VERSION,
             -> EventIcon.fromStorageKey(json.getString(KEY_ICON))
                 ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
             else -> throw CountdownDataException(CountdownDataProblem.CORRUPT)
@@ -200,6 +208,7 @@ object CountdownStorageCodec {
             CountdownStorageSchema.REPEAT_RULE_VERSION,
             CountdownStorageSchema.EXPANDED_RECURRENCE_VERSION,
             CountdownStorageSchema.COUNT_MODE_VERSION,
+            CountdownStorageSchema.OPTIONAL_TIME_VERSION,
             -> ReminderOption.fromStorageKey(json.getString(KEY_REMINDER))
                 ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
             else -> throw CountdownDataException(CountdownDataProblem.CORRUPT)
@@ -223,6 +232,23 @@ object CountdownStorageCodec {
             },
         ) ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
 
+        val supportsTime = schemaVersion >= CountdownStorageSchema.OPTIONAL_TIME_VERSION
+        val hasTime = supportsTime && json.has(KEY_EVENT_TIME)
+        val hasZone = supportsTime && json.has(KEY_EVENT_ZONE)
+        if (hasTime != hasZone) throw CountdownDataException(CountdownDataProblem.CORRUPT)
+
+        val eventTime = if (hasTime) {
+            val raw = json.get(KEY_EVENT_TIME) as? String
+                ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            if (!TIME_FORMAT.matches(raw)) throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            LocalTime.parse(raw)
+        } else null
+        val eventZone = if (hasZone) {
+            val raw = json.get(KEY_EVENT_ZONE) as? String
+                ?: throw CountdownDataException(CountdownDataProblem.CORRUPT)
+            ZoneId.of(raw)
+        } else null
+
         return CountdownEvent(
             id = json.getString(KEY_ID),
             title = json.getString(KEY_TITLE),
@@ -233,6 +259,8 @@ object CountdownStorageCodec {
             createdAt = Instant.parse(json.getString(KEY_CREATED_AT)),
             repeatRule = repeatRule,
             countMode = countMode,
+            eventTime = eventTime,
+            eventZone = eventZone,
         )
     }
 
@@ -246,6 +274,12 @@ object CountdownStorageCodec {
         .put(KEY_REPEAT_RULE, event.repeatRule.storageKey)
         .put(KEY_COUNT_MODE, event.countMode.storageKey)
         .put(KEY_CREATED_AT, event.createdAt.toString())
+        .apply {
+            if (event.eventTime != null && event.eventZone != null) {
+                put(KEY_EVENT_TIME, event.eventTime.toString())
+                put(KEY_EVENT_ZONE, event.eventZone.id)
+            }
+        }
 
     private const val KEY_SCHEMA_VERSION = "schemaVersion"
     private const val KEY_EVENTS = "events"
@@ -257,6 +291,9 @@ object CountdownStorageCodec {
     private const val KEY_REMINDER = "reminderKey"
     private const val KEY_REPEAT_RULE = "repeatRule"
     private const val KEY_COUNT_MODE = "countMode"
+    private const val KEY_EVENT_TIME = "eventTime"
+    private const val KEY_EVENT_ZONE = "eventZone"
+    private val TIME_FORMAT = Regex("""\d{2}:\d{2}""")
     private const val KEY_NOTIFY_ON_ARRIVAL = "notifyOnArrival"
     private const val KEY_CREATED_AT = "createdAt"
     private const val READ_BUFFER_BYTES = 16 * 1024
