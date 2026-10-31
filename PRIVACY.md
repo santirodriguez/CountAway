@@ -51,7 +51,7 @@ CountAway has no user accounts, so there is no server-side account or profile to
 
 For privacy questions or inquiries, contact the developer through:
 
-https://santiagorodriguez.com
+support@cajapersonal.org
 
 ---
 
@@ -102,7 +102,7 @@ CountAway no tiene cuentas de usuario, por lo que no existe una cuenta o perfil 
 
 Para consultas sobre privacidad, contactá al desarrollador mediante:
 
-https://santiagorodriguez.com
+support@cajapersonal.org
 
 ---
 
@@ -153,4 +153,4 @@ CountAway no té comptes d'usuari, de manera que no existeix cap compte o perfil
 
 Per a consultes de privacitat, contacta amb el desenvolupador mitjançant:
 
-https://santiagorodriguez.com
+support@cajapersonal.org

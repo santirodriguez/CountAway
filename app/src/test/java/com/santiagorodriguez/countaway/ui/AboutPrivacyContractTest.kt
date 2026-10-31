@@ -1,11 +1,49 @@
 package com.santiagorodriguez.countaway.ui
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
 class AboutPrivacyContractTest {
+
+    @Test
+    fun publicIdentityAndDonationLinksMatchPublishedSite() {
+        val activity = File("src/main/java/com/santiagorodriguez/countaway/ui/AboutActivity.kt").readText()
+        val policy = File("../PRIVACY.md").readText()
+        val readme = File("../README.md").readText()
+
+        assertTrue(activity.contains("DONATE_WEBSITE = \"https://cajapersonal.org/donate/\""))
+        assertFalse(activity.contains("santiagorodriguez.com"))
+        assertEquals(3, policy.lines().count { it == "support@cajapersonal.org" })
+        assertFalse(policy.contains("santiagorodriguez.com"))
+        assertTrue(readme.contains("href=\"https://cajapersonal.org/donate/\""))
+        assertFalse(readme.contains("santiagorodriguez.com"))
+
+        val locales = listOf(
+            "values" to "A Caja Personal project",
+            "values-es" to "Un proyecto de Caja Personal",
+            "values-ca" to "Un projecte de Caja Personal",
+        )
+        for ((directory, credit) in locales) {
+            val publicCredit = File("src/main/res/$directory/about_polish_strings.xml").readText()
+            val legacyCredit = File("src/main/res/$directory/strings.xml").readText()
+            assertTrue(
+                "$directory visible credit mismatch",
+                publicCredit.contains("<string name=\"about_author_name\">$credit</string>"),
+            )
+            assertTrue(
+                "$directory legacy credit mismatch",
+                legacyCredit.contains("<string name=\"about_author\">$credit</string>"),
+            )
+            assertFalse(
+                "$directory still references the retired website",
+                (publicCredit + legacyCredit).contains("santiagorodriguez.com"),
+            )
+        }
+    }
+
     @Test
     fun helpExposesStableProjectAndPrivacyLinks() {
         val support = File("src/main/res/layout/view_about_support.xml").readText()

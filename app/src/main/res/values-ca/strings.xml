@@ -130,7 +130,7 @@
         <item quantity="one">Això substituirà els esdeveniments actuals per %1$d esdeveniment de la còpia.</item>
         <item quantity="other">Això substituirà els esdeveniments actuals per %1$d esdeveniments de la còpia.</item>
     </plurals>
-    <string name="about_author">Creada per santiagorodriguez.com</string>
+    <string name="about_author">Un projecte de Caja Personal</string>
     <string name="about_donate">Dona</string>
     <string name="about_donate_note">Si això t’ha estalviat mirar el calendari dotze vegades al dia, pots col·laborar amb la noble causa de continuar simplificant coses que no haurien de ser complicades.</string>
     <string name="language_follow_system">Idioma del dispositiu</string>

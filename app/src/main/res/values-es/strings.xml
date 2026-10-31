@@ -130,7 +130,7 @@
         <item quantity="one">Esto reemplazará tus eventos actuales por %1$d evento de la copia.</item>
         <item quantity="other">Esto reemplazará tus eventos actuales por %1$d eventos de la copia.</item>
     </plurals>
-    <string name="about_author">Creada por santiagorodriguez.com</string>
+    <string name="about_author">Un proyecto de Caja Personal</string>
     <string name="about_donate">Donar</string>
     <string name="about_donate_note">Si esto te ahorró mirar el calendario doce veces por día, podés colaborar con la noble causa de seguir simplificando cosas que no deberían ser complicadas.</string>
     <string name="language_follow_system">Usar idioma del dispositivo</string>

@@ -138,7 +138,7 @@
         <item quantity="one">This will replace your current events with %1$d event from the backup.</item>
         <item quantity="other">This will replace your current events with %1$d events from the backup.</item>
     </plurals>
-    <string name="about_author">Created by santiagorodriguez.com</string>
+    <string name="about_author">A Caja Personal project</string>
     <string name="about_donate">Donate</string>
     <string name="about_donate_note">If this saved you from checking the calendar twelve times a day, you can support the noble cause of keeping simple things simple.</string>
     <string name="language_follow_system">Use system language</string>

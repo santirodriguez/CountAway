@@ -243,7 +243,7 @@ class AboutActivity : BaseActivity() {
 
     private companion object {
         const val PROJECT_WEBSITE = "https://countaway.cajapersonal.org/"
-        const val DONATE_WEBSITE = "https://santiagorodriguez.com/donate"
+        const val DONATE_WEBSITE = "https://cajapersonal.org/donate/"
         const val REQUEST_EXPORT = 5101
         const val REQUEST_IMPORT = 5102
         const val STATE_CALENDAR_TAPS = "calendar_taps"
