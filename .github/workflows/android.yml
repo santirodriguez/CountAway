@@ -156,6 +156,8 @@ jobs:
         run: |
           python3 scripts/test-play-screenshot-staging.py
           python3 scripts/test-release-screenshots.py
+          python3 scripts/test-readme-screenshots.py
+          python3 scripts/verify-readme-screenshots.py
 
       - name: Prepare and validate reusable Play assets
         run: |
