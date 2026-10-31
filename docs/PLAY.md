@@ -1,13 +1,25 @@
 # Google Play preparation and submission
 
-CountAway has an existing Google Play app and testing-track history alongside its GitHub/Obtainium and F-Droid distribution. Confirm current testing, upload-key, review, and production-access status in Play Console before acting. Repository preparation does not authorize an upload, track submission, rollout, or publication.
+CountAway has an existing Google Play app and testing-track history alongside its GitHub/Obtainium and F-Droid distribution. For routine updates, check the intended track and globally used versionCodes in the live Console; repeat one-time account and upload-key verification only when an actual change, mismatch, or Play request warrants it. Repository preparation does not authorize an upload, track submission, rollout, or publication.
+
+## Routine Play update (Production already active)
+
+This is the **default procedure for every future CountAway version**, not a one-time launch checklist. Use the detailed sections below only for exceptions and technical instructions.
+
+1. **Accept the exact release.** Follow [RELEASING.md](RELEASING.md) for candidate QA and approvals. Confirm the immutable source commit, package and versionName, successful exact-source Actions checks, and the next unused versionCode across **all** Play tracks. Recheck current Google policy before submission; do not repeat initial account onboarding.
+2. **Retrieve the existing AAB.** Use the matching `CountAway-v<version>-play-readiness-<source-sha>` Actions artifact; verify its SHA-256 and bundletool package/version receipt. Do not silently rebuild or substitute another source.
+3. **Sign and verify locally.** Use the existing `scripts/sign-play-bundle.sh` with the preserved **dedicated Play upload** JKS and public certificate, then verify the signed AAB, unchanged unsigned AAB and non-secret receipt. Reuse the verified Console-to-upload-certificate baseline when keys are unchanged; do not request the same Console screenshot or re-create keys.
+4. **Prepare only changed store material.** Supply release notes from `fastlane/metadata/android/{en-US,es,ca}/changelogs/<versionCode>.txt` (Play locales: `en-US`, `es-419`, `ca`). Reuse existing accurate, version-neutral storefront screenshots, artwork, descriptions and declarations unless the release or Play policy requires a change; keep genuine current-candidate screenshot evidence required by [RELEASING.md](RELEASING.md) separate from optional storefront reuploads. Verify privacy-policy accuracy and changed declarations as applicable.
+5. **Target Production normally.** Once Production access is active, upload directly to **Production** by default. Use internal/closed testing only when Google requires it, the change needs additional pre-release testing, or the maintainer chooses it; the initial 12-tester/14-day production-access gate is not a recurring update step.
+6. **Submit for review with separate approval.** Obtain explicit authorization for the exact AAB upload and review submission; inspect Console-parsed package/versionCode, release notes, track and pending changes. **Confirm Managed publishing is ON before submitting for review** when publication must remain under the maintainer's control; without it, approved changes may publish automatically.
+7. **Publish and confirm.** After Google approves, obtain separate explicit authorization to publish the approved changes. Confirm the live Production release and, when available, verify a Play-delivered installation/update and cross-store signing compatibility. Keep F-Droid's build/index confirmation as a separate distribution path.
 
 ## Release baseline (observed 2026-10-31)
 
 - applicationId: `com.santiagorodriguez.countaway`
 - GitHub public stable release: **1.2.4 / versionCode 13** (tag `v1.2.4` at `fb0cd3f61921813c1e409443717de2dfe76780d2`), published on 2026-10-31.
 - First Google Play Production release: **1.2.3 / versionCode 12**, confirmed publicly available on 2026-10-30.
-- Google Play 1.2.4 / versionCode 13: the dedicated upload-signed AAB was accepted by Play Console and submitted for **Production review** alongside English, Spanish and Catalan screenshot updates on 2026-10-31, with Managed publishing enabled. It was **not publicly rolled out** at this checkpoint. Treat Console's live review and publishing state as authoritative after this date.
+- Google Play 1.2.4 / versionCode 13: the maintainer confirmed Production publication after Google's approval and Managed publishing on 2026-10-31, together with the English, Spanish and Catalan listing changes. Independent Play-delivered install/update verification was not recorded. For later changes, the live Console remains authoritative.
 - minSdk: 26
 - targetSdk / compileSdk: 36
 - no Internet permission
@@ -183,13 +195,13 @@ Android CI and the release workflow stage all six accepted screenshots, validate
 
 PNG exports can be checked with `python3 scripts/verify-play-assets.py <icon|feature|screenshot> <file>...`. JPEG screenshot exports remain valid Play inputs and should be inspected with an image tool before submission. Final screenshots are not generated or altered by this pipeline; they must still be genuine exact-candidate captures.
 
-The Play Console app and historical Play App Signing enrollment already exist. Verify the current upload-certificate status, declarations, testing tracks, and production access in the live Console; do not assume a key reset is pending or a testing track is still inactive. New uploads, review submissions, track promotions, and rollout remain separate maintainer-controlled gates.
+The Play Console app already has Play App Signing and Production access. Recheck upload-key registration, declarations, testing-track eligibility or account access only when a relevant change, anomaly, Google requirement or Console prompt calls for it; the ordinary update path above still checks track and globally used versionCodes. New uploads, review submissions, track promotions, and rollout remain separate maintainer-controlled gates.
 
 If the developer account is a **personal account created after November 13, 2023**, production access currently requires a closed test with at least 12 testers continuously opted in for at least 14 days, followed by a production-access request in Play Console. Internal testing does not satisfy that production gate. Account type/date must be checked in Play Console; do not assume this requirement applies or does not apply.
 
 ## Play testing-track submission checklist
 
-Before submitting to a permitted Play testing track:
+Use this **only when a testing track is deliberately required or chosen**, not for every normal Production update. Before submitting to that testing track:
 
 1. re-audit the exact candidate against current Play policy and target API requirements;
 2. verify the privacy-policy URL is publicly accessible and accurate;
@@ -213,7 +225,7 @@ Language configuration splits are disabled so an EN-only device installation als
 
 Use only the exact AAB produced from the accepted release-candidate SHA.
 
-1. Confirm `app/build.gradle.kts` contains the intended package, versionName and candidate versionCode. Check all prior Play uploads and testing/production tracks before allocation; use a globally higher unused code. Do not assume versionCode 13 is available or reuse the checked-in code 12 for the next release.
+1. Confirm `app/build.gradle.kts` contains the intended package, versionName and candidate versionCode. Check all prior Play uploads and testing/production tracks before allocation; use a globally higher unused code. Do not reuse a versionCode already uploaded on any Play track or assume a dated example reflects the current next code.
 2. Record the candidate source SHA and the readiness AAB SHA-256 retained by Actions.
 3. Select the preserved dedicated Play **upload JKS** and verify its alias certificate against the public upload PEM and the previously established Console registration baseline. Do not repeat the same Console screenshot check for each unchanged release. Recheck Console after a reset/rotation or discrepancy. The upload key is not CountAway's app-signing identity. If access to the registered upload key was lost, first make and verify an independent backup of a new upload key, request an **upload-key reset** using only its public PEM, then wait for Google's confirmed activation before signing/uploading.
 4. Sign the exact reviewed AAB with the repository helper, which uses JAR-compatible signing, verifies that the keystore alias matches the supplied public upload certificate, keeps passwords off the command line, leaves the input AAB unchanged, and can revalidate package/version with bundletool:
@@ -238,7 +250,7 @@ Use only the exact AAB produced from the accepted release-candidate SHA.
 7. Preserve the previously verified **Play app-signing certificate** identity:
    `dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a`.
    The upload certificate is distinct. Recheck the active Console app-signing identity only if relevant key changes or compatibility anomalies arise; if Play cannot preserve the identity required for cross-store updates, stop.
-8. Install a Play-delivered build and verify package/version/signing identity plus update compatibility with the existing CountAway installation before production rollout.
+8. If using a testing track, install its Play-delivered build and verify package/version/signing identity plus update compatibility **before** Production. For a direct Production update, perform that Play-delivered smoke check **after** publication; do not require a nonexistent pre-Production Play build.
 
 Never commit a keystore, key, password, export bundle, Play credential, or secret. A readiness AAB is not upload-ready until the explicit signing procedure above has been completed.
 
@@ -256,4 +268,4 @@ Revalidate every declaration against the exact candidate and current Play wordin
 - Support contact: use a monitored maintainer-provided address; do not invent one in repository metadata.
 - Countries, category/tags, identity/trader/account verification, and any personal-account testing requirement are Console/account decisions.
 
-Repository state should describe Play as **prepared**, **submitted**, **in testing**, or **production** accurately. With the first 1.2.3 Production availability reported by the maintainer, the release-branch README now links the existing official Google Play badge to `https://play.google.com/store/apps/details?id=com.santiagorodriguez.countaway` instead of presenting a pending-listing notice. Before any new Play submission, recheck the actual Console Production track, public listing and globally used versionCodes; do not merge an inactive or broken store URL into `main`.
+Repository state should describe Play as **prepared**, **submitted**, **in testing**, or **production** accurately. The README's Google Play badge already links to `https://play.google.com/store/apps/details?id=com.santiagorodriguez.countaway`. For a future submission, check the actual Production track and globally used versionCodes; verify public listing availability when changed or uncertain, and never merge a broken store URL into `main`.
