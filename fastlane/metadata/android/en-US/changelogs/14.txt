@@ -1,0 +1,1 @@
+Event times now follow your device's 12/24-hour setting. Clearer recurring-event previews and reminders, plus simpler live-hours widget setup with localized styles, useful event ordering, and safer selection.

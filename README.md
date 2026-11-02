@@ -60,7 +60,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 ## Highlights
 
 - **Count both ways:** count down to future dates or count up from a start date.
-- **Optional event times:** show live hours, minutes, and seconds, or keep counting calendar days.
+- **Optional event times:** show live hours, minutes, and seconds; event clock labels follow your device's 12/24-hour setting.
 - **Two kinds of widgets:** classic day-count widgets and a dedicated live-hours widget for timed events.
 - **Widget-first:** long-press an event, choose a style, preview it, and add it to Home.
 - **Flexible recurrence:** weekly, monthly, or yearly count-down events.

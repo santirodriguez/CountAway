@@ -1,0 +1,1 @@
+Las horas de los eventos ahora respetan el formato de 12/24 horas del teléfono. Vistas previas y recordatorios de eventos recurrentes más claros. También mejoramos la configuración del widget de horas con estilos traducidos, mejor orden y selección más segura.
