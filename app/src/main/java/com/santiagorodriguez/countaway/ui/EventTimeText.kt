@@ -25,6 +25,18 @@ internal object EventTimeText {
 
     fun dateTime(context: Context, target: ZonedDateTime): String {
         val locale = context.resources.configuration.locales[0]
+        val dateTime = target.format(
+            DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+                .withLocale(locale),
+        )
+        val nativeTime = target.format(
+            DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale),
+        )
+        // Preserve the locale's original date/time order and punctuation.
+        // Replace only the clock portion to honor the system's 12/24-hour setting.
+        if (dateTime.contains(nativeTime)) {
+            return dateTime.replaceFirst(nativeTime, time(context, target))
+        }
         val date = target.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
         return "$date · ${time(context, target)}"
     }

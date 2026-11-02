@@ -15,6 +15,8 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
@@ -40,7 +42,14 @@ class EventTimeTextInstrumentedTest {
                 ZoneId.of("America/New_York"))
             val expected = EventTimeText.time(locale, DateFormat.is24HourFormat(context), target)
             assertEquals(expected, EventTimeText.time(context, target))
-            assertTrue(EventTimeText.dateTime(context, target).endsWith(expected))
+            val nativeTime = target.format(
+                DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+            val localizedDateTime = target.format(
+                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+                    .withLocale(locale))
+            assertTrue(localizedDateTime.contains(nativeTime))
+            assertEquals(localizedDateTime.replaceFirst(nativeTime, expected),
+                EventTimeText.dateTime(context, target))
         }
     }
 

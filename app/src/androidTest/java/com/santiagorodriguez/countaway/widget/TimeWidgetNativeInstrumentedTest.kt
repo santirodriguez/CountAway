@@ -17,6 +17,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.ui.EventTimeText
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -69,14 +70,18 @@ class TimeWidgetNativeInstrumentedTest {
         val target = now.plusDays(7).withSecond(0).withNano(0)
         val liveEvent = event.copy(date = target.toLocalDate(), eventTime = target.toLocalTime())
         val liveSnapshot = CountdownTimeSnapshot(now)
-        val expectedTarget = DateTimeFormatter.ofLocalizedDateTime(
+        val legacyTarget = DateTimeFormatter.ofLocalizedDateTime(
             FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(Locale.US).format(target)
+        val legacyTime = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
+            .withLocale(Locale.US).format(target)
+        assertTrue("Localized date/time must contain its localized time", legacyTarget.contains(legacyTime))
         val sizes = listOf(160 to 90, 240 to 95, 180 to 120, 160 to 190,
             240 to 180, 280 to 210, 320 to 250)
         val fonts = listOf(1f, 1.3f, 2f)
         val themes = listOf(WidgetAppearance.DARK, WidgetAppearance.LIGHT)
         for ((width, height) in sizes) for (font in fonts) for (appearance in themes) {
             val context = fontContext(font)
+            val expectedTarget = legacyTarget.replaceFirst(legacyTime, EventTimeText.time(context, target))
             val style = WidgetConfiguration(liveEvent.id, appearance, WidgetBackground.HORIZON)
             val remote = TimeWidgetRenderer.render(context, context, 1234, style,
                 liveEvent, null, liveSnapshot, width, height, hashMapOf(), interactive = false)
