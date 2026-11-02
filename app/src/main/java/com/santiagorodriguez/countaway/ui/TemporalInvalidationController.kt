@@ -14,8 +14,8 @@ import java.time.Instant
 
 internal class TemporalInvalidationController(
     private val context: Context,
-    private val onInvalidated: (CountdownTimeSnapshot) -> Unit,
     private val nextPresentationBoundary: ((CountdownTimeSnapshot) -> Instant?)? = null,
+    private val onInvalidated: (CountdownTimeSnapshot) -> Unit,
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var registered = false
