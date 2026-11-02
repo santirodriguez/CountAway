@@ -56,10 +56,6 @@ import org.junit.runner.RunWith
  * Based on the six public v1.2.4 composition roles. Never changes Fastlane
  * assets, and never claims the slot-six preview is an actual launcher.
  */
-@Target(AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class IsolatedLauncherReview
-
 @RunWith(AndroidJUnit4::class)
 @SdkSuppress(minSdkVersion = 36)
 class ReleaseScreenshotReviewInstrumentedTest {
@@ -78,7 +74,6 @@ class ReleaseScreenshotReviewInstrumentedTest {
      * This diagnostic is deliberately non-gating: unsupported launchers leave an
      * explicit NOT_CAPTURED receipt instead of substituting rendered artwork.
      */
-    @IsolatedLauncherReview
     @Test fun attemptRealLauncherWidgetCaptureForHumanReview() {
         val file = File(app.filesDir, "layout-evidence/release-review/LAUNCHER_CAPTURE.txt")
         checkNotNull(file.parentFile).mkdirs()
@@ -93,10 +88,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             .find(densityBefore)?.groupValues?.get(1)
         val oldDefaults = defaults.get()
         val manager = AppWidgetManager.getInstance(app)
-        val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-        val homePackage = app.packageManager.resolveActivity(
-            homeIntent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
-        )?.activityInfo?.packageName
+        var verifiedLauncherPackage: String? = null
         try {
             if (!manager.isRequestPinAppWidgetSupported) {
                 notes += "status=NOT_CAPTURED; reason=launcher_pin_request_unsupported"
@@ -137,12 +129,12 @@ class ReleaseScreenshotReviewInstrumentedTest {
             SystemClock.sleep(1_800)
             val foreground = instrumentation.uiAutomation.rootInActiveWindow
                 ?.packageName?.toString()
-            notes += "home_package=$homePackage"
             notes += "foreground_package=$foreground"
             if (foreground !in setOf("com.google.android.apps.nexuslauncher", "com.android.launcher3")) {
                 notes += "status=NOT_CAPTURED; reason=launcher_not_foreground"
                 return
             }
+            verifiedLauncherPackage = foreground
             val classicStillBound = classicId in manager.getAppWidgetIds(classicProvider)
             val timedStillBound = timeId in manager.getAppWidgetIds(timeProvider)
             if (!classicStillBound || !timedStillBound) {
@@ -156,20 +148,24 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 ?.any { it.isVisibleToUser } == true
             notes += "classic_title_visible=$classicVisible"
             notes += "timed_title_visible=$timedVisible"
-            if (!classicVisible || !timedVisible) {
-                notes += "status=NOT_CAPTURED; reason=both_widget_titles_not_visible"
-                return
+            // Always preserve a native launcher image for human verification.
+            // The receipt must distinguish visible widgets from mere binding.
+            capture("7-launcher-review-only")
+            notes += if (classicVisible && timedVisible) {
+                "status=CAPTURED_REVIEW_ONLY; both_titles_visible=true"
+            } else {
+                "status=CAPTURED_UNVERIFIED; both_titles_visible=false"
             }
-            capture("7-real-launcher-widgets")
-            notes += "status=CAPTURED_REVIEW_ONLY; required=human_pixel_review_for_both_widgets"
+            notes += "required=human_pixel_review_for_both_widgets"
         } catch (failure: Exception) {
             notes += "status=NOT_CAPTURED; reason=${failure.javaClass.simpleName}"
             notes += "detail=${failure.message.orEmpty().replace('\n', ' ').take(180)}"
         } finally {
             // The launcher exists only in the disposable CI emulator. Do not
             // alter any user's real device or the canonical store screenshots.
-            if (homePackage in setOf("com.android.launcher3", "com.google.android.apps.nexuslauncher")) {
-                runCatching { shell("pm clear $homePackage") }
+            verifiedLauncherPackage?.let { launcher ->
+                val cleanup = runCatching { shell("pm clear $launcher") }.getOrDefault("failed")
+                notes += "launcher_cleanup=$cleanup"
             }
             repository.save(previous)
             prefs.edit().apply {
