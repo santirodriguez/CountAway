@@ -879,6 +879,19 @@ jobs:
                       sys.exit(0)
               sys.exit(1)
 
+          if mode == "label-center":
+              for node in root.iter():
+                  if node.get("text") != query and node.get("content-desc") != query:
+                      continue
+                  if node.get("enabled") == "false":
+                      continue
+                  rect = bounds(node)
+                  if rect:
+                      x1, y1, x2, y2 = rect
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      sys.exit(0)
+              sys.exit(1)
+
           if mode == "text":
               sys.exit(0 if any(node.get("text") == query for node in root.iter()) else 1)
 
@@ -944,6 +957,11 @@ jobs:
                 read -r x y <<< "${coords}"
                 adb shell input tap "${x}" "${y}"
                 return 0
+              fi
+              coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" scroll "${PACKAGE_ID}" "${xml_file}" 2>/dev/null)" || coords=""
+              if [[ -n "${coords}" ]]; then
+                read -r x y x1 y1 <<< "${coords}"
+                adb shell input swipe "${x}" "${y}" "${x1}" "${y1}" 400
               fi
               sleep 1
             done
@@ -1030,6 +1048,90 @@ jobs:
             return 1
           }
 
+          tap_document_file() {
+            local document="$1" xml="acceptance-evidence/picker-import-api-${API_LEVEL}.xml"
+            local attempt coords x y location=""
+            for attempt in {1..20}; do
+              dump_ui "${xml}"
+              coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "${document}" "${xml}" 2>/dev/null)" || coords=""
+              if [[ -n "${coords}" ]]; then
+                read -r x y <<< "${coords}"
+                adb shell input tap "${x}" "${y}"
+                return 0
+              fi
+              for location in "Downloads" "Download" "Show roots" "Show navigation drawer"; do
+                coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "${location}" "${xml}" 2>/dev/null)" || coords=""
+                if [[ -n "${coords}" ]]; then
+                  read -r x y <<< "${coords}"
+                  adb shell input tap "${x}" "${y}"
+                  break
+                fi
+              done
+              sleep 1
+            done
+            echo "Document picker did not expose upgrade fixture: ${document}" >&2
+            return 1
+          }
+
+          tap_document_save() {
+            local xml="acceptance-evidence/picker-export-api-${API_LEVEL}.xml"
+            local attempt coords x y selector=""
+            for attempt in {1..12}; do
+              dump_ui "${xml}"
+              for selector in "Save" "SAVE"; do
+                coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "${selector}" "${xml}" 2>/dev/null)" || coords=""
+                if [[ -n "${coords}" ]]; then
+                  read -r x y <<< "${coords}"
+                  adb shell input tap "${x}" "${y}"
+                  return 0
+                fi
+              done
+              coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" center "com.google.android.documentsui:id/action_menu_save" "${xml}" 2>/dev/null)" || coords=""
+              if [[ -n "${coords}" ]]; then
+                read -r x y <<< "${coords}"
+                adb shell input tap "${x}" "${y}"
+                return 0
+              fi
+              sleep 1
+            done
+            echo "No enabled Save in backup document picker" >&2
+            return 1
+          }
+
+          await_backup_idle() {
+            local xml="acceptance-evidence/backup-idle-api-${API_LEVEL}.xml"
+            local attempt
+            for attempt in {1..25}; do
+              if dump_ui "${xml}" \
+                && python3 "${RUNNER_TEMP}/countaway-ui.py" center "${PACKAGE_ID}:id/exportButton" "${xml}" >/dev/null 2>&1; then
+                return 0
+              fi
+              sleep 1
+            done
+            echo "Backup UI did not become ready" >&2
+            return 1
+          }
+
+          export_upgrade_snapshot() {
+            local stage="$1" output="acceptance-evidence/upgrade-$1-data-api-${API_LEVEL}.json"
+            local attempt remote=""
+            # Disposable emulator: delete only a known test-generated document.
+            adb shell rm -f /sdcard/Download/CountAway-backup.json /sdcard/Documents/CountAway-backup.json
+            tap_resource exportButton
+            tap_document_save
+            for attempt in {1..25}; do
+              remote="$(adb shell find /sdcard/Download /sdcard/Documents -maxdepth 1 -type f -name CountAway-backup.json 2>/dev/null | tr -d '\r' | head -n 1)" || remote=""
+              if [[ -n "${remote}" ]] && adb pull "${remote}" "${output}" >/dev/null 2>&1 \
+                && python3 -m json.tool "${output}" >/dev/null 2>&1; then
+                await_backup_idle
+                return 0
+              fi
+              sleep 1
+            done
+            echo "Could not retrieve public backup export (${stage})" >&2
+            return 1
+          }
+
           capture_runtime_state() {
             set +e
             adb shell dumpsys alarm > "acceptance-evidence/alarm-api-${API_LEVEL}.txt"
@@ -1047,7 +1149,11 @@ jobs:
             PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v${PREVIOUS_PUBLIC_VERSION}/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
             UPGRADE_PROBE_TITLE="UpgradeProbe124"
-
+            # Do not execute the signed upgrade with an unrevised versionCode.
+            [[ "${VERSION_CODE}" =~ ^[0-9]+$ ]] && (( VERSION_CODE > PREVIOUS_PUBLIC_VERSION_CODE )) || {
+              echo "Candidate versionCode must exceed the public predecessor" >&2
+              exit 1
+            }
             curl --fail --location --silent --show-error --retry 2 \
               "${PREVIOUS_APK_URL}" \
               --output "${PREVIOUS_APK}"
@@ -1058,12 +1164,39 @@ jobs:
             adb shell am start -W \
               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity" \
               > "acceptance-evidence/upgrade-${PREVIOUS_PUBLIC_VERSION}-launch-api-${API_LEVEL}.txt"
-
+            # Retain the proven public-editor title/save contract. The following
+            # backup import replaces this probe with four schema-8 events.
             tap_resource addCountdownButton
             replace_fixture_title "${UPGRADE_PROBE_TITLE}"
             tap_fixture_save
             wait_for_text "${UPGRADE_PROBE_TITLE}" \
-              "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.xml"
+              "acceptance-evidence/upgrade-created-api-${API_LEVEL}.xml"
+
+            python3 scripts/upgrade-v124-fixture.py generate candidate/CountAway-upgrade-v124.json
+            adb shell mkdir -p /sdcard/Download
+            adb push candidate/CountAway-upgrade-v124.json /sdcard/Download/CountAway-upgrade-v124.json
+            adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+              -d file:///sdcard/Download/CountAway-upgrade-v124.json >/dev/null || true
+
+            tap_resource aboutButton
+            tap_resource importButton
+            tap_document_file "CountAway-upgrade-v124.json"
+            confirm_xml="acceptance-evidence/backup-confirm-api-${API_LEVEL}.xml"
+            confirm_coords=""
+            for attempt in {1..15}; do
+              dump_ui "${confirm_xml}"
+              confirm_coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" center "android:id/button1" "${confirm_xml}" 2>/dev/null)" || confirm_coords=""
+              if [[ -n "${confirm_coords}" ]]; then break; fi
+              sleep 1
+            done
+            test -n "${confirm_coords}"
+            read -r confirm_x confirm_y <<< "${confirm_coords}"
+            adb shell input tap "${confirm_x}" "${confirm_y}"
+            await_backup_idle
+            export_upgrade_snapshot before
+            python3 scripts/upgrade-v124-fixture.py verify \
+              "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json" \
+              "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json"
 
             adb shell dumpsys package "${PACKAGE_ID}" \
               > "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
@@ -1076,8 +1209,12 @@ jobs:
             adb shell am start -W \
               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity" \
               > "acceptance-evidence/upgrade-candidate-launch-api-${API_LEVEL}.txt"
-            wait_for_text "${UPGRADE_PROBE_TITLE}" \
-              "acceptance-evidence/upgrade-after-data-api-${API_LEVEL}.xml"
+            tap_resource aboutButton
+            await_backup_idle
+            export_upgrade_snapshot after
+            python3 scripts/upgrade-v124-fixture.py verify \
+              "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json" \
+              "acceptance-evidence/upgrade-after-data-api-${API_LEVEL}.json"
 
             PID="$(adb shell pidof "${PACKAGE_ID}" | tr -d '\r')"
             if [[ -z "${PID}" ]]; then
