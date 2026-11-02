@@ -36,8 +36,8 @@ jobs:
       BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
       EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
       PACKAGE_ID: "com.santiagorodriguez.countaway"
-      PREVIOUS_PUBLIC_VERSION: "1.2.3"
-      PREVIOUS_PUBLIC_APK_BYTES: "503480"
+      PREVIOUS_PUBLIC_VERSION: "1.2.4"
+      PREVIOUS_PUBLIC_APK_BYTES: "540904"
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
@@ -764,10 +764,10 @@ jobs:
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
-      PREVIOUS_PUBLIC_VERSION: "1.2.3"
-      PREVIOUS_PUBLIC_VERSION_CODE: "12"
-      PREVIOUS_PUBLIC_APK_SHA256: "9c3556382058add92f455ff714205adab8cc1c8946b5c87a620e1c678229afbf"
-      PREVIOUS_PUBLIC_APK_BYTES: "503480"
+      PREVIOUS_PUBLIC_VERSION: "1.2.4"
+      PREVIOUS_PUBLIC_VERSION_CODE: "13"
+      PREVIOUS_PUBLIC_APK_SHA256: "b563da811a8409556127547384f3b849dbebd7bdb99712bc3fba56ce421d86fa"
+      PREVIOUS_PUBLIC_APK_BYTES: "540904"
 
     steps:
       - name: Checkout exact candidate source
@@ -1046,7 +1046,7 @@ jobs:
             PREVIOUS_APK="candidate/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v${PREVIOUS_PUBLIC_VERSION}/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
-            UPGRADE_PROBE_TITLE="UpgradeProbe123"
+            UPGRADE_PROBE_TITLE="UpgradeProbe124"
 
             curl --fail --location --silent --show-error --retry 2 \
               "${PREVIOUS_APK_URL}" \
