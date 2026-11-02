@@ -52,7 +52,7 @@ class TimeWidgetSelectionLifecycleInstrumentedTest {
                     assertTrue(activity.findViewById<Button>(R.id.widgetSaveButton).isEnabled)
                 }
                 scenario.moveToState(Lifecycle.State.CREATED)
-                repository.save(if (removeEvent) emptyList() else listOf(timed.copy(eventTime = null)))
+                repository.save(if (removeEvent) emptyList() else listOf(timed.copy(eventTime = null, eventZone = null)))
                 scenario.moveToState(Lifecycle.State.RESUMED)
                 drain()
                 scenario.onActivity { activity ->
