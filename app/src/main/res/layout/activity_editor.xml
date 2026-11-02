@@ -115,10 +115,12 @@
             android:text="@string/editor_time_optional" />
 
         <LinearLayout
+            android:id="@+id/timeControlsRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
             <Button
                 android:id="@+id/timeButton"
                 style="@style/Widget.CountAway.EditorControl"

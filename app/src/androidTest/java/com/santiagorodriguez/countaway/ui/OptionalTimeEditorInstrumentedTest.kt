@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.ui
 
 import android.content.Intent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.DatePicker
 import android.widget.TimePicker
@@ -182,6 +183,41 @@ class OptionalTimeEditorInstrumentedTest {
             drain()
             assertEquals(event.copy(eventTime = null, eventZone = null),
                 events().single { it.id == event.id })
+        }
+    }
+
+    @Test fun timeControlsStayInsideTheirRowWithOrWithoutSelectedTime() = isolated {
+        val dateOnly = fixture()
+        repository.save(original() + dateOnly)
+        ActivityScenario.launch<EditorActivity>(intent(dateOnly)).use { scenario ->
+            drain()
+            scenario.onActivity { activity ->
+                assertTimeControlsContained(activity, "date-only")
+            }
+        }
+
+        val timed = dateOnly.copy(eventTime = LocalTime.of(18, 30),
+            eventZone = ZoneId.of("America/Argentina/Buenos_Aires"))
+        repository.save(original() + timed)
+        ActivityScenario.launch<EditorActivity>(intent(timed)).use { scenario ->
+            drain()
+            scenario.onActivity { activity ->
+                assertTimeControlsContained(activity, "timed")
+            }
+        }
+    }
+
+    private fun assertTimeControlsContained(activity: EditorActivity, stage: String) {
+        val row = activity.findViewById<ViewGroup>(R.id.timeControlsRow)
+        assertTrue("$stage: time controls row was not laid out", row.height > 0)
+        for (id in listOf(R.id.timeButton, R.id.removeTimeButton)) {
+            val control = activity.findViewById<View>(id)
+            if (control.visibility != View.VISIBLE) continue
+            assertTrue(
+                "$stage: control $id overflows time row: top=${control.top}, " +
+                    "bottom=${control.bottom}, rowHeight=${row.height}",
+                control.top >= 0 && control.bottom <= row.height,
+            )
         }
     }
 
