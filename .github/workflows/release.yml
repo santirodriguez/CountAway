@@ -1120,12 +1120,14 @@ jobs:
             tap_resource exportButton
             tap_document_save
             for attempt in {1..25}; do
-              remote="$(adb shell find /sdcard/Download /sdcard/Documents -maxdepth 1 -type f -name CountAway-backup.json 2>/dev/null | tr -d '\r' | head -n 1)" || remote=""
-              if [[ -n "${remote}" ]] && adb pull "${remote}" "${output}" >/dev/null 2>&1 \
-                && python3 -m json.tool "${output}" >/dev/null 2>&1; then
-                await_backup_idle
-                return 0
-              fi
+              for remote in /sdcard/Download/CountAway-backup.json /sdcard/Documents/CountAway-backup.json; do
+                if adb shell test -s "${remote}" \
+                  && adb pull "${remote}" "${output}" >/dev/null 2>&1 \
+                  && python3 -m json.tool "${output}" >/dev/null 2>&1; then
+                  await_backup_idle
+                  return 0
+                fi
+              done
               sleep 1
             done
             echo "Could not retrieve public backup export (${stage})" >&2
