@@ -66,6 +66,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
     private val widgets = WidgetPreferences(app)
     private val defaults = WidgetDefaultsPreferences(app)
     private val zone = ZoneId.of("America/Argentina/Buenos_Aires")
+    private val visibilityFindings = mutableListOf<String>()
 
     @Test fun captureSixCandidateViewsForHumanReview() {
         val previous = (repository.loadResult() as CountdownLoadResult.Success).events
@@ -150,6 +151,15 @@ class ReleaseScreenshotReviewInstrumentedTest {
                     // This affects only the temporary review screenshot.
                     val scroll = activity.findViewById<ScrollView>(R.id.editorRoot)
                     scroll.scrollTo(0, (12 * activity.resources.displayMetrics.density).toInt())
+                    val timeButton = activity.findViewById<View>(R.id.timeButton)
+                    // Request natural Android scrolling to the actual control,
+                    // rather than assuming a fixed offset works on every density.
+                    timeButton.requestRectangleOnScreen(
+                        Rect(0, 0, timeButton.width, timeButton.height), true
+                    )
+                }
+                instrumentation.waitForIdleSync()
+                scenario.onActivity { activity ->
                     assertEntirelyVisible(activity.findViewById(R.id.editorHeading),
                         "Editor heading")
                     assertEntirelyVisible(activity.findViewById(R.id.timeButton),
@@ -250,6 +260,18 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 "4 About; 5 light Home; 6 time-widget configuration ALTERNATIVE, NOT launcher\n" +
                 "No canonical Fastlane screenshot was replaced. Human review required.\n"
             )
+            val geometryReport = File(app.filesDir,
+                "layout-evidence/release-review/VISIBILITY_FINDINGS.txt")
+            geometryReport.writeText(
+                if (visibilityFindings.isEmpty()) "PASS: all checked controls fully visible\n"
+                else visibilityFindings.joinToString(separator = "\n", postfix = "\n")
+            )
+            // Retain all six real review PNGs and their detailed geometry
+            // even when a UI is clipped. The overall test still fails closed.
+            assertTrue(
+                "Review capture has clipped controls: " + visibilityFindings.joinToString(" | "),
+                visibilityFindings.isEmpty(),
+            )
         } finally {
             widgetIds.forEach(widgets::remove)
             runCatching { host.stopListening() }
@@ -283,10 +305,29 @@ class ReleaseScreenshotReviewInstrumentedTest {
     }
 
     private fun assertEntirelyVisible(view: View, label: String) {
-        val rect = Rect()
-        assertTrue("$label has no visible rectangle", view.getGlobalVisibleRect(rect))
-        assertEquals("$label is clipped vertically", view.height, rect.height())
-        assertEquals("$label is clipped horizontally", view.width, rect.width())
+        val visibleBounds = Rect()
+        val hasVisibleRect = view.getGlobalVisibleRect(visibleBounds)
+        if (hasVisibleRect &&
+            visibleBounds.width() == view.width &&
+            visibleBounds.height() == view.height
+        ) return
+        val origin = IntArray(2)
+        view.getLocationOnScreen(origin)
+        val parentFrames = mutableListOf<String>()
+        var ancestor = view.parent
+        for (level in 0 until 4) {
+            val parentView = ancestor as? View ?: break
+            val bounds = Rect()
+            parentView.getGlobalVisibleRect(bounds)
+            parentFrames +=
+                "${parentView.javaClass.simpleName}(height=${parentView.height},visible=${bounds.height()},top=${bounds.top},bottom=${bounds.bottom})"
+            ancestor = parentView.parent
+        }
+        visibilityFindings +=
+            "$label: measured=${view.width}x${view.height}, visible=" +
+                "${visibleBounds.width()}x${visibleBounds.height()}, " +
+                "origin=(${origin[0]},${origin[1]}), " +
+                "visibleBounds=$visibleBounds; parents=${parentFrames.joinToString(" > ")}"
     }
 
     private fun shell(command: String): String =
