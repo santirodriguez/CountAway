@@ -24,6 +24,7 @@ import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.BaseActivity
 import com.santiagorodriguez.countaway.ui.EditorActivity
+import com.santiagorodriguez.countaway.ui.EventTimeText
 import com.santiagorodriguez.countaway.ui.InsetUtils
 import com.santiagorodriguez.countaway.ui.SimpleItemSelectedListener
 import com.santiagorodriguez.countaway.ui.TemporalInvalidationController
@@ -163,7 +164,7 @@ class TimeWidgetConfigActivity : BaseActivity() {
                         .withLocale(resources.configuration.locales[0])
                     val choices = events.map { event ->
                         EventTransport.preview(event.title) + " · " + event.date.format(formatter) +
-                            " · " + event.eventTime.toString()
+                            " · " + EventTimeText.time(this, requireNotNull(event.eventTime))
                     }
                     eventList.adapter = ArrayAdapter(this, R.layout.item_widget_event, android.R.id.text1, choices)
                     emptyState.visibility = if (events.isEmpty()) View.VISIBLE else View.GONE

@@ -42,6 +42,23 @@ class CountdownTimeTest {
     }
 
     @Test
+    fun anAdditionalPresentationBoundaryCanRefreshOnceWithoutPolling() {
+        val snapshot = CountdownTimeSnapshot(ZonedDateTime.parse("2026-10-18T16:29:59Z"))
+        val near = snapshot.now.toInstant().plusSeconds(2)
+        val alreadyPassed = snapshot.now.toInstant().minusSeconds(3)
+        assertEquals(2_000L,
+            CountdownTemporalInvalidationPolicy.delayUntilNextRefreshBoundaryMillis(snapshot, near))
+        assertEquals(1_000L,
+            CountdownTemporalInvalidationPolicy.delayUntilNextRefreshBoundaryMillis(
+                snapshot, snapshot.now.toInstant().plusMillis(100),
+            ))
+        assertEquals(
+            CountdownTemporalInvalidationPolicy.delayUntilNextDateBoundaryMillis(snapshot),
+            CountdownTemporalInvalidationPolicy.delayUntilNextRefreshBoundaryMillis(snapshot, alreadyPassed),
+        )
+    }
+
+    @Test
     fun oppositeSideTimezonesCanProduceDifferentCivilDatesForSameInstant() {
         val instant = Instant.parse("2026-01-01T00:30:00Z")
 

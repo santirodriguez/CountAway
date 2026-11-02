@@ -19,10 +19,9 @@ import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
+import com.santiagorodriguez.countaway.ui.EventTimeText
 import java.time.Duration
 import java.time.Instant
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.text.NumberFormat
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -124,10 +123,12 @@ internal object TimeWidgetRenderer {
         views.setTextViewText(R.id.timeWidgetTitle, EventTransport.preview(timed.title))
         // The ticking digits identify this as a live timer; omit the old oversized label.
         views.setViewVisibility(R.id.timeWidgetCaption, View.GONE)
-        val targetText = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-            .withLocale(displayContext.resources.configuration.locales[0])
-            .format(count.target)
-        val zoneSuffix = if (count.target.zone != snapshot.zone) " · " + count.target.zone.id else ""
+        val targetText = EventTimeText.dateTime(displayContext, count.target)
+        val ambiguous = count.target.zone.rules
+            .getValidOffsets(count.target.toLocalDateTime()).size > 1
+        val zoneSuffix = if (count.target.zone != snapshot.zone || ambiguous) {
+            " · " + count.target.zone.id + (if (ambiguous) " (${count.target.offset})" else "")
+        } else ""
         views.setTextViewText(R.id.timeWidgetDate, targetText + zoneSuffix)
         val clockNow = Instant.now()
         val plan = TimeWidgetClockPolicy.plan(

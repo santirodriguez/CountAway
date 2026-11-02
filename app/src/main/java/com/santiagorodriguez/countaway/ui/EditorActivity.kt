@@ -31,6 +31,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownDateDomain
 import com.santiagorodriguez.countaway.countdown.CountdownOccurrenceResolver
 import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
@@ -161,9 +162,21 @@ class EditorActivity : BaseActivity() {
         reminderSpinner = findViewById(R.id.reminderSpinner)
         scheduleSummary = findViewById(R.id.editorScheduleSummary)
         registerBackCallback()
-        temporalInvalidationController = TemporalInvalidationController(this) { snapshot ->
-            if (editorInitialized) refreshReminderSpinner(reminderToday(snapshot.now))
-        }
+        temporalInvalidationController = TemporalInvalidationController(
+            this,
+            onInvalidated = { snapshot ->
+                if (editorInitialized) {
+                    renderTime()
+                    refreshReminderSpinner(reminderToday(snapshot.now), snapshot)
+                }
+            },
+            nextPresentationBoundary = { snapshot ->
+                if (!editorInitialized || selectedCountMode != CountMode.COUNT_DOWN) null
+                else EditorSchedulePolicy.nextRefreshBoundary(
+                    selectedDate, selectedRepeatRule, selectedTime, selectedTimeZone, snapshot.now,
+                )
+            },
+        )
 
         pendingEditorState = savedInstanceState
         largeTitleToken = savedInstanceState?.getString(STATE_TITLE_FILE)
@@ -278,6 +291,7 @@ class EditorActivity : BaseActivity() {
         deleteButton.setOnClickListener { confirmDelete() }
         pendingEditorState = null
         editorInitialized = true
+        temporalInvalidationController.reschedule()
         consumeOperation()
         if (pendingCountUpConfirmation && !editorBusy) {
             dialogFocus.capture(modeButton)
@@ -291,7 +305,10 @@ class EditorActivity : BaseActivity() {
         super.onResume()
         val snapshot = CountdownTime.snapshot()
         temporalInvalidationController.start(snapshot)
-        if (editorInitialized) refreshReminderSpinner(reminderToday(snapshot.now))
+        if (editorInitialized) {
+            renderTime()
+            refreshReminderSpinner(reminderToday(snapshot.now), snapshot)
+        }
     }
 
     override fun onPause() {
@@ -529,7 +546,10 @@ class EditorActivity : BaseActivity() {
         }
     }
 
-    private fun refreshReminderSpinner(today: LocalDate) {
+    private fun refreshReminderSpinner(
+        today: LocalDate,
+        snapshot: CountdownTimeSnapshot = CountdownTime.snapshot(),
+    ) {
         val nextOptions = if (selectedCountMode == CountMode.COUNT_UP) listOf(ReminderOption.OFF) else
             ReminderEditorPolicy.availableOptions(existingEvent, selectedDate, selectedReminder, today, selectedRepeatRule)
         val optionsChanged = nextOptions != reminderOptions
@@ -540,7 +560,8 @@ class EditorActivity : BaseActivity() {
         }
         reminderSpinner.setSelection(reminderOptions.indexOf(selectedReminder).coerceAtLeast(0))
         suppressReminderSelection = false
-        renderScheduleSummary(today)
+        renderScheduleSummary(snapshot)
+        temporalInvalidationController.reschedule(snapshot)
     }
 
     private fun reminderToday(now: ZonedDateTime): LocalDate =
@@ -772,9 +793,7 @@ class EditorActivity : BaseActivity() {
             removeTimeButton.visibility = View.GONE
             return
         }
-        val locale = resources.configuration.locales[0]
-        val formatted = value.format(
-            DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+        val formatted = EventTimeText.time(this, value)
         timeButton.text = getString(R.string.editor_selected_time, formatted)
         val zone = selectedTimeZone
         val currentZone = CountdownTime.snapshot().zone
@@ -1050,7 +1069,7 @@ class EditorActivity : BaseActivity() {
         }
     }
 
-    private fun renderScheduleSummary(today: LocalDate) {
+    private fun renderScheduleSummary(snapshot: CountdownTimeSnapshot) {
         if (selectedCountMode == CountMode.COUNT_UP) {
             scheduleSummary.setText(R.string.count_up_explanation)
             scheduleSummary.visibility = View.VISIBLE
@@ -1060,20 +1079,24 @@ class EditorActivity : BaseActivity() {
         val locale = resources.configuration.locales[0]
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
         if (selectedRepeatRule != RepeatRule.NONE) {
-            val occurrence = CountdownOccurrenceResolver.displayDate(selectedDate, selectedRepeatRule, today)
+            val occurrence = EditorSchedulePolicy.nextOccurrenceDate(
+                selectedDate, selectedRepeatRule, selectedTime, selectedTimeZone, snapshot.now,
+            )
             lines += getString(R.string.schedule_next_occurrence, occurrence.format(formatter),
                 repeatLabel(selectedRepeatRule).lowercase(locale))
         }
-        ArrivalNotificationPolicy.scheduledDate(selectedDate, selectedRepeatRule, selectedReminder, today)?.let { date ->
-            val time = selectedTime
-            val zone = selectedTimeZone
-            if (time != null && zone != null) {
-                val scheduled = date.atTime(time).atZone(zone)
-                lines += getString(R.string.schedule_next_reminder_timed,
-                    scheduled.toLocalDate().format(formatter),
-                    scheduled.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale)),
-                    zone.id)
-            } else {
+        val time = selectedTime
+        val zone = selectedTimeZone
+        if (selectedReminder != ReminderOption.OFF && time != null && zone != null) {
+            // A draft does not know delivery history, catch-up or retry state.
+            // Describe the configured reminder rather than promising a pending delivery.
+            lines += getString(R.string.schedule_reminder_rule_timed,
+                reminderLabel(selectedReminder), EventTimeText.time(this, time), zone.id)
+        } else {
+            val today = reminderToday(snapshot.now)
+            ArrivalNotificationPolicy.scheduledDate(
+                selectedDate, selectedRepeatRule, selectedReminder, today,
+            )?.let { date ->
                 lines += getString(R.string.schedule_next_reminder, date.format(formatter))
             }
         }

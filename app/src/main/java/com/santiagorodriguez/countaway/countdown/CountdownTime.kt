@@ -29,5 +29,17 @@ object CountdownTemporalInvalidationPolicy {
             .coerceAtLeast(MIN_DELAY_MILLIS)
     }
 
+    /** Use the nearest one-shot UI boundary without changing daily invalidation. */
+    fun delayUntilNextRefreshBoundaryMillis(
+        snapshot: CountdownTimeSnapshot,
+        presentationBoundary: java.time.Instant?,
+    ): Long {
+        val dateDelay = delayUntilNextDateBoundaryMillis(snapshot)
+        val presentationDelay = presentationBoundary?.let {
+            Duration.between(snapshot.now.toInstant(), it).toMillis()
+        }?.takeIf { it > 0L } ?: return dateDelay
+        return minOf(dateDelay, presentationDelay).coerceAtLeast(MIN_DELAY_MILLIS)
+    }
+
     private const val MIN_DELAY_MILLIS = 1_000L
 }

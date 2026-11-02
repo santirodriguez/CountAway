@@ -24,8 +24,6 @@ import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.time.ZoneId
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -188,9 +186,7 @@ class OptionalTimeEditorInstrumentedTest {
     }
 
     private fun assertEditorTime(activity: EditorActivity, expected: LocalTime, stage: String) {
-        val locale = activity.resources.configuration.locales[0]
-        val formatted = expected.format(
-            DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+        val formatted = EventTimeText.time(activity, expected)
         val label = activity.findViewById<Button>(R.id.timeButton).text.toString()
         assertEquals("$stage: time label",
             activity.getString(R.string.editor_selected_time, formatted), label)
