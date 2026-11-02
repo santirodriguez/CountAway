@@ -82,6 +82,9 @@ class TimeWidgetConfigIntegrationInstrumentedTest {
                         WidgetAppearance.entries.indexOf(WidgetAppearance.DARK))
                     activity.findViewById<Spinner>(R.id.widgetBackgroundSpinner).setSelection(
                         WidgetBackground.entries.indexOf(WidgetBackground.MONOGRAM))
+                }
+                instrumentation.waitForIdleSync()
+                scenario.onActivity { activity ->
                     assertEquals(
                         activity.getString(R.string.widget_style_summary,
                             activity.getString(R.string.widget_background_six),
