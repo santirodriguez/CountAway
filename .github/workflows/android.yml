@@ -146,6 +146,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/test-upgrade-fixture.py -v 2>&1 | tee ci-evidence/upgrade-fixture-tests.txt
+          python3 scripts/test-upgrade-v124-fixture.py -v 2>&1 | tee -a ci-evidence/upgrade-fixture-tests.txt
 
       - name: Validate localization sources
         run: |
