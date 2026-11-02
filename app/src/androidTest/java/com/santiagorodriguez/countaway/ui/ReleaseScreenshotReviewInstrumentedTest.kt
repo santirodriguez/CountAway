@@ -68,6 +68,174 @@ class ReleaseScreenshotReviewInstrumentedTest {
     private val zone = ZoneId.of("America/Argentina/Buenos_Aires")
     private val visibilityFindings = mutableListOf<String>()
 
+    /**
+     * Best-effort extra review evidence from the emulator's actual home screen.
+     * A widget preview inside this app is never labelled as a launcher screenshot.
+     * This diagnostic is deliberately non-gating: unsupported launchers leave an
+     * explicit NOT_CAPTURED receipt instead of substituting rendered artwork.
+     */
+    @Test fun attemptRealLauncherWidgetCaptureForHumanReview() {
+        val file = File(app.filesDir, "layout-evidence/release-review/LAUNCHER_CAPTURE.txt")
+        checkNotNull(file.parentFile).mkdirs()
+        val notes = mutableListOf("source=Android API36 emulator launcher; unapproved review evidence")
+        val previous = (repository.loadResult() as CountdownLoadResult.Success).events
+        val previousTheme = prefs.getString("theme", null)
+        val hadTheme = prefs.contains("theme")
+        val locale = app.getSystemService(LocaleManager::class.java)
+        val oldLocales = locale.applicationLocales
+        val densityBefore = shell("wm density")
+        val densityOverride = Regex("Override density: ([0-9]+)")
+            .find(densityBefore)?.groupValues?.get(1)
+        val oldDefaults = defaults.get()
+        val manager = AppWidgetManager.getInstance(app)
+        val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val homePackage = app.packageManager.resolveActivity(
+            homeIntent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
+        )?.activityInfo?.packageName
+        try {
+            if (!manager.isRequestPinAppWidgetSupported) {
+                notes += "status=NOT_CAPTURED; reason=launcher_pin_request_unsupported"
+                return
+            }
+            shell("wm density 280")
+            locale.applicationLocales = LocaleList.forLanguageTags("en")
+            prefs.edit().putString("theme", "DARK").commit()
+            val today = LocalDate.now(zone)
+            val day = event("launcher-day", "Juega Vélez", today.plusDays(12), EventType.EVENT)
+            val timed = event("launcher-time", "Concert night", today.plusDays(12), EventType.CONCERT)
+                .copy(eventTime = LocalTime.of(18, 30), eventZone = zone, repeatRule = RepeatRule.WEEKLY)
+            repository.save(listOf(day, timed))
+            drain()
+
+            val classicProvider = ComponentName(app,
+                com.santiagorodriguez.countaway.widget.CountdownWidgetProvider::class.java)
+            val classicId = requestLauncherWidget(classicProvider, notes, false) ?: run {
+                notes += "status=NOT_CAPTURED; reason=classic_pin_not_confirmed"
+                return
+            }
+            widgets.save(classicId, day.id, WidgetAppearance.DARK,
+                WidgetBackground.MONOGRAM, WidgetEventSelection.FIXED)
+            com.santiagorodriguez.countaway.widget.CountdownWidgetProvider.updateWidget(
+                app, manager, classicId)
+            notes += "classic_widget_id=$classicId"
+
+            val timeProvider = ComponentName(app, TimeWidgetProvider::class.java)
+            val timeId = requestLauncherWidget(timeProvider, notes, true) ?: run {
+                notes += "status=NOT_CAPTURED; reason=time_widget_pin_not_confirmed"
+                return
+            }
+            widgets.save(timeId, timed.id, WidgetAppearance.DARK,
+                WidgetBackground.HORIZON, WidgetEventSelection.FIXED)
+            TimeWidgetProvider.updateWidget(app, manager, timeId)
+            notes += "timed_widget_id=$timeId"
+            shell("input keyevent KEYCODE_HOME")
+            SystemClock.sleep(1_800)
+            val foreground = instrumentation.uiAutomation.rootInActiveWindow
+                ?.packageName?.toString()
+            notes += "home_package=$homePackage"
+            notes += "foreground_package=$foreground"
+            if (homePackage.isNullOrBlank() || homePackage != foreground) {
+                notes += "status=NOT_CAPTURED; reason=launcher_not_foreground"
+                return
+            }
+            val classicStillBound = classicId in manager.getAppWidgetIds(classicProvider)
+            val timedStillBound = timeId in manager.getAppWidgetIds(timeProvider)
+            if (!classicStillBound || !timedStillBound) {
+                notes += "status=NOT_CAPTURED; reason=widget_binding_lost"
+                return
+            }
+            capture("7-real-launcher-widgets")
+            notes += "status=CAPTURED_REVIEW_ONLY; required=human_pixel_review_for_both_widgets"
+        } catch (failure: Exception) {
+            notes += "status=NOT_CAPTURED; reason=${failure.javaClass.simpleName}"
+            notes += "detail=${failure.message.orEmpty().replace('\n', ' ').take(180)}"
+        } finally {
+            // The launcher exists only in the disposable CI emulator. Do not
+            // alter any user's real device or the canonical store screenshots.
+            if (homePackage in setOf("com.android.launcher3", "com.google.android.apps.nexuslauncher")) {
+                runCatching { shell("pm clear $homePackage") }
+            }
+            repository.save(previous)
+            prefs.edit().apply {
+                if (hadTheme) putString("theme", previousTheme) else remove("theme")
+            }.commit()
+            defaults.save(oldDefaults)
+            locale.applicationLocales = oldLocales
+            runCatching {
+                shell(if (densityOverride != null) "wm density $densityOverride" else "wm density reset")
+            }
+            file.writeText(notes.joinToString("\n", postfix = "\n"))
+        }
+    }
+
+    private fun requestLauncherWidget(
+        provider: ComponentName, notes: MutableList<String>, timed: Boolean
+    ): Int? {
+        val manager = AppWidgetManager.getInstance(app)
+        val existing = manager.getAppWidgetIds(provider).toSet()
+        var requested = false
+        ActivityScenario.launch<MainActivity>(Intent(app, MainActivity::class.java)).use { scenario ->
+            drain()
+            scenario.onActivity { activity ->
+                requested = manager.requestPinAppWidget(provider, null, null)
+            }
+            notes += "pin_requested_${provider.shortClassName}=$requested"
+            if (!requested) return null
+            val approved = clickLauncherLabel(
+                listOf("add", "add automatically", "add to home screen", "add widget"),
+                exact = true, notes = notes,
+            )
+            notes += "pin_approved_${provider.shortClassName}=$approved"
+            if (timed) {
+                val selected = clickLauncherLabel(listOf("Concert night"),
+                    exact = false, notes = notes)
+                notes += "time_selection_clicked=$selected"
+                val saved = clickLauncherLabel(listOf("save"),
+                    exact = true, notes = notes)
+                notes += "time_config_saved=$saved"
+            }
+        }
+        repeat(12) {
+            val added = manager.getAppWidgetIds(provider).firstOrNull { id -> id !in existing }
+            if (added != null) return added
+            SystemClock.sleep(400)
+        }
+        return null
+    }
+
+    private fun clickLauncherLabel(
+        wanted: List<String>, exact: Boolean, notes: MutableList<String>
+    ): Boolean {
+        var observed: List<String> = emptyList()
+        repeat(14) {
+            SystemClock.sleep(450)
+            val root = instrumentation.uiAutomation.rootInActiveWindow ?: return@repeat
+            val queue = java.util.ArrayDeque<android.view.accessibility.AccessibilityNodeInfo>()
+            queue.add(root)
+            val labels = mutableListOf<String>()
+            while (!queue.isEmpty()) {
+                val node = queue.removeFirst()
+                val label = (node.text ?: node.contentDescription)?.toString()?.trim().orEmpty()
+                if (label.isNotBlank()) labels += label
+                if (wanted.any { expected ->
+                        if (exact) label.equals(expected, ignoreCase = true)
+                        else label.contains(expected, ignoreCase = true)
+                    }) {
+                    var clickable: android.view.accessibility.AccessibilityNodeInfo? = node
+                    while (clickable != null && !clickable.isClickable) clickable = clickable.parent
+                    if (clickable != null && clickable.performAction(
+                            android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK)) return true
+                }
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let { queue.addLast(it) }
+                }
+            }
+            observed = labels.take(25)
+        }
+        notes += "unmatched_ui_labels=${observed.joinToString(" | ").take(360)}"
+        return false
+    }
+
     @Test fun captureSixCandidateViewsForHumanReview() {
         val previous = (repository.loadResult() as CountdownLoadResult.Success).events
         val oldDefaults = defaults.get()
@@ -85,10 +253,10 @@ class ReleaseScreenshotReviewInstrumentedTest {
         val userId = shell("am get-current-user").toInt()
         val widgetIds = mutableListOf<Int>()
         try {
-            // Match the naturally compact v1.2.4 portrait composition through
-            // the real Android emulator display setting, never by editing pixels.
+            // Use a more legible full-screen display density for genuine review
+            // captures. This changes emulator settings, never screenshot pixels.
             // The original density is restored in finally.
-            shell("wm density 240")
+            shell("wm density 280")
             SystemClock.sleep(500)
             locale.applicationLocales = LocaleList.forLanguageTags("en")
             prefs.edit().putString("theme", "DARK").commit()
@@ -254,7 +422,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             }
 
             File(app.filesDir, "layout-evidence/release-review/REVIEW_ONLY.txt").writeText(
-                "versionName=1.2.5\nversionCode=14\nsource=real Android API36 UI at 1080x1920, density=240\n" +
+                "versionName=1.2.5\nversionCode=14\nsource=real Android API36 UI at 1080x1920, density=280\n" +
                 "status=UNAPPROVED; no cropping, editing, or pixel reconstruction\n" +
                 "slots=1 dark Home; 2 timed editor; 3 classic pin-style chooser; " +
                 "4 About; 5 light Home; 6 time-widget configuration ALTERNATIVE, NOT launcher\n" +
