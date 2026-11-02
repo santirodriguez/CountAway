@@ -210,13 +210,16 @@ class OptionalTimeEditorInstrumentedTest {
     private fun assertTimeControlsContained(activity: EditorActivity, stage: String) {
         val row = activity.findViewById<ViewGroup>(R.id.timeControlsRow)
         assertTrue("$stage: time controls row was not laid out", row.height > 0)
+        // A child may fit inside its parent and still be clipped by its padding.
+        val contentTop = if (row.clipToPadding) row.paddingTop else 0
+        val contentBottom = if (row.clipToPadding) row.height - row.paddingBottom else row.height
         for (id in listOf(R.id.timeButton, R.id.removeTimeButton)) {
             val control = activity.findViewById<View>(id)
             if (control.visibility != View.VISIBLE) continue
             assertTrue(
-                "$stage: control $id overflows time row: top=${control.top}, " +
-                    "bottom=${control.bottom}, rowHeight=${row.height}",
-                control.top >= 0 && control.bottom <= row.height,
+                "$stage: control $id is clipped by the time row: top=${control.top}, " +
+                    "bottom=${control.bottom}, visibleContent=$contentTop..$contentBottom",
+                control.top >= contentTop && control.bottom <= contentBottom,
             )
         }
     }
