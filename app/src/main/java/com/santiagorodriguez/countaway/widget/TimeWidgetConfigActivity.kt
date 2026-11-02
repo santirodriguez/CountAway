@@ -187,10 +187,11 @@ class TimeWidgetConfigActivity : BaseActivity() {
             if (index >= 0) eventList.setItemChecked(index + eventList.headerViewsCount, true)
             saveButton.isEnabled = index >= 0
         } else {
+            val failure = load as CountdownLoadResult.Failure
             choices = emptyList()
             events = emptyList()
             emptyState.visibility = View.VISIBLE
-            emptyState.setText(if (load.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA)
+            emptyState.setText(if (failure.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA)
                 R.string.widget_data_newer_version else R.string.widget_data_error)
             eventList.adapter = ArrayAdapter<String>(this, R.layout.item_widget_event,
                 android.R.id.text1, emptyList())
