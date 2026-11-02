@@ -18,6 +18,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ListView
+import android.widget.ScrollView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
@@ -143,6 +144,12 @@ class ReleaseScreenshotReviewInstrumentedTest {
                     (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                         .hideSoftInputFromWindow(input.windowToken, 0)
                     prepare(activity.window.decorView)
+                    // Keep the heading and optional-time control fully in the
+                    // native viewport. The ScrollView has 20dp of top padding,
+                    // so a tiny natural scroll does not cut off the heading.
+                    // This affects only the temporary review screenshot.
+                    val scroll = activity.findViewById<ScrollView>(R.id.editorRoot)
+                    scroll.scrollTo(0, (12 * activity.resources.displayMetrics.density).toInt())
                     assertEntirelyVisible(activity.findViewById(R.id.editorHeading),
                         "Editor heading")
                     assertEntirelyVisible(activity.findViewById(R.id.timeButton),
