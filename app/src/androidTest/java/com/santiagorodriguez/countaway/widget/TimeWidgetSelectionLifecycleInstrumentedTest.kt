@@ -62,7 +62,7 @@ class TimeWidgetSelectionLifecycleInstrumentedTest {
                     assertFalse(activity.findViewById<Button>(R.id.widgetSaveButton).isEnabled)
                     val empty = activity.findViewById<TextView>(R.id.widgetEmptyState)
                     assertEquals(View.VISIBLE, empty.visibility)
-                    assertEquals(activity.getString(R.string.time_widget_no_events), empty.text)
+                    assertEquals(activity.getString(R.string.time_widget_no_events), empty.text.toString())
                 }
             }
             assertNull(WidgetPreferences(app).get(widgetId))
@@ -81,8 +81,11 @@ class TimeWidgetSelectionLifecycleInstrumentedTest {
                 create.performClick()
             }
             instrumentation.waitForIdleSync()
-            val editor = ActivityLifecycleMonitorRegistry.getInstance()
-                .getActivitiesInStage(Stage.RESUMED).filterIsInstance<EditorActivity>().singleOrNull()
+            var editor: EditorActivity? = null
+            instrumentation.runOnMainSync {
+                editor = ActivityLifecycleMonitorRegistry.getInstance()
+                    .getActivitiesInStage(Stage.RESUMED).filterIsInstance<EditorActivity>().singleOrNull()
+            }
             assertNotNull("Create must open the ordinary editor", editor)
             instrumentation.runOnMainSync { checkNotNull(editor).finish() }
             drain()
