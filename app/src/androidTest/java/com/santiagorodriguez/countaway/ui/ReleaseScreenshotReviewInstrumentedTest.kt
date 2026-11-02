@@ -83,9 +83,10 @@ class ReleaseScreenshotReviewInstrumentedTest {
         val userId = shell("am get-current-user").toInt()
         val widgetIds = mutableListOf<Int>()
         try {
-            // A genuine emulator display-density setting gives the real UI
-            // sufficient vertical space. No image cropping or recomposition.
-            shell("wm density 300")
+            // Match the naturally compact v1.2.4 portrait composition through
+            // the real Android emulator display setting, never by editing pixels.
+            // The original density is restored in finally.
+            shell("wm density 240")
             SystemClock.sleep(500)
             locale.applicationLocales = LocaleList.forLanguageTags("en")
             prefs.edit().putString("theme", "DARK").commit()
@@ -142,7 +143,10 @@ class ReleaseScreenshotReviewInstrumentedTest {
                     (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                         .hideSoftInputFromWindow(input.windowToken, 0)
                     prepare(activity.window.decorView)
-                    assertEntirelyVisible(activity.findViewById(R.id.timeButton), "Editor optional time")
+                    assertEntirelyVisible(activity.findViewById(R.id.editorHeading),
+                        "Editor heading")
+                    assertEntirelyVisible(activity.findViewById(R.id.timeButton),
+                        "Editor optional time")
                 }
                 capture("2-editor-timed")
             }
@@ -233,7 +237,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             }
 
             File(app.filesDir, "layout-evidence/release-review/REVIEW_ONLY.txt").writeText(
-                "versionName=1.2.5\nversionCode=14\nsource=real Android API36 UI at 1080x1920, density=300\n" +
+                "versionName=1.2.5\nversionCode=14\nsource=real Android API36 UI at 1080x1920, density=240\n" +
                 "status=UNAPPROVED; no cropping, editing, or pixel reconstruction\n" +
                 "slots=1 dark Home; 2 timed editor; 3 classic pin-style chooser; " +
                 "4 About; 5 light Home; 6 time-widget configuration ALTERNATIVE, NOT launcher\n" +
