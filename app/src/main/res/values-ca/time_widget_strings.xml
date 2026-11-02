@@ -5,6 +5,7 @@
     <string name="time_widget_config_title">Giny de temps en directe</string>
     <string name="time_widget_config_description">Tria un esdeveniment amb hora. Les dates properes mostren hores totals; les llunyanes, dies i un rellotge en directe si hi ha espai.</string>
     <string name="time_widget_no_events">Afegeix una hora a un esdeveniment per seleccionar-lo aquí.</string>
+    <string name="time_widget_create_event_with_time">Crea un esdeveniment (tria una hora)</string>
     <string name="time_widget_choose_event">Tria un esdeveniment amb hora</string>
     <string name="time_widget_live_timer">COMPTADOR EN DIRECTE</string>
     <string name="time_widget_long_days">%1$s dies</string>
