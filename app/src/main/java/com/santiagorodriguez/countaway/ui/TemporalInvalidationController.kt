@@ -14,9 +14,9 @@ import java.time.Instant
 
 internal class TemporalInvalidationController(
     private val context: Context,
-    private val nextPresentationBoundary: ((CountdownTimeSnapshot) -> Instant?)? = null,
     private val onInvalidated: (CountdownTimeSnapshot) -> Unit,
 ) {
+    private var nextPresentationBoundary: ((CountdownTimeSnapshot) -> Instant?)? = null
     private val handler = Handler(Looper.getMainLooper())
     private var registered = false
     private val midnightRefresh = Runnable { invalidateNow() }
@@ -42,6 +42,11 @@ internal class TemporalInvalidationController(
             registered = true
         }
         scheduleNextBoundary(snapshot)
+    }
+
+    fun setNextPresentationBoundary(boundary: (CountdownTimeSnapshot) -> Instant?) {
+        nextPresentationBoundary = boundary
+        reschedule()
     }
 
     fun reschedule(snapshot: CountdownTimeSnapshot = CountdownTime.snapshot()) {

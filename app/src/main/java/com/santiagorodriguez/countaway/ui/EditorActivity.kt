@@ -162,21 +162,18 @@ class EditorActivity : BaseActivity() {
         reminderSpinner = findViewById(R.id.reminderSpinner)
         scheduleSummary = findViewById(R.id.editorScheduleSummary)
         registerBackCallback()
-        temporalInvalidationController = TemporalInvalidationController(
-            this,
-            onInvalidated = { snapshot ->
-                if (editorInitialized) {
-                    renderTime()
-                    refreshReminderSpinner(reminderToday(snapshot.now), snapshot)
-                }
-            },
-            nextPresentationBoundary = { snapshot ->
-                if (!editorInitialized || selectedCountMode != CountMode.COUNT_DOWN) null
-                else EditorSchedulePolicy.nextRefreshBoundary(
-                    selectedDate, selectedRepeatRule, selectedTime, selectedTimeZone, snapshot.now,
-                )
-            },
-        )
+        temporalInvalidationController = TemporalInvalidationController(this) { snapshot ->
+            if (editorInitialized) {
+                renderTime()
+                refreshReminderSpinner(reminderToday(snapshot.now), snapshot)
+            }
+        }
+        temporalInvalidationController.setNextPresentationBoundary { snapshot ->
+            if (!editorInitialized || selectedCountMode != CountMode.COUNT_DOWN) null
+            else EditorSchedulePolicy.nextRefreshBoundary(
+                selectedDate, selectedRepeatRule, selectedTime, selectedTimeZone, snapshot.now,
+            )
+        }
 
         pendingEditorState = savedInstanceState
         largeTitleToken = savedInstanceState?.getString(STATE_TITLE_FILE)
