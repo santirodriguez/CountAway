@@ -56,6 +56,10 @@ import org.junit.runner.RunWith
  * Based on the six public v1.2.4 composition roles. Never changes Fastlane
  * assets, and never claims the slot-six preview is an actual launcher.
  */
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class IsolatedLauncherReview
+
 @RunWith(AndroidJUnit4::class)
 @SdkSuppress(minSdkVersion = 36)
 class ReleaseScreenshotReviewInstrumentedTest {
@@ -74,6 +78,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
      * This diagnostic is deliberately non-gating: unsupported launchers leave an
      * explicit NOT_CAPTURED receipt instead of substituting rendered artwork.
      */
+    @IsolatedLauncherReview
     @Test fun attemptRealLauncherWidgetCaptureForHumanReview() {
         val file = File(app.filesDir, "layout-evidence/release-review/LAUNCHER_CAPTURE.txt")
         checkNotNull(file.parentFile).mkdirs()
@@ -134,7 +139,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 ?.packageName?.toString()
             notes += "home_package=$homePackage"
             notes += "foreground_package=$foreground"
-            if (homePackage.isNullOrBlank() || homePackage != foreground) {
+            if (foreground !in setOf("com.google.android.apps.nexuslauncher", "com.android.launcher3")) {
                 notes += "status=NOT_CAPTURED; reason=launcher_not_foreground"
                 return
             }
@@ -142,6 +147,17 @@ class ReleaseScreenshotReviewInstrumentedTest {
             val timedStillBound = timeId in manager.getAppWidgetIds(timeProvider)
             if (!classicStillBound || !timedStillBound) {
                 notes += "status=NOT_CAPTURED; reason=widget_binding_lost"
+                return
+            }
+            val launcherTree = instrumentation.uiAutomation.rootInActiveWindow
+            val classicVisible = launcherTree?.findAccessibilityNodeInfosByText(day.title)
+                ?.any { it.isVisibleToUser } == true
+            val timedVisible = launcherTree?.findAccessibilityNodeInfosByText(timed.title)
+                ?.any { it.isVisibleToUser } == true
+            notes += "classic_title_visible=$classicVisible"
+            notes += "timed_title_visible=$timedVisible"
+            if (!classicVisible || !timedVisible) {
+                notes += "status=NOT_CAPTURED; reason=both_widget_titles_not_visible"
                 return
             }
             capture("7-real-launcher-widgets")
