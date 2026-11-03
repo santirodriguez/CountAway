@@ -931,20 +931,32 @@ jobs:
           PYUI
 
           dump_ui() {
-            local output="$1" attempt remote
+            local output="$1" attempt remote failure
+            local report="acceptance-evidence/ui-capture-api-${API_LEVEL}.log"
+            local probe="${output}.capture.log"
             rm -f "${output}"
-            for attempt in {1..10}; do
-              # Require a new hierarchy file for every UI query.
+            for attempt in {1..2}; do
               remote="/sdcard/countaway-ui-${API_LEVEL}-${BASHPID}-${RANDOM}-${RANDOM}.xml"
-              if adb shell uiautomator dump "${remote}" >/dev/null 2>&1 \
-                && adb pull "${remote}" "${output}" >/dev/null 2>&1 \
-                && python3 -c 'import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])' "${output}"; then
-                return 0
+              if timeout 15s adb shell uiautomator dump "${remote}" > "${probe}" 2>&1; then
+                if timeout 8s adb pull "${remote}" "${output}" >> "${probe}" 2>&1; then
+                  if python3 -c 'import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])' "${output}" >> "${probe}" 2>&1; then
+                    rm -f "${probe}"
+                    return 0
+                  else
+                    failure="parse:$?"
+                  fi
+                else
+                  failure="pull:$?"
+                fi
+              else
+                failure="dump:$?"
               fi
-              rm -f "${output}"
+              printf 'ui_capture_failed file=%s attempt=%s stage_exit=%s\n' "${output}" "${attempt}" "${failure}" | tee -a "${report}" >&2
+              tail -n 5 "${probe}" | tee -a "${report}" >&2 || true
+              rm -f "${output}" "${probe}"
               sleep 1
             done
-            echo "Could not capture a fresh CountAway UI hierarchy" >&2
+            echo "Could not capture a fresh CountAway UI hierarchy: ${output}" >&2
             return 1
           }
 
@@ -953,7 +965,7 @@ jobs:
             local xml_file="acceptance-evidence/tap-${short_id}-api-${API_LEVEL}.xml"
             local attempt x y
             for attempt in {1..10}; do
-              dump_ui "${xml_file}" || true
+              dump_ui "${xml_file}" || return 1
               local coords=""
               coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" center "${PACKAGE_ID}:id/${short_id}" "${xml_file}" 2>/dev/null)" || true
               if [[ -n "${coords}" ]]; then
@@ -970,6 +982,18 @@ jobs:
             done
             echo "Could not find CountAway resource: ${short_id}" >&2
             return 1
+          }
+
+          tap_predecessor_about() {
+            local previous_home="$1" coords x y
+            # Use the enabled About control observed on this emulator before
+            # upgrading; ticking Home content may prevent a live UI dump.
+            coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" center "${PACKAGE_ID}:id/aboutButton" "${previous_home}")" || {
+              echo "Pre-upgrade Home did not expose the About control" >&2
+              return 1
+            }
+            read -r x y <<< "${coords}"
+            adb shell input tap "${x}" "${y}"
           }
 
           replace_fixture_title() {
@@ -1041,7 +1065,7 @@ jobs:
             local xml_file="$2"
             local attempt
             for attempt in {1..15}; do
-              dump_ui "${xml_file}" || true
+              dump_ui "${xml_file}" || return 1
               if python3 "${RUNNER_TEMP}/countaway-ui.py" text "${expected}" "${xml_file}" 2>/dev/null; then
                 return 0
               fi
@@ -1105,8 +1129,8 @@ jobs:
             local xml="acceptance-evidence/backup-idle-api-${API_LEVEL}.xml"
             local attempt
             for attempt in {1..25}; do
-              if dump_ui "${xml}" \
-                && python3 "${RUNNER_TEMP}/countaway-ui.py" center "${PACKAGE_ID}:id/exportButton" "${xml}" >/dev/null 2>&1; then
+              dump_ui "${xml}" || return 1
+              if python3 "${RUNNER_TEMP}/countaway-ui.py" center "${PACKAGE_ID}:id/exportButton" "${xml}" >/dev/null 2>&1; then
                 return 0
               fi
               sleep 1
@@ -1226,10 +1250,8 @@ jobs:
               > "acceptance-evidence/upgrade-candidate-task-api-${API_LEVEL}.txt" || true
             adb exec-out screencap -p \
               > "acceptance-evidence/upgrade-candidate-screen-api-${API_LEVEL}.png" || true
-            tap_resource aboutButton
-            dump_ui "acceptance-evidence/upgrade-about-version-api-${API_LEVEL}.xml"
-            python3 "${RUNNER_TEMP}/countaway-ui.py" text "v${VERSION}" \
-              "acceptance-evidence/upgrade-about-version-api-${API_LEVEL}.xml"
+            tap_predecessor_about "acceptance-evidence/upgrade-created-api-${API_LEVEL}.xml"
+            wait_for_text "v${VERSION}" "acceptance-evidence/upgrade-about-version-api-${API_LEVEL}.xml"
             await_backup_idle
             export_upgrade_snapshot after
             python3 scripts/upgrade-v124-fixture.py verify \
