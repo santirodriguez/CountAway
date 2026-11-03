@@ -76,12 +76,12 @@ CountAway skips all that. It counts the days and leaves you alone.
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" alt="CountAway Home in dark mode with countdown and count-up events" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="CountAway event editor with an optional Add time control" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="CountAway event editor with a timed event" width="46%" />
 </p>
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="CountAway classic day-widget style configuration" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway About screen showing version 1.2.4 and local backups" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway About screen with version information and local backups" width="46%" />
 </p>
 
 <p align="center">
