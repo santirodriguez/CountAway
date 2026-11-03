@@ -15,6 +15,7 @@ import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
+import android.view.MotionEvent
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ListView
@@ -27,6 +28,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.data.EventRevision
 import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
@@ -105,9 +107,9 @@ class ReleaseScreenshotReviewInstrumentedTest {
             locale.applicationLocales = LocaleList.forLanguageTags("en")
             prefs.edit().putString("theme", "DARK").commit()
             val today = LocalDate.now(zone)
-            val day = event("launcher-day", "Juega Vélez", today.plusDays(12), EventType.EVENT)
+            val day = event("launcher-day", "Trip to Barcelona", today.plusDays(12), EventType.TRIP)
             val timed = event("launcher-time", "Concert night", today.plusDays(12), EventType.CONCERT)
-                .copy(eventTime = LocalTime.of(18, 30), eventZone = zone, repeatRule = RepeatRule.WEEKLY)
+                .copy(eventTime = LocalTime.of(18, 30), eventZone = ZoneId.of("Europe/Madrid"), repeatRule = RepeatRule.WEEKLY)
             repository.save(listOf(day, timed))
             drain()
 
@@ -155,8 +157,14 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 ?.any { it.isVisibleToUser } == true
             notes += "classic_title_visible=$classicVisible"
             notes += "timed_title_visible=$timedVisible"
-            // Always preserve a native launcher image for human verification.
-            // The receipt must distinguish visible widgets from mere binding.
+            // Compare authentic launcher layouts, never edit image pixels.
+            capture("7-launcher-before-arrangement-review-only")
+            val classicDrag = dragHomeWidget(110f, 224f, 335f, 780f)
+            val timedDrag = dragHomeWidget(320f, 354f, 660f, 735f)
+            notes += "classic_drag_injected=$classicDrag"
+            notes += "timed_drag_injected=$timedDrag"
+            shell("input keyevent KEYCODE_HOME")
+            SystemClock.sleep(900)
             capture("7-launcher-review-only")
             notes += if (classicVisible && timedVisible) {
                 "status=CAPTURED_REVIEW_ONLY; both_titles_visible=true"
@@ -185,6 +193,35 @@ class ReleaseScreenshotReviewInstrumentedTest {
             }
             file.writeText(notes.joinToString("\n", postfix = "\n"))
         }
+    }
+
+    // Input gestures move real launcher widgets. Successful injection does
+    // not prove placement; the native screenshot must be reviewed separately.
+    private fun dragHomeWidget(fromX: Float, fromY: Float, toX: Float, toY: Float): Boolean {
+        val automation = instrumentation.uiAutomation
+        val downTime = SystemClock.uptimeMillis()
+        fun send(action: Int, x: Float, y: Float): Boolean {
+            val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, x, y, 0)
+            return try {
+                automation.injectInputEvent(event, true)
+            } finally {
+                event.recycle()
+            }
+        }
+        var success = send(MotionEvent.ACTION_DOWN, fromX, fromY)
+        SystemClock.sleep(850)
+        for (step in 1..14) {
+            val fraction = step.toFloat() / 14f
+            success = send(
+                MotionEvent.ACTION_MOVE,
+                fromX + (toX - fromX) * fraction,
+                fromY + (toY - fromY) * fraction,
+            ) && success
+            SystemClock.sleep(48)
+        }
+        success = send(MotionEvent.ACTION_UP, toX, toY) && success
+        SystemClock.sleep(700)
+        return success
     }
 
     private fun requestLauncherWidget(
@@ -310,6 +347,10 @@ class ReleaseScreenshotReviewInstrumentedTest {
                         list.getChildAt(index).isPressed = false
                         list.getChildAt(index).isActivated = false
                     }
+                    val language = activity.findViewById<View>(R.id.languageButton)
+                    language.clearFocus()
+                    activity.window.decorView.isFocusableInTouchMode = true
+                    activity.window.decorView.requestFocus()
                     prepare(activity.window.decorView)
                 }
                 capture("1-home-dark")
@@ -320,7 +361,9 @@ class ReleaseScreenshotReviewInstrumentedTest {
             repository.save(homeEvents + concert)
             drain()
             ActivityScenario.launch<EditorActivity>(
-                Intent(app, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, concert.id)
+                Intent(app, EditorActivity::class.java)
+                    .putExtra(EditorActivity.EXTRA_DUPLICATE_EVENT_ID, concert.id)
+                    .putExtra(EditorActivity.EXTRA_SOURCE_REVISION, EventRevision.of(concert))
             ).use { scenario ->
                 drain()
                 scenario.onActivity { activity ->
@@ -351,6 +394,9 @@ class ReleaseScreenshotReviewInstrumentedTest {
                         "Editor heading")
                     assertEntirelyVisible(activity.findViewById(R.id.timeButton),
                         "Editor optional time")
+                    assertEquals(View.GONE, activity.findViewById<View>(R.id.deleteButton).visibility)
+                    assertEntirelyVisible(activity.findViewById(R.id.saveButton),
+                        "Editor draft save")
                 }
                 capture("2-editor-timed")
             }
@@ -402,6 +448,10 @@ class ReleaseScreenshotReviewInstrumentedTest {
                     list.clearChoices()
                     list.isPressed = false
                     for (index in 0 until list.childCount) list.getChildAt(index).isPressed = false
+                    val language = activity.findViewById<View>(R.id.languageButton)
+                    language.clearFocus()
+                    activity.window.decorView.isFocusableInTouchMode = true
+                    activity.window.decorView.requestFocus()
                     prepare(activity.window.decorView)
                 }
                 capture("5-home-light")
@@ -443,7 +493,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             File(app.filesDir, "layout-evidence/release-review/REVIEW_ONLY.txt").writeText(
                 "versionName=1.2.5\nversionCode=14\nsource=real Android API36 UI at 1080x1920, density=280\n" +
                 "status=UNAPPROVED; no cropping, editing, or pixel reconstruction\n" +
-                "slots=1 dark Home; 2 timed editor; 3 classic pin-style chooser; " +
+                "slots=1 dark Home; 2 unsaved timed-event copy draft; 3 classic pin-style chooser; " +
                 "4 About; 5 light Home; 6 time-widget configuration ALTERNATIVE, NOT launcher\n" +
                 "No canonical Fastlane screenshot was replaced. Human review required.\n"
             )
