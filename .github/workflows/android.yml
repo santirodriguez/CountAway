@@ -86,6 +86,12 @@ jobs:
           grep -Eq '^OK \([1-9][0-9]* tests?\)' layout-evidence/instrumentation.txt
           ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' layout-evidence/instrumentation.txt
           if [ "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "36" ]; then
+            # Preserve behavioral render evidence before clearing app data.
+            adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence share-evidence \
+              > layout-evidence/behavior-renders.tar
+            tar -tf layout-evidence/behavior-renders.tar \
+              > layout-evidence/behavior-render-manifest.txt
+            grep -Eq '^layout-evidence/.*\.png$' layout-evidence/behavior-render-manifest.txt
             # Native store screenshots execute on a cleared, disposable emulator.
             adb shell am force-stop "$PACKAGE" || true
             adb shell pm clear "$PACKAGE" > layout-evidence/store-capture-data-reset.txt
