@@ -931,17 +931,20 @@ jobs:
           PYUI
 
           dump_ui() {
-            local output="$1"
-            local attempt
+            local output="$1" attempt remote
             rm -f "${output}"
             for attempt in {1..10}; do
-              if adb shell uiautomator dump /sdcard/countaway-ui.xml >/dev/null 2>&1 \
-                && adb pull /sdcard/countaway-ui.xml "${output}" >/dev/null 2>&1; then
+              # Require a new hierarchy file for every UI query.
+              remote="/sdcard/countaway-ui-${API_LEVEL}-${BASHPID}-${RANDOM}-${RANDOM}.xml"
+              if adb shell uiautomator dump "${remote}" >/dev/null 2>&1 \
+                && adb pull "${remote}" "${output}" >/dev/null 2>&1 \
+                && python3 -c 'import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])' "${output}"; then
                 return 0
               fi
+              rm -f "${output}"
               sleep 1
             done
-            echo "Could not capture CountAway UI hierarchy" >&2
+            echo "Could not capture a fresh CountAway UI hierarchy" >&2
             return 1
           }
 
