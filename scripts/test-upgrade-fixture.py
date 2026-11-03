@@ -26,7 +26,10 @@ s = json.loads(path.read_text())
 a = sys.argv[1:]
 s.setdefault('commands', []).append(a)
 if a[:2] == ['shell', 'uiautomator']:
-    pass
+    if s.get('dump_error'):
+        s['dump_error_count'] = s.get('dump_error_count', 0) + 1
+        path.write_text(json.dumps(s))
+        raise SystemExit(1)
 elif a[0] == 'pull':
     root = ET.Element('hierarchy')
     if s.get('saved'):
@@ -81,21 +84,25 @@ class UpgradeFixtureDriverTest(unittest.TestCase):
         cls.parser, cls.driver = driver_parts(cls.source)
         compile(cls.parser, 'workflow-ui-helper', 'exec')
 
-    def run_fixture(self, initial: dict) -> tuple[subprocess.CompletedProcess, dict, str]:
+    def run_fixture(self, initial: dict, extra: str = '') -> tuple[subprocess.CompletedProcess, dict, str]:
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
             (work / 'state.json').write_text(json.dumps(initial))
             (work / 'fake_adb.py').write_text(FAKE_ADB)
             (work / 'countaway-ui.py').write_text(self.parser)
+            (work / 'predecessor-home.xml').write_text(
+                '<hierarchy><node resource-id="app:id/aboutButton" enabled="true" '
+                'bounds="[901,89][1027,215]" /></hierarchy>')
             (work / 'acceptance-evidence').mkdir()
             script = 'set -euo pipefail\n' + self.driver + r'''
 python3() { command python3 -S "$@"; }
 adb() { python3 fake_adb.py "$@"; }
+timeout() { shift; "$@"; }
 sleep() { :; }
 replace_fixture_title UpgradeProbe123
 tap_fixture_save
 wait_for_text UpgradeProbe123 acceptance-evidence/saved.xml
-'''
+''' + extra
             syntax = subprocess.run(['bash', '-n'], input=script, text=True, capture_output=True)
             self.assertEqual(0, syntax.returncode, syntax.stderr)
             result = subprocess.run(['bash', '-c', script], cwd=work,
@@ -145,6 +152,33 @@ wait_for_text UpgradeProbe123 acceptance-evidence/saved.xml
         self.assertEqual(len(dumps), len(set(dumps)))
         self.assertEqual(dumps, pulls)
         self.assertTrue(all(p.startswith('/sdcard/countaway-ui-33-') for p in dumps))
+
+    def test_dump_failure_stops_after_two_attempts(self):
+        result, state, receipt = self.run_fixture({'actual': '', 'dump_error': True})
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(2, state['dump_error_count'])
+        self.assertIn('stage_exit=dump:', result.stderr)
+        self.assertNotIn('typed', state)
+        self.assertEqual('', receipt)
+
+    def test_post_upgrade_about_tap_uses_observed_predecessor_button(self):
+        result, state, _ = self.run_fixture({'actual': ''},
+            'tap_predecessor_about predecessor-home.xml\n')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn(['shell', 'input', 'tap', '964', '152'], state['commands'])
+
+    def test_post_upgrade_about_fails_closed_without_observed_button(self):
+        result, state, _ = self.run_fixture({'actual': ''},
+            'tap_predecessor_about missing-home.xml\n')
+        self.assertNotEqual(0, result.returncode)
+        self.assertNotIn(['shell', 'input', 'tap', '964', '152'], state['commands'])
+
+    def test_signed_upgrade_still_requires_version_and_exact_data_verification(self):
+        after_install = self.source.split('            adb install -r "${CANDIDATE_APK}"', 1)[1]
+        self.assertIn('tap_predecessor_about "acceptance-evidence/upgrade-created-api-${API_LEVEL}.xml"', after_install)
+        self.assertIn('wait_for_text "v${VERSION}"', after_install)
+        self.assertIn('scripts/upgrade-v124-fixture.py verify', after_install)
+        self.assertIn('upgrade-after-data-api-${API_LEVEL}.json', after_install)
 
     def test_disabled_field_never_receives_text_or_saves(self):
         result, state, _ = self.run_fixture({'actual': '', 'disabled': True})
