@@ -1,1 +1,1 @@
-Les hores dels esdeveniments ara segueixen el format de 12/24 hores del dispositiu. Vistes prèvies i recordatoris de recurrències més clars. També millorem la configuració del giny d'hores amb estils traduïts, un ordre més útil i una selecció més segura.
+Les hores segueixen el format de 12/24 hores del dispositiu. Vistes prèvies i recordatoris recurrents més clars. El giny d'hores té estils traduïts, una selecció més segura i un format compacte de 2×1 quan el llançador ho permet.

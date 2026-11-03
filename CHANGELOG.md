@@ -5,6 +5,7 @@
 - Make event times follow the device's 12/24-hour clock setting across editing, Home, widgets, sharing, and notifications.
 - Clarify recurring-event previews and reminder descriptions as the next occurrence changes.
 - Improve live-hours widget setup with localized style names, time-aware event ordering, and safer event selection.
+- Support a compact 2×1 live-hours widget where the launcher permits it, without losing larger resizable layouts.
 
 ## 1.2.4
 

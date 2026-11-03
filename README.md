@@ -61,7 +61,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 
 - **Count both ways:** count down to future dates or count up from a start date.
 - **Optional event times:** show live hours, minutes, and seconds; event clock labels follow your device's 12/24-hour setting.
-- **Two kinds of widgets:** classic day-count widgets and a dedicated live-hours widget for timed events.
+- **Two kinds of widgets:** classic day-count widgets and a dedicated live-hours widget for timed events, with a compact 2×1 option on compatible launchers.
 - **Widget-first:** long-press an event, choose a style, preview it, and add it to Home.
 - **Flexible recurrence:** weekly, monthly, or yearly count-down events.
 - **Nine widget backgrounds:** from clean Classic to Mist, Horizon, Sunset, Ember, Ridge, and more.
@@ -112,6 +112,8 @@ Maintainer signing and release steps are in [`docs/RELEASING.md`](docs/RELEASING
 ## Support
 
 CountAway is a [Caja Personal](https://cajapersonal.org/) project.
+
+Official site: [countaway.cajapersonal.org](https://countaway.cajapersonal.org/). [Privacy policy](https://countaway.cajapersonal.org/privacy/).
 
 <a href="https://cajapersonal.org/donate/"><img src="docs/assets/badges/donate.svg" alt="Donate" height="46" /></a>
 
