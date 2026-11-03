@@ -15,7 +15,6 @@ import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
-import android.view.MotionEvent
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ListView
@@ -172,15 +171,22 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 ?.any { it.isVisibleToUser } == true
             notes += "classic_title_visible=$classicVisible"
             notes += "timed_title_visible=$timedVisible"
-            // Compare authentic launcher layouts, never edit image pixels.
-            capture("7-launcher-before-arrangement-review-only")
-            val classicDrag = dragHomeWidget(110f, 224f, 335f, 780f)
-            val timedDrag = dragHomeWidget(320f, 354f, 660f, 735f)
-            notes += "classic_drag_injected=$classicDrag"
-            notes += "timed_drag_injected=$timedDrag"
-            shell("input keyevent KEYCODE_HOME")
-            SystemClock.sleep(900)
+            // AppWidgetManager binding proves a widget exists, not which
+            // launcher page contains it. Preserve native screenshots of the
+            // initial page and the next three pages before arranging anything.
             capture("7-launcher-review-only")
+            notes += "launcher_page_0=captured"
+            repeat(3) { index ->
+                shell("input swipe 840 880 160 880 460")
+                SystemClock.sleep(950)
+                val page = index + 1
+                val pageForeground = instrumentation.uiAutomation.rootInActiveWindow
+                    ?.packageName?.toString()
+                notes += "launcher_page_${page}_foreground=$pageForeground"
+                if (pageForeground in setOf("com.google.android.apps.nexuslauncher", "com.android.launcher3")) {
+                    capture("7-launcher-page-${page}-review-only")
+                }
+            }
             notes += if (classicVisible && timedVisible) {
                 "status=CAPTURED_REVIEW_ONLY; both_titles_visible=true"
             } else {
@@ -208,35 +214,6 @@ class ReleaseScreenshotReviewInstrumentedTest {
             }
             file.writeText(notes.joinToString("\n", postfix = "\n"))
         }
-    }
-
-    // Input gestures move real launcher widgets. Successful injection does
-    // not prove placement; the native screenshot must be reviewed separately.
-    private fun dragHomeWidget(fromX: Float, fromY: Float, toX: Float, toY: Float): Boolean {
-        val automation = instrumentation.uiAutomation
-        val downTime = SystemClock.uptimeMillis()
-        fun send(action: Int, x: Float, y: Float): Boolean {
-            val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, x, y, 0)
-            return try {
-                automation.injectInputEvent(event, true)
-            } finally {
-                event.recycle()
-            }
-        }
-        var success = send(MotionEvent.ACTION_DOWN, fromX, fromY)
-        SystemClock.sleep(850)
-        for (step in 1..14) {
-            val fraction = step.toFloat() / 14f
-            success = send(
-                MotionEvent.ACTION_MOVE,
-                fromX + (toX - fromX) * fraction,
-                fromY + (toY - fromY) * fraction,
-            ) && success
-            SystemClock.sleep(48)
-        }
-        success = send(MotionEvent.ACTION_UP, toX, toY) && success
-        SystemClock.sleep(700)
-        return success
     }
 
     private fun requestLauncherWidget(
