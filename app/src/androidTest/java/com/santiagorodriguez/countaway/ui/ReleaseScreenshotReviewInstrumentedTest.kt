@@ -234,14 +234,17 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 exact = true, notes = notes,
             )
             notes += "pin_approved_${provider.shortClassName}=$approved"
-            if (timed) {
-                val selected = clickLauncherLabel(listOf("Concert night"),
-                    exact = false, notes = notes)
-                notes += "time_selection_clicked=$selected"
-                val saved = clickLauncherLabel(listOf("save"),
-                    exact = true, notes = notes)
-                notes += "time_config_saved=$saved"
+            // Both providers require a real in-app configuration after pin approval.
+            val choice = if (timed) "Concert night" else "Trip to Barcelona"
+            val selected = clickLauncherLabel(listOf(choice), exact = false, notes = notes)
+            notes += "config_event_selected=$selected"
+            var saved = clickLauncherLabel(listOf("save"), exact = true, notes = notes)
+            if (!saved) {
+                shell("input swipe 540 1400 540 450 420")
+                SystemClock.sleep(650)
+                saved = clickLauncherLabel(listOf("save"), exact = true, notes = notes)
             }
+            notes += "config_saved=$saved"
         }
         repeat(12) {
             val added = manager.getAppWidgetIds(provider).firstOrNull { id -> id !in existing }
