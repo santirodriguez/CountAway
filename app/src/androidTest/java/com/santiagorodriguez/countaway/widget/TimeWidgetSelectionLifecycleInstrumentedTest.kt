@@ -12,6 +12,10 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
@@ -80,14 +84,24 @@ class TimeWidgetSelectionLifecycleInstrumentedTest {
                 assertFalse(activity.findViewById<Button>(R.id.widgetSaveButton).isEnabled)
                 create.performClick()
             }
-            instrumentation.waitForIdleSync()
+            // Wait for the actual editor window, not just the idle launch queue.
+            onView(withId(R.id.editorRoot)).check(matches(isDisplayed()))
+            drain()
             var editor: EditorActivity? = null
             instrumentation.runOnMainSync {
                 editor = ActivityLifecycleMonitorRegistry.getInstance()
                     .getActivitiesInStage(Stage.RESUMED).filterIsInstance<EditorActivity>().singleOrNull()
             }
             assertNotNull("Create must open the ordinary editor", editor)
-            instrumentation.runOnMainSync { checkNotNull(editor).finish() }
+            instrumentation.runOnMainSync {
+                val opened = checkNotNull(editor)
+                assertEquals(opened.getString(R.string.event_new_title),
+                    opened.findViewById<TextView>(R.id.editorHeading).text.toString())
+                assertEquals(opened.getString(R.string.editor_add_time),
+                    opened.findViewById<Button>(R.id.timeButton).text.toString())
+                assertEquals(View.GONE, opened.findViewById<Button>(R.id.removeTimeButton).visibility)
+                opened.finish()
+            }
             drain()
             scenario.onActivity { activity ->
                 assertEquals(2, activity.findViewById<ListView>(R.id.widgetEventList).count)
