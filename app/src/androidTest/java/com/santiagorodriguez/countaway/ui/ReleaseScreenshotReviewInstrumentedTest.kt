@@ -118,7 +118,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             val classicProvider = ComponentName(app,
                 com.santiagorodriguez.countaway.widget.CountdownWidgetProvider::class.java)
             val classicSamples = listOf(
-                Triple(day, WidgetAppearance.DARK, WidgetBackground.RIDGE),
+                Triple(day, WidgetAppearance.DARK, WidgetBackground.MONOGRAM),
                 Triple(weekend, WidgetAppearance.LIGHT, WidgetBackground.SUNSET),
                 Triple(newYear, WidgetAppearance.DARK, WidgetBackground.FOREST),
             )
