@@ -414,6 +414,25 @@ class ReleaseScreenshotReviewInstrumentedTest {
             repository.save(homeEvents)
             drain()
 
+            // Capture the About screen before entering widget setup so no
+            // transient platform window layer from the chooser affects its colors.
+            ActivityScenario.launch<AboutActivity>(Intent(app, AboutActivity::class.java)).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    val version = activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
+                    assertEquals("1.2.5", version)
+                    assertTrue(activity.findViewById<android.widget.TextView>(R.id.versionText)
+                        .text.toString().contains("1.2.5"))
+                    prepare(activity.window.decorView)
+                    assertEntirelyVisible(activity.findViewById(R.id.aboutAuthorCredit),
+                        "About author/footer")
+                    assertEntirelyVisible(activity.findViewById(R.id.privacyButton),
+                        "About privacy link")
+                }
+                SystemClock.sleep(3_000)
+                capture("4-about-v125")
+            }
+
             // The v1.2.4 third capture was the REAL pin-style chooser, not the
             // home-screen widget selection list used in the previous attempt.
             ActivityScenario.launch<WidgetPinSetupActivity>(
@@ -432,23 +451,6 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 }
                 SystemClock.sleep(1_500)
                 capture("3-classic-widget-style")
-            }
-
-            ActivityScenario.launch<AboutActivity>(Intent(app, AboutActivity::class.java)).use { scenario ->
-                drain()
-                scenario.onActivity { activity ->
-                    val version = activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
-                    assertEquals("1.2.5", version)
-                    assertTrue(activity.findViewById<android.widget.TextView>(R.id.versionText)
-                        .text.toString().contains("1.2.5"))
-                    prepare(activity.window.decorView)
-                    assertEntirelyVisible(activity.findViewById(R.id.aboutAuthorCredit),
-                        "About author/footer")
-                    assertEntirelyVisible(activity.findViewById(R.id.privacyButton),
-                        "About privacy link")
-                }
-                SystemClock.sleep(3_000)
-                capture("4-about-v125")
             }
 
             prefs.edit().putString("theme", "LIGHT").commit()
