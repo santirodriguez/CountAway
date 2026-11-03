@@ -83,6 +83,20 @@ jobs:
             "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
           grep -Eq '^OK \([1-9][0-9]* tests?\)' layout-evidence/instrumentation.txt
           ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' layout-evidence/instrumentation.txt
+          # The invasive real-launcher review must run after all behavior tests.
+          # It is non-gating and its original image remains unapproved.
+          if [ "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "36" ]; then
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.ui.ReleaseScreenshotReviewInstrumentedTest#attemptRealLauncherWidgetCaptureForHumanReview' \
+              -e countawayLauncherReview true \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/launcher-instrumentation.txt 2>&1 || true
+            if grep -Fq 'OK (1 test)' layout-evidence/launcher-instrumentation.txt; then
+              printf 'launcher_probe=completed\n' > layout-evidence/launcher-probe-status.txt
+            else
+              printf 'launcher_probe=not_completed\n' > layout-evidence/launcher-probe-status.txt
+            fi
+          fi
           SCRIPT
       - name: Render and verify Android contracts
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
