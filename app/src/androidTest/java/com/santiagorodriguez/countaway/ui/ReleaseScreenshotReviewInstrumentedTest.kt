@@ -48,6 +48,7 @@ import java.time.ZoneId
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.*
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -75,6 +76,12 @@ class ReleaseScreenshotReviewInstrumentedTest {
      * explicit NOT_CAPTURED receipt instead of substituting rendered artwork.
      */
     @Test fun attemptRealLauncherWidgetCaptureForHumanReview() {
+        // Pinning changes launcher state and must not contaminate behavioral tests.
+        // Opt in with: -e countawayLauncherReview true
+        assumeTrue(
+            "Launcher screenshot capture is separate from the standard test suite",
+            InstrumentationRegistry.getArguments().getBoolean("countawayLauncherReview", false),
+        )
         val file = File(app.filesDir, "layout-evidence/release-review/LAUNCHER_CAPTURE.txt")
         checkNotNull(file.parentFile).mkdirs()
         val notes = mutableListOf("source=Android API36 emulator launcher; unapproved review evidence")
