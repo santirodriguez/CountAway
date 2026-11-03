@@ -56,7 +56,11 @@ jobs:
             local capture_ok=0
             while (( attempt <= 3 )); do
               rm -f layout-evidence/renders.pending.tar
-              if adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence share-evidence \
+              local archive_paths=(layout-evidence)
+              if adb shell run-as "$PACKAGE" test -d files/share-evidence > /dev/null 2>&1; then
+                archive_paths+=(share-evidence)
+              fi
+              if adb exec-out run-as "$PACKAGE" tar -C files -cf - "${archive_paths[@]}" \
                     > layout-evidence/renders.pending.tar &&
                  tar -tf layout-evidence/renders.pending.tar > layout-evidence/render-manifest.txt &&
                  grep -Eq '^layout-evidence/.*\.png$' layout-evidence/render-manifest.txt; then
