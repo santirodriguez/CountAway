@@ -135,6 +135,17 @@ wait_for_text UpgradeProbe123 acceptance-evidence/saved.xml
     def test_save_is_found_by_scrolling_once_not_blind_repeated_taps(self):
         self.assert_success({'actual': '', 'hidden_save': True})
 
+    def test_each_ui_query_uses_a_new_device_path(self):
+        result, state, _ = self.run_fixture({'actual': 'Previous title'})
+        self.assertEqual(0, result.returncode, result.stderr)
+        dumps = [a[3] for a in state['commands']
+                 if a[:3] == ['shell', 'uiautomator', 'dump']]
+        pulls = [a[1] for a in state['commands'] if a[:1] == ['pull']]
+        self.assertGreaterEqual(len(dumps), 3)
+        self.assertEqual(len(dumps), len(set(dumps)))
+        self.assertEqual(dumps, pulls)
+        self.assertTrue(all(p.startswith('/sdcard/countaway-ui-33-') for p in dumps))
+
     def test_disabled_field_never_receives_text_or_saves(self):
         result, state, _ = self.run_fixture({'actual': '', 'disabled': True})
         self.assertNotEqual(0, result.returncode)
