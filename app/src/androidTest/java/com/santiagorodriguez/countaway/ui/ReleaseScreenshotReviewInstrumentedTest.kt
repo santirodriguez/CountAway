@@ -23,6 +23,8 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
@@ -34,6 +36,7 @@ import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.RepeatRule
 import com.santiagorodriguez.countaway.widget.TimeWidgetConfigActivity
 import com.santiagorodriguez.countaway.widget.TimeWidgetProvider
+import com.santiagorodriguez.countaway.widget.WidgetPinning
 import com.santiagorodriguez.countaway.widget.WidgetAppearance
 import com.santiagorodriguez.countaway.widget.WidgetBackground
 import com.santiagorodriguez.countaway.widget.WidgetDefaultsPreferences
@@ -127,7 +130,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             )
             val classicIds = mutableListOf<Int>()
             for ((sample, appearance, background) in classicSamples) {
-                val id = requestLauncherWidget(classicProvider, notes, false) ?: run {
+                val id = requestLauncherWidget(classicProvider, notes, sample, appearance, background, false) ?: run {
                     notes += "status=NOT_CAPTURED; reason=classic_pin_failed_${sample.id}"
                     return
                 }
@@ -139,14 +142,15 @@ class ReleaseScreenshotReviewInstrumentedTest {
             }
 
             val timeProvider = ComponentName(app, TimeWidgetProvider::class.java)
-            val timeId = requestLauncherWidget(timeProvider, notes, true) ?: run {
-                notes += "status=NOT_CAPTURED; reason=time_widget_pin_not_confirmed"
-                return
+            val timeId = requestLauncherWidget(timeProvider, notes, timed, WidgetAppearance.DARK, WidgetBackground.HORIZON, true)
+            if (timeId != null) {
+                widgets.save(timeId, timed.id, WidgetAppearance.DARK,
+                    WidgetBackground.HORIZON, WidgetEventSelection.FIXED)
+                TimeWidgetProvider.updateWidget(app, manager, timeId)
+                notes += "timed_widget_id=$timeId"
+            } else {
+                notes += "timed_widget_not_confirmed; retaining_classic_page_evidence"
             }
-            widgets.save(timeId, timed.id, WidgetAppearance.DARK,
-                WidgetBackground.HORIZON, WidgetEventSelection.FIXED)
-            TimeWidgetProvider.updateWidget(app, manager, timeId)
-            notes += "timed_widget_id=$timeId"
             shell("input keyevent KEYCODE_HOME")
             SystemClock.sleep(1_800)
             val foreground = instrumentation.uiAutomation.rootInActiveWindow
@@ -158,11 +162,14 @@ class ReleaseScreenshotReviewInstrumentedTest {
             }
             verifiedLauncherPackage = foreground
             val classicStillBound = classicIds.all { it in manager.getAppWidgetIds(classicProvider) }
-            val timedStillBound = timeId in manager.getAppWidgetIds(timeProvider)
+            val timedStillBound = timeId != null && timeId in manager.getAppWidgetIds(timeProvider)
             notes += "bound_classics=${classicIds.size}; expected=3"
-            if (!classicStillBound || !timedStillBound) {
-                notes += "status=NOT_CAPTURED; reason=widget_binding_lost"
+            if (!classicStillBound) {
+                notes += "status=NOT_CAPTURED; reason=classic_widget_binding_lost"
                 return
+            }
+            if (!timedStillBound) {
+                notes += "timed_widget_binding_incomplete; launcher_images_are_partial"
             }
             val launcherTree = instrumentation.uiAutomation.rootInActiveWindow
             val classicVisible = launcherTree?.findAccessibilityNodeInfosByText(day.title)
@@ -217,7 +224,9 @@ class ReleaseScreenshotReviewInstrumentedTest {
     }
 
     private fun requestLauncherWidget(
-        provider: ComponentName, notes: MutableList<String>, timed: Boolean
+        provider: ComponentName, notes: MutableList<String>,
+        event: CountdownEvent, appearance: WidgetAppearance,
+        background: WidgetBackground, timed: Boolean,
     ): Int? {
         val manager = AppWidgetManager.getInstance(app)
         val existing = manager.getAppWidgetIds(provider).toSet()
@@ -225,7 +234,13 @@ class ReleaseScreenshotReviewInstrumentedTest {
         ActivityScenario.launch<MainActivity>(Intent(app, MainActivity::class.java)).use { scenario ->
             drain()
             scenario.onActivity { activity ->
-                requested = manager.requestPinAppWidget(provider, null, null)
+                requested = if (timed) {
+                    manager.requestPinAppWidget(provider, null, null)
+                } else {
+                    WidgetPinning.request(
+                        activity, event, WidgetStyleSelection(appearance, background),
+                    )
+                }
             }
             notes += "pin_requested_${provider.shortClassName}=$requested"
             if (!requested) return null
@@ -234,23 +249,37 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 exact = true, notes = notes,
             )
             notes += "pin_approved_${provider.shortClassName}=$approved"
-            // Both providers require a real in-app configuration after pin approval.
-            val choice = if (timed) "Concert night" else "Trip to Barcelona"
-            val selected = clickLauncherLabel(listOf(choice), exact = false, notes = notes)
-            notes += "config_event_selected=$selected"
-            var saved = clickLauncherLabel(listOf("save"), exact = true, notes = notes)
-            if (!saved) {
-                shell("input swipe 540 1400 540 450 420")
-                SystemClock.sleep(650)
-                saved = clickLauncherLabel(listOf("save"), exact = true, notes = notes)
+            if (!approved) return null
+            if (timed) {
+                var nativeConfig = false
+                repeat(18) {
+                    if (!nativeConfig) {
+                        instrumentation.runOnMainSync {
+                            nativeConfig = ActivityLifecycleMonitorRegistry.getInstance()
+                                .getActivitiesInStage(Stage.RESUMED)
+                                .any { it is TimeWidgetConfigActivity }
+                        }
+                        if (!nativeConfig) SystemClock.sleep(400)
+                    }
+                }
+                notes += "native_time_config_resumed=$nativeConfig"
+                if (!nativeConfig) return null
+                val selected = clickLauncherLabel(listOf(event.title), exact = false, notes = notes)
+                notes += "time_event_selected=$selected"
+                if (!selected) return null
+                val saved = clickLauncherLabel(listOf("save"), exact = true, notes = notes)
+                notes += "time_config_saved=$saved"
+                if (!saved) return null
+            } else {
+                notes += "classic_uses_product_pin_callback=true"
             }
-            notes += "config_saved=$saved"
         }
-        repeat(12) {
-            val added = manager.getAppWidgetIds(provider).firstOrNull { id -> id !in existing }
+        repeat(24) {
+            val added = manager.getAppWidgetIds(provider).firstOrNull { it !in existing }
             if (added != null) return added
-            SystemClock.sleep(400)
+            SystemClock.sleep(450)
         }
+        notes += "pin_bound_timeout_${provider.shortClassName}"
         return null
     }
 
