@@ -45,7 +45,11 @@ internal object TimeWidgetRenderer {
         cache: MutableMap<TimeWidgetBackgroundKey, Bitmap>,
         interactive: Boolean = true,
     ): RemoteViews {
-        val views = RemoteViews(context.packageName, R.layout.widget_time_live)
+        // A true one-cell-high layout keeps the title and native clock visible.
+        // Larger host bounds retain the established full-height presentation.
+        val compact = heightDp < 70
+        val views = RemoteViews(context.packageName,
+            if (compact) R.layout.widget_time_compact else R.layout.widget_time_live)
         val layout = TimeWidgetLayoutPlanner.plan(widthDp, heightDp,
             displayContext.resources.configuration.fontScale)
         // The pre-API-37 RemoteViews padding overload expects physical pixels.
@@ -53,7 +57,7 @@ internal object TimeWidgetRenderer {
         val horizontalPaddingPx = (layout.horizontalPaddingDp * density).roundToInt()
         val verticalPaddingPx = (layout.verticalPaddingDp * density).roundToInt()
         // Keep total padding unchanged while lifting oversized text off the bottom edge.
-        val liftPx = if (widthDp >= 200 && heightDp < 110 &&
+        val liftPx = if (widthDp >= 200 && heightDp in 70..109 &&
             displayContext.resources.configuration.fontScale >= 1.6f
         ) (4 * density).roundToInt() else 0
         views.setViewPadding(R.id.timeWidgetContent,
@@ -168,6 +172,8 @@ internal object TimeWidgetRenderer {
                 views.setTextViewTextSize(R.id.timeWidgetLongDays, TypedValue.COMPLEX_UNIT_SP,
                     fittedLongDaySizeSp(displayContext, widthDp, layout.horizontalPaddingDp,
                         dayLabel, when {
+                            heightDp < 70 && largeFont -> 11f
+                            heightDp < 70 -> 18f
                             heightDp < 110 && largeFont -> 16f
                             largeFont -> 20f
                             heightDp < 120 -> 27f

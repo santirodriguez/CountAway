@@ -19,8 +19,9 @@ internal object TimeWidgetLayoutPlanner {
         val height = heightDp.coerceAtLeast(1)
         val enlarged = fontScale >= 1.6f
         return TimeWidgetLayoutPlan(
-            horizontalPaddingDp = if (width < 185) 10 else 15,
+            horizontalPaddingDp = if (height < 70) 7 else if (width < 185) 10 else 15,
             verticalPaddingDp = when {
+                height < 70 -> 2
                 height < 110 -> 8
                 height < 146 -> 10
                 else -> 13
@@ -30,9 +31,14 @@ internal object TimeWidgetLayoutPlanner {
                 height >= 132 -> 2
                 else -> 1
             },
-            titleSizeSp = if (enlarged || height < 110) 12f else 14f,
+            titleSizeSp = when {
+                height < 70 -> if (enlarged) 8f else 10f
+                enlarged || height < 110 -> 12f
+                else -> 14f
+            },
             dateSizeSp = if (enlarged) 10f else 11f,
             clockMaxSizeSp = when {
+                height < 70 -> if (enlarged) 11f else if (fontScale >= 1.3f) 16f else 22f
                 height < 110 -> 32f
                 width < 185 -> 37f
                 height < 150 -> 38f

@@ -4,6 +4,22 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TimeWidgetLayoutPlannerTest {
+    @Test fun oneCellHighHasARealCompactBudgetEvenAtLargeText() {
+        val regular = TimeWidgetLayoutPlanner.plan(160, 55, 1f)
+        val enlarged = TimeWidgetLayoutPlanner.plan(160, 55, 2f)
+        assertEquals(1, regular.titleLines)
+        assertEquals(2, regular.verticalPaddingDp)
+        assertEquals(7, regular.horizontalPaddingDp)
+        assertEquals(22f, regular.clockMaxSizeSp, 0f)
+        assertEquals(8f, enlarged.titleSizeSp, 0f)
+        assertEquals(11f, enlarged.clockMaxSizeSp, 0f)
+        for (plan in listOf(regular, enlarged)) {
+            assertFalse(plan.showDate)
+            assertFalse(plan.showAccent)
+            assertFalse(plan.showLiveIndicator)
+        }
+    }
+
     @Test fun compactOneRowRetainsTitleAndClockWithoutOverflowBudget() {
         val short = TimeWidgetLayoutPlanner.plan(160, 90, 1f)
         assertEquals(1, short.titleLines)

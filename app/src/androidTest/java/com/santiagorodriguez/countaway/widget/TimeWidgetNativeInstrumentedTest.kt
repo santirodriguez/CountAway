@@ -52,16 +52,18 @@ class TimeWidgetNativeInstrumentedTest {
             assertEquals(1, classic.targetCellWidth)
             assertEquals(1, classic.targetCellHeight)
             assertEquals(2, timed.targetCellWidth)
-            assertEquals(2, timed.targetCellHeight)
+            assertEquals(1, timed.targetCellHeight)
         }
         assertEquals(ComponentName(app, TimeWidgetConfigActivity::class.java), timed.configure)
         assertTrue("Timed widget must allow narrower launcher resizing",
             timed.minResizeWidth < timed.minWidth)
         assertTrue("Timed widget must allow shorter launcher resizing",
             timed.minResizeHeight < timed.minHeight)
-        val twoRowHintPx = (95 * app.resources.displayMetrics.density).roundToInt()
-        assertTrue("Default minHeight must fit a two-row launcher cell",
-            timed.minHeight <= twoRowHintPx)
+        val oneRowHintPx = (51 * app.resources.displayMetrics.density).roundToInt()
+        assertTrue("Default minHeight must fit a one-row launcher cell",
+            timed.minHeight <= oneRowHintPx)
+        assertTrue("Minimum resize height must fit landscape one-row cells",
+            timed.minResizeHeight <= (50 * app.resources.displayMetrics.density).roundToInt())
     }
 
     @Test fun nativeClockAndTitleFitCompactWideTallAndLargeHostSizes() = instrumentation.runOnMainSync {
@@ -75,7 +77,7 @@ class TimeWidgetNativeInstrumentedTest {
         val legacyTime = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
             .withLocale(Locale.US).format(target)
         assertTrue("Localized date/time must contain its localized time", legacyTarget.contains(legacyTime))
-        val sizes = listOf(160 to 90, 240 to 95, 180 to 120, 160 to 190,
+        val sizes = listOf(160 to 55, 240 to 55, 300 to 58, 160 to 90, 240 to 95, 180 to 120, 160 to 190,
             240 to 180, 280 to 210, 320 to 250)
         val fonts = listOf(1f, 1.3f, 2f)
         val themes = listOf(WidgetAppearance.DARK, WidgetAppearance.LIGHT)
@@ -106,7 +108,7 @@ class TimeWidgetNativeInstrumentedTest {
             assertEquals(name + " horizontal padding", (plan.horizontalPaddingDp * density).roundToInt(),
                 card.paddingLeft)
             val baselinePaddingPx = (plan.verticalPaddingDp * density).roundToInt()
-            val liftPx = if (width >= 200 && height < 110 && font >= 1.6f)
+            val liftPx = if (width >= 200 && height in 70..109 && font >= 1.6f)
                 (4 * density).roundToInt() else 0
             assertEquals(name + " upper padding", baselinePaddingPx - liftPx, card.paddingTop)
             assertEquals(name + " lower padding", baselinePaddingPx + liftPx, card.paddingBottom)
@@ -202,7 +204,7 @@ class TimeWidgetNativeInstrumentedTest {
             eventTime = future.toLocalTime().withSecond(0).withNano(0), eventZone = zone)
         val context = fontContext(2f)
         val configuration = WidgetConfiguration(targetEvent.id, WidgetAppearance.DARK, WidgetBackground.HORIZON)
-        for ((width, height) in listOf(160 to 90, 160 to 190, 240 to 180, 280 to 210, 320 to 250)) {
+        for ((width, height) in listOf(160 to 55, 240 to 55, 160 to 90, 160 to 190, 240 to 180, 280 to 210, 320 to 250)) {
             val views = TimeWidgetRenderer.render(context, context, 1234, configuration,
                 targetEvent, null, CountdownTimeSnapshot(now), width, height,
                 hashMapOf(), interactive = false)
@@ -240,7 +242,7 @@ class TimeWidgetNativeInstrumentedTest {
                 com.santiagorodriguez.countaway.model.CountMode.COUNT_DOWN),
         )
         for ((tag, date, mode) in cases)
-            for ((width, height) in listOf(160 to 90, 180 to 120, 160 to 190, 240 to 180, 320 to 250))
+            for ((width, height) in listOf(160 to 55, 160 to 90, 180 to 120, 160 to 190, 240 to 180, 320 to 250))
                 for (font in listOf(1f, 2f)) {
                     val context = fontContext(font)
                     val distant = event.copy(title = "Historical birthday and anniversary",
