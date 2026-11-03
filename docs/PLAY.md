@@ -163,7 +163,7 @@ Keep one global version sequence across every store.
 
 ## Store assets and console setup
 
-Play assets are release inputs, not permission to fabricate app UI. The six accepted v1.2.4 phone screenshots are genuine 1080×1920 RGB PNG captures in Fastlane. They replace the v1.2.3 screenshots; no screen content was fabricated or retouched.
+Play assets are release inputs, not permission to fabricate app UI. The six approved v1.2.5 phone screenshots are genuine 1080×1920 RGB PNG captures in Fastlane. They replaced the previous release-evidence set without recompression or retouching. Updating this repository does not upload screenshots to the live Play listing.
 
 Required Play export checks:
 
@@ -178,7 +178,7 @@ Store locale mapping comes from `app/src/main/res/xml/supported_languages.xml`. 
 
 The existing Fastlane icon and feature graphic remain source/distribution assets and are not rewritten merely for Play. CI and the Release workflow create visually identical Play derivatives with `scripts/prepare-play-assets.py`: the 512×512 icon is encoded as 32-bit RGBA with opaque alpha, and the 1024×500 feature graphic is encoded as 24-bit RGB. The generator decodes both source and output and fails if any visible RGB pixel changes. Generated release derivatives are retained under `play-readiness/store-assets/`.
 
-Phone screenshots have a single canonical **release-evidence** source for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. The six accepted v1.2.4 files are genuine 1080×1920 (9:16), 24-bit RGB PNG captures; the conversion from indexed PNG preserved every visible RGB pixel. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. For the public Play storefront, the maintainer selected five accurate, version-neutral images and intentionally omitted the About/version capture (`4.png`); `6.png` shows launcher widgets. The canonical six remain unchanged. For future releases, inspect whether existing storefront images remain accurate, and retain a separate accepted current-version capture set as release evidence. Never distort, pad or repaint screenshot content.
+Phone screenshots have a single canonical **release-evidence** source for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. The current six approved v1.2.5 files are genuine 1080×1920 (9:16), 24-bit RGB PNG captures, preserved byte-for-byte when promoted into Fastlane. The earlier accepted v1.2.4 files are historical; their indexed-to-RGB conversion preserved every visible RGB pixel, but they are no longer the current canonical set. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. For the published v1.2.4 Play storefront, the maintainer selected five accurate, version-neutral images and intentionally omitted the About/version capture (`4.png`); `6.png` shows launcher widgets. That storefront selection remains separately managed in Play Console, and newer repository images require an authorized upload to appear there. For future releases, inspect whether existing storefront images remain accurate, and retain accepted current-version captures as release evidence. Never distort, pad or repaint screenshot content.
 
 To stage the accepted screenshots for the Play Console, copy them from the canonical Fastlane files while preserving byte-for-byte identity:
 
