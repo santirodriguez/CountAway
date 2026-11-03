@@ -31,7 +31,6 @@
             android:paddingBottom="0dp"
             android:background="@drawable/icon_button"
             android:gravity="center"
-            android:foreground="?android:attr/selectableItemBackground"
             android:contentDescription="@string/language_choose"
             android:textAllCaps="false"
             android:textSize="14sp" />

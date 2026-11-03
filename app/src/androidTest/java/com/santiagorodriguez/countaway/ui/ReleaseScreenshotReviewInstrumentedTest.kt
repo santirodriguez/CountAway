@@ -108,22 +108,32 @@ class ReleaseScreenshotReviewInstrumentedTest {
             prefs.edit().putString("theme", "DARK").commit()
             val today = LocalDate.now(zone)
             val day = event("launcher-day", "Trip to Barcelona", today.plusDays(12), EventType.TRIP)
+            val weekend = event("launcher-weekend", "Beach weekend", today.plusDays(36), EventType.TRIP)
+            val newYear = event("launcher-year", "New Year's Eve", today.plusDays(59), EventType.EVENT)
             val timed = event("launcher-time", "Concert night", today.plusDays(12), EventType.CONCERT)
                 .copy(eventTime = LocalTime.of(18, 30), eventZone = ZoneId.of("Europe/Madrid"), repeatRule = RepeatRule.WEEKLY)
-            repository.save(listOf(day, timed))
+            repository.save(listOf(day, weekend, newYear, timed))
             drain()
 
             val classicProvider = ComponentName(app,
                 com.santiagorodriguez.countaway.widget.CountdownWidgetProvider::class.java)
-            val classicId = requestLauncherWidget(classicProvider, notes, false) ?: run {
-                notes += "status=NOT_CAPTURED; reason=classic_pin_not_confirmed"
-                return
+            val classicSamples = listOf(
+                Triple(day, WidgetAppearance.DARK, WidgetBackground.RIDGE),
+                Triple(weekend, WidgetAppearance.LIGHT, WidgetBackground.SUNSET),
+                Triple(newYear, WidgetAppearance.DARK, WidgetBackground.FOREST),
+            )
+            val classicIds = mutableListOf<Int>()
+            for ((sample, appearance, background) in classicSamples) {
+                val id = requestLauncherWidget(classicProvider, notes, false) ?: run {
+                    notes += "status=NOT_CAPTURED; reason=classic_pin_failed_${sample.id}"
+                    return
+                }
+                widgets.save(id, sample.id, appearance, background, WidgetEventSelection.FIXED)
+                com.santiagorodriguez.countaway.widget.CountdownWidgetProvider.updateWidget(
+                    app, manager, id)
+                classicIds += id
+                notes += "classic_widget_id=$id; event=${sample.title}; style=$background; appearance=$appearance"
             }
-            widgets.save(classicId, day.id, WidgetAppearance.DARK,
-                WidgetBackground.MONOGRAM, WidgetEventSelection.FIXED)
-            com.santiagorodriguez.countaway.widget.CountdownWidgetProvider.updateWidget(
-                app, manager, classicId)
-            notes += "classic_widget_id=$classicId"
 
             val timeProvider = ComponentName(app, TimeWidgetProvider::class.java)
             val timeId = requestLauncherWidget(timeProvider, notes, true) ?: run {
@@ -144,8 +154,9 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 return
             }
             verifiedLauncherPackage = foreground
-            val classicStillBound = classicId in manager.getAppWidgetIds(classicProvider)
+            val classicStillBound = classicIds.all { it in manager.getAppWidgetIds(classicProvider) }
             val timedStillBound = timeId in manager.getAppWidgetIds(timeProvider)
+            notes += "bound_classics=${classicIds.size}; expected=3"
             if (!classicStillBound || !timedStillBound) {
                 notes += "status=NOT_CAPTURED; reason=widget_binding_lost"
                 return
@@ -171,7 +182,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             } else {
                 "status=CAPTURED_UNVERIFIED; both_titles_visible=false"
             }
-            notes += "required=human_pixel_review_for_both_widgets"
+            notes += "required=human_pixel_review_for_all_four_widgets"
         } catch (failure: Exception) {
             notes += "status=NOT_CAPTURED; reason=${failure.javaClass.simpleName}"
             notes += "detail=${failure.message.orEmpty().replace('\n', ' ').take(180)}"
@@ -419,6 +430,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
                     assertEntirelyVisible(activity.findViewById(R.id.widgetPinSetupCancelButton),
                         "Cancel action")
                 }
+                SystemClock.sleep(1_500)
                 capture("3-classic-widget-style")
             }
 
@@ -435,7 +447,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
                     assertEntirelyVisible(activity.findViewById(R.id.privacyButton),
                         "About privacy link")
                 }
-                SystemClock.sleep(1800)
+                SystemClock.sleep(3_000)
                 capture("4-about-v125")
             }
 
@@ -588,6 +600,13 @@ class ReleaseScreenshotReviewInstrumentedTest {
         try {
             assertEquals("Full 9:16 width", 1080, bitmap.width)
             assertEquals("Full 9:16 height", 1920, bitmap.height)
+            if (name == "3-classic-widget-style" || name == "4-about-v125") {
+                val actual = bitmap.getPixel(10, 700)
+                val expected = Color.rgb(6, 17, 38)
+                File(app.filesDir, "layout-evidence/release-review/DARK_CAPTURE_BACKDROP.txt")
+                    .appendText("$name actual=${Integer.toHexString(actual)} expected=${Integer.toHexString(expected)}\\n")
+                assertEquals("$name has an unexpected window tint", expected, actual)
+            }
             val file = File(app.filesDir, "layout-evidence/release-review/$name.png")
             checkNotNull(file.parentFile).mkdirs()
             file.outputStream().use { stream ->
