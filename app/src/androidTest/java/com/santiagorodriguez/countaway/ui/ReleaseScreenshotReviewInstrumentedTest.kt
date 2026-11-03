@@ -59,6 +59,10 @@ import org.junit.runner.RunWith
  * Based on the six public v1.2.4 composition roles. Never changes Fastlane
  * assets, and never claims the slot-six preview is an actual launcher.
  */
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class IsolatedStoreScreenshot
+
 @RunWith(AndroidJUnit4::class)
 @SdkSuppress(minSdkVersion = 36)
 class ReleaseScreenshotReviewInstrumentedTest {
@@ -303,7 +307,12 @@ class ReleaseScreenshotReviewInstrumentedTest {
         return false
     }
 
+    @IsolatedStoreScreenshot
     @Test fun captureSixCandidateViewsForHumanReview() {
+        assumeTrue(
+            "Store captures are isolated from behavioral instrumentation",
+            InstrumentationRegistry.getArguments().getString("countawayScreenshotReview") == "true",
+        )
         val previous = (repository.loadResult() as CountdownLoadResult.Success).events
         val oldDefaults = defaults.get()
         val oldTheme = prefs.getString("theme", null)
@@ -602,17 +611,18 @@ class ReleaseScreenshotReviewInstrumentedTest {
         try {
             assertEquals("Full 9:16 width", 1080, bitmap.width)
             assertEquals("Full 9:16 height", 1920, bitmap.height)
-            if (name == "3-classic-widget-style" || name == "4-about-v125") {
-                val actual = bitmap.getPixel(10, 700)
-                val expected = Color.rgb(6, 17, 38)
-                File(app.filesDir, "layout-evidence/release-review/DARK_CAPTURE_BACKDROP.txt")
-                    .appendText("$name actual=${Integer.toHexString(actual)} expected=${Integer.toHexString(expected)}\\n")
-                assertEquals("$name has an unexpected window tint", expected, actual)
-            }
             val file = File(app.filesDir, "layout-evidence/release-review/$name.png")
             checkNotNull(file.parentFile).mkdirs()
             file.outputStream().use { stream ->
                 assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream))
+            }
+            // Preserve original failing evidence before enforcing color fidelity.
+            if (name == "3-classic-widget-style" || name == "4-about-v125") {
+                val actual = bitmap.getPixel(10, 700)
+                val expected = Color.rgb(6, 17, 38)
+                File(app.filesDir, "layout-evidence/release-review/DARK_CAPTURE_BACKDROP.txt")
+                    .appendText("$name actual=${Integer.toHexString(actual)} expected=${Integer.toHexString(expected)}\n")
+                assertEquals("$name has an unexpected window tint", expected, actual)
             }
         } finally {
             bitmap.recycle()
