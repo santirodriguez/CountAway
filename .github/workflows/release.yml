@@ -1211,13 +1211,21 @@ jobs:
               "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
 
             adb install -r "${CANDIDATE_APK}"
-            # The predecessor's AboutActivity can survive as the foreground task
-            # after a successful in-place APK update. Reset only the activity
-            # back stack: do not wipe app data or turn this into a fresh install.
-            # FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK = 0x10008000.
+            # Verify the installed package identity before checking its UI.
+            adb shell dumpsys package "${PACKAGE_ID}" \
+              > "acceptance-evidence/upgrade-installed-package-api-${API_LEVEL}.txt"
+            grep -Fq "versionName=${VERSION}" \
+              "acceptance-evidence/upgrade-installed-package-api-${API_LEVEL}.txt"
+            grep -Eq "versionCode=${VERSION_CODE}([[:space:]]|$)" \
+              "acceptance-evidence/upgrade-installed-package-api-${API_LEVEL}.txt"
+            # Reset only the activity task; preserve all event storage.
             adb shell am start -W -f 0x10008000 \
               -n "${PACKAGE_ID}/com.santiagorodriguez.countaway.ui.MainActivity" \
               > "acceptance-evidence/upgrade-candidate-launch-api-${API_LEVEL}.txt"
+            adb shell dumpsys activity activities \
+              > "acceptance-evidence/upgrade-candidate-task-api-${API_LEVEL}.txt" || true
+            adb exec-out screencap -p \
+              > "acceptance-evidence/upgrade-candidate-screen-api-${API_LEVEL}.png" || true
             tap_resource aboutButton
             dump_ui "acceptance-evidence/upgrade-about-version-api-${API_LEVEL}.xml"
             python3 "${RUNNER_TEMP}/countaway-ui.py" text "v${VERSION}" \
