@@ -82,7 +82,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
         // Opt in with: -e countawayLauncherReview true
         assumeTrue(
             "Launcher screenshot capture is separate from the standard test suite",
-            InstrumentationRegistry.getArguments().getBoolean("countawayLauncherReview", false),
+            InstrumentationRegistry.getArguments().getString("countawayLauncherReview") == "true",
         )
         val file = File(app.filesDir, "layout-evidence/release-review/LAUNCHER_CAPTURE.txt")
         checkNotNull(file.parentFile).mkdirs()
