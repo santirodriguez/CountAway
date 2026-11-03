@@ -15,7 +15,9 @@ import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
+import android.view.MotionEvent
 import android.view.inputmethod.InputMethodManager
+import android.widget.Button
 import android.widget.EditText
 import android.widget.ListView
 import android.widget.ScrollView
@@ -144,10 +146,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             val timeProvider = ComponentName(app, TimeWidgetProvider::class.java)
             val timeId = requestLauncherWidget(timeProvider, notes, timed, WidgetAppearance.DARK, WidgetBackground.HORIZON, true)
             if (timeId != null) {
-                widgets.save(timeId, timed.id, WidgetAppearance.DARK,
-                    WidgetBackground.HORIZON, WidgetEventSelection.FIXED)
-                TimeWidgetProvider.updateWidget(app, manager, timeId)
-                notes += "timed_widget_id=$timeId"
+                notes += "timed_widget_id=$timeId; native_setup_pending=true"
             } else {
                 notes += "timed_widget_not_confirmed; retaining_classic_page_evidence"
             }
@@ -178,22 +177,32 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 ?.any { it.isVisibleToUser } == true
             notes += "classic_title_visible=$classicVisible"
             notes += "timed_title_visible=$timedVisible"
-            // AppWidgetManager binding proves a widget exists, not which
-            // launcher page contains it. Preserve native screenshots of the
-            // initial page and the next three pages before arranging anything.
+            // The Pixel launcher places new widgets on its second page.
+            // Preserve a native before/after record, never compose app previews.
+            capture("7-launcher-page-0-review-only")
+            shell("input swipe 840 880 160 880 460")
+            SystemClock.sleep(950)
+            capture("7-launcher-page-1-before-setup-review-only")
+            val configured = if (timeId != null) {
+                configureTimeFromLauncher(timed.title, timeId, notes)
+            } else false
+            notes += "time_configured_from_real_widget=$configured"
+            shell("input keyevent KEYCODE_HOME")
+            SystemClock.sleep(750)
+            shell("input swipe 840 880 160 880 460")
+            SystemClock.sleep(1_000)
+            capture("7-launcher-page-1-after-setup-review-only")
+            // Target the observed widget centres of this 1080x1920 emulator.
+            // Real touch gestures are used; final placement still needs review.
+            notes += "classic_second_drag_injected=" +
+                dragLauncherWidget(315f, 275f, 330f, 815f)
+            notes += "classic_third_drag_injected=" +
+                dragLauncherWidget(520f, 275f, 475f, 1090f)
+            shell("input keyevent KEYCODE_HOME")
+            SystemClock.sleep(850)
+            shell("input swipe 840 880 160 880 460")
+            SystemClock.sleep(1_050)
             capture("7-launcher-review-only")
-            notes += "launcher_page_0=captured"
-            repeat(3) { index ->
-                shell("input swipe 840 880 160 880 460")
-                SystemClock.sleep(950)
-                val page = index + 1
-                val pageForeground = instrumentation.uiAutomation.rootInActiveWindow
-                    ?.packageName?.toString()
-                notes += "launcher_page_${page}_foreground=$pageForeground"
-                if (pageForeground in setOf("com.google.android.apps.nexuslauncher", "com.android.launcher3")) {
-                    capture("7-launcher-page-${page}-review-only")
-                }
-            }
             notes += if (classicVisible && timedVisible) {
                 "status=CAPTURED_REVIEW_ONLY; both_titles_visible=true"
             } else {
@@ -221,6 +230,75 @@ class ReleaseScreenshotReviewInstrumentedTest {
             }
             file.writeText(notes.joinToString("\n", postfix = "\n"))
         }
+    }
+
+    private fun configureTimeFromLauncher(
+        title: String, widgetId: Int, notes: MutableList<String>,
+    ): Boolean {
+        // An actual tap on the unconfigured widget triggers its PendingIntent.
+        shell("input tap 710 385")
+        var saved = false
+        repeat(24) {
+            if (!saved) {
+                SystemClock.sleep(380)
+                instrumentation.runOnMainSync {
+                    val activity = ActivityLifecycleMonitorRegistry.getInstance()
+                        .getActivitiesInStage(Stage.RESUMED)
+                        .filterIsInstance<TimeWidgetConfigActivity>().firstOrNull()
+                    if (activity != null) {
+                        val list = activity.findViewById<ListView>(R.id.widgetEventList)
+                        val position = (0 until list.count).firstOrNull { row ->
+                            list.adapter.getItem(row)?.toString()?.contains(title, ignoreCase = true) == true
+                        } ?: -1
+                        if (position >= 0) {
+                            list.performItemClick(
+                                list.getChildAt(position - list.firstVisiblePosition),
+                                position,
+                                list.adapter.getItemId(position),
+                            )
+                            val button = activity.findViewById<Button>(R.id.widgetSaveButton)
+                            if (button.isEnabled) saved = button.performClick()
+                        }
+                    }
+                }
+            }
+        }
+        if (saved) {
+            drain()
+            TimeWidgetProvider.updateWidget(app, AppWidgetManager.getInstance(app), widgetId)
+        }
+        notes += "time_widget_event_save_invoked=$saved"
+        return saved
+    }
+
+    // Android input gestures reposition actual launcher widgets, not pixels.
+    private fun dragLauncherWidget(
+        fromX: Float, fromY: Float, toX: Float, toY: Float,
+    ): Boolean {
+        val automation = instrumentation.uiAutomation
+        val downTime = SystemClock.uptimeMillis()
+        fun send(action: Int, x: Float, y: Float): Boolean {
+            val event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action, x, y, 0)
+            return try {
+                automation.injectInputEvent(event, true)
+            } finally {
+                event.recycle()
+            }
+        }
+        var ok = send(MotionEvent.ACTION_DOWN, fromX, fromY)
+        SystemClock.sleep(850)
+        for (step in 1..18) {
+            val f = step.toFloat() / 18f
+            ok = send(
+                MotionEvent.ACTION_MOVE,
+                fromX + (toX - fromX) * f,
+                fromY + (toY - fromY) * f,
+            ) && ok
+            SystemClock.sleep(45)
+        }
+        ok = send(MotionEvent.ACTION_UP, toX, toY) && ok
+        SystemClock.sleep(850)
+        return ok
     }
 
     private fun requestLauncherWidget(
@@ -251,25 +329,8 @@ class ReleaseScreenshotReviewInstrumentedTest {
             notes += "pin_approved_${provider.shortClassName}=$approved"
             if (!approved) return null
             if (timed) {
-                var nativeConfig = false
-                repeat(18) {
-                    if (!nativeConfig) {
-                        instrumentation.runOnMainSync {
-                            nativeConfig = ActivityLifecycleMonitorRegistry.getInstance()
-                                .getActivitiesInStage(Stage.RESUMED)
-                                .any { it is TimeWidgetConfigActivity }
-                        }
-                        if (!nativeConfig) SystemClock.sleep(400)
-                    }
-                }
-                notes += "native_time_config_resumed=$nativeConfig"
-                if (!nativeConfig) return null
-                val selected = clickLauncherLabel(listOf(event.title), exact = false, notes = notes)
-                notes += "time_event_selected=$selected"
-                if (!selected) return null
-                val saved = clickLauncherLabel(listOf("save"), exact = true, notes = notes)
-                notes += "time_config_saved=$saved"
-                if (!saved) return null
+                // Launcher may add a placeholder before opening configuration.
+                notes += "time_requires_real_launcher_configuration=true"
             } else {
                 notes += "classic_uses_product_pin_callback=true"
             }
