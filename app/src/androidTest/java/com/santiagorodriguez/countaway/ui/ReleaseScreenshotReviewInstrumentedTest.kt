@@ -383,6 +383,11 @@ class ReleaseScreenshotReviewInstrumentedTest {
             "Store captures are isolated from behavioral instrumentation",
             InstrumentationRegistry.getArguments().getString("countawayScreenshotReview") == "true",
         )
+        val candidatePackage = app.packageManager.getPackageInfo(app.packageName, 0)
+        val candidateVersion = requireNotNull(candidatePackage.versionName) {
+            "Installed candidate has no versionName"
+        }
+        val candidateVersionCode = candidatePackage.longVersionCode
         val previous = (repository.loadResult() as CountdownLoadResult.Success).events
         val oldDefaults = defaults.get()
         val oldTheme = prefs.getString("theme", null)
@@ -499,9 +504,11 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 drain()
                 scenario.onActivity { activity ->
                     val version = activity.packageManager.getPackageInfo(activity.packageName, 0).versionName
-                    assertEquals("1.2.5", version)
-                    assertTrue(activity.findViewById<android.widget.TextView>(R.id.versionText)
-                        .text.toString().contains("1.2.5"))
+                    assertEquals(candidateVersion, version)
+                    assertEquals(
+                        activity.getString(R.string.about_version_compact, candidateVersion),
+                        activity.findViewById<android.widget.TextView>(R.id.versionText).text.toString(),
+                    )
                     prepare(activity.window.decorView)
                     assertEntirelyVisible(activity.findViewById(R.id.aboutAuthorCredit),
                         "About author/footer")
@@ -509,7 +516,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
                         "About privacy link")
                 }
                 SystemClock.sleep(3_000)
-                capture("4-about-v125")
+                capture("4-about")
             }
 
             // The v1.2.4 third capture was the REAL pin-style chooser, not the
@@ -584,7 +591,8 @@ class ReleaseScreenshotReviewInstrumentedTest {
             }
 
             File(app.filesDir, "layout-evidence/release-review/REVIEW_ONLY.txt").writeText(
-                "versionName=1.2.5\nversionCode=14\nsource=real Android API36 UI at 1080x1920, density=280\n" +
+                "versionName=$candidateVersion\nversionCode=$candidateVersionCode\n" +
+                "source=real Android API36 UI at 1080x1920, density=280\n" +
                 "status=UNAPPROVED; no cropping, editing, or pixel reconstruction\n" +
                 "slots=1 dark Home; 2 unsaved timed-event copy draft; 3 classic pin-style chooser; " +
                 "4 About; 5 light Home; 6 time-widget configuration ALTERNATIVE, NOT launcher\n" +
@@ -687,7 +695,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream))
             }
             // Preserve original failing evidence before enforcing color fidelity.
-            if (name == "3-classic-widget-style" || name == "4-about-v125") {
+            if (name == "3-classic-widget-style" || name == "4-about") {
                 val actual = bitmap.getPixel(10, 700)
                 val expected = Color.rgb(6, 17, 38)
                 File(app.filesDir, "layout-evidence/release-review/DARK_CAPTURE_BACKDROP.txt")
