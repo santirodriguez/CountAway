@@ -7,5 +7,5 @@ internal object AutoBackupRetention {
     fun stale(copies: List<AutoBackupStore.OwnedCopy>): List<AutoBackupStore.OwnedCopy> =
         copies.sortedWith(compareByDescending<AutoBackupStore.OwnedCopy> { it.createdAt }
             .thenByDescending { it.uri })
-            .drop(MAX_VERIFIED_COPIES)
+            .drop(MAX_VERIFIED_COPIES).asReversed()
 }
