@@ -146,4 +146,37 @@
     <string name="event_reset_failed">No s’ha pogut reiniciar el comptador. Torna-ho a provar.</string>
     <string name="event_reset_undo_failed">No s’ha pogut desfer. Torna-ho a provar.</string>
     <string name="event_reset_undone">Reinici desfet.</string>
+
+    <string name="auto_backup_title">Còpies automàtiques</string>
+    <string name="auto_backup_on">Activades · verificades</string>
+    <string name="auto_backup_off">Desactivades</string>
+    <string name="auto_backup_back">Torna a Sobre l’app</string>
+    <string name="auto_backup_description">Conserva còpies recuperables dels esdeveniments. No es desa res automàticament fins que les actives i es verifica la primera còpia.</string>
+    <string name="auto_backup_destination_title">On es desen</string>
+    <string name="auto_backup_default">Utilitza Descàrregues/CountAway</string>
+    <string name="auto_backup_default_note">La carpeta local recomanada. A Android 8–9, tria una carpeta CountAway amb el selector del sistema.</string>
+    <string name="auto_backup_choose">Tria una altra carpeta</string>
+    <string name="auto_backup_choose_note">Tu controles la ubicació. Alguns proveïdors poden sincronitzar els fitxers pel seu compte.</string>
+    <string name="auto_backup_now">Fes una còpia ara</string>
+    <string name="auto_backup_disable">Desactiva les còpies automàtiques</string>
+    <string name="auto_backup_disable_title">Vols desactivar les còpies?</string>
+    <string name="auto_backup_disable_message">S’aturaran les còpies futures. Les existents no s’esborraran.</string>
+    <string name="auto_backup_none">Encara no hi ha cap carpeta de còpies automàtiques.</string>
+    <string name="auto_backup_current_location">Carpeta: %1$s</string>
+    <string name="auto_backup_last_success">Última verificació: %1$s</string>
+    <string name="auto_backup_last_attempt">Últim intent: %1$s</string>
+    <string name="auto_backup_never">Encara no hi ha cap còpia automàtica verificada.</string>
+    <string name="auto_backup_verified">Còpia desada i verificada.</string>
+    <string name="auto_backup_unchanged">Còpia verificada. No hi ha canvis des de l’anterior.</string>
+    <string name="auto_backup_working">Verificant i desant els esdeveniments…</string>
+    <string name="auto_backup_permission_failed">La carpeta no ha concedit permisos de lectura i escriptura. Tria una altra ubicació.</string>
+    <string name="auto_backup_provider_failed">No s’ha pogut verificar la còpia. Revisa la carpeta i torna-ho a provar.</string>
+    <string name="auto_backup_settings_failed">Hi ha un problema amb la configuració. No s’ha esborrat cap fitxer existent.</string>
+    <string name="auto_backup_cleanup_warning">No s’han pogut eliminar algunes còpies antigues de manera segura. Les verificades continuen disponibles.</string>
+    <string name="auto_backup_schedule_warning">Android no ha pogut programar les còpies. Fes una còpia ara i torna-ho a provar.</string>
+    <string name="auto_backup_privacy">Les còpies són fitxers JSON sense xifrar amb els esdeveniments, no els ginys ni els ajustos. Mantén la carpeta privada. CountAway no accedeix a Internet; un proveïdor extern pot sincronitzar fitxers pel seu compte. Android decideix quan executar tasques en segon pla, sense garantir cap hora diària. Restaura des d’«Importa la còpia» a Sobre l’app. Desactivar-les no esborra fitxers.</string>
+    <string name="auto_backup_legacy_title">Tria una carpeta</string>
+    <string name="auto_backup_legacy_message">A Android 8 o 9, tria o crea una carpeta CountAway, preferiblement a Descàrregues. Així no calen permisos generals d’emmagatzematge.</string>
+    <string name="auto_backup_chosen_folder">Carpeta triada</string>
+    <string name="auto_backup_legacy_label">Carpeta triada: %1$s</string>
 </resources>

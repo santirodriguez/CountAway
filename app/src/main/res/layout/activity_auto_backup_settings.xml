@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/autoBackupRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:fillViewport="true">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+        <TextView
+            android:id="@+id/autoBackupBack"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:minWidth="48dp"
+            android:background="@drawable/icon_button"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:contentDescription="@string/auto_backup_back"
+            android:text="‹"
+            android:textSize="28sp"
+            android:textColor="@color/foreground" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/auto_backup_title"
+            android:textSize="23sp"
+            android:textColor="@color/foreground" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/auto_backup_description"
+            android:textSize="14sp"
+            android:textColor="@color/secondary_text" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/surface_card"
+            android:orientation="vertical"
+            android:padding="18dp">
+            <TextView
+                android:id="@+id/autoBackupStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="@string/auto_backup_off"
+                android:textSize="17sp"
+                android:textColor="@color/foreground" />
+            <TextView
+                android:id="@+id/autoBackupDestination"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textSize="13sp"
+                android:text="@string/auto_backup_none"
+                android:textColor="@color/secondary_text" />
+            <TextView
+                android:id="@+id/autoBackupLastVerified"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/auto_backup_never"
+                android:textSize="13sp"
+                android:textColor="@color/secondary_text" />
+            <TextView
+                android:id="@+id/autoBackupLastAttempt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textSize="12sp"
+                android:textColor="@color/secondary_text" />
+            <TextView
+                android:id="@+id/autoBackupError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:accessibilityLiveRegion="polite"
+                android:textSize="13sp"
+                android:textColor="@color/danger"
+                android:visibility="gone" />
+            <TextView
+                android:id="@+id/autoBackupProgress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:accessibilityLiveRegion="polite"
+                android:text="@string/auto_backup_working"
+                android:textSize="13sp"
+                android:textColor="@color/accent_text"
+                android:visibility="gone" />
+        </LinearLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="@string/auto_backup_destination_title"
+            android:textColor="@color/foreground"
+            android:textSize="16sp" />
+        <Button
+            android:id="@+id/autoBackupDefault"
+            style="@style/Widget.CountAway.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/auto_backup_default" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/auto_backup_default_note"
+            android:textSize="12sp"
+            android:textColor="@color/secondary_text" />
+        <Button
+            android:id="@+id/autoBackupChoose"
+            style="@style/Widget.CountAway.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/auto_backup_choose" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/auto_backup_choose_note"
+            android:textSize="12sp"
+            android:textColor="@color/secondary_text" />
+        <Button
+            android:id="@+id/autoBackupNow"
+            style="@style/Widget.CountAway.Button.Primary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/auto_backup_now"
+            android:visibility="gone" />
+        <Button
+            android:id="@+id/autoBackupDisable"
+            style="@style/Widget.CountAway.Button.Destructive"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/auto_backup_disable"
+            android:visibility="gone" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/auto_backup_privacy"
+            android:textColor="@color/secondary_text"
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

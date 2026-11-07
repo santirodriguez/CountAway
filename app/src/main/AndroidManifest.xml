@@ -30,6 +30,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.AutoBackupSettingsActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.AboutActivity"
             android:exported="false" />
 
