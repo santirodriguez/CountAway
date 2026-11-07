@@ -135,4 +135,15 @@
     <string name="about_donate_note">Si això t’ha estalviat mirar el calendari dotze vegades al dia, pots col·laborar amb la noble causa de continuar simplificant coses que no haurien de ser complicades.</string>
     <string name="language_follow_system">Idioma del dispositiu</string>
     <string name="theme_system_current">Actualment: %1$s</string>
+
+    <string name="event_action_reset_today">Reinicia a avui</string>
+    <string name="event_reset_confirm_title">Vols reiniciar el comptador?</string>
+    <string name="event_reset_confirm_message">Vols canviar «%1$s» del %2$s al %3$s?</string>
+    <string name="event_reset_confirm_action">Reinicia</string>
+    <string name="event_reset_undo_message">Reiniciat a avui: %1$s</string>
+    <string name="event_reset_undo_action">Desfés</string>
+    <string name="event_reset_dismiss">Tanca l’avís de reinici</string>
+    <string name="event_reset_failed">No s’ha pogut reiniciar el comptador. Torna-ho a provar.</string>
+    <string name="event_reset_undo_failed">No s’ha pogut desfer. Torna-ho a provar.</string>
+    <string name="event_reset_undone">Reinici desfet.</string>
 </resources>

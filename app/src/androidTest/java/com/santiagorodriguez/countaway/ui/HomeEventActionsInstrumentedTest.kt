@@ -45,6 +45,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -223,6 +225,11 @@ class HomeEventActionsInstrumentedTest {
         val height = View.MeasureSpec.makeMeasureSpec(dp(theme, 235), View.MeasureSpec.EXACTLY)
         popup.measure(width, height)
         popup.layout(0, 0, popup.measuredWidth, popup.measuredHeight)
+        val reset = popup.findViewById<View>(R.id.home_event_reset_today)
+        reset.visibility = View.VISIBLE
+        val edit = popup.findViewById<View>(R.id.home_event_edit)
+        val duplicate = popup.findViewById<View>(R.id.home_event_duplicate)
+        assertTrue("Reset must follow Edit and precede Duplicate", edit.top < reset.top && reset.top < duplicate.top)
         val share = popup.findViewById<View>(R.id.home_event_share)
         val delete = popup.findViewById<View>(R.id.home_event_delete)
         assertTrue("Share should be above Delete", share.top < delete.top)
@@ -310,6 +317,114 @@ class HomeEventActionsInstrumentedTest {
         }
         drain()
         assertArrayEquals(bytes, File(context.filesDir, "countaways.json").readBytes())
+    }
+
+
+    @Test fun dateOnlyCountUpResetCanBeCancelledThenUndoneAfterRotation() = isolated {
+        val today = CountdownTime.snapshot().today
+        val source = fixture().copy(countMode = CountMode.COUNT_UP, date = today.minusDays(45))
+        repository.save(listOf(source))
+        val originalBytes = File(context.filesDir, "countaways.json").readBytes()
+        ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
+            drain()
+            scenario.onActivity { actionButton(it).performClick() }
+            onView(withId(R.id.home_event_reset_today)).check(matches(isDisplayed()))
+            onView(withId(R.id.home_event_reset_today)).check { view, error ->
+                if (error != null) throw error
+                val edit = view.rootView.findViewById<View>(R.id.home_event_edit)
+                val duplicate = view.rootView.findViewById<View>(R.id.home_event_duplicate)
+                assertTrue("Reset must sit between Edit and Duplicate", edit.top < view.top && view.top < duplicate.top)
+                capture(view.rootView.findViewById(R.id.eventActionsPopup), "reset-menu")
+            }
+            onView(withId(R.id.home_event_reset_today)).perform(click())
+            onView(withText(context.getString(R.string.event_reset_confirm_title))).inRoot(isDialog()).check(matches(isDisplayed()))
+            onView(withId(android.R.id.button2)).inRoot(isDialog()).perform(click())
+            drain()
+            assertArrayEquals("Cancel must not write", originalBytes, File(context.filesDir, "countaways.json").readBytes())
+
+            scenario.onActivity { actionButton(it).performClick() }
+            onView(withId(R.id.home_event_reset_today)).perform(click())
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            drain()
+            val reset = events().single()
+            assertEquals(source.copy(date = CountdownTime.snapshot().today), reset)
+            onView(withId(R.id.homeResetUndoBar)).check(matches(isDisplayed()))
+            onView(withId(R.id.homeResetUndoBar)).check { view, error ->
+                if (error != null) throw error
+                capture(view, "reset-undo")
+            }
+
+            scenario.recreate()
+            drain()
+            onView(withId(R.id.homeResetUndoBar)).check(matches(isDisplayed()))
+            onView(withId(R.id.homeResetUndoButton)).perform(click())
+            drain()
+            assertEquals("Undo must restore all prior fields", listOf(source), events())
+            onView(withId(R.id.homeResetUndoBar)).check { view, error ->
+                if (error != null) throw error
+                assertEquals(View.GONE, view.visibility)
+            }
+        }
+    }
+
+    @Test fun onlyDateOnlyCountUpEventsReceiveResetAction() = isolated {
+        val today = CountdownTime.snapshot().today
+        val base = fixture().copy(date = today.minusDays(7))
+        val invalid = listOf(
+            base.copy(countMode = CountMode.COUNT_DOWN),
+            base.copy(countMode = CountMode.COUNT_UP, date = today),
+            base.copy(countMode = CountMode.COUNT_UP,
+                eventTime = LocalTime.of(9, 30), eventZone = ZoneId.systemDefault()),
+            base.copy(countMode = CountMode.COUNT_DOWN, repeatRule = RepeatRule.MONTHLY),
+        )
+        for (source in invalid) {
+            repository.save(listOf(source))
+            ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
+                drain()
+                scenario.onActivity { actionButton(it).performClick() }
+                onView(withId(R.id.home_event_reset_today)).check { view, error ->
+                    if (error != null) throw error
+                    assertEquals("Unexpected reset for unsupported event", View.GONE, view.visibility)
+                }
+            }
+        }
+    }
+
+    @Test fun staleResetAndStaleUndoCannotOverwriteInterveningEdits() = isolated {
+        val today = CountdownTime.snapshot().today
+        val source = fixture().copy(countMode = CountMode.COUNT_UP, date = today.minusDays(30))
+        repository.save(listOf(source))
+        ActivityScenario.launch<MainActivity>(Intent(context, MainActivity::class.java)).use { scenario ->
+            drain()
+            scenario.onActivity { actionButton(it).performClick() }
+            onView(withId(R.id.home_event_reset_today)).perform(click())
+            val concurrent = source.copy(title = "Edited elsewhere")
+            repository.save(listOf(concurrent))
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            drain()
+            assertEquals(listOf(concurrent), events())
+            onView(withId(R.id.homeResetUndoBar)).check { view, error ->
+                if (error != null) throw error
+                assertEquals(View.GONE, view.visibility)
+            }
+
+            // Refresh the row from disk before selecting a new reset operation.
+            scenario.onActivity { actionButton(it).performClick() }
+            onView(withId(R.id.home_event_reset_today)).perform(click())
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            drain()
+            val reset = concurrent.copy(date = CountdownTime.snapshot().today)
+            assertEquals(listOf(reset), events())
+            val changedAgain = reset.copy(title = "A later edit")
+            repository.save(listOf(changedAgain))
+            onView(withId(R.id.homeResetUndoButton)).perform(click())
+            drain()
+            assertEquals("Stale Undo must not overwrite newer storage", listOf(changedAgain), events())
+            onView(withId(R.id.homeResetUndoBar)).check { view, error ->
+                if (error != null) throw error
+                assertEquals(View.GONE, view.visibility)
+            }
+        }
     }
 
     private fun actionButton(activity: MainActivity): View =

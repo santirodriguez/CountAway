@@ -143,4 +143,15 @@
     <string name="about_donate_note">If this saved you from checking the calendar twelve times a day, you can support the noble cause of keeping simple things simple.</string>
     <string name="language_follow_system">Use system language</string>
     <string name="theme_system_current">Currently: %1$s</string>
+
+    <string name="event_action_reset_today">Reset to today</string>
+    <string name="event_reset_confirm_title">Reset counter?</string>
+    <string name="event_reset_confirm_message">Change %1$s from %2$s to %3$s?</string>
+    <string name="event_reset_confirm_action">Reset</string>
+    <string name="event_reset_undo_message">Reset to today: %1$s</string>
+    <string name="event_reset_undo_action">Undo</string>
+    <string name="event_reset_dismiss">Dismiss reset notice</string>
+    <string name="event_reset_failed">Could not reset this counter. Try again.</string>
+    <string name="event_reset_undo_failed">Could not undo. Try again.</string>
+    <string name="event_reset_undone">Reset undone.</string>
 </resources>

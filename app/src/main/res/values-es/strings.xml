@@ -135,4 +135,15 @@
     <string name="about_donate_note">Si esto te ahorró mirar el calendario doce veces por día, podés colaborar con la noble causa de seguir simplificando cosas que no deberían ser complicadas.</string>
     <string name="language_follow_system">Usar idioma del dispositivo</string>
     <string name="theme_system_current">Actualmente: %1$s</string>
+
+    <string name="event_action_reset_today">Reiniciar hoy</string>
+    <string name="event_reset_confirm_title">¿Reiniciar contador?</string>
+    <string name="event_reset_confirm_message">¿Cambiar «%1$s» del %2$s al %3$s?</string>
+    <string name="event_reset_confirm_action">Reiniciar</string>
+    <string name="event_reset_undo_message">Reiniciado hoy: %1$s</string>
+    <string name="event_reset_undo_action">Deshacer</string>
+    <string name="event_reset_dismiss">Cerrar aviso de reinicio</string>
+    <string name="event_reset_failed">No se pudo reiniciar el contador. Intentá de nuevo.</string>
+    <string name="event_reset_undo_failed">No se pudo deshacer. Intentá de nuevo.</string>
+    <string name="event_reset_undone">Reinicio deshecho.</string>
 </resources>

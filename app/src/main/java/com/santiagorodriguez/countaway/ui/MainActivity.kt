@@ -186,6 +186,7 @@ class MainActivity : BaseActivity() {
     private fun renderData(result: CountdownLoadResult, today: LocalDate) {
         when (result) {
             is CountdownLoadResult.Success -> {
+                eventActions.reconcileUndo(result.events)
                 adapter.submit(CountdownEventOrder.sortedForDisplay(result.events, today), today)
                 scheduleClockTick()
                 emptyStateIcon.visibility = View.VISIBLE

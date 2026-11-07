@@ -148,6 +148,51 @@
         </ScrollView>
     </FrameLayout>
 
+    <LinearLayout
+        android:id="@+id/homeResetUndoBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:accessibilityLiveRegion="polite"
+        android:background="@drawable/surface_card"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="6dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/homeResetUndoMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/foreground"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/homeResetUndoButton"
+            style="@style/Widget.CountAway.SmallAction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:minWidth="66dp"
+            android:text="@string/event_reset_undo_action" />
+
+        <Button
+            android:id="@+id/homeResetUndoDismiss"
+            style="@style/Widget.CountAway.Dialog.Button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="2dp"
+            android:contentDescription="@string/event_reset_dismiss"
+            android:minWidth="48dp"
+            android:text="×"
+            android:textColor="@color/secondary_text"
+            android:textSize="21sp" />
+    </LinearLayout>
+
     <Button
         android:id="@+id/addCountdownButton"
         style="@style/Widget.CountAway.Button.Primary"
