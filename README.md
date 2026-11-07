@@ -74,20 +74,28 @@ CountAway skips all that. It counts the days and leaves you alone.
 
 ## Screenshots
 
-<p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" alt="CountAway Home in dark mode with countdown and count-up events" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="CountAway event editor with a timed event" width="46%" />
-</p>
+Six genuine CountAway 1.2.5 screenshots. Select any image to view it in full size.
 
-<p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="CountAway classic day-widget style configuration" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway About screen with version information and local backups" width="46%" />
-</p>
+<table>
+<tr>
+<td align="center" valign="bottom"><a href="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png"><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" alt="CountAway Home in dark mode with countdown and count-up events" height="265" /></a></td>
+<td align="center" valign="bottom"><a href="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png"><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="CountAway event editor with a timed event" height="265" /></a></td>
+<td align="center" valign="bottom"><a href="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png"><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="CountAway classic day-widget style configuration" height="265" /></a></td>
+<td align="center" valign="bottom"><a href="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png"><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway About screen with version information and local backups" height="265" /></a></td>
+<td align="center" valign="bottom"><a href="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png"><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" alt="CountAway Home in light mode" height="265" /></a></td>
+<td align="center" valign="bottom"><a href="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png"><img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" alt="CountAway classic and live-hours widgets on an Android home screen" height="265" /></a></td>
+</tr>
+<tr>
+<td align="center"><strong>Home</strong></td>
+<td align="center"><strong>Timed editor</strong></td>
+<td align="center"><strong>Widget styles</strong></td>
+<td align="center"><strong>About</strong></td>
+<td align="center"><strong>Light mode</strong></td>
+<td align="center"><strong>Home widgets</strong></td>
+</tr>
+</table>
 
-<p align="center">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" alt="CountAway Home in light mode" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" alt="CountAway classic and live-hours widgets on an Android home screen" width="46%" />
-</p>
+<p align="center"><sub>Original CountAway 1.2.5 Android captures · Unmodified screenshot pixels</sub></p>
 
 ## Privacy, by design
 
@@ -109,13 +117,20 @@ Requires **JDK 17** and **Android SDK 36**.
 
 Maintainer signing and release steps are in [`docs/RELEASING.md`](docs/RELEASING.md), with Google Play preparation in [`docs/PLAY.md`](docs/PLAY.md) and F-Droid notes in [`docs/FDROID.md`](docs/FDROID.md).
 
-## Support
+---
 
-CountAway is a [Caja Personal](https://cajapersonal.org/) project.
+## Support CountAway
 
-Official site: [countaway.cajapersonal.org](https://countaway.cajapersonal.org/). [Privacy policy](https://countaway.cajapersonal.org/privacy/).
+<p align="center">
+  A <a href="https://cajapersonal.org/"><strong>Caja Personal</strong></a> project.<br />
+  Free, open source, and focused on the dates that matter.
+</p>
 
-<a href="https://cajapersonal.org/donate/"><img src="docs/assets/badges/donate.svg" alt="Donate" height="46" /></a>
+<p align="center">
+  <a href="https://cajapersonal.org/donate/"><img src="docs/assets/badges/donate.svg" alt="Support Caja Personal — Donate" height="46" /></a>
+</p>
+
+<p align="center"><sub><a href="https://countaway.cajapersonal.org/">Website</a> · <a href="https://countaway.cajapersonal.org/privacy/">Privacy</a> · <a href="LICENSE">Apache License 2.0</a></sub></p>
 
 ## License
 
