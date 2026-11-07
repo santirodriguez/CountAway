@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject screenshots reused byte-for-byte from CountAway's public 1.2.3 release.
+"""Reject screenshots reused byte-for-byte from CountAway's prior public releases.
 
 The format and dimensions are checked separately by prepare-play-assets.py.
 This check only proves that older files were replaced, not that a capture is
@@ -12,9 +12,18 @@ import hashlib
 from pathlib import Path
 
 SCREENSHOT_DIR = Path("fastlane/metadata/android/en-US/images/phoneScreenshots")
-PUBLISHED_BASELINE_VERSION = "1.2.3"
-# Git blob object IDs for the six screenshots at the immutable public v1.2.3 tag.
+PUBLISHED_BASELINE_VERSION = "1.2.4"
+# Pinned to tag v1.2.4 (fb0cd3f); no current-release image content is changed.
 PUBLISHED_SCREENSHOT_BLOBS = {
+    "1.png": "6fc1389787d2fa2e772632533d29a3788d24fffc",
+    "2.png": "b11e5a48c7b16eb83b036a5713de4777b3b0d520",
+    "3.png": "16dd7b0fbdcf72fd06d81f703fe5ef042e6744d9",
+    "4.png": "989681fc28a52f1ebaa717d098ad1e08307daaab",
+    "5.png": "c120c65b7ed9b9f49b39f54a441afe386008549c",
+    "6.png": "359d7e8ed4412e07ae9b9c047f2f6af9aa5f0212",
+}
+# Preserve the already-tested pre-v1.2.4 freshness boundary as well.
+HISTORICAL_V123_BLOBS = {
     "1.png": "621de701835518c2c7d3804db4dc8dfa2a536bca",
     "2.png": "0a0788b6d58032e5b3709efdc800a22e68b8fb9d",
     "3.png": "aab7edb088dd52ac74eb5965e379a66c58016e90",
@@ -34,26 +43,33 @@ def verify_fresh_screenshots(
     version: str,
     directory: Path = SCREENSHOT_DIR,
     baseline: dict[str, str] = PUBLISHED_SCREENSHOT_BLOBS,
+    previous_baseline: dict[str, str] = HISTORICAL_V123_BLOBS,
 ) -> None:
-    missing = [name for name in baseline if not (directory / name).is_file()]
+    names = tuple(f"{index}.png" for index in range(1, 7))
+    missing = [name for name in names if not (directory / name).is_file()]
     if missing:
         raise ValueError("Missing release screenshot(s): " + ", ".join(missing))
 
-    # Historical revalidation of v1.2.3 must not be retroactively blocked.
-    if version == PUBLISHED_BASELINE_VERSION:
+    # Validate past releases only against predecessors, never their own pixels.
+    if version == "1.2.3":
         return
+    checks = [("1.2.3", previous_baseline)]
+    if version != PUBLISHED_BASELINE_VERSION:
+        checks.append((PUBLISHED_BASELINE_VERSION, baseline))
 
-    # Published screenshots remain stale even if their filenames or order change.
-    published_ids = set(baseline.values())
-    stale = [name for name in baseline
-             if git_blob_id(directory / name) in published_ids]
-    if stale:
-        raise ValueError(
-            f"CountAway {version} still reuses public {PUBLISHED_BASELINE_VERSION} screenshot(s): "
-            + ", ".join(stale)
-            + ". Capture all six screens from the current release candidate, "
-              "including its real About/version screen, and obtain visual approval."
-        )
+    actual = {name: git_blob_id(directory / name) for name in names}
+    for old_version, old_blobs in checks:
+        if set(old_blobs) != set(names) or len(set(old_blobs.values())) != 6:
+            raise ValueError(f"Unusable immutable screenshot baseline: {old_version}")
+        stale = [name for name, digest in actual.items()
+                 if digest in set(old_blobs.values())]
+        if stale:
+            raise ValueError(
+                f"CountAway {version} still reuses public {old_version} screenshot(s): "
+                + ", ".join(stale)
+                + ". Capture all six screens from the current release candidate, "
+                  "including its real About/version screen, and obtain visual approval."
+            )
 
 
 def main() -> None:

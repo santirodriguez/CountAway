@@ -1,0 +1,1 @@
+Las horas respetan el formato de 12/24 horas del teléfono. Mejoramos las vistas previas y los recordatorios recurrentes. El widget de horas ofrece estilos traducidos, una selección más segura y un formato compacto de 2×1 cuando el lanzador lo permite.

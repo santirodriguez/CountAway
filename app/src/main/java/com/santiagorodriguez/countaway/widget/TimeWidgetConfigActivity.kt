@@ -14,7 +14,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
-import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
+import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.CountdownIo
@@ -24,11 +24,10 @@ import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.BaseActivity
 import com.santiagorodriguez.countaway.ui.EditorActivity
+import com.santiagorodriguez.countaway.ui.EventTimeText
 import com.santiagorodriguez.countaway.ui.InsetUtils
 import com.santiagorodriguez.countaway.ui.SimpleItemSelectedListener
 import com.santiagorodriguez.countaway.ui.TemporalInvalidationController
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 
 /** Independent fixed-event configuration. Never offers classic widget NEXT semantics. */
 class TimeWidgetConfigActivity : BaseActivity() {
@@ -45,6 +44,8 @@ class TimeWidgetConfigActivity : BaseActivity() {
     private lateinit var previewContainer: FrameLayout
     private lateinit var temporal: TemporalInvalidationController
     private var events: List<CountdownEvent> = emptyList()
+    private var choices: List<TimeWidgetChoice> = emptyList()
+    private var displayedSnapshot = CountdownTime.snapshot()
     private var selectedId: String? = null
     private var generation = 0
     private var loading = false
@@ -63,6 +64,9 @@ class TimeWidgetConfigActivity : BaseActivity() {
         InsetUtils.applySystemBarPadding(findViewById(R.id.widgetConfigRoot))
         repository = CountdownRepository(this)
         temporal = TemporalInvalidationController(this) { reload() }
+        temporal.setNextPresentationBoundary { snapshot ->
+            TimeWidgetChoiceResolver.nextRecurringBoundary(choices, snapshot)
+        }
         eventList = findViewById(R.id.widgetEventList)
         eventList.choiceMode = ListView.CHOICE_MODE_SINGLE
         header = layoutInflater.inflate(R.layout.time_widget_config_header, eventList, false)
@@ -75,20 +79,12 @@ class TimeWidgetConfigActivity : BaseActivity() {
         saveButton = footer.findViewById(R.id.widgetSaveButton)
         preview = footer.findViewById(R.id.widgetPreviewFrame)
         previewContainer = footer.findViewById(R.id.widgetPreviewContainer)
-        val backgrounds = listOf(
-            R.string.widget_background_classic, R.string.widget_background_mist,
-            R.string.widget_background_horizon, R.string.widget_background_forest,
-            R.string.widget_background_sunset, R.string.widget_background_pulse,
-            R.string.widget_background_breeze, R.string.widget_background_ember,
-            R.string.widget_background_six,
-        )
         appearanceSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item,
-            listOf(R.string.widget_appearance_system, R.string.widget_appearance_light,
-                R.string.widget_appearance_dark).map(::getString)).apply {
+            WidgetAppearance.entries.map { getString(WidgetStyleLabels.appearance(it)) }).apply {
                 setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
         backgroundSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item,
-            backgrounds.map(::getString)).apply {
+            WidgetBackground.entries.map { getString(WidgetStyleLabels.background(it)) }).apply {
                 setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
         val saved = WidgetPreferences(applicationContext).get(widgetId)
@@ -110,11 +106,15 @@ class TimeWidgetConfigActivity : BaseActivity() {
             val index = position - eventList.headerViewsCount
             if (index !in events.indices) return@setOnItemClickListener
             selectedId = events[index].id
-            saveButton.isEnabled = true
+            saveButton.isEnabled = TimeWidgetChoiceResolver.selectedId(choices, selectedId) != null
             refreshPreview()
         }
-        footer.findViewById<Button>(R.id.widgetCreateButton).setOnClickListener {
-            startActivity(Intent(this, EditorActivity::class.java))
+        footer.findViewById<Button>(R.id.widgetCreateButton).apply {
+            setText(R.string.time_widget_create_event_with_time)
+            setOnClickListener {
+                // The normal editor still requires the user to choose a time.
+                startActivity(Intent(this@TimeWidgetConfigActivity, EditorActivity::class.java))
+            }
         }
         saveButton.setOnClickListener { save() }
         saveButton.isEnabled = false
@@ -153,37 +153,53 @@ class TimeWidgetConfigActivity : BaseActivity() {
             task = { repository.loadResult() },
             onComplete = { result ->
                 if (current != generation || isFinishing || isDestroyed) return@submit
-                val load = result.getOrElse { CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT) }
-                loading = false
-                if (load is CountdownLoadResult.Success) {
-                    events = CountdownEventOrder.sortedForDisplay(load.events, CountdownTime.snapshot().today)
-                        .filter { it.eventTime != null && it.eventZone != null }
-                    selectedId = EventTransport.resolve(events, selectedId)?.id
-                    val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-                        .withLocale(resources.configuration.locales[0])
-                    val choices = events.map { event ->
-                        EventTransport.preview(event.title) + " · " + event.date.format(formatter) +
-                            " · " + event.eventTime.toString()
-                    }
-                    eventList.adapter = ArrayAdapter(this, R.layout.item_widget_event, android.R.id.text1, choices)
-                    emptyState.visibility = if (events.isEmpty()) View.VISIBLE else View.GONE
-                    emptyState.setText(R.string.time_widget_no_events)
-                    val index = events.indexOfFirst { it.id == selectedId }
-                    eventList.clearChoices()
-                    if (index >= 0) eventList.setItemChecked(index + eventList.headerViewsCount, true)
-                    saveButton.isEnabled = index >= 0
-                } else {
-                    events = emptyList()
-                    emptyState.visibility = View.VISIBLE
-                    emptyState.setText(if ((load as CountdownLoadResult.Failure).problem ==
-                        CountdownDataProblem.UNSUPPORTED_SCHEMA) R.string.widget_data_newer_version
-                        else R.string.widget_data_error)
-                    eventList.adapter = ArrayAdapter<String>(this, R.layout.item_widget_event,
-                        android.R.id.text1, emptyList())
-                }
-                refreshPreview()
+                // One actual instant controls ordering, displayed occurrence and preview.
+                val snapshot = CountdownTime.snapshot()
+                showLoaded(
+                    result.getOrElse { CountdownLoadResult.Failure(CountdownDataProblem.CORRUPT) },
+                    snapshot,
+                )
             },
         )
+    }
+
+    private fun showLoaded(load: CountdownLoadResult, snapshot: CountdownTimeSnapshot) {
+        loading = false
+        displayedSnapshot = snapshot
+        if (load is CountdownLoadResult.Success) {
+            choices = TimeWidgetChoiceResolver.choices(load.events, snapshot)
+            events = choices.map { it.event }
+            selectedId = TimeWidgetChoiceResolver.selectedId(choices, selectedId)
+            val items = choices.map { choice ->
+                val target = choice.target
+                val ambiguous = target.zone.rules.getValidOffsets(target.toLocalDateTime()).size > 1
+                val zone = if (target.zone != snapshot.zone || ambiguous) {
+                    " · " + target.zone.id + (if (ambiguous) " (${target.offset})" else "")
+                } else ""
+                EventTransport.preview(choice.event.title) + " · " +
+                    EventTimeText.dateTime(this, target) + zone
+            }
+            eventList.adapter = ArrayAdapter(this, R.layout.item_widget_event, android.R.id.text1, items)
+            emptyState.visibility = if (events.isEmpty()) View.VISIBLE else View.GONE
+            emptyState.setText(R.string.time_widget_no_events)
+            val index = events.indexOfFirst { it.id == selectedId }
+            eventList.clearChoices()
+            if (index >= 0) eventList.setItemChecked(index + eventList.headerViewsCount, true)
+            saveButton.isEnabled = index >= 0
+        } else {
+            val failure = load as CountdownLoadResult.Failure
+            choices = emptyList()
+            events = emptyList()
+            emptyState.visibility = View.VISIBLE
+            emptyState.setText(if (failure.problem == CountdownDataProblem.UNSUPPORTED_SCHEMA)
+                R.string.widget_data_newer_version else R.string.widget_data_error)
+            eventList.adapter = ArrayAdapter<String>(this, R.layout.item_widget_event,
+                android.R.id.text1, emptyList())
+            eventList.clearChoices()
+            saveButton.isEnabled = false
+        }
+        temporal.reschedule(snapshot)
+        refreshPreview()
     }
 
     private fun refreshPreview() {
@@ -197,7 +213,7 @@ class TimeWidgetConfigActivity : BaseActivity() {
         val configuration = WidgetConfiguration(selectedId, appearance, background)
         val event = events.firstOrNull { it.id == selectedId }
         val views = TimeWidgetRenderer.render(
-            this, this, widgetId, configuration, event, null, CountdownTime.snapshot(),
+            this, this, widgetId, configuration, event, null, displayedSnapshot,
             180, 140, hashMapOf(), interactive = false)
         runCatching {
             preview.removeAllViews()
@@ -210,12 +226,13 @@ class TimeWidgetConfigActivity : BaseActivity() {
         }.onFailure { android.util.Log.w("CountAwayTimeWidget", "Preview unavailable", it) }
         footer.findViewById<TextView>(R.id.widgetStyleSummary).text = getString(
             R.string.widget_style_summary,
-            background.storageKey, appearance.storageKey)
+            getString(WidgetStyleLabels.background(background)),
+            getString(WidgetStyleLabels.appearance(appearance)))
     }
 
     private fun save() {
-        val id = selectedId ?: return
-        if (events.none { it.id == id && it.eventTime != null }) return
+        if (loading || !saveButton.isEnabled) return
+        val id = TimeWidgetChoiceResolver.selectedId(choices, selectedId) ?: return
         val manager = AppWidgetManager.getInstance(applicationContext)
         if (!WidgetInstanceValidator.isOwnedBy(manager, widgetId,
                 ComponentName(applicationContext, TimeWidgetProvider::class.java))) {
@@ -223,8 +240,10 @@ class TimeWidgetConfigActivity : BaseActivity() {
             finish()
             return
         }
-        val appearance = WidgetAppearance.entries[appearanceSpinner.selectedItemPosition]
-        val background = WidgetBackground.entries[backgroundSpinner.selectedItemPosition]
+        val appearance = WidgetAppearance.entries.getOrNull(appearanceSpinner.selectedItemPosition)
+            ?: return
+        val background = WidgetBackground.entries.getOrNull(backgroundSpinner.selectedItemPosition)
+            ?: return
         WidgetPreferences(applicationContext).save(widgetId, id, appearance, background,
             WidgetEventSelection.FIXED)
         val appContext = applicationContext

@@ -60,8 +60,8 @@ CountAway skips all that. It counts the days and leaves you alone.
 ## Highlights
 
 - **Count both ways:** count down to future dates or count up from a start date.
-- **Optional event times:** show live hours, minutes, and seconds, or keep counting calendar days.
-- **Two kinds of widgets:** classic day-count widgets and a dedicated live-hours widget for timed events.
+- **Optional event times:** show live hours, minutes, and seconds; event clock labels follow your device's 12/24-hour setting.
+- **Two kinds of widgets:** classic day-count widgets and a dedicated live-hours widget for timed events, with a compact 2×1 option on compatible launchers.
 - **Widget-first:** long-press an event, choose a style, preview it, and add it to Home.
 - **Flexible recurrence:** weekly, monthly, or yearly count-down events.
 - **Nine widget backgrounds:** from clean Classic to Mist, Horizon, Sunset, Ember, Ridge, and more.
@@ -76,12 +76,12 @@ CountAway skips all that. It counts the days and leaves you alone.
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" alt="CountAway Home in dark mode with countdown and count-up events" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="CountAway event editor with an optional Add time control" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" alt="CountAway event editor with a timed event" width="46%" />
 </p>
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" alt="CountAway classic day-widget style configuration" width="46%" />
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway About screen showing version 1.2.4 and local backups" width="46%" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" alt="CountAway About screen with version information and local backups" width="46%" />
 </p>
 
 <p align="center">
@@ -112,6 +112,8 @@ Maintainer signing and release steps are in [`docs/RELEASING.md`](docs/RELEASING
 ## Support
 
 CountAway is a [Caja Personal](https://cajapersonal.org/) project.
+
+Official site: [countaway.cajapersonal.org](https://countaway.cajapersonal.org/). [Privacy policy](https://countaway.cajapersonal.org/privacy/).
 
 <a href="https://cajapersonal.org/donate/"><img src="docs/assets/badges/donate.svg" alt="Donate" height="46" /></a>
 

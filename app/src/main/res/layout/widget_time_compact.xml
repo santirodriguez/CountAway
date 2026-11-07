@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One-cell-height fallback for launchers that actually supply less than 70dp.
+     Keeps the native Chronometer and event identity without truncating a date. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/timeWidgetRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <ImageView
+        android:id="@+id/timeWidgetBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:contentDescription="@null" />
+    <LinearLayout
+        android:id="@+id/timeWidgetContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:padding="2dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <ImageView
+                android:id="@+id/timeWidgetIcon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="5dp"
+                android:src="@drawable/ic_event_calendar"
+                android:contentDescription="@null" />
+            <ImageView
+                android:id="@+id/timeWidgetBrandLogo"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="5dp"
+                android:src="@drawable/launcher_foreground_art"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null"
+                android:visibility="gone" />
+            <TextView
+                android:id="@+id/timeWidgetTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-medium"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:textColor="@color/widget_dark_text"
+                android:textSize="10sp" />
+            <ImageView
+                android:id="@+id/timeWidgetLiveDot"
+                android:layout_width="7dp"
+                android:layout_height="7dp"
+                android:layout_marginStart="6dp"
+                android:src="@drawable/widget_time_indicator"
+                android:visibility="gone"
+                android:contentDescription="@null" />
+        </LinearLayout>
+        <ImageView
+            android:id="@+id/timeWidgetAccentLine"
+            android:layout_width="34dp"
+            android:layout_height="3dp"
+            android:src="@drawable/widget_time_accent"
+            android:visibility="gone"
+            android:contentDescription="@null" />
+        <TextView
+            android:id="@+id/timeWidgetCaption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/widget_dark_secondary_text"
+            android:textSize="10sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/timeWidgetLongDays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-condensed"
+            android:fontFeatureSettings="tnum"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textStyle="bold"
+            android:textColor="@color/widget_dark_accent"
+            android:textSize="18sp"
+            android:visibility="gone" />
+        <Chronometer
+            android:id="@+id/timeWidgetClock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:fontFamily="sans-serif-condensed"
+            android:fontFeatureSettings="tnum"
+            android:includeFontPadding="false"
+            android:gravity="center_vertical"
+            android:textStyle="bold"
+            android:textSize="22sp"
+            android:singleLine="true"
+            android:ellipsize="none"
+            android:textColor="@color/widget_dark_accent" />
+        <TextView
+            android:id="@+id/timeWidgetDetailHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/timeWidgetFallback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="@color/widget_dark_accent"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/timeWidgetDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</FrameLayout>

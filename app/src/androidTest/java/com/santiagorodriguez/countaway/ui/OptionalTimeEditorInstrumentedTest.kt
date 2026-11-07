@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.ui
 
 import android.content.Intent
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.DatePicker
 import android.widget.TimePicker
@@ -24,8 +25,6 @@ import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.time.ZoneId
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -187,10 +186,46 @@ class OptionalTimeEditorInstrumentedTest {
         }
     }
 
+    @Test fun timeControlsStayInsideTheirRowWithOrWithoutSelectedTime() = isolated {
+        val dateOnly = fixture()
+        repository.save(original() + dateOnly)
+        ActivityScenario.launch<EditorActivity>(intent(dateOnly)).use { scenario ->
+            drain()
+            scenario.onActivity { activity ->
+                assertTimeControlsContained(activity, "date-only")
+            }
+        }
+
+        val timed = dateOnly.copy(eventTime = LocalTime.of(18, 30),
+            eventZone = ZoneId.of("America/Argentina/Buenos_Aires"))
+        repository.save(original() + timed)
+        ActivityScenario.launch<EditorActivity>(intent(timed)).use { scenario ->
+            drain()
+            scenario.onActivity { activity ->
+                assertTimeControlsContained(activity, "timed")
+            }
+        }
+    }
+
+    private fun assertTimeControlsContained(activity: EditorActivity, stage: String) {
+        val row = activity.findViewById<ViewGroup>(R.id.timeControlsRow)
+        assertTrue("$stage: time controls row was not laid out", row.height > 0)
+        // A child may fit inside its parent and still be clipped by its padding.
+        val contentTop = if (row.clipToPadding) row.paddingTop else 0
+        val contentBottom = if (row.clipToPadding) row.height - row.paddingBottom else row.height
+        for (id in listOf(R.id.timeButton, R.id.removeTimeButton)) {
+            val control = activity.findViewById<View>(id)
+            if (control.visibility != View.VISIBLE) continue
+            assertTrue(
+                "$stage: control $id is clipped by the time row: top=${control.top}, " +
+                    "bottom=${control.bottom}, visibleContent=$contentTop..$contentBottom",
+                control.top >= contentTop && control.bottom <= contentBottom,
+            )
+        }
+    }
+
     private fun assertEditorTime(activity: EditorActivity, expected: LocalTime, stage: String) {
-        val locale = activity.resources.configuration.locales[0]
-        val formatted = expected.format(
-            DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+        val formatted = EventTimeText.time(activity, expected)
         val label = activity.findViewById<Button>(R.id.timeButton).text.toString()
         assertEquals("$stage: time label",
             activity.getString(R.string.editor_selected_time, formatted), label)

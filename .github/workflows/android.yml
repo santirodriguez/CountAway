@@ -56,7 +56,11 @@ jobs:
             local capture_ok=0
             while (( attempt <= 3 )); do
               rm -f layout-evidence/renders.pending.tar
-              if adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence share-evidence \
+              local archive_paths=(layout-evidence)
+              if adb shell run-as "$PACKAGE" test -d files/share-evidence > /dev/null 2>&1; then
+                archive_paths+=(share-evidence)
+              fi
+              if adb exec-out run-as "$PACKAGE" tar -C files -cf - "${archive_paths[@]}" \
                     > layout-evidence/renders.pending.tar &&
                  tar -tf layout-evidence/renders.pending.tar > layout-evidence/render-manifest.txt &&
                  grep -Eq '^layout-evidence/.*\.png$' layout-evidence/render-manifest.txt; then
@@ -78,11 +82,56 @@ jobs:
             exit "$test_status"
           }
           trap 'collect "$?"' EXIT
-          echo 'scope=complete_android_instrumentation_suite' > layout-evidence/test-classes.txt
+          # Run behavior checks without screenshot setup mutating app/launcher state.
+          echo 'scope=behavior_suite_excludes_store_capture' > layout-evidence/test-classes.txt
           adb shell am instrument -w \
+            -e notAnnotation com.santiagorodriguez.countaway.ui.IsolatedStoreScreenshot \
             "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
           grep -Eq '^OK \([1-9][0-9]* tests?\)' layout-evidence/instrumentation.txt
           ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' layout-evidence/instrumentation.txt
+          if [ "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "36" ]; then
+            # Preserve behavioral render evidence before clearing app data.
+            adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence share-evidence \
+              > layout-evidence/behavior-renders.tar
+            tar -tf layout-evidence/behavior-renders.tar \
+              > layout-evidence/behavior-render-manifest.txt
+            grep -Eq '^layout-evidence/.*\.png$' layout-evidence/behavior-render-manifest.txt
+            # Native store screenshots execute on a cleared, disposable emulator.
+            adb shell am force-stop "$PACKAGE" || true
+            adb shell pm clear "$PACKAGE" > layout-evidence/store-capture-data-reset.txt
+            set +e
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.ui.ReleaseScreenshotReviewInstrumentedTest#captureSixCandidateViewsForHumanReview' \
+              -e countawayScreenshotReview true \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/screenshots-instrumentation.txt 2>&1
+            screenshot_exit=$?
+            set -e
+            capture_failed=0
+            if [ "$screenshot_exit" -eq 0 ] &&
+               grep -Eq '^OK \(1 test\)' layout-evidence/screenshots-instrumentation.txt &&
+               ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' layout-evidence/screenshots-instrumentation.txt; then
+              printf 'store_capture=passed\n' > layout-evidence/store-capture-status.txt
+            else
+              capture_failed=1
+              printf 'store_capture=failed\ninstrumentation_exit=%s\n' "$screenshot_exit" > layout-evidence/store-capture-status.txt
+            fi
+            # Only after the full behavioral suite and screenshot check, attempt
+            # actual launcher widgets; this diagnostic is non-gating.
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.ui.ReleaseScreenshotReviewInstrumentedTest#attemptRealLauncherWidgetCaptureForHumanReview' \
+              -e countawayLauncherReview true \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/launcher-instrumentation.txt 2>&1 || true
+            if grep -Fq 'OK (1 test)' layout-evidence/launcher-instrumentation.txt; then
+              printf 'launcher_probe=completed\n' > layout-evidence/launcher-probe-status.txt
+            else
+              printf 'launcher_probe=not_completed\n' > layout-evidence/launcher-probe-status.txt
+            fi
+            # Preserve strict visual acceptance: a failed screenshot capture
+            # still fails this job, with its original PNG available in artifacts.
+            if [ "$capture_failed" -ne 0 ]; then exit 1; fi
+          fi
           SCRIPT
       - name: Render and verify Android contracts
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
@@ -146,6 +195,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/test-upgrade-fixture.py -v 2>&1 | tee ci-evidence/upgrade-fixture-tests.txt
+          python3 scripts/test-upgrade-v124-fixture.py -v 2>&1 | tee -a ci-evidence/upgrade-fixture-tests.txt
 
       - name: Validate localization sources
         run: |

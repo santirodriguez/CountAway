@@ -1,0 +1,1 @@
+Les hores segueixen el format de 12/24 hores del dispositiu. Vistes prèvies i recordatoris recurrents més clars. El giny d'hores té estils traduïts, una selecció més segura i un format compacte de 2×1 quan el llançador ho permet.

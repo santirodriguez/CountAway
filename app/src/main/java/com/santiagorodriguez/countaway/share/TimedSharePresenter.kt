@@ -4,8 +4,8 @@ import android.content.Context
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.*
 import com.santiagorodriguez.countaway.model.*
+import com.santiagorodriguez.countaway.ui.EventTimeText
 import java.time.*
-import java.time.format.*
 
 internal data class TimedShareParts(val date: LocalDate, val primary: String,
     val secondary: String, val summary: String, val timestamp: String)
@@ -36,9 +36,7 @@ internal object TimedSharePresenter {
         val summary = if (gap.isZero) value else ctx.getString(label, "≈ $value")
         val primary = if (min == 0L) value else "≈ $days d · $hours h"
         val secondary = ctx.getString(label, if (min == 0L) "" else "$minutes min").trimEnd(' ', '·')
-        val locale = ctx.resources.configuration.locales[0]
-        val stamp = t.target.format(DateTimeFormatter.ofLocalizedDateTime(
-            FormatStyle.MEDIUM, FormatStyle.SHORT).withLocale(locale))
+        val stamp = EventTimeText.dateTime(ctx, t.target)
         val ambiguous = zone.rules.getValidOffsets(t.target.toLocalDateTime()).size > 1
         val dateText = if (zone != now.zone || ambiguous)
             "$stamp · ${zone.id} (${t.target.offset})" else stamp

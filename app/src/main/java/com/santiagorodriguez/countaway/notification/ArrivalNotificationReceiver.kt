@@ -18,8 +18,7 @@ import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.LanguageManager
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
+import com.santiagorodriguez.countaway.ui.EventTimeText
 
 class ArrivalNotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
@@ -104,13 +103,11 @@ object ArrivalNotifier {
             val detailedBody = if (dueTime != null && dueZone != null) {
                 val occurrence = scheduledDate.plusDays(daysBefore.toLong())
                     .atTime(dueTime).atZone(dueZone)
-                val locale = displayContext.resources.configuration.locales[0]
-                val dateTime = occurrence.format(
-                    DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
-                        .withLocale(locale),
-                )
+                val dateTime = EventTimeText.dateTime(displayContext, occurrence)
+                val ambiguous = dueZone.rules.getValidOffsets(occurrence.toLocalDateTime()).size > 1
+                val zone = dueZone.id + (if (ambiguous) " (${occurrence.offset})" else "")
                 displayContext.getString(R.string.notification_timed_due_format,
-                    body, "$dateTime · ${dueZone.id}")
+                    body, "$dateTime · $zone")
             } else body
 
             val notification = Notification.Builder(context, ArrivalNotificationScheduler.CHANNEL_ID)

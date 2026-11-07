@@ -8,6 +8,8 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.widget.Button
 import android.widget.ListView
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.R
@@ -76,12 +78,29 @@ class TimeWidgetConfigIntegrationInstrumentedTest {
                     list.performItemClick(list.getChildAt(1 - list.firstVisiblePosition),
                         1, list.adapter.getItemId(1))
                     assertTrue(activity.findViewById<Button>(R.id.widgetSaveButton).isEnabled)
+                    activity.findViewById<Spinner>(R.id.widgetAppearanceSpinner).setSelection(
+                        WidgetAppearance.entries.indexOf(WidgetAppearance.DARK))
+                    activity.findViewById<Spinner>(R.id.widgetBackgroundSpinner).setSelection(
+                        WidgetBackground.entries.indexOf(WidgetBackground.MONOGRAM))
+                }
+                instrumentation.waitForIdleSync()
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        activity.getString(R.string.widget_style_summary,
+                            activity.getString(R.string.widget_background_six),
+                            activity.getString(R.string.widget_appearance_dark)),
+                        activity.findViewById<TextView>(R.id.widgetStyleSummary).text.toString(),
+                    )
                 }
                 scenario.recreate()
                 drain()
                 scenario.onActivity { activity ->
                     val list = activity.findViewById<ListView>(R.id.widgetEventList)
                     assertEquals(1, list.checkedItemPosition)
+                    assertEquals(WidgetAppearance.entries.indexOf(WidgetAppearance.DARK),
+                        activity.findViewById<Spinner>(R.id.widgetAppearanceSpinner).selectedItemPosition)
+                    assertEquals(WidgetBackground.entries.indexOf(WidgetBackground.MONOGRAM),
+                        activity.findViewById<Spinner>(R.id.widgetBackgroundSpinner).selectedItemPosition)
                     assertTrue(activity.findViewById<Button>(R.id.widgetSaveButton).isEnabled)
                     activity.findViewById<Button>(R.id.widgetSaveButton).performClick()
                 }
@@ -90,7 +109,8 @@ class TimeWidgetConfigIntegrationInstrumentedTest {
             val stored = requireNotNull(preferences.get(widgetId))
             assertEquals(timed.id, stored.eventId)
             assertEquals(WidgetEventSelection.FIXED, stored.eventSelection)
-            assertEquals(WidgetBackground.HORIZON, stored.background)
+            assertEquals(WidgetBackground.MONOGRAM, stored.background)
+            assertEquals(WidgetAppearance.DARK, stored.appearance)
         } finally {
             runCatching { host.stopListening() }
             runCatching { host.deleteHost() }
