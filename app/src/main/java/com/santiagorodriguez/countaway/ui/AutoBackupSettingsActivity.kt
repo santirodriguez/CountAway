@@ -138,7 +138,12 @@ class AutoBackupSettingsActivity : BaseActivity() {
             toast(R.string.auto_backup_permission_failed)
             return
         }
-        if (runCatching { contentResolver.takePersistableUriPermission(uri, grants) }.isFailure) {
+        if (runCatching {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            }.isFailure) {
             toast(R.string.auto_backup_permission_failed)
             return
         }

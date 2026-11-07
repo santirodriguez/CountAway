@@ -32,14 +32,7 @@ internal object AutoBackupFiles {
                 check(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     "Shared Downloads require Android 10 or newer"
                 }
-                val values = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-                    put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/CountAway/")
-                    put(MediaStore.MediaColumns.IS_PENDING, 1)
-                }
-                resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                    ?: error("Downloads file cannot be created")
+                createDefaultDownloads(context, name)
             }
             AutoBackupStore.Kind.SELECTED_FOLDER -> {
                 val tree = requireGrantedFolder(context, target)
@@ -49,6 +42,18 @@ internal object AutoBackupFiles {
                     ?: error("Selected provider cannot create documents")
             }
         }
+    }
+
+    @android.annotation.TargetApi(Build.VERSION_CODES.Q)
+    private fun createDefaultDownloads(context: Context, name: String): Uri {
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/CountAway/")
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        return context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            ?: error("Downloads file cannot be created")
     }
 
     private fun publish(context: Context, target: AutoBackupStore.Destination, uri: Uri) {
