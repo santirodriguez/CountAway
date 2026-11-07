@@ -31,9 +31,9 @@ internal object AutoBackupEngine {
                 current.copy(
                     enabled = true, generation = current.generation + 1,
                     destination = destination,
-                    savedRevision = current.dirtyRevision,
+                    savedRevision = initial.dirtyRevision,
                     lastAttempt = attempt, lastVerified = System.currentTimeMillis(),
-                    lastError = null, fingerprint = copy.sha256, owned = listOf(copy),
+                    lastError = null, failures = 0, fingerprint = copy.sha256, owned = listOf(copy),
                 )
             }
             Outcome(true, final.lastVerified)
@@ -57,7 +57,7 @@ internal object AutoBackupEngine {
                     if (current.enabled && current.generation == initial.generation) {
                         current.copy(
                             lastVerified = System.currentTimeMillis(),
-                            lastError = null, savedRevision = initial.dirtyRevision,
+                            lastError = null, failures = 0, savedRevision = initial.dirtyRevision,
                             fingerprint = prepared.sha256,
                         )
                     } else current
@@ -72,7 +72,7 @@ internal object AutoBackupEngine {
                 }
                 current.copy(
                     savedRevision = initial.dirtyRevision,
-                    lastVerified = System.currentTimeMillis(), lastError = null,
+                    lastVerified = System.currentTimeMillis(), lastError = null, failures = 0,
                     fingerprint = copy.sha256, owned = current.owned + copy,
                 )
             }
@@ -82,7 +82,7 @@ internal object AutoBackupEngine {
             runCatching {
                 AutoBackupStore.update(app) { current ->
                     if (current.enabled && current.generation == initial.generation)
-                        current.copy(lastError = "BACKUP_FAILED")
+                        current.copy(lastError = "BACKUP_FAILED", failures = (current.failures + 1).coerceAtMost(3))
                     else current
                 }
             }

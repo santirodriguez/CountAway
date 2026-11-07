@@ -30,6 +30,7 @@ internal object AutoBackupStore {
         val lastVerified: Long = 0,
         val lastError: String? = null,
         val fingerprint: String? = null,
+        val failures: Int = 0,
         val owned: List<OwnedCopy> = emptyList(),
     )
 
@@ -84,6 +85,7 @@ internal object AutoBackupStore {
                 lastVerified = o.getLong("lastVerified"),
                 lastError = o.optString("lastError").takeIf(String::isNotBlank),
                 fingerprint = o.optString("fingerprint").takeIf(String::isNotBlank),
+                failures = o.optInt("failures", 0).coerceIn(0, 3),
                 owned = owned,
             )
         } catch (error: Exception) {
@@ -109,6 +111,7 @@ internal object AutoBackupStore {
         put("lastVerified", state.lastVerified)
         put("lastError", state.lastError ?: "")
         put("fingerprint", state.fingerprint ?: "")
+        put("failures", state.failures)
         put("owned", JSONArray().apply {
             state.owned.forEach { entry ->
                 put(JSONObject().apply {

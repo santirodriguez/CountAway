@@ -14,6 +14,7 @@ import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.backup.AutoBackupEngine
 import com.santiagorodriguez.countaway.backup.AutoBackupStore
+import com.santiagorodriguez.countaway.backup.AutoBackupScheduler
 import com.santiagorodriguez.countaway.data.RetainedOperation
 import java.text.DateFormat
 import java.util.Date
@@ -48,11 +49,13 @@ class AutoBackupSettingsActivity : BaseActivity() {
                 .setMessage(R.string.auto_backup_disable_message)
                 .setNegativeButton(R.string.action_cancel, null)
                 .setPositiveButton(R.string.auto_backup_disable) { _, _ ->
-                    runCatching { AutoBackupEngine.disable(applicationContext) }
-                        .onFailure { toast(R.string.auto_backup_settings_failed) }
+                    runCatching {
+                        AutoBackupEngine.disable(applicationContext)
+                        AutoBackupScheduler.cancel(applicationContext)
+                    }.onFailure { toast(R.string.auto_backup_settings_failed) }
                     render()
                 }
-                .show().also(DialogPresentation::polish)
+                .show().also { DialogPresentation.polish(it) }
         }
         render()
     }
@@ -68,6 +71,7 @@ class AutoBackupSettingsActivity : BaseActivity() {
         super.onResume()
         resumed = true
         consumeResult()
+        runCatching { AutoBackupScheduler.ensureScheduled(applicationContext) }
         render()
     }
 
@@ -88,7 +92,7 @@ class AutoBackupSettingsActivity : BaseActivity() {
                 .setMessage(R.string.auto_backup_legacy_message)
                 .setNegativeButton(R.string.action_cancel, null)
                 .setPositiveButton(R.string.auto_backup_choose) { _, _ -> chooseFolder(true) }
-                .show().also(DialogPresentation::polish)
+                .show().also { DialogPresentation.polish(it) }
             return
         }
         startWork {
@@ -116,7 +120,7 @@ class AutoBackupSettingsActivity : BaseActivity() {
         val uri = data?.data ?: return
         val grants = data.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or
             Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-        if (grants != Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) {
+        if (grants != (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)) {
             toast(R.string.auto_backup_permission_failed)
             return
         }
@@ -148,7 +152,10 @@ class AutoBackupSettingsActivity : BaseActivity() {
     private fun consumeResult() {
         if (!resumed || isFinishing || isDestroyed) return
         session.work.takeResult()?.fold(
-            onSuccess = { toast(if (it.created) R.string.auto_backup_verified else R.string.auto_backup_unchanged) },
+            onSuccess = {
+                runCatching { AutoBackupScheduler.ensureScheduled(applicationContext) }
+                toast(if (it.created) R.string.auto_backup_verified else R.string.auto_backup_unchanged)
+            },
             onFailure = { toast(R.string.auto_backup_provider_failed) },
         )
         render()
