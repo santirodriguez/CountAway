@@ -20,7 +20,6 @@
   <a href="https://play.google.com/store/apps/details?id=com.santiagorodriguez.countaway"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="54" /></a>
 </p>
 
-
 <p align="center">
   <a href="https://github.com/santirodriguez/CountAway/releases"><img src="https://img.shields.io/badge/GitHub-signed%20APK%20releases-181717?style=for-the-badge&logo=github&logoColor=white" alt="Signed APK releases on GitHub" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-4C9A73?style=for-the-badge" alt="Apache 2.0 license" /></a>
@@ -73,8 +72,6 @@ CountAway skips all that. It counts the days and leaves you alone.
 - **Multilingual:** English, Español, and Català.
 
 ## Screenshots
-
-Six genuine CountAway 1.2.5 screenshots. Select any image to view it in full size.
 
 <table>
 <tr>
@@ -131,7 +128,3 @@ Maintainer signing and release steps are in [`docs/RELEASING.md`](docs/RELEASING
 </p>
 
 <p align="center"><sub><a href="https://countaway.cajapersonal.org/">Website</a> · <a href="https://countaway.cajapersonal.org/privacy/">Privacy</a> · <a href="LICENSE">Apache License 2.0</a></sub></p>
-
-## License
-
-Licensed under the [Apache License 2.0](LICENSE).
