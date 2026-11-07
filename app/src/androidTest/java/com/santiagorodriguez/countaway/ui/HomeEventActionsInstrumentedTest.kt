@@ -221,12 +221,12 @@ class HomeEventActionsInstrumentedTest {
     @Test fun aShortMenuViewportCanScrollToTheFinalDeleteAction() = instrumentation.runOnMainSync {
         val theme = ContextThemeWrapper(context, context.applicationInfo.theme)
         val popup = LayoutInflater.from(theme).inflate(R.layout.event_actions_popup, null) as ScrollView
+        val reset = popup.findViewById<View>(R.id.home_event_reset_today)
+        reset.visibility = View.VISIBLE
         val width = View.MeasureSpec.makeMeasureSpec(dp(theme, 236), View.MeasureSpec.EXACTLY)
         val height = View.MeasureSpec.makeMeasureSpec(dp(theme, 235), View.MeasureSpec.EXACTLY)
         popup.measure(width, height)
         popup.layout(0, 0, popup.measuredWidth, popup.measuredHeight)
-        val reset = popup.findViewById<View>(R.id.home_event_reset_today)
-        reset.visibility = View.VISIBLE
         val edit = popup.findViewById<View>(R.id.home_event_edit)
         val duplicate = popup.findViewById<View>(R.id.home_event_duplicate)
         assertTrue("Reset must follow Edit and precede Duplicate", edit.top < reset.top && reset.top < duplicate.top)
