@@ -122,7 +122,7 @@
     <string name="about_how_title">Make it useful</string>
     <string name="about_how_body">Three steps, then stop checking the calendar. Create an event, long-press it to choose a widget style, and let the Home screen do the remembering.</string>
     <string name="about_how_steps">1. Create an event\n2. Add the widget\n3. Stop checking the calendar every five minutes</string>
-    <string name="about_privacy">CountAway has no accounts, ads, analytics, or network access. Your data stays local unless you export a backup to a provider you choose.</string>
+    <string name="about_privacy">CountAway has no accounts, ads, analytics, or network access. Your events remain on your device unless you explicitly choose a provider for backups.</string>
     <string name="backup_title">Local backup</string>
     <string name="backup_description">Export or restore your events using a plain JSON file you control. Where that file is stored depends on the provider you choose.</string>
     <string name="backup_export">Export backup</string>
@@ -187,4 +187,7 @@
     <string name="auto_backup_legacy_message">On Android 8 or 9, choose or create a CountAway folder, ideally in Downloads. This avoids asking for broad storage permissions.</string>
     <string name="auto_backup_chosen_folder">Selected folder</string>
     <string name="auto_backup_legacy_label">Chosen folder: %1$s</string>
+    <string name="auto_backup_recover">Recover backup settings</string>
+    <string name="auto_backup_recover_title">Reset backup settings?</string>
+    <string name="auto_backup_recover_message">This turns off automatic backups and requires a new folder choice. Existing backup files will not be deleted.</string>
 </resources>

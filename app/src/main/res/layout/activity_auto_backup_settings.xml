@@ -148,6 +148,14 @@
             android:layout_marginTop="8dp"
             android:text="@string/auto_backup_disable"
             android:visibility="gone" />
+        <Button
+            android:id="@+id/autoBackupRecover"
+            style="@style/Widget.CountAway.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/auto_backup_recover"
+            android:visibility="gone" />
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

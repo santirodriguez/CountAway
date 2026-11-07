@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.backup
 
 import android.content.Context
 import android.net.Uri
+import android.content.Intent
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import java.nio.charset.StandardCharsets
 import java.time.Instant
@@ -21,6 +22,11 @@ internal object AutoBackupEngine {
         synchronized(lock) {
             val app = context.applicationContext
             val initial = AutoBackupStore.read(app)
+            if (initial.enabled &&
+                initial.destination?.kind == destination.kind &&
+                initial.destination.treeUri == destination.treeUri) {
+                return@synchronized backupNow(app)
+            }
             val attempt = System.currentTimeMillis()
             val prepared = prepare(app)
             val copy = create(app, destination, prepared, attempt)
@@ -35,6 +41,12 @@ internal object AutoBackupEngine {
                     lastAttempt = attempt, lastVerified = System.currentTimeMillis(),
                     lastError = null, failures = 0, fingerprint = copy.sha256, owned = listOf(copy),
                 )
+            }
+            // Setup must schedule even if the originating Activity is destroyed.
+            runCatching { AutoBackupScheduler.ensureScheduled(app) }
+            if (initial.destination?.treeUri != null &&
+                initial.destination.treeUri != destination.treeUri) {
+                releaseOldFolderGrant(app, initial.destination.treeUri)
             }
             Outcome(true, final.lastVerified)
         }
@@ -95,7 +107,17 @@ internal object AutoBackupEngine {
         AutoBackupStore.update(app) {
             it.copy(enabled = false, generation = it.generation + 1, lastError = null)
         }
+        runCatching { AutoBackupScheduler.cancel(app) }
+        AutoBackupStore.read(app).destination?.treeUri?.let { releaseOldFolderGrant(app, it) }
         // No old backup file is deleted when opt-out happens.
+    }
+
+    private fun releaseOldFolderGrant(context: Context, rawUri: String) {
+        runCatching {
+            context.contentResolver.releasePersistableUriPermission(
+                Uri.parse(rawUri), Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        }
     }
 
     private data class Prepared(val payload: String, val sha256: String)

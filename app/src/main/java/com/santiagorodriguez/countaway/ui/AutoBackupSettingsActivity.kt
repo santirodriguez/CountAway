@@ -43,6 +43,20 @@ class AutoBackupSettingsActivity : BaseActivity() {
         findViewById<Button>(R.id.autoBackupNow).setOnClickListener {
             startWork { AutoBackupEngine.backupNow(applicationContext) }
         }
+        findViewById<Button>(R.id.autoBackupRecover).setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.auto_backup_recover_title)
+                .setMessage(R.string.auto_backup_recover_message)
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.auto_backup_recover) { _, _ ->
+                    runCatching {
+                        AutoBackupStore.resetUnreadable(applicationContext)
+                        AutoBackupScheduler.cancel(applicationContext)
+                    }.onFailure { toast(R.string.auto_backup_settings_failed) }
+                    render()
+                }
+                .show().also { DialogPresentation.polish(it) }
+        }
         findViewById<Button>(R.id.autoBackupDisable).setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle(R.string.auto_backup_disable_title)
@@ -169,10 +183,12 @@ class AutoBackupSettingsActivity : BaseActivity() {
         findViewById<View>(R.id.autoBackupProgress).visibility = if (isBusy) View.VISIBLE else View.GONE
         val state = runCatching { AutoBackupStore.read(applicationContext) }.getOrElse {
             findViewById<TextView>(R.id.autoBackupStatus).setText(R.string.auto_backup_settings_failed)
+            findViewById<View>(R.id.autoBackupRecover).visibility = View.VISIBLE
             findViewById<View>(R.id.autoBackupNow).visibility = View.GONE
             findViewById<View>(R.id.autoBackupDisable).visibility = View.GONE
             return
         }
+        findViewById<View>(R.id.autoBackupRecover).visibility = View.GONE
         findViewById<TextView>(R.id.autoBackupStatus).setText(
             if (state.enabled) R.string.auto_backup_on else R.string.auto_backup_off)
         findViewById<View>(R.id.autoBackupNow).visibility = if (state.enabled) View.VISIBLE else View.GONE

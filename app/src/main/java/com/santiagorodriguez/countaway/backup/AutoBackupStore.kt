@@ -41,6 +41,15 @@ internal object AutoBackupStore {
 
     fun read(context: Context): State = synchronized(lock) { readUnsafe(context) }
 
+    /** Explicit recovery only: never deletes backup documents or guesses their ownership. */
+    fun resetUnreadable(context: Context) = synchronized(lock) {
+        check(runCatching { readUnsafe(context) }.isFailure) {
+            "Do not discard a readable backup configuration"
+        }
+        check(context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
+            .edit().remove(STATE_KEY).commit()) { "Backup settings could not be reset" }
+    }
+
     fun update(context: Context, transform: (State) -> State): State = synchronized(lock) {
         val current = readUnsafe(context)
         val replacement = transform(current)

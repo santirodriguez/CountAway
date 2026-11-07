@@ -32,6 +32,14 @@ class AutoBackupEngineInstrumentedTest {
         countMode = CountMode.COUNT_UP,
     )
 
+    @Test fun corruptBackupSettingsRequireExplicitResetWithoutDeletingFiles() = isolated { _: MutableSet<String> ->
+        prefs.edit().putString("configuration_v1", "{broken state").commit()
+        assertTrue(runCatching { AutoBackupStore.read(context) }.isFailure)
+        AutoBackupStore.resetUnreadable(context)
+        assertFalse(AutoBackupStore.read(context).enabled)
+        assertTrue(AutoBackupStore.read(context).owned.isEmpty())
+    }
+
     @Test fun automaticBackupsAreOptInAndDoNotScheduleWhenOff() = isolated { _: MutableSet<String> ->
         assertFalse(AutoBackupStore.read(context).enabled)
         AutoBackupScheduler.mutationCommitted(context)

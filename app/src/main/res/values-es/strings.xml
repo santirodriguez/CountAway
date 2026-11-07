@@ -114,7 +114,7 @@
     <string name="about_how_title">Para que sirva de verdad</string>
     <string name="about_how_body">Tres pasos y después dejá de mirar el calendario. Creá un evento, mantenelo apretado para elegir el estilo del widget y dejá que la pantalla de inicio haga el resto.</string>
     <string name="about_how_steps">1. Creá un evento\n2. Agregá el widget\n3. Dejá de mirar el calendario cada cinco minutos</string>
-    <string name="about_privacy">Ya Estamos no usa cuentas, publicidad, analíticas ni acceso a internet. Tus datos quedan locales salvo que exportes una copia a un proveedor que elijas.</string>
+    <string name="about_privacy">Ya Estamos no usa cuentas, publicidad, analíticas ni Internet. Tus eventos quedan en el dispositivo salvo que elijas expresamente un proveedor para las copias.</string>
     <string name="backup_title">Copia local</string>
     <string name="backup_description">Exportá o restaurá tus eventos usando un archivo JSON de texto que controlás vos. El lugar donde se guarde depende del proveedor que elijas.</string>
     <string name="backup_export">Exportar copia</string>
@@ -179,4 +179,7 @@
     <string name="auto_backup_legacy_message">En Android 8 o 9, elegí o creá una carpeta CountAway, preferentemente en Descargas. Así evitamos permisos generales de almacenamiento.</string>
     <string name="auto_backup_chosen_folder">Carpeta elegida</string>
     <string name="auto_backup_legacy_label">Carpeta elegida: %1$s</string>
+    <string name="auto_backup_recover">Restablecer configuración</string>
+    <string name="auto_backup_recover_title">¿Restablecer copias automáticas?</string>
+    <string name="auto_backup_recover_message">Se desactivarán las copias automáticas y tendrás que elegir la carpeta otra vez. Los archivos existentes no se borrarán.</string>
 </resources>
