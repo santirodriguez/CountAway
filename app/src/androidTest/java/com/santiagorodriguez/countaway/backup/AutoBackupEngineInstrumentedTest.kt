@@ -32,7 +32,7 @@ class AutoBackupEngineInstrumentedTest {
         countMode = CountMode.COUNT_UP,
     )
 
-    @Test fun automaticBackupsAreOptInAndDoNotScheduleWhenOff() = isolated {
+    @Test fun automaticBackupsAreOptInAndDoNotScheduleWhenOff() = isolated { _: MutableSet<String> ->
         assertFalse(AutoBackupStore.read(context).enabled)
         AutoBackupScheduler.mutationCommitted(context)
         AutoBackupScheduler.ensureScheduled(context)
@@ -41,7 +41,7 @@ class AutoBackupEngineInstrumentedTest {
         assertNull(jobs.getPendingJob(AutoBackupScheduler.DAILY_JOB_ID))
     }
 
-    @Test fun selectedFolderWithoutPersistedGrantCannotActivate() = isolated {
+    @Test fun selectedFolderWithoutPersistedGrantCannotActivate() = isolated { _: MutableSet<String> ->
         repository.save(listOf(sample))
         val target = AutoBackupStore.Destination(
             AutoBackupStore.Kind.SELECTED_FOLDER,
@@ -53,7 +53,7 @@ class AutoBackupEngineInstrumentedTest {
         assertTrue(AutoBackupStore.read(context).owned.isEmpty())
     }
 
-    @Test fun corruptStoredEventDataNeverBecomesAnEmptyVerifiedBackup() = isolated {
+    @Test fun corruptStoredEventDataNeverBecomesAnEmptyVerifiedBackup() = isolated { _: MutableSet<String> ->
         repository.save(listOf(sample))
         val file = File(context.filesDir, "countaways.json")
         file.writeText("{this is not a backup}", Charsets.UTF_8)
@@ -65,7 +65,7 @@ class AutoBackupEngineInstrumentedTest {
         assertEquals(0, AutoBackupStore.read(context).owned.size)
     }
 
-    @Test fun aSuccessfulMutationCreatesOneCoalescedJobAndARequiredDailyRecheck() = isolated {
+    @Test fun aSuccessfulMutationCreatesOneCoalescedJobAndARequiredDailyRecheck() = isolated { _: MutableSet<String> ->
         AutoBackupStore.update(context) {
             it.copy(enabled = true, destination = AutoBackupStore.Destination(
                 AutoBackupStore.Kind.DEFAULT_DOWNLOADS))
@@ -143,5 +143,4 @@ class AutoBackupEngineInstrumentedTest {
         }
     }
 
-    private fun isolated(test: () -> Unit) = isolated { _: MutableSet<String> -> test() }
 }
