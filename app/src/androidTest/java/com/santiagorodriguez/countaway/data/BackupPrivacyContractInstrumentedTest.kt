@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.share.ShareImageProvider
+import com.santiagorodriguez.countaway.backup.AutoBackupJobService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -67,6 +68,11 @@ class BackupPrivacyContractInstrumentedTest {
         assertFalse(shareProvider.exported)
         assertTrue(shareProvider.grantUriPermissions)
         assertEquals("${context.packageName}.share", shareProvider.authority)
+
+        val jobService = packageManager.getServiceInfo(
+            ComponentName(context, AutoBackupJobService::class.java), 0)
+        assertEquals("android.permission.BIND_JOB_SERVICE", jobService.permission)
+        assertTrue(jobService.exported)
     }
 
     private fun parseSectionedExclusions(@XmlRes resourceId: Int): Map<String, Set<String>> {
