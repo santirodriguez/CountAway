@@ -351,7 +351,13 @@ jobs:
 
             curl --fail --location --silent --show-error --retry 2               "${PRIVACY_URL}"               --output "${RUNNER_TEMP}/countaway-privacy-policy.html"
             test -s "${RUNNER_TEMP}/countaway-privacy-policy.html"
-            grep -Fq '<title>CountAway Privacy Policy</title>' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            # The published Site may localize or reformat its HTML title.
+            # Require identifiable policy text in all three languages instead.
+            grep -Fq 'CountAway is an app developed by Santiago Rodriguez' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            grep -Fq 'What CountAway does not collect' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            grep -Fq 'Qué datos no recopila CountAway' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            grep -Fq 'Quines dades no recopila CountAway' "${RUNNER_TEMP}/countaway-privacy-policy.html"
+            grep -Fq 'support@cajapersonal.org' "${RUNNER_TEMP}/countaway-privacy-policy.html"
             grep -Fq 'English' "${RUNNER_TEMP}/countaway-privacy-policy.html"
             grep -Fq 'Español' "${RUNNER_TEMP}/countaway-privacy-policy.html"
             grep -Fq 'Català' "${RUNNER_TEMP}/countaway-privacy-policy.html"
