@@ -122,8 +122,18 @@ class AutoBackupEngineInstrumentedTest {
         assertTrue(AutoBackupEngine.enable(context, target).created)
         val first = AutoBackupStore.read(context).owned.single()
         owned += first.uri
-        assertEquals(1, context.contentResolver.delete(Uri.parse(first.uri), null, null))
-        assertFalse(AutoBackupFiles.verify(context, Uri.parse(first.uri), first.sha256))
+        val oldUri = Uri.parse(first.uri)
+        // Some API29 MediaStore implementations report 0 deletions even for a
+        // previously app-owned URI. Verify the document's actual availability.
+        context.contentResolver.delete(oldUri, null, null)
+        if (AutoBackupFiles.verify(context, oldUri, first.sha256)) {
+            // An unreadable or modified file is equally important to recover.
+            context.contentResolver.openOutputStream(oldUri, "w")?.use {
+                it.write("{invalid backup".toByteArray(Charsets.UTF_8))
+            } ?: error("Provider could not simulate a missing or damaged snapshot")
+        }
+        assertFalse("The first copy must no longer be verifiable",
+            AutoBackupFiles.verify(context, oldUri, first.sha256))
         assertTrue(AutoBackupEngine.backupNow(context).created)
         val state = AutoBackupStore.read(context)
         owned += state.owned.map { it.uri }

@@ -208,6 +208,33 @@ class AutoBackupSettingsInstrumentedTest {
         }
     }
 
+    @SdkSuppress(maxSdkVersion = 28)
+    @Test fun legacyDefaultRequiresExplicitPickerAndCancelKeepsBackupsOff() {
+        val preferences = context.getSharedPreferences("countaway_auto_backups", Context.MODE_PRIVATE)
+        val old = preferences.getString("configuration_v1", null)
+        try {
+            preferences.edit().remove("configuration_v1").commit()
+            ActivityScenario.launch<AutoBackupSettingsActivity>(
+                Intent(context, AutoBackupSettingsActivity::class.java)
+            ).use { scenario ->
+                scenario.onActivity { screen ->
+                    screen.findViewById<Button>(R.id.autoBackupDefault).performClick()
+                }
+                onView(withId(android.R.id.button2)).inRoot(isDialog()).perform(click())
+                scenario.onActivity { screen ->
+                    assertEquals(screen.getString(R.string.auto_backup_off),
+                        screen.findViewById<TextView>(R.id.autoBackupStatus).text.toString())
+                }
+                assertFalse(AutoBackupStore.read(context).enabled)
+            }
+        } finally {
+            val edit = preferences.edit()
+            if (old == null) edit.remove("configuration_v1")
+            else edit.putString("configuration_v1", old)
+            edit.commit()
+        }
+    }
+
     @Test fun settingsExposeBothDestinationsButStayOffUntilUserOptsIn() {
         val prefs = context.getSharedPreferences("countaway_auto_backups", Context.MODE_PRIVATE)
         val original = prefs.getString("configuration_v1", null)

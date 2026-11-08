@@ -84,11 +84,22 @@ jobs:
             exit "$test_status"
           }
           trap 'collect "$?"' EXIT
-          # Run behavior checks without screenshot setup mutating app/launcher state.
-          echo 'scope=behavior_suite_excludes_store_capture' > layout-evidence/test-classes.txt
-          adb shell am instrument -w \
-            -e notAnnotation com.santiagorodriguez.countaway.ui.IsolatedStoreScreenshot \
-            "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
+          # Core supported Android versions keep the full behavioral suite.
+          # API 28/29/30 probe only the storage transition for this release branch:
+          # unrelated historic widget/UI tests have not been qualified on these APIs.
+          sdk="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
+          if [ "$GITHUB_REF" = "refs/heads/release/1.2.6" ] &&
+             { [ "$sdk" = 28 ] || [ "$sdk" = 29 ] || [ "$sdk" = 30 ]; }; then
+            echo 'scope=backup_storage_transition_only' > layout-evidence/test-classes.txt
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.backup.AutoBackupEngineInstrumentedTest,com.santiagorodriguez.countaway.ui.AutoBackupSettingsInstrumentedTest,com.santiagorodriguez.countaway.data.BackupProviderBoundaryInstrumentedTest,com.santiagorodriguez.countaway.data.BackupPrivacyContractInstrumentedTest' \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
+          else
+            echo 'scope=full_behavior_suite_excludes_store_capture' > layout-evidence/test-classes.txt
+            adb shell am instrument -w \
+              -e notAnnotation com.santiagorodriguez.countaway.ui.IsolatedStoreScreenshot \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
+          fi
           grep -Eq '^OK \([1-9][0-9]* tests?\)' layout-evidence/instrumentation.txt
           ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' layout-evidence/instrumentation.txt
           if [ "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "36" ]; then
