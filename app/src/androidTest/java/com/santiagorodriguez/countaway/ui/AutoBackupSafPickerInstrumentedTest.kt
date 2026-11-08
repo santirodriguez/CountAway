@@ -130,6 +130,39 @@ class AutoBackupSafPickerInstrumentedTest {
                 owned += AutoBackupStore.read(context).owned.map { Uri.parse(it.uri) }
                 assertTrue(AutoBackupFiles.verify(context, owned.last(),
                     AutoBackupStore.read(context).owned.last().sha256))
+
+                // Exercise an actual system DocumentsProvider grant after opt-in,
+                // without a mock provider or modifying any untracked documents.
+                // Only revoke a grant newly acquired by this disposable test.
+                val committed = AutoBackupStore.read(context)
+                val tree = Uri.parse(requireNotNull(committed.destination?.treeUri))
+                assertFalse("Refusing to revoke a pre-existing persisted folder grant",
+                    tree in oldGrants)
+                context.contentResolver.releasePersistableUriPermission(
+                    tree, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                val remaining = context.contentResolver.persistedUriPermissions
+                    .singleOrNull { it.uri == tree }
+                assertNotNull("Expected the test-owned write grant to remain", remaining)
+                assertFalse("Read permission was not actually revoked",
+                    requireNotNull(remaining).isReadPermission)
+                assertTrue("Test must retain write permission for safe cleanup",
+                    remaining.isWritePermission)
+
+                val nextChange = next.copy(date = next.date.plusDays(1))
+                repository.save(listOf(nextChange))
+                val denied = runCatching { AutoBackupEngine.backupNow(context) }
+                assertTrue("Backup unexpectedly succeeded without persisted read access",
+                    denied.isFailure)
+                val afterDenial = AutoBackupStore.read(context)
+                assertTrue("Revoked grant must not silently turn backups off",
+                    afterDenial.enabled)
+                assertEquals("Revoked grant changed the verified copy ledger",
+                    committed.owned, afterDenial.owned)
+                assertEquals("Revoked grant failure was hidden",
+                    "BACKUP_FAILED", afterDenial.lastError)
+                assertEquals("Failed provider backup changed local events",
+                    listOf(nextChange),
+                    (repository.loadResult() as CountdownLoadResult.Success).events)
             }
         } finally {
             // Cleanup only this test's own new URIs, while tree permission is live.
@@ -141,10 +174,15 @@ class AutoBackupSafPickerInstrumentedTest {
             for (grant in context.contentResolver.persistedUriPermissions) {
                 if (grant.uri !in oldGrants) {
                     runCatching {
-                        context.contentResolver.releasePersistableUriPermission(
-                            grant.uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                        // The test may intentionally revoke only READ. Release
+                        // exactly the flags still persisted, not an absent flag.
+                        val remainingFlags =
+                            (if (grant.isReadPermission) Intent.FLAG_GRANT_READ_URI_PERMISSION else 0) or
+                            (if (grant.isWritePermission) Intent.FLAG_GRANT_WRITE_URI_PERMISSION else 0)
+                        if (remainingFlags != 0) {
+                            context.contentResolver.releasePersistableUriPermission(
+                                grant.uri, remainingFlags)
+                        }
                     }
                 }
             }
