@@ -98,11 +98,31 @@ class AutoBackupSafPickerInstrumentedTest {
                     CountdownStorageCodec.readUtf8Payload(it)
                 }
                 assertEquals(listOf(sample), CountdownStorageCodec.decodeForImport(restored))
-                scenario.onActivity { activity ->
-                    assertEquals(activity.getString(R.string.auto_backup_on),
-                        activity.findViewById<android.widget.TextView>(R.id.autoBackupStatus)
-                            .text.toString())
-                }
+                // The ledger is committed on the document worker before the retained
+                // operation delivers its main-thread completion and re-renders this view.
+                // Observe the real UI until it is ready; never force a render or accept
+                // only the persisted state as proof of visible opt-in.
+                val uiDeadline = SystemClock.uptimeMillis() + 8_000L
+                var uiStatus = ""
+                var expectedOn = ""
+                var backupActionReady = false
+                do {
+                    scenario.onActivity { activity ->
+                        expectedOn = activity.getString(R.string.auto_backup_on)
+                        uiStatus = activity.findViewById<android.widget.TextView>(
+                            R.id.autoBackupStatus).text.toString()
+                        val backupAction = activity.findViewById<android.widget.Button>(
+                            R.id.autoBackupNow)
+                        backupActionReady = backupAction.visibility == android.view.View.VISIBLE &&
+                            backupAction.isEnabled
+                    }
+                    if (uiStatus == expectedOn && backupActionReady) break
+                    SystemClock.sleep(150L)
+                } while (SystemClock.uptimeMillis() < uiDeadline)
+                assertEquals("Verified SAF opt-in never reached the visible On state",
+                    expectedOn, uiStatus)
+                assertTrue("Back up now remains unavailable after verified SAF opt-in",
+                    backupActionReady)
                 val next = sample.copy(date = sample.date.plusDays(1))
                 repository.save(listOf(next))
                 val outcome = AutoBackupEngine.backupNow(context)
