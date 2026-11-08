@@ -187,6 +187,10 @@ class AutoBackupSettingsActivity : BaseActivity() {
                 R.id.autoBackupDisable)) findViewById<View>(id).isEnabled = !isBusy
         findViewById<View>(R.id.autoBackupProgress).visibility = if (isBusy) View.VISIBLE else View.GONE
         val state = runCatching { AutoBackupStore.read(applicationContext) }.getOrElse {
+            // An unreadable configuration cannot be overwritten by a normal
+            // destination selection; recovery must be an explicit user action.
+            findViewById<View>(R.id.autoBackupDefault).isEnabled = false
+            findViewById<View>(R.id.autoBackupChoose).isEnabled = false
             findViewById<TextView>(R.id.autoBackupStatus).setText(R.string.auto_backup_settings_failed)
             findViewById<View>(R.id.autoBackupRecover).visibility = View.VISIBLE
             findViewById<View>(R.id.autoBackupNow).visibility = View.GONE

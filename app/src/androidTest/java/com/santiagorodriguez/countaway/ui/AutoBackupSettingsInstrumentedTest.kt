@@ -2,6 +2,18 @@ package com.santiagorodriguez.countaway.ui
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import androidx.test.filters.SdkSuppress
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.matcher.RootMatchers.isDialog
+import androidx.test.espresso.matcher.ViewMatchers.withId
+import com.santiagorodriguez.countaway.backup.AutoBackupEngine
+import com.santiagorodriguez.countaway.backup.AutoBackupFiles
+import com.santiagorodriguez.countaway.backup.AutoBackupScheduler
+import com.santiagorodriguez.countaway.backup.AutoBackupStore
+import com.santiagorodriguez.countaway.data.CountdownLoadResult
+import com.santiagorodriguez.countaway.data.CountdownRepository
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -131,6 +143,68 @@ class AutoBackupSettingsInstrumentedTest {
             }
         } finally {
             bitmap.recycle()
+        }
+    }
+
+    @SdkSuppress(minSdkVersion = 29)
+    @Test fun verifiedOptInShowsEnabledStateAndDisableKeepsTheActualBackup() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val preferences = context.getSharedPreferences("countaway_auto_backups", Context.MODE_PRIVATE)
+        val original = preferences.getString("configuration_v1", null)
+        val appearance = context.getSharedPreferences("countaway_ui", Context.MODE_PRIVATE)
+        val originalTheme = appearance.getString("theme", null)
+        val repository = CountdownRepository(context)
+        val initialEvents = (repository.loadResult() as CountdownLoadResult.Success).events
+        var savedUri: Uri? = null
+        try {
+            AutoBackupScheduler.cancel(context)
+            preferences.edit().remove("configuration_v1").commit()
+            appearance.edit().putString("theme", "DARK").commit()
+            repository.save(emptyList())
+            AutoBackupEngine.enable(context,
+                AutoBackupStore.Destination(AutoBackupStore.Kind.DEFAULT_DOWNLOADS))
+            val copy = AutoBackupStore.read(context).owned.single()
+            savedUri = Uri.parse(copy.uri)
+            assertTrue(AutoBackupFiles.verify(context, requireNotNull(savedUri), copy.sha256))
+            ActivityScenario.launch<AutoBackupSettingsActivity>(
+                Intent(context, AutoBackupSettingsActivity::class.java)
+            ).use { scenario ->
+                scenario.onActivity { activity ->
+                    assertEquals(activity.getString(R.string.auto_backup_on),
+                        activity.findViewById<TextView>(R.id.autoBackupStatus).text.toString())
+                    assertEquals(View.VISIBLE,
+                        activity.findViewById<View>(R.id.autoBackupNow).visibility)
+                    assertEquals(View.VISIBLE,
+                        activity.findViewById<View>(R.id.autoBackupDisable).visibility)
+                    assertTrue(activity.findViewById<TextView>(R.id.autoBackupDestination)
+                        .text.toString().contains("Downloads/CountAway"))
+                }
+                instrumentation.waitForIdleSync()
+                saveActualWindow(instrumentation, "auto-backup-window-verified-DARK.png")
+                scenario.onActivity { activity ->
+                    activity.findViewById<Button>(R.id.autoBackupDisable).performClick()
+                }
+                onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+                scenario.onActivity { activity ->
+                    assertEquals(activity.getString(R.string.auto_backup_off),
+                        activity.findViewById<TextView>(R.id.autoBackupStatus).text.toString())
+                }
+            }
+            assertFalse(AutoBackupStore.read(context).enabled)
+            assertTrue("Opting out must preserve the latest verified file",
+                AutoBackupFiles.verify(context, requireNotNull(savedUri), copy.sha256))
+        } finally {
+            AutoBackupScheduler.cancel(context)
+            savedUri?.let { runCatching { context.contentResolver.delete(it, null, null) } }
+            repository.save(initialEvents)
+            val edit = preferences.edit()
+            if (original == null) edit.remove("configuration_v1")
+            else edit.putString("configuration_v1", original)
+            edit.commit()
+            val appearanceEdit = appearance.edit()
+            if (originalTheme == null) appearanceEdit.remove("theme")
+            else appearanceEdit.putString("theme", originalTheme)
+            appearanceEdit.commit()
         }
     }
 

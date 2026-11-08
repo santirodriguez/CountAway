@@ -761,11 +761,15 @@ class EditorActivity : BaseActivity() {
             positiveButton?.isFocusableInTouchMode = true
             positiveButton?.requestFocus()
             dialog.updateTime(starting.hour, starting.minute)
+            // The platform's validation state can change after restoring an
+            // initial 12-hour display (notably at midnight). Never force-enable
+            // a genuinely invalid time, but honor a valid restored selection.
+            positiveButton?.isEnabled = picker.validateInput()
             positiveButton?.setOnClickListener {
-                // Commit active text input before reading the selected time.
+                // Validate committed user input before reading the selection.
                 if (picker.findFocus() is EditText) picker.clearFocus()
-                val chosen = LocalTime.of(picker.hour, picker.minute)
                 if (!picker.validateInput()) return@setOnClickListener
+                val chosen = LocalTime.of(picker.hour, picker.minute)
                 accept(chosen.hour, chosen.minute)
                 dialog.dismiss()
             }

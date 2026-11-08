@@ -72,6 +72,35 @@ class OptionalTimeEditorInstrumentedTest {
         }
     }
 
+    @Test fun midnightAndNoonRemainsConfirmableInNativeTimePicker() = isolated {
+        val base = fixture().copy(eventZone = ZoneId.of("America/Argentina/Buenos_Aires"))
+        for (hour in listOf(0, 12)) {
+            val selected = LocalTime.of(hour, 20)
+            val event = base.copy(eventTime = selected)
+            repository.save(original() + event)
+            ActivityScenario.launch<EditorActivity>(intent(event)).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    activity.findViewById<Button>(R.id.timeButton).performClick()
+                }
+                onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, error ->
+                    if (error != null) throw error
+                    val picker = view as TimePicker
+                    assertEquals("Initial native hour", hour, picker.hour)
+                    assertEquals("Initial native minute", 20, picker.minute)
+                    assertTrue("Native time should validate when no edits were entered", picker.validateInput())
+                }
+                onView(withId(android.R.id.button1)).inRoot(isDialog()).check { view, error ->
+                    if (error != null) throw error
+                    assertTrue("A valid initial time must permit confirmation", view.isEnabled)
+                }.perform(click())
+                scenario.onActivity { activity ->
+                    assertEditorTime(activity, selected, "after native confirmation at $hour:20")
+                }
+            }
+        }
+    }
+
     @Test fun afternoonTimeSurvivesNativePickerAndRecreation() = isolated {
         val event = fixture().copy(eventTime = LocalTime.of(18, 30),
             eventZone = ZoneId.of("America/Argentina/Buenos_Aires"))

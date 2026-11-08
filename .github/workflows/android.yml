@@ -22,7 +22,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api: [26, 36]
+        # A temporary source-bound compatibility sweep for the 1.2.6 backup
+        # storage boundaries. Ordinary branches retain the core CI matrix.
+        api: ${{ fromJSON(github.ref == 'refs/heads/release/1.2.6' && '[26,28,29,30,36]' || '[26,36]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
