@@ -100,6 +100,44 @@ jobs:
             tar -tf layout-evidence/behavior-renders.tar \
               > layout-evidence/behavior-render-manifest.txt
             grep -Eq '^layout-evidence/.*\.png$' layout-evidence/behavior-render-manifest.txt
+            # Check persisted backup state across an actual emulator reboot.
+            adb shell am force-stop "$PACKAGE" || true
+            adb shell pm clear "$PACKAGE" > layout-evidence/reboot-prep-clear.txt
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.backup.AutoBackupRebootInstrumentedTest#preparePublicCopyAndPersistedJobsBeforeReboot' \
+              -e countawayRebootStage prepare \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/reboot-prepare.txt 2>&1
+            if ! grep -Eq '^OK \(1 test\)' layout-evidence/reboot-prepare.txt; then
+              cat layout-evidence/reboot-prepare.txt
+              exit 1
+            fi
+            adb reboot
+            adb wait-for-device
+            boot_ready=0
+            for retry in $(seq 1 90); do
+              if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; then
+                boot_ready=1
+                break
+              fi
+              sleep 2
+            done
+            if (( boot_ready == 0 )); then
+              echo 'Android emulator did not complete reboot' >&2
+              exit 1
+            fi
+            adb shell input keyevent 82 || true
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.backup.AutoBackupRebootInstrumentedTest#restoredStateAndAnotherVerifiedCopyAfterReboot' \
+              -e countawayRebootStage verify \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/reboot-verify.txt 2>&1
+            if ! grep -Eq '^OK \(1 test\)' layout-evidence/reboot-verify.txt; then
+              cat layout-evidence/reboot-verify.txt
+              exit 1
+            fi
+            printf 'real_emulator_reboot_backup_recovery=verified\n' \
+              > layout-evidence/reboot-recovery-status.txt
             # Source-bound end-to-end public backup recovery across a real reinstall.
             adb shell am force-stop "$PACKAGE" || true
             adb shell pm clear "$PACKAGE" > layout-evidence/reinstall-prep-clear.txt
