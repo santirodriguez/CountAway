@@ -3,6 +3,8 @@ package com.santiagorodriguez.countaway.backup
 import android.app.job.JobScheduler
 import android.content.Context
 import android.net.Uri
+import android.os.Environment
+import android.os.SystemClock
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
@@ -72,7 +74,10 @@ class AutoBackupRebootInstrumentedTest {
             assertEquals(AutoBackupStore.Kind.DEFAULT_DOWNLOADS, before.destination?.kind)
             assertEquals(listOf(sample), storedEvents())
             assertTrue("Last valid public copy must still be readable", before.owned.isNotEmpty())
-            assertTrue(verified(before.owned.first()))
+            assertTrue(
+                "Last public copy was not readable after Android mounted shared storage",
+                waitForPublicCopyAfterBoot(before.owned.first()),
+            )
             assertTrue("Persisted daily job must survive an actual reboot",
                 jobs.getPendingJob(AutoBackupScheduler.DAILY_JOB_ID)?.isPersisted == true)
 
@@ -106,6 +111,29 @@ class AutoBackupRebootInstrumentedTest {
 
     private fun storedEvents(): List<CountdownEvent> =
         (repository.loadResult() as CountdownLoadResult.Success).events
+
+    /**
+     * sys.boot_completed can become 1 before MediaProvider attaches external_primary.
+     * A transient unmounted primary volume must not be diagnosed as lost backup data.
+     * Keep a strict deadline so persistently missing or unreadable copies still fail.
+     */
+    private fun waitForPublicCopyAfterBoot(copy: AutoBackupStore.OwnedCopy): Boolean {
+        val deadline = SystemClock.uptimeMillis() + 30_000L
+        var attempts = 0
+        var lastStorageState = "unknown"
+        do {
+            attempts++
+            lastStorageState = Environment.getExternalStorageState()
+            if (lastStorageState == Environment.MEDIA_MOUNTED && verified(copy)) {
+                Log.i("CountAwayReboot", "POST_BOOT_PUBLIC_READY attempts=$attempts")
+                return true
+            }
+            SystemClock.sleep(300)
+        } while (SystemClock.uptimeMillis() < deadline)
+        Log.e("CountAwayReboot",
+            "POST_BOOT_PUBLIC_UNREADABLE storage=$lastStorageState attempts=$attempts")
+        return false
+    }
 
     private fun verified(copy: AutoBackupStore.OwnedCopy): Boolean =
         AutoBackupFiles.verify(context, Uri.parse(copy.uri), copy.sha256)
