@@ -131,8 +131,14 @@ public final class BackupFaultDocumentsProvider extends DocumentsProvider {
         String safeName = displayName.substring(0, Math.min(90, displayName.length()))
             .replaceAll("[^A-Za-z0-9._-]", "_");
         String id = "f-" + UUID.randomUUID() + "__" + safeName;
-        if (!backing(id).createNewFile()) {
-            throw new FileNotFoundException("Cannot create fixture document");
+        try {
+            if (!backing(id).createNewFile()) {
+                throw new FileNotFoundException("Cannot create fixture document");
+            }
+        } catch (IOException e) {
+            FileNotFoundException failure = new FileNotFoundException("Cannot create fixture document");
+            failure.initCause(e);
+            throw failure;
         }
         return id;
     }
