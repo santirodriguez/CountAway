@@ -96,6 +96,28 @@ jobs:
             tar -tf layout-evidence/behavior-renders.tar \
               > layout-evidence/behavior-render-manifest.txt
             grep -Eq '^layout-evidence/.*\.png$' layout-evidence/behavior-render-manifest.txt
+            # Source-bound end-to-end public backup recovery across a real reinstall.
+            adb shell am force-stop "$PACKAGE" || true
+            adb shell pm clear "$PACKAGE" > layout-evidence/reinstall-prep-clear.txt
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.ui.AutoBackupReinstallInstrumentedTest#prepareVerifiedPublicBackupBeforeUninstall' \
+              -e countawayReinstallStage prepare \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/reinstall-prepare.txt 2>&1
+            grep -Eq '^OK \(1 test\)' layout-evidence/reinstall-prepare.txt
+            adb shell am force-stop "$PACKAGE" || true
+            adb uninstall "$PACKAGE" > layout-evidence/reinstall-uninstall.txt
+            adb install -r app/build/outputs/apk/debug/app-debug.apk > layout-evidence/reinstall-install.txt
+            adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
+              >> layout-evidence/reinstall-install.txt
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.ui.AutoBackupReinstallInstrumentedTest#restorePublicBackupThroughSystemPickerAfterReinstall' \
+              -e countawayReinstallStage restore \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/reinstall-restore.txt 2>&1
+            grep -Eq '^OK \(1 test\)' layout-evidence/reinstall-restore.txt
+            printf 'uninstall_reinstall_manual_import=verified\n' \
+              > layout-evidence/reinstall-recovery-status.txt
             # Native store screenshots execute on a cleared, disposable emulator.
             adb shell am force-stop "$PACKAGE" || true
             adb shell pm clear "$PACKAGE" > layout-evidence/store-capture-data-reset.txt
