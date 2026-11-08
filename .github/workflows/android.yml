@@ -47,28 +47,6 @@ jobs:
           PACKAGE=com.santiagorodriguez.countaway
           adb install -r app/build/outputs/apk/debug/app-debug.apk
           adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-          # Short, strict API36 SAF smoke before the costly full emulator suite.
-          if [ "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "36" ]; then
-            adb logcat -c || true
-            set +e
-            timeout 150s adb shell am instrument -w \
-              -e class 'com.santiagorodriguez.countaway.backup.AutoBackupSafFailureInstrumentedTest' \
-              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
-              > layout-evidence/saf-fault-preflight.txt 2>&1
-            saf_status=$?
-            set -e
-            if (( saf_status != 0 )) || \
-               ! grep -Eq '^OK \(1 test\)' layout-evidence/saf-fault-preflight.txt; then
-              echo 'SAF regression failed; skipping the expensive full suite'
-              tail -n 120 layout-evidence/saf-fault-preflight.txt
-              adb logcat -d -b main -b crash > layout-evidence/saf-fault-logcat.txt || true
-              adb shell dumpsys package "$PACKAGE.test" > layout-evidence/saf-fault-test-package.txt || true
-              echo 'Crash markers from the isolated SAF run:'
-              grep -n -A 38 -E 'FATAL EXCEPTION|AndroidRuntime:|Process crashed|has died' \
-                layout-evidence/saf-fault-logcat.txt | tail -n 190 || true
-              exit 1
-            fi
-          fi
           # Validate Android evidence streams before publishing the artifact.
           collect() {
             local test_status="$1"
@@ -112,7 +90,6 @@ jobs:
           echo 'scope=behavior_suite_excludes_store_capture' > layout-evidence/test-classes.txt
           adb shell am instrument -w \
             -e notAnnotation com.santiagorodriguez.countaway.ui.IsolatedStoreScreenshot \
-            -e notClass com.santiagorodriguez.countaway.backup.AutoBackupSafFailureInstrumentedTest \
             "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
           grep -Eq '^OK \([1-9][0-9]* tests?\)' layout-evidence/instrumentation.txt
           ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' layout-evidence/instrumentation.txt
