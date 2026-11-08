@@ -114,6 +114,12 @@ class AutoBackupSettingsInstrumentedTest {
                         }
                         assertEquals("System bar icon contrast must match app theme",
                             !expectsLightIcons, lightStatusBar)
+                        @Suppress("DEPRECATION")
+                        val legacyLightIcons =
+                            (screen.window.decorView.systemUiVisibility and
+                                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR) != 0
+                        assertEquals("Legacy icon mode must agree with actual theme",
+                            !expectsLightIcons, legacyLightIcons)
                         assertEquals(screen.getString(R.string.auto_backup_off),
                             screen.findViewById<TextView>(R.id.autoBackupStatus).text.toString())
                         assertTrue(screen.findViewById<View>(R.id.autoBackupDefault).isShown)

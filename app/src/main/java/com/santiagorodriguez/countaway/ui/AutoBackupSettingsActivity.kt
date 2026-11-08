@@ -92,6 +92,11 @@ class AutoBackupSettingsActivity : BaseActivity() {
         render()
     }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applyStatusBarContrast()
+    }
+
     override fun onPause() {
         resumed = false
         super.onPause()
@@ -234,18 +239,19 @@ class AutoBackupSettingsActivity : BaseActivity() {
         val lightContent =
             (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) !=
                 Configuration.UI_MODE_NIGHT_YES
+        // Both platform appearance channels must agree: a legacy decor flag
+        // can otherwise override WindowInsetsController on some Android builds.
+        @Suppress("DEPRECATION")
+        val legacyFlag = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        @Suppress("DEPRECATION")
+        val existing = window.decorView.systemUiVisibility
+        @Suppress("DEPRECATION")
+        window.decorView.systemUiVisibility =
+            if (lightContent) existing or legacyFlag else existing and legacyFlag.inv()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val flag = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+            val modernFlag = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
             window.insetsController?.setSystemBarsAppearance(
-                if (lightContent) flag else 0, flag)
-        } else {
-            @Suppress("DEPRECATION")
-            val flag = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-            @Suppress("DEPRECATION")
-            val existing = window.decorView.systemUiVisibility
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility =
-                if (lightContent) existing or flag else existing and flag.inv()
+                if (lightContent) modernFlag else 0, modernFlag)
         }
     }
 
