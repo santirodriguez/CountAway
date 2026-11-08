@@ -30,17 +30,23 @@ internal object AutoBackupEngine {
             val attempt = System.currentTimeMillis()
             val prepared = prepare(app)
             val copy = create(app, destination, prepared, attempt)
-            val final = AutoBackupStore.update(app) { current ->
-                check(initial.generation == current.generation) {
-                    "Destination changed while writing; backup not activated"
+            // If opt-in cannot be persisted, remove only the new, still-untracked file.
+            val final = try {
+                AutoBackupStore.update(app) { current ->
+                    check(initial.generation == current.generation) {
+                        "Destination changed while writing; backup not activated"
+                    }
+                    current.copy(
+                        enabled = true, generation = current.generation + 1,
+                        destination = destination,
+                        savedRevision = initial.dirtyRevision,
+                        lastAttempt = attempt, lastVerified = System.currentTimeMillis(),
+                        lastError = null, failures = 0, fingerprint = copy.sha256, owned = listOf(copy),
+                    )
                 }
-                current.copy(
-                    enabled = true, generation = current.generation + 1,
-                    destination = destination,
-                    savedRevision = initial.dirtyRevision,
-                    lastAttempt = attempt, lastVerified = System.currentTimeMillis(),
-                    lastError = null, failures = 0, fingerprint = copy.sha256, owned = listOf(copy),
-                )
+            } catch (error: Exception) {
+                discardUntrackedCopy(app, copy)
+                throw error
             }
             // Setup must schedule even if the originating Activity is destroyed.
             runCatching { AutoBackupScheduler.ensureScheduled(app) }
@@ -78,15 +84,22 @@ internal object AutoBackupEngine {
             }
 
             val copy = create(app, initial.destination, prepared, attempt)
-            val updated = AutoBackupStore.update(app) { current ->
-                check(current.enabled && current.generation == initial.generation) {
-                    "Backup destination changed before verification completed"
+            // Disabling/changing the destination can happen while a slow provider writes.
+            // Never resurrect an old configuration or strand its newly written document.
+            val updated = try {
+                AutoBackupStore.update(app) { current ->
+                    check(current.enabled && current.generation == initial.generation) {
+                        "Backup destination changed before verification completed"
+                    }
+                    current.copy(
+                        savedRevision = initial.dirtyRevision,
+                        lastVerified = System.currentTimeMillis(), lastError = null, failures = 0,
+                        fingerprint = copy.sha256, owned = current.owned + copy,
+                    )
                 }
-                current.copy(
-                    savedRevision = initial.dirtyRevision,
-                    lastVerified = System.currentTimeMillis(), lastError = null, failures = 0,
-                    fingerprint = copy.sha256, owned = current.owned + copy,
-                )
+            } catch (error: Exception) {
+                discardUntrackedCopy(app, copy)
+                throw error
             }
             prune(app, updated.generation)
             Outcome(true, updated.lastVerified)
@@ -118,6 +131,13 @@ internal object AutoBackupEngine {
                 Uri.parse(rawUri), Intent.FLAG_GRANT_READ_URI_PERMISSION or
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
         }
+    }
+
+    /** A failed ledger update must never delete a previously committed owned document. */
+    private fun discardUntrackedCopy(context: Context, copy: AutoBackupStore.OwnedCopy) {
+        val committed = runCatching { AutoBackupStore.read(context) }
+            .getOrNull()?.owned?.any { it.uri == copy.uri } == true
+        if (!committed) runCatching { AutoBackupFiles.deleteVerifiedOwned(context, copy) }
     }
 
     private data class Prepared(val payload: String, val sha256: String)

@@ -95,6 +95,24 @@ class AutoBackupEngineInstrumentedTest {
     }
 
     @SdkSuppress(minSdkVersion = 29)
+    @Test fun aMissingLastSnapshotIsRegeneratedRatherThanClaimedRecovered() = isolated { owned ->
+        repository.save(listOf(sample))
+        val target = AutoBackupStore.Destination(AutoBackupStore.Kind.DEFAULT_DOWNLOADS)
+        assertTrue(AutoBackupEngine.enable(context, target).created)
+        val first = AutoBackupStore.read(context).owned.single()
+        owned += first.uri
+        assertEquals(1, context.contentResolver.delete(Uri.parse(first.uri), null, null))
+        assertFalse(AutoBackupFiles.verify(context, Uri.parse(first.uri), first.sha256))
+        assertTrue(AutoBackupEngine.backupNow(context).created)
+        val state = AutoBackupStore.read(context)
+        owned += state.owned.map { it.uri }
+        assertTrue(state.enabled)
+        assertEquals(2, state.owned.size)
+        assertTrue(AutoBackupFiles.verify(context, Uri.parse(state.owned.last().uri),
+            state.owned.last().sha256))
+    }
+
+    @SdkSuppress(minSdkVersion = 29)
     @Test fun publicDownloadsSupportsVerificationManualRestoreDedupAndSevenOwnedSnapshots() = isolated { owned ->
         repository.save(listOf(sample))
         val target = AutoBackupStore.Destination(AutoBackupStore.Kind.DEFAULT_DOWNLOADS)

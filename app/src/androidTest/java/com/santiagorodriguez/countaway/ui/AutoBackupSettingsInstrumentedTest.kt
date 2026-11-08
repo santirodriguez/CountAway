@@ -58,7 +58,11 @@ class AutoBackupSettingsInstrumentedTest {
                     root.scrollTo(0, child.height - root.height)
                     val image = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
                     try {
-                        root.draw(Canvas(image))
+                        // Detached View renders lack a real window surface: fill the actual
+                        // themed background before drawing diagnostic pixels.
+                        val canvas = Canvas(image)
+                        canvas.drawColor(themed.getColor(R.color.background))
+                        root.draw(canvas)
                         val name = "auto-backup-$language-$dark-$scale-$widthDp.png"
                         val file = File(context.filesDir, "layout-evidence/$name")
                         file.parentFile!!.mkdirs()
@@ -66,6 +70,67 @@ class AutoBackupSettingsInstrumentedTest {
                     } finally { image.recycle() }
                 }
             }
+        }
+    }
+
+    @Test fun actualSettingsWindowRendersReadableInLightAndDarkThemes() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val appearance = context.getSharedPreferences("countaway_ui", Context.MODE_PRIVATE)
+        val originalTheme = appearance.getString("theme", null)
+        val folder = context.getSharedPreferences("countaway_auto_backups", Context.MODE_PRIVATE)
+        val originalBackup = folder.getString("configuration_v1", null)
+        try {
+            folder.edit().remove("configuration_v1").commit()
+            for (name in listOf("DARK", "LIGHT")) {
+                appearance.edit().putString("theme", name).commit()
+                ActivityScenario.launch<AutoBackupSettingsActivity>(
+                    Intent(context, AutoBackupSettingsActivity::class.java)
+                ).use { scenario ->
+                    scenario.onActivity { screen ->
+                        assertEquals(screen.getString(R.string.auto_backup_off),
+                            screen.findViewById<TextView>(R.id.autoBackupStatus).text.toString())
+                        assertTrue(screen.findViewById<View>(R.id.autoBackupDefault).isShown)
+                        assertTrue(screen.findViewById<View>(R.id.autoBackupChoose).isShown ||
+                            screen.findViewById<ScrollView>(R.id.autoBackupRoot).getChildAt(0)
+                                .height > screen.findViewById<ScrollView>(R.id.autoBackupRoot).height)
+                    }
+                    instrumentation.waitForIdleSync()
+                    saveActualWindow(instrumentation, "auto-backup-window-$name-top.png")
+                    scenario.onActivity { screen ->
+                        screen.findViewById<ScrollView>(R.id.autoBackupRoot)
+                            .fullScroll(View.FOCUS_DOWN)
+                    }
+                    instrumentation.waitForIdleSync()
+                    saveActualWindow(instrumentation, "auto-backup-window-$name-bottom.png")
+                }
+            }
+        } finally {
+            val restoreTheme = appearance.edit()
+            if (originalTheme == null) restoreTheme.remove("theme")
+            else restoreTheme.putString("theme", originalTheme)
+            restoreTheme.commit()
+            val restoreFolder = folder.edit()
+            if (originalBackup == null) restoreFolder.remove("configuration_v1")
+            else restoreFolder.putString("configuration_v1", originalBackup)
+            restoreFolder.commit()
+        }
+    }
+
+    private fun saveActualWindow(
+        instrumentation: android.app.Instrumentation,
+        name: String,
+    ) {
+        val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot()) {
+            "Cannot capture actual Android settings window"
+        }
+        try {
+            val file = File(context.filesDir, "layout-evidence/$name")
+            file.parentFile!!.mkdirs()
+            file.outputStream().use {
+                check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+            }
+        } finally {
+            bitmap.recycle()
         }
     }
 

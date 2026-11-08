@@ -148,7 +148,7 @@
     <string name="event_reset_undone">Reinici desfet.</string>
 
     <string name="auto_backup_title">Còpies automàtiques</string>
-    <string name="auto_backup_on">Activades · verificades</string>
+    <string name="auto_backup_on">Activades</string>
     <string name="auto_backup_off">Desactivades</string>
     <string name="auto_backup_back">Torna a Sobre l’app</string>
     <string name="auto_backup_description">Conserva còpies recuperables dels esdeveniments. No es desa res automàticament fins que les actives i es verifica la primera còpia.</string>

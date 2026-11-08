@@ -148,7 +148,7 @@
     <string name="event_reset_undone">Reinicio deshecho.</string>
 
     <string name="auto_backup_title">Copias automáticas</string>
-    <string name="auto_backup_on">Activadas · verificadas</string>
+    <string name="auto_backup_on">Activadas</string>
     <string name="auto_backup_off">Desactivadas</string>
     <string name="auto_backup_back">Volver a Acerca de</string>
     <string name="auto_backup_description">Conservá copias recuperables de tus eventos. No se guarda nada automáticamente hasta que las actives y se verifique la primera copia.</string>

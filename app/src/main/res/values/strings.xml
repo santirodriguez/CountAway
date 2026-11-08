@@ -156,7 +156,7 @@
     <string name="event_reset_undone">Reset undone.</string>
 
     <string name="auto_backup_title">Automatic backups</string>
-    <string name="auto_backup_on">On · verified</string>
+    <string name="auto_backup_on">On</string>
     <string name="auto_backup_off">Off</string>
     <string name="auto_backup_back">Back to About</string>
     <string name="auto_backup_description">Keep recoverable copies of your events. Nothing is saved automatically until you turn this on and the first backup is verified.</string>

@@ -67,14 +67,14 @@ internal object AutoBackupFiles {
 
     fun verify(context: Context, uri: Uri, expectedSha256: String): Boolean {
         return try {
-        val payload = context.contentResolver.openInputStream(uri)?.use {
-            CountdownStorageCodec.readUtf8Payload(it)
-        } ?: return false
-        CountdownStorageCodec.decodeForImport(payload)
-        sha256(payload.toByteArray(StandardCharsets.UTF_8)) == expectedSha256
-    } catch (_: Exception) {
-        false
-    }
+            val payload = context.contentResolver.openInputStream(uri)?.use {
+                CountdownStorageCodec.readUtf8Payload(it)
+            } ?: return false
+            CountdownStorageCodec.decodeForImport(payload)
+            sha256(payload.toByteArray(StandardCharsets.UTF_8)) == expectedSha256
+        } catch (_: Exception) {
+            false
+        }
     }
 
     fun createVerified(
