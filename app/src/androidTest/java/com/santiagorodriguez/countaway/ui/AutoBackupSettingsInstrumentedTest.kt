@@ -2,6 +2,8 @@ package com.santiagorodriguez.countaway.ui
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.view.WindowInsetsController
 import android.net.Uri
 import androidx.test.filters.SdkSuppress
 import androidx.test.espresso.Espresso.onView
@@ -99,6 +101,19 @@ class AutoBackupSettingsInstrumentedTest {
                     Intent(context, AutoBackupSettingsActivity::class.java)
                 ).use { scenario ->
                     scenario.onActivity { screen ->
+                        val expectsLightIcons = name == "DARK"
+                        val lightStatusBar = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            val flag = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            (requireNotNull(screen.window.insetsController).systemBarsAppearance
+                                and flag) != 0
+                        } else {
+                            @Suppress("DEPRECATION")
+                            val flag = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                            @Suppress("DEPRECATION")
+                            (screen.window.decorView.systemUiVisibility and flag) != 0
+                        }
+                        assertEquals("System bar icon contrast must match app theme",
+                            !expectsLightIcons, lightStatusBar)
                         assertEquals(screen.getString(R.string.auto_backup_off),
                             screen.findViewById<TextView>(R.id.autoBackupStatus).text.toString())
                         assertTrue(screen.findViewById<View>(R.id.autoBackupDefault).isShown)

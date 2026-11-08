@@ -3,11 +3,13 @@ package com.santiagorodriguez.countaway.ui
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.DocumentsContract
 import android.view.View
+import android.view.WindowInsetsController
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -83,6 +85,7 @@ class AutoBackupSettingsActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        applyStatusBarContrast()
         resumed = true
         consumeResult()
         runCatching { AutoBackupScheduler.ensureScheduled(applicationContext) }
@@ -221,6 +224,28 @@ class AutoBackupSettingsActivity : BaseActivity() {
             "SCHEDULE_FAILED" -> getString(R.string.auto_backup_schedule_warning)
             null -> ""
             else -> getString(R.string.auto_backup_provider_failed)
+        }
+    }
+
+    /** The Activity's wrapped app theme may differ from the device UI mode.
+     * Set icon contrast from the actually rendered content theme, not a stale
+     * system-bar appearance left by the previous Activity. */
+    private fun applyStatusBarContrast() {
+        val lightContent =
+            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) !=
+                Configuration.UI_MODE_NIGHT_YES
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val flag = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+            window.insetsController?.setSystemBarsAppearance(
+                if (lightContent) flag else 0, flag)
+        } else {
+            @Suppress("DEPRECATION")
+            val flag = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            @Suppress("DEPRECATION")
+            val existing = window.decorView.systemUiVisibility
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility =
+                if (lightContent) existing or flag else existing and flag.inv()
         }
     }
 
