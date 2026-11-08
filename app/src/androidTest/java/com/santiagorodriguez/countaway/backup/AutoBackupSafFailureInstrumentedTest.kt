@@ -174,6 +174,23 @@ class AutoBackupSafFailureInstrumentedTest {
         val authority = context.packageName + ".ci-fault-saf"
         assertNotNull("Debug provider missing from installed debug APK",
             context.packageManager.resolveContentProvider(authority, 0))
+        // Query the real provider with a restricted projection before asking
+        // DocumentsUI to discover its roots. This catches provider metadata
+        // faults independently from the system picker's navigation behavior.
+        val rootsUri = DocumentsContract.buildRootsUri(authority)
+        val columns = arrayOf(DocumentsContract.Root.COLUMN_ROOT_ID,
+            DocumentsContract.Root.COLUMN_TITLE, DocumentsContract.Root.COLUMN_DOCUMENT_ID)
+        context.contentResolver.query(rootsUri, columns, null, null, null).use { result ->
+            assertNotNull("Debug provider cannot return roots", result)
+            val cursor = requireNotNull(result)
+            assertTrue("Debug provider returned no root", cursor.moveToFirst())
+            assertEquals("root", cursor.getString(0))
+            assertEquals("CountAway Test Storage", cursor.getString(1))
+            assertEquals("root", cursor.getString(2))
+        }
+        // DocumentsUI can cache available roots across app installation. Announce
+        // this fixture root before opening the actual Android system picker.
+        context.contentResolver.notifyChange(rootsUri, null)
         scenario.onActivity {
             it.findViewById<Button>(R.id.autoBackupChoose).performClick()
         }
@@ -181,64 +198,61 @@ class AutoBackupSafFailureInstrumentedTest {
         // Android DocumentsUI opens at the last local folder, with the roots drawer
         // closed. A custom provider cannot be selected from that document listing.
         val opened = click("CountAway Test Storage", 2_000L) ||
-            (revealRoots() && click("CountAway Test Storage", 5_000L)) ||
-            (clickCurrentRoot() && click("CountAway Test Storage", 5_000L))
+            (openRootsDrawer() && click("CountAway Test Storage", 6_000L))
         assertTrue("Debug provider root unavailable in DocumentsUI: " + dump(), opened)
         assertTrue("Cannot open test folder: " + dump(), click("Backup Scenarios", 7_000L))
         assertTrue("Cannot use test folder: " + dump(), click("Use this folder", 7_000L))
         assertTrue("Permission dialog missing: " + dump(), click("Allow", 7_000L))
     }
 
-    private fun revealRoots(): Boolean {
+    private fun openRootsDrawer(): Boolean {
         for (label in listOf("Show roots", "Show navigation drawer",
-                "Open navigation drawer", "Browse")) {
-            if (click(label, 350L)) return true
+                "Open navigation drawer", "Navigation menu")) {
+            if (click(label, 450L)) return waitForFixtureRoot()
         }
-        // Gesture fallback: Android 15/16 Files picker often exposes a hamburger
-        // without a stable accessible label. Swipe from the left screen edge.
-        val root = automation.rootInActiveWindow ?: return false
-        val bounds = Rect().also(root::getBoundsInScreen)
-        val y = bounds.centerY().toFloat()
-        val left = bounds.left + 4f
-        val right = bounds.left + bounds.width() * 0.72f
-        val downTime = SystemClock.uptimeMillis()
-        fun touch(action: Int, x: Float) {
-            val event = MotionEvent.obtain(
-                downTime, SystemClock.uptimeMillis(), action, x, y, 0)
+        val window = automation.rootInActiveWindow ?: return false
+        // Never inject a left-edge swipe. On gesture-navigation emulators it
+        // invokes Android Back and closes the system picker instead.
+        if (window.packageName?.toString() == context.packageName) return false
+        val rect = Rect().also { window.getBoundsInScreen(it) }
+        val topLeftButton = nodes().firstOrNull { node ->
+            val bounds = Rect().also { node.getBoundsInScreen(it) }
+            val role = node.className?.toString().orEmpty()
+            node.isEnabled && node.isClickable &&
+                role.contains("ImageButton") &&
+                bounds.centerX() < rect.width() / 4 &&
+                bounds.centerY() < rect.height() / 4
+        }
+        if (topLeftButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true)
+            return waitForFixtureRoot()
+        // Actual toolbar hamburger tap as a bounded last resort. Check that
+        // DocumentsUI remains visible before treating this as navigation.
+        val x = (rect.left + rect.width() * 0.07f)
+        val y = (rect.top + rect.height() * 0.085f)
+        val time = SystemClock.uptimeMillis()
+        fun tap(action: Int) {
+            val event = MotionEvent.obtain(time, SystemClock.uptimeMillis(), action, x, y, 0)
             event.source = InputDevice.SOURCE_TOUCHSCREEN
-            try {
-                automation.injectInputEvent(event, true)
-            } finally { event.recycle() }
+            try { automation.injectInputEvent(event, true) }
+            finally { event.recycle() }
         }
-        touch(MotionEvent.ACTION_DOWN, left)
-        for (step in 1..12) {
-            SystemClock.sleep(18L)
-            touch(MotionEvent.ACTION_MOVE, left + (right - left) * step / 12f)
-        }
-        touch(MotionEvent.ACTION_UP, right)
-        SystemClock.sleep(400L)
-        return nodes().any {
-            it.isVisibleToUser &&
-                (it.text?.toString() == "CountAway Test Storage" ||
-                    it.contentDescription?.toString() == "CountAway Test Storage")
-        }
+        tap(MotionEvent.ACTION_DOWN)
+        tap(MotionEvent.ACTION_UP)
+        return waitForFixtureRoot()
     }
 
-    private fun clickCurrentRoot(): Boolean {
-        // In some DocumentsUI builds the toolbar location opens the same roots
-        // drawer; do not guess at arbitrary unrelated buttons.
-        val currentRoot = nodes().firstOrNull {
-            it.isVisibleToUser &&
-                (it.contentDescription?.toString()?.startsWith("Files on ") == true ||
-                    it.text?.toString()?.startsWith("Files on ") == true)
-        } ?: return false
-        var node: AccessibilityNodeInfo? = currentRoot
-        while (node != null) {
-            if (node.isClickable && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                return true
-            }
-            node = node.parent
-        }
+    private fun waitForFixtureRoot(): Boolean {
+        val until = SystemClock.uptimeMillis() + 2_500L
+        do {
+            val window = automation.rootInActiveWindow
+            if (window?.packageName?.toString() == context.packageName) return false
+            if (nodes().any {
+                    it.isVisibleToUser &&
+                        (it.text?.toString() == "CountAway Test Storage" ||
+                            it.contentDescription?.toString() == "CountAway Test Storage")
+                }) return true
+            SystemClock.sleep(150L)
+        } while (SystemClock.uptimeMillis() < until)
         return false
     }
 

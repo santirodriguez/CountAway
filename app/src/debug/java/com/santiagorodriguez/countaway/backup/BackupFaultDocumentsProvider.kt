@@ -21,17 +21,18 @@ class BackupFaultDocumentsProvider : DocumentsProvider() {
 
     override fun queryRoots(projection: Array<out String>?): Cursor =
         MatrixCursor(projection?.toList()?.toTypedArray() ?: ROOT_COLUMNS).apply {
-            newRow().apply {
-                add(DocumentsContract.Root.COLUMN_ROOT_ID, "root")
-                add(DocumentsContract.Root.COLUMN_DOCUMENT_ID, "root")
-                add(DocumentsContract.Root.COLUMN_TITLE, "CountAway Test Storage")
-                add(DocumentsContract.Root.COLUMN_SUMMARY, "Disposable backup failures")
-                add(DocumentsContract.Root.COLUMN_ICON, android.R.drawable.ic_menu_save)
-                add(DocumentsContract.Root.COLUMN_FLAGS,
-                    DocumentsContract.Root.FLAG_LOCAL_ONLY or
-                        DocumentsContract.Root.FLAG_SUPPORTS_CREATE)
-                add(DocumentsContract.Root.COLUMN_MIME_TYPES, "*/*")
-            }
+            addProjectedRow(this, mapOf(
+                DocumentsContract.Root.COLUMN_ROOT_ID to "root",
+                DocumentsContract.Root.COLUMN_DOCUMENT_ID to "root",
+                DocumentsContract.Root.COLUMN_TITLE to "CountAway Test Storage",
+                DocumentsContract.Root.COLUMN_SUMMARY to "Disposable backup failures",
+                DocumentsContract.Root.COLUMN_ICON to android.R.drawable.ic_menu_save,
+                DocumentsContract.Root.COLUMN_FLAGS to
+                    (DocumentsContract.Root.FLAG_LOCAL_ONLY or
+                        DocumentsContract.Root.FLAG_SUPPORTS_CREATE),
+                DocumentsContract.Root.COLUMN_MIME_TYPES to "*/*",
+                DocumentsContract.Root.COLUMN_AVAILABLE_BYTES to base.usableSpace,
+            ))
         }
 
     override fun queryDocument(documentId: String, projection: Array<out String>?): Cursor =
@@ -113,24 +114,28 @@ class BackupFaultDocumentsProvider : DocumentsProvider() {
         val file = if (directory) null else backing(id).also {
             if (!it.isFile) throw FileNotFoundException(id)
         }
-        cursor.newRow().apply {
-            add(DocumentsContract.Document.COLUMN_DOCUMENT_ID, id)
-            add(DocumentsContract.Document.COLUMN_DISPLAY_NAME,
-                when (id) {
-                    "root" -> "CountAway Test Storage"
-                    "folder" -> "Backup Scenarios"
-                    else -> id.substringAfter("__")
-                })
-            add(DocumentsContract.Document.COLUMN_MIME_TYPE,
-                if (directory) DocumentsContract.Document.MIME_TYPE_DIR else "application/json")
-            add(DocumentsContract.Document.COLUMN_FLAGS,
-                if (directory) DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE else
+        addProjectedRow(cursor, mapOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID to id,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME to when (id) {
+                "root" -> "CountAway Test Storage"
+                "folder" -> "Backup Scenarios"
+                else -> id.substringAfter("__")
+            },
+            DocumentsContract.Document.COLUMN_MIME_TYPE to
+                (if (directory) DocumentsContract.Document.MIME_TYPE_DIR else "application/json"),
+            DocumentsContract.Document.COLUMN_FLAGS to
+                (if (directory) DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE else
                     DocumentsContract.Document.FLAG_SUPPORTS_WRITE or
-                        DocumentsContract.Document.FLAG_SUPPORTS_DELETE)
-            add(DocumentsContract.Document.COLUMN_SIZE, file?.length() ?: 0L)
-            add(DocumentsContract.Document.COLUMN_LAST_MODIFIED,
-                file?.lastModified() ?: System.currentTimeMillis())
-        }
+                        DocumentsContract.Document.FLAG_SUPPORTS_DELETE),
+            DocumentsContract.Document.COLUMN_SIZE to (file?.length() ?: 0L),
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED to
+                (file?.lastModified() ?: System.currentTimeMillis()),
+        ))
+    }
+
+    /** Serve only requested columns. DocumentsUI may ask for a subset. */
+    private fun addProjectedRow(cursor: MatrixCursor, values: Map<String, Any?>) {
+        cursor.addRow(cursor.columnNames.map { values[it] }.toTypedArray())
     }
 
     private companion object {
@@ -139,6 +144,7 @@ class BackupFaultDocumentsProvider : DocumentsProvider() {
             DocumentsContract.Root.COLUMN_TITLE, DocumentsContract.Root.COLUMN_SUMMARY,
             DocumentsContract.Root.COLUMN_ICON, DocumentsContract.Root.COLUMN_FLAGS,
             DocumentsContract.Root.COLUMN_MIME_TYPES,
+            DocumentsContract.Root.COLUMN_AVAILABLE_BYTES,
         )
         val DOCUMENT_COLUMNS = arrayOf(
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
