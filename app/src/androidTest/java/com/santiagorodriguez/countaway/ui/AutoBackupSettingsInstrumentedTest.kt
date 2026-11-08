@@ -128,13 +128,13 @@ class AutoBackupSettingsInstrumentedTest {
                                 .height > screen.findViewById<ScrollView>(R.id.autoBackupRoot).height)
                     }
                     instrumentation.waitForIdleSync()
-                    saveActualWindow(instrumentation, "auto-backup-window-$name-top.png")
+                    saveActualWindow(instrumentation, "auto-backup-window-$name-top.png", name == "DARK")
                     scenario.onActivity { screen ->
                         screen.findViewById<ScrollView>(R.id.autoBackupRoot)
                             .fullScroll(View.FOCUS_DOWN)
                     }
                     instrumentation.waitForIdleSync()
-                    saveActualWindow(instrumentation, "auto-backup-window-$name-bottom.png")
+                    saveActualWindow(instrumentation, "auto-backup-window-$name-bottom.png", name == "DARK")
                 }
             }
         } finally {
@@ -152,14 +152,15 @@ class AutoBackupSettingsInstrumentedTest {
     private fun saveActualWindow(
         instrumentation: android.app.Instrumentation,
         name: String,
+        expectDark: Boolean,
     ) {
-        // ActivityScenario can report RESUMED before Android draws its first
-        // frame. Retain the original screenshot of every rejected attempt;
-        // never accept a blank OS surface as visual evidence of a usable UI.
+        // RESUMED can precede the first frame and the SystemUI appearance
+        // transition. Verify actual icon pixels, not only an Activity flag.
         val evidence = File(context.filesDir, "layout-evidence")
         evidence.mkdirs()
-        var lastDistinctColors = 0
-        repeat(4) { attempt ->
+        var lastColors = 0
+        var lastIconPixels = 0
+        repeat(8) { attempt ->
             instrumentation.waitForIdleSync()
             val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot()) {
                 "Cannot capture actual Android settings window"
@@ -173,10 +174,15 @@ class AutoBackupSettingsInstrumentedTest {
                         colors += bitmap.getPixel(x, y) and 0x00ffffff
                     }
                 }
-                lastDistinctColors = colors.size
-                val usable = lastDistinctColors >= 8
+                lastColors = colors.size
+                val iconContrast = if (Build.VERSION.SDK_INT >= 35) {
+                    lastIconPixels = visibleStatusIconPixels(bitmap, expectDark)
+                    lastIconPixels >= 18
+                } else true
+                val usable = lastColors >= 8 && iconContrast
+                val diagnostic = if (lastColors < 8) "blank" else "status-contrast"
                 val file = File(evidence,
-                    if (usable) name else "$name.blank-attempt-${attempt + 1}.png")
+                    if (usable) name else "$name.$diagnostic-attempt-${attempt + 1}.png")
                 file.outputStream().use {
                     check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
                 }
@@ -184,10 +190,31 @@ class AutoBackupSettingsInstrumentedTest {
             } finally {
                 bitmap.recycle()
             }
-            Thread.sleep(150)
+            Thread.sleep(160)
         }
-        fail("Native window remained blank after four captures: $name; " +
-            "distinct colors=$lastDistinctColors")
+        fail("Native window failed visual verification: $name; " +
+            "distinct colors=$lastColors, contrasting status pixels=$lastIconPixels")
+    }
+
+    private fun visibleStatusIconPixels(bitmap: Bitmap, expectDark: Boolean): Int {
+        // Emulators are rendered at 1080 px width; scale the bounded status-time
+        // region to device width and avoid unrelated light app content.
+        val scale = bitmap.width / 1080f
+        fun coord(px: Int) = (px * scale).toInt()
+        var matching = 0
+        for (y in coord(25) until minOf(bitmap.height, coord(115))
+            step maxOf(1, coord(3))) {
+            for (x in coord(20) until minOf(bitmap.width, coord(310))
+                step maxOf(1, coord(3))) {
+                val rgb = bitmap.getPixel(x, y)
+                val r = (rgb shr 16) and 255
+                val g = (rgb shr 8) and 255
+                val b = rgb and 255
+                if (if (expectDark) minOf(r, g, b) > 180
+                    else maxOf(r, g, b) < 120) matching++
+            }
+        }
+        return matching
     }
 
     @SdkSuppress(minSdkVersion = 29)
@@ -224,7 +251,7 @@ class AutoBackupSettingsInstrumentedTest {
                         .text.toString().contains("Downloads/CountAway"))
                 }
                 instrumentation.waitForIdleSync()
-                saveActualWindow(instrumentation, "auto-backup-window-verified-DARK.png")
+                saveActualWindow(instrumentation, "auto-backup-window-verified-DARK.png", true)
                 scenario.onActivity { activity ->
                     activity.findViewById<Button>(R.id.autoBackupDisable).performClick()
                 }

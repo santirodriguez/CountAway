@@ -35,6 +35,8 @@ class AutoBackupSettingsActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_auto_backup_settings)
         InsetUtils.applySystemBarPadding(findViewById(R.id.autoBackupRoot))
+        // Apply the wrapped light/dark theme to SystemUI before the first frame.
+        applyStatusBarContrast()
         session = lastNonConfigurationInstance as? Session ?: Session()
         session.work.onChanged = ::consumeResult
         choosingLegacyDefault = savedInstanceState?.getBoolean(STATE_LEGACY_PICKER) ?: false
@@ -86,6 +88,7 @@ class AutoBackupSettingsActivity : BaseActivity() {
     override fun onResume() {
         super.onResume()
         applyStatusBarContrast()
+        refreshStatusBarOnNextFrame()
         resumed = true
         consumeResult()
         runCatching { AutoBackupScheduler.ensureScheduled(applicationContext) }
@@ -94,7 +97,16 @@ class AutoBackupSettingsActivity : BaseActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) applyStatusBarContrast()
+        if (hasFocus) {
+            applyStatusBarContrast()
+            refreshStatusBarOnNextFrame()
+        }
+    }
+
+    private fun refreshStatusBarOnNextFrame() {
+        window.decorView.postOnAnimation {
+            if (!isFinishing && !isDestroyed) applyStatusBarContrast()
+        }
     }
 
     override fun onPause() {
