@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.backup
 
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.graphics.Rect
 import android.net.Uri
 import android.os.SystemClock
@@ -25,7 +26,6 @@ import com.santiagorodriguez.countaway.ui.AutoBackupSettingsActivity
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.util.concurrent.CountDownLatch
@@ -40,7 +40,7 @@ class AutoBackupSafFailureInstrumentedTest {
     private val context = instrumentation.targetContext
     private val automation = instrumentation.uiAutomation
     private val repository = CountdownRepository(context)
-    private val faultPrefs = context.getSharedPreferences("ci_fault_saf", Context.MODE_PRIVATE)
+    private val controller = Uri.parse("content://com.santiagorodriguez.countaway.test.ci-fault-control")
     private val backupPrefs = context.getSharedPreferences("countaway_auto_backups", Context.MODE_PRIVATE)
     private val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
     private val sample = CountdownEvent(
@@ -53,12 +53,10 @@ class AutoBackupSafFailureInstrumentedTest {
         val oldConfig = backupPrefs.getString("configuration_v1", null)
         val oldEvents = (repository.loadResult() as CountdownLoadResult.Success).events
         val oldGrants = context.contentResolver.persistedUriPermissions.map { it.uri }.toSet()
-        val folder = File(context.filesDir, "ci-fault-saf")
         try {
             AutoBackupScheduler.cancel(context)
             backupPrefs.edit().remove("configuration_v1").commit()
-            folder.deleteRecursively()
-            faultPrefs.edit().clear().commit()
+            control("reset")
             repository.save(listOf(sample))
             ActivityScenario.launch<AutoBackupSettingsActivity>(
                 Intent(context, AutoBackupSettingsActivity::class.java)
@@ -66,23 +64,21 @@ class AutoBackupSafFailureInstrumentedTest {
                 chooseFixture(scenario)
                 val original = waitForCopy()
                 assertTrue("First test-provider JSON was not verified", verified(original))
-                faultPrefs.edit().putString("protected_document",
-                    DocumentsContract.getDocumentId(Uri.parse(original.uri))).commit()
+                control("protect", DocumentsContract.getDocumentId(Uri.parse(original.uri)))
                 repository.save(listOf(sample.copy(date = sample.date.plusDays(1))))
 
                 for (mode in listOf("UNAVAILABLE", "NO_SPACE", "ABORT", "TRUNCATED")) {
-                    faultPrefs.edit().putString("mode", mode).commit()
+                    control("mode", mode)
                     assertTrue("Provider fault $mode did not reject the write",
                         runCatching { AutoBackupEngine.backupNow(context) }.isFailure)
                     val state = AutoBackupStore.read(context)
                     assertEquals("Failure $mode changed the ledger", listOf(original), state.owned)
                     assertEquals("Failure $mode was hidden", "BACKUP_FAILED", state.lastError)
-                    faultPrefs.edit().putString("mode", "NORMAL").commit()
+                    control("mode", "NORMAL")
                     assertTrue("Failure $mode damaged the last good document", verified(original))
                 }
 
-                faultPrefs.edit().putString("mode", "SLOW")
-                    .putBoolean("entered_slow_write", false).commit()
+                control("mode", "SLOW")
                 val operation = FutureTask { AutoBackupEngine.backupNow(context) }
                 val worker = Thread(operation, "CountAway-slow-SAF").apply {
                     isDaemon = true
@@ -96,7 +92,7 @@ class AutoBackupSafFailureInstrumentedTest {
                 assertTrue("Delayed output did not commit",
                     operation.get(12L, TimeUnit.SECONDS).created)
                 worker.join(1000L)
-                faultPrefs.edit().putString("mode", "NORMAL").commit()
+                control("mode", "NORMAL")
                 val stored = AutoBackupStore.read(context)
                 assertEquals(2, stored.owned.size)
                 assertTrue("Previously good file damaged", verified(original))
@@ -129,7 +125,7 @@ class AutoBackupSafFailureInstrumentedTest {
                 assertTrue("New snapshot failed verification", verified(recovered.owned.last()))
             }
         } finally {
-            faultPrefs.edit().putString("mode", "NORMAL").commit()
+            control("mode", "NORMAL")
             AutoBackupScheduler.cancel(context)
             for (copy in runCatching { AutoBackupStore.read(context).owned }.getOrDefault(emptyList())) {
                 runCatching { context.contentResolver.delete(Uri.parse(copy.uri), null, null) }
@@ -140,13 +136,17 @@ class AutoBackupSafFailureInstrumentedTest {
                     runCatching { context.contentResolver.releasePersistableUriPermission(grant.uri, flags) }
                 }
             }
-            folder.deleteRecursively()
-            faultPrefs.edit().clear().commit()
+            runCatching { control("reset") }
             repository.save(oldEvents)
             if (oldConfig == null) backupPrefs.edit().remove("configuration_v1").commit()
             else backupPrefs.edit().putString("configuration_v1", oldConfig).commit()
         }
     }
+
+    private fun control(action: String, arg: String? = null): Bundle =
+        requireNotNull(context.contentResolver.call(controller, action, arg, null)) {
+            "SAF test control did not respond: $action"
+        }
 
     private fun verified(copy: AutoBackupStore.OwnedCopy) =
         AutoBackupFiles.verify(context, Uri.parse(copy.uri), copy.sha256)
@@ -164,33 +164,18 @@ class AutoBackupSafFailureInstrumentedTest {
     private fun waitSlow(): Boolean {
         val until = SystemClock.uptimeMillis() + 8_000L
         do {
-            if (faultPrefs.getBoolean("entered_slow_write", false)) return true
+            if (control("status").getBoolean("entered_slow_write")) return true
             SystemClock.sleep(80L)
         } while (SystemClock.uptimeMillis() < until)
         return false
     }
 
     private fun chooseFixture(scenario: ActivityScenario<AutoBackupSettingsActivity>) {
-        val authority = context.packageName + ".ci-fault-saf"
-        assertNotNull("Debug provider missing from installed debug APK",
-            context.packageManager.resolveContentProvider(authority, 0))
-        // Query the real provider with a restricted projection before asking
-        // DocumentsUI to discover its roots. This catches provider metadata
-        // faults independently from the system picker's navigation behavior.
-        val rootsUri = DocumentsContract.buildRootsUri(authority)
-        val columns = arrayOf(DocumentsContract.Root.COLUMN_ROOT_ID,
-            DocumentsContract.Root.COLUMN_TITLE, DocumentsContract.Root.COLUMN_DOCUMENT_ID)
-        context.contentResolver.query(rootsUri, columns, null, null, null).use { result ->
-            assertNotNull("Debug provider cannot return roots", result)
-            val cursor = requireNotNull(result)
-            assertTrue("Debug provider returned no root", cursor.moveToFirst())
-            assertEquals("root", cursor.getString(0))
-            assertEquals("CountAway Test Storage", cursor.getString(1))
-            assertEquals("root", cursor.getString(2))
-        }
-        // DocumentsUI can cache available roots across app installation. Announce
-        // this fixture root before opening the actual Android system picker.
-        context.contentResolver.notifyChange(rootsUri, null)
+        assertTrue("External test APK fixture not responding",
+            control("probe").getBoolean("ready"))
+        val authority = "com.santiagorodriguez.countaway.test.ci-fault-saf"
+        assertNotNull("External test APK DocumentsProvider not installed",
+            instrumentation.context.packageManager.resolveContentProvider(authority, 0))
         scenario.onActivity {
             it.findViewById<Button>(R.id.autoBackupChoose).performClick()
         }

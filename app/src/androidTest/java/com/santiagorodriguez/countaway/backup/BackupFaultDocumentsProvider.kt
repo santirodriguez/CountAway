@@ -1,7 +1,12 @@
 package com.santiagorodriguez.countaway.backup
 
+import android.content.ContentProvider
+import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
+import android.net.Uri
+import android.os.Binder
+import android.os.Bundle
 import android.database.MatrixCursor
 import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
@@ -153,4 +158,48 @@ class BackupFaultDocumentsProvider : DocumentsProvider() {
             DocumentsContract.Document.COLUMN_SIZE, DocumentsContract.Document.COLUMN_LAST_MODIFIED,
         )
     }
+}
+
+/** Instrumentation-only IPC; test fixture never exists in release APK. */
+class BackupFaultControlProvider : ContentProvider() {
+    override fun onCreate() = true
+
+    override fun call(method: String, arg: String?, extras: Bundle?): Bundle {
+        val c = requireNotNull(context)
+        val callers = c.packageManager.getPackagesForUid(Binder.getCallingUid()).orEmpty()
+        if ("com.santiagorodriguez.countaway" !in callers && c.packageName !in callers)
+            throw SecurityException("Fixture control restricted to tested app")
+        val prefs = c.getSharedPreferences("ci_fault_saf", Context.MODE_PRIVATE)
+        when (method) {
+            "probe" -> return Bundle().apply { putBoolean("ready", true) }
+            "reset" -> {
+                prefs.edit().clear().commit()
+                File(c.filesDir, "ci-fault-saf").deleteRecursively()
+                c.contentResolver.notifyChange(
+                    DocumentsContract.buildRootsUri(c.packageName + ".ci-fault-saf"), null)
+            }
+            "mode" -> {
+                require(arg in setOf("NORMAL", "UNAVAILABLE", "NO_SPACE", "ABORT", "TRUNCATED", "SLOW"))
+                prefs.edit().putString("mode", arg).putBoolean("entered_slow_write", false).commit()
+            }
+            "protect" -> {
+                require(arg != null && arg.startsWith("f-"))
+                prefs.edit().putString("protected_document", arg).commit()
+            }
+            "status" -> return Bundle().apply {
+                putBoolean("entered_slow_write", prefs.getBoolean("entered_slow_write", false))
+            }
+            else -> throw IllegalArgumentException("Unknown fixture command")
+        }
+        return Bundle().apply { putBoolean("ready", true) }
+    }
+
+    override fun query(uri: Uri, projection: Array<out String>?, selection: String?,
+        selectionArgs: Array<out String>?, sortOrder: String?): Cursor? = null
+    override fun getType(uri: Uri): String? = null
+    override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+    override fun update(uri: Uri, values: ContentValues?, selection: String?,
+        selectionArgs: Array<out String>?): Int = 0
+    override fun delete(uri: Uri, selection: String?,
+        selectionArgs: Array<out String>?): Int = 0
 }

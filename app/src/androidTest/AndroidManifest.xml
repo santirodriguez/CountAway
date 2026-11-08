@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="CountAway SAF CI Fixture">
+        <provider
+            android:name="com.santiagorodriguez.countaway.backup.BackupFaultDocumentsProvider"
+            android:authorities="com.santiagorodriguez.countaway.test.ci-fault-saf"
+            android:exported="true"
+            android:label="CountAway Test Storage"
+            android:icon="@android:drawable/ic_menu_save"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+        <provider
+            android:name="com.santiagorodriguez.countaway.backup.BackupFaultControlProvider"
+            android:authorities="com.santiagorodriguez.countaway.test.ci-fault-control"
+            android:exported="true" />
+    </application>
+</manifest>
