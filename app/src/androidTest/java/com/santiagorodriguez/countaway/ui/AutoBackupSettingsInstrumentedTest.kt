@@ -132,18 +132,41 @@ class AutoBackupSettingsInstrumentedTest {
         instrumentation: android.app.Instrumentation,
         name: String,
     ) {
-        val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot()) {
-            "Cannot capture actual Android settings window"
-        }
-        try {
-            val file = File(context.filesDir, "layout-evidence/$name")
-            file.parentFile!!.mkdirs()
-            file.outputStream().use {
-                check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+        // ActivityScenario can report RESUMED before Android draws its first
+        // frame. Retain the original screenshot of every rejected attempt;
+        // never accept a blank OS surface as visual evidence of a usable UI.
+        val evidence = File(context.filesDir, "layout-evidence")
+        evidence.mkdirs()
+        var lastDistinctColors = 0
+        repeat(4) { attempt ->
+            instrumentation.waitForIdleSync()
+            val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot()) {
+                "Cannot capture actual Android settings window"
             }
-        } finally {
-            bitmap.recycle()
+            try {
+                val colors = HashSet<Int>()
+                for (y in bitmap.height / 5 until bitmap.height * 17 / 20
+                    step maxOf(1, bitmap.height / 35)) {
+                    for (x in bitmap.width / 10 until bitmap.width * 9 / 10
+                        step maxOf(1, bitmap.width / 35)) {
+                        colors += bitmap.getPixel(x, y) and 0x00ffffff
+                    }
+                }
+                lastDistinctColors = colors.size
+                val usable = lastDistinctColors >= 8
+                val file = File(evidence,
+                    if (usable) name else "$name.blank-attempt-${attempt + 1}.png")
+                file.outputStream().use {
+                    check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+                }
+                if (usable) return
+            } finally {
+                bitmap.recycle()
+            }
+            Thread.sleep(150)
         }
+        fail("Native window remained blank after four captures: $name; " +
+            "distinct colors=$lastDistinctColors")
     }
 
     @SdkSuppress(minSdkVersion = 29)
