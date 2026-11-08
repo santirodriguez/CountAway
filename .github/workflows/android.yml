@@ -112,6 +112,14 @@ jobs:
               cat layout-evidence/reboot-prepare.txt
               exit 1
             fi
+            # The user normally opens CountAway to enable backups. Opening the
+            # actual launcher Activity also clears Android's stopped-package state
+            # left by pm clear / instrumentation-only CI setup. Do not skip the
+            # independent persisted-job assertion after the subsequent reboot.
+            adb shell dumpsys package "$PACKAGE" > layout-evidence/reboot-package-before-launch.txt
+            adb shell am start -W -n "$PACKAGE/.ui.MainActivity" > layout-evidence/reboot-app-launch.txt
+            adb shell dumpsys package "$PACKAGE" > layout-evidence/reboot-package-before.txt
+            adb shell dumpsys jobscheduler > layout-evidence/reboot-jobs-before.txt
             adb reboot
             adb wait-for-device
             boot_ready=0
@@ -127,6 +135,8 @@ jobs:
               exit 1
             fi
             adb shell input keyevent 82 || true
+            adb shell dumpsys package "$PACKAGE" > layout-evidence/reboot-package-after.txt
+            adb shell dumpsys jobscheduler > layout-evidence/reboot-jobs-after.txt
             adb shell am instrument -w \
               -e class 'com.santiagorodriguez.countaway.backup.AutoBackupRebootInstrumentedTest#restoredStateAndAnotherVerifiedCopyAfterReboot' \
               -e countawayRebootStage verify \
