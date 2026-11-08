@@ -181,7 +181,10 @@ internal object AutoBackupEngine {
         val state = AutoBackupStore.read(context)
         if (!state.enabled || state.generation != expectedGeneration) return
         for (copy in AutoBackupRetention.stale(state.owned)) {
-            if (!AutoBackupFiles.deleteVerifiedOwned(context, copy)) {
+            val removed = AutoBackupFiles.deleteVerifiedOwned(context, copy) ||
+                (state.destination?.kind == AutoBackupStore.Kind.DEFAULT_DOWNLOADS &&
+                    AutoBackupFiles.confirmedMissingOwnedDownload(context, copy))
+            if (!removed) {
                 runCatching {
                     AutoBackupStore.update(context) { current ->
                         if (current.generation == expectedGeneration)

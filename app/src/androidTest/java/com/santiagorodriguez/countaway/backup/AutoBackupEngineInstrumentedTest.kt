@@ -175,10 +175,29 @@ class AutoBackupEngineInstrumentedTest {
         assertEquals(7, state.owned.map { it.sha256 }.distinct().size)
         val mostRecent = state.owned.last()
         assertTrue(AutoBackupFiles.verify(context, Uri.parse(mostRecent.uri), mostRecent.sha256))
+        // A user may manually remove an old app-owned Downloads item. Once
+        // MediaStore confirms it is absent, prune its ledger entry rather than
+        // reporting an endless cleanup error or deleting any other document.
+        val manuallyRemoved = state.owned.first()
+        assertFalse(AutoBackupFiles.confirmedMissingOwnedDownload(context, mostRecent))
+        context.contentResolver.delete(Uri.parse(manuallyRemoved.uri), null, null)
+        assertTrue("MediaStore should confirm an already removed owned item",
+            AutoBackupFiles.confirmedMissingOwnedDownload(context, manuallyRemoved))
+        repository.save(listOf(sample.copy(date = sample.date.plusDays(9))))
+        assertTrue(AutoBackupEngine.backupNow(context).created)
+        state = AutoBackupStore.read(context)
+        owned += state.owned.map { it.uri }
+        assertEquals(7, state.owned.size)
+        assertFalse(state.owned.any { it.uri == manuallyRemoved.uri })
+        assertNull("A confirmed missing item is not a cleanup failure", state.lastError)
+        assertTrue(AutoBackupFiles.verify(context,
+            Uri.parse(state.owned.last().uri), state.owned.last().sha256))
+
         AutoBackupEngine.disable(context)
         assertFalse(AutoBackupStore.read(context).enabled)
         assertTrue("Disabling must keep the last backup",
-            AutoBackupFiles.verify(context, Uri.parse(mostRecent.uri), mostRecent.sha256))
+            AutoBackupFiles.verify(context, Uri.parse(state.owned.last().uri),
+                state.owned.last().sha256))
     }
 
     private fun isolated(test: (MutableSet<String>) -> Unit) {

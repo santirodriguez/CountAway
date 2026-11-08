@@ -1,5 +1,6 @@
 package com.santiagorodriguez.countaway.backup
 
+import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -113,6 +114,26 @@ internal object AutoBackupFiles {
         if (!verify(context, uri, copy.sha256)) return false
         return runCatching { context.contentResolver.delete(uri, null, null) == 1 }
             .getOrDefault(false)
+    }
+
+    /**
+     * Only an empty MediaStore query for an app-created Downloads item proves
+     * it was already removed. Null cursors, inaccessible providers, and SAF
+     * documents are not evidence of deletion and must stay in the ledger.
+     */
+    fun confirmedMissingOwnedDownload(
+        context: Context,
+        copy: AutoBackupStore.OwnedCopy,
+    ): Boolean {
+        val uri = Uri.parse(copy.uri)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+            uri.scheme != ContentResolver.SCHEME_CONTENT ||
+            uri.authority != MediaStore.AUTHORITY) return false
+        return runCatching {
+            context.contentResolver.query(
+                uri, arrayOf(MediaStore.MediaColumns._ID), null, null, null,
+            )?.use { it.count == 0 } ?: false
+        }.getOrDefault(false)
     }
 
     fun sha256(bytes: ByteArray): String =
