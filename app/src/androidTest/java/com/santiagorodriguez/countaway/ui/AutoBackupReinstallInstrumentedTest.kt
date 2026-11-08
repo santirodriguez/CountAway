@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.ui
 
 import android.content.Intent
 import android.os.SystemClock
+import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
@@ -60,12 +61,26 @@ class AutoBackupReinstallInstrumentedTest {
         val copy = state.owned.single()
         assertTrue(AutoBackupFiles.verify(context, android.net.Uri.parse(copy.uri), copy.sha256))
         assertEquals("Downloads/CountAway", state.destination?.label)
-        Log.i("CountAwayReinstall", "PREPARE_VERIFIED public_download=true")
+        val backupName = context.contentResolver.query(
+            android.net.Uri.parse(copy.uri),
+            arrayOf(MediaStore.MediaColumns.DISPLAY_NAME),
+            null, null, null,
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else null
+        } ?: error("Cannot resolve the exact verified Downloads filename")
+        assertTrue("Unexpected backup filename", backupName.matches(
+            Regex("CountAway-[0-9]{8}-[0-9]{6}-[0-9a-f]{8}\\.json")
+        ))
+        Log.i("CountAwayReinstall", "PREPARE_VERIFIED name=$backupName")
         // Intentionally leave this fixture in Downloads until after the real uninstall.
     }
 
     @Test fun restorePublicBackupThroughSystemPickerAfterReinstall() {
         requireStage("restore")
+        val expectedName = requireNotNull(
+            InstrumentationRegistry.getArguments().getString("countawayExpectedBackupName")
+        ) { "Missing exact verified filename from pre-uninstall process" }
+        require(expectedName.matches(Regex("CountAway-[0-9]{8}-[0-9]{6}-[0-9a-f]{8}\\.json")))
         assertFalse("Backup opt-in must not survive uninstall", AutoBackupStore.read(context).enabled)
         assertTrue("Private events must not survive uninstall", events().isEmpty())
         ActivityScenario.launch<AboutActivity>(
@@ -75,7 +90,7 @@ class AutoBackupReinstallInstrumentedTest {
                 activity.findViewById<View>(R.id.importButton).performClick()
             }
             assertTrue("ACTION_OPEN_DOCUMENT did not open", waitForExternalPicker())
-            if (!clickBackupFile(5_000L)) {
+            if (!clickText(expectedName, 5_000L)) {
                 val downloads = clickText("Downloads", 4_000L) ||
                     clickText("Download", 3_000L) ||
                     (clickText("Show roots", 2_000L) &&
@@ -85,8 +100,8 @@ class AutoBackupReinstallInstrumentedTest {
                 assertTrue("Downloads root unavailable: " + dumpUi(), downloads)
                 assertTrue("CountAway folder unavailable after uninstall: " + dumpUi(),
                     clickText("CountAway", 6_000L))
-                assertTrue("Public JSON missing after uninstall: " + dumpUi(),
-                    clickBackupFile(9_000L))
+                assertTrue("Expected $expectedName missing after uninstall: " + dumpUi(),
+                    clickText(expectedName, 9_000L))
             }
             assertTrue("Real import confirmation missing: " + dumpUi(),
                 waitForText(context.getString(R.string.backup_import_confirm_title), 15_000L))
@@ -131,9 +146,6 @@ class AutoBackupReinstallInstrumentedTest {
 
     private fun clickText(value: String, timeout: Long): Boolean =
         clickMatching(timeout) { it.equals(value, ignoreCase = true) }
-
-    private fun clickBackupFile(timeout: Long): Boolean =
-        clickMatching(timeout) { it.startsWith("CountAway-") && it.endsWith(".json") }
 
     private fun clickMatching(timeout: Long, matches: (String) -> Boolean): Boolean {
         val until = SystemClock.uptimeMillis() + timeout

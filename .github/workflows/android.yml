@@ -51,6 +51,10 @@ jobs:
           collect() {
             local test_status="$1"
             trap - EXIT
+            if (( test_status != 0 )) && [[ -s layout-evidence/reinstall-restore.txt ]]; then
+              echo "Reinstall recovery failure receipt:"
+              tail -n 100 layout-evidence/reinstall-restore.txt
+            fi
             adb logcat -d > layout-evidence/logcat.txt || true
             local attempt=1
             local capture_ok=0
@@ -104,7 +108,17 @@ jobs:
               -e countawayReinstallStage prepare \
               "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
               > layout-evidence/reinstall-prepare.txt 2>&1
-            grep -Eq '^OK \(1 test\)' layout-evidence/reinstall-prepare.txt
+            if ! grep -Eq '^OK \(1 test\)' layout-evidence/reinstall-prepare.txt; then
+              cat layout-evidence/reinstall-prepare.txt
+              exit 1
+            fi
+            adb logcat -d -s CountAwayReinstall:I > layout-evidence/reinstall-prepare-logcat.txt
+            backup_name="$(sed -n -E 's/^.*PREPARE_VERIFIED name=(CountAway-[0-9]{8}-[0-9]{6}-[0-9a-f]{8}\.json).*$/\1/p' layout-evidence/reinstall-prepare-logcat.txt | tail -n 1)"
+            if [[ -z "$backup_name" ]]; then
+              echo "Verified backup filename was not captured from preparation" >&2
+              cat layout-evidence/reinstall-prepare.txt >&2
+              exit 1
+            fi
             adb shell am force-stop "$PACKAGE" || true
             adb uninstall "$PACKAGE" > layout-evidence/reinstall-uninstall.txt
             adb install -r app/build/outputs/apk/debug/app-debug.apk > layout-evidence/reinstall-install.txt
@@ -113,9 +127,13 @@ jobs:
             adb shell am instrument -w \
               -e class 'com.santiagorodriguez.countaway.ui.AutoBackupReinstallInstrumentedTest#restorePublicBackupThroughSystemPickerAfterReinstall' \
               -e countawayReinstallStage restore \
+              -e countawayExpectedBackupName "$backup_name" \
               "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
               > layout-evidence/reinstall-restore.txt 2>&1
-            grep -Eq '^OK \(1 test\)' layout-evidence/reinstall-restore.txt
+            if ! grep -Eq '^OK \(1 test\)' layout-evidence/reinstall-restore.txt; then
+              cat layout-evidence/reinstall-restore.txt
+              exit 1
+            fi
             printf 'uninstall_reinstall_manual_import=verified\n' \
               > layout-evidence/reinstall-recovery-status.txt
             # Native store screenshots execute on a cleared, disposable emulator.
