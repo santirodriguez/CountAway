@@ -235,9 +235,18 @@ jobs:
           grep -Fxq "base/manifest/AndroidManifest.xml" "${RUNNER_TEMP}/countaway-aab-files.txt"
           grep -Eq '^base/dex/classes([0-9]*)?\.dex$' "${RUNNER_TEMP}/countaway-aab-files.txt"
 
-          curl --fail --location --silent --show-error --retry 2 \
+          if ! curl --fail --location --silent --show-error --retry 2 \
             "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar" \
-            --output "${BUNDLETOOL_JAR}"
+            --output "${BUNDLETOOL_JAR}"; then
+            # Same official GitHub release asset, addressed through the REST API.
+            # Never bypass the pinned SHA-256 verification on either path.
+            rm -f "${BUNDLETOOL_JAR}"
+            curl --fail --location --silent --show-error --retry 2 \
+              --header "Accept: application/octet-stream" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/google/bundletool/releases/assets/329035725" \
+              --output "${BUNDLETOOL_JAR}"
+          fi
           echo "${BUNDLETOOL_SHA256}  ${BUNDLETOOL_JAR}" | sha256sum --check -
           java -jar "${BUNDLETOOL_JAR}" validate --bundle="${AAB}"
           bash scripts/verify-bundle-languages.sh "${AAB}" "${BUNDLETOOL_JAR}" "ci-evidence/bundle-languages"
