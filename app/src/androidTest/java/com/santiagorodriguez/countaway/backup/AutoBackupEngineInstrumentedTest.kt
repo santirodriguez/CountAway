@@ -95,6 +95,27 @@ class AutoBackupEngineInstrumentedTest {
     }
 
     @SdkSuppress(minSdkVersion = 29)
+    @Test fun failedReadbackNeverReplacesTheLastValidBackup() = isolated { owned ->
+        repository.save(listOf(sample))
+        val target = AutoBackupStore.Destination(AutoBackupStore.Kind.DEFAULT_DOWNLOADS)
+        assertTrue(AutoBackupEngine.enable(context, target).created)
+        val before = AutoBackupStore.read(context).owned.single()
+        owned += before.uri
+        val valid = repository.exportPayload()
+        val failure = runCatching {
+            AutoBackupFiles.createVerified(
+                context, target, valid, "0".repeat(64),
+                "CountAway-rejected-${java.util.UUID.randomUUID()}.json",
+            )
+        }
+        assertTrue("A mismatched hash must reject the new copy", failure.isFailure)
+        val after = AutoBackupStore.read(context)
+        assertEquals(listOf(before), after.owned)
+        assertTrue("Existing verified backup must survive a rejected write",
+            AutoBackupFiles.verify(context, Uri.parse(before.uri), before.sha256))
+    }
+
+    @SdkSuppress(minSdkVersion = 29)
     @Test fun aMissingLastSnapshotIsRegeneratedRatherThanClaimedRecovered() = isolated { owned ->
         repository.save(listOf(sample))
         val target = AutoBackupStore.Destination(AutoBackupStore.Kind.DEFAULT_DOWNLOADS)

@@ -3,6 +3,7 @@ package com.santiagorodriguez.countaway.backup
 import android.content.Context
 import android.net.Uri
 import android.content.Intent
+import com.santiagorodriguez.countaway.data.CountdownIo
 import com.santiagorodriguez.countaway.data.CountdownRepository
 import java.nio.charset.StandardCharsets
 import java.time.Instant
@@ -117,12 +118,27 @@ internal object AutoBackupEngine {
 
     fun disable(context: Context) {
         val app = context.applicationContext
-        AutoBackupStore.update(app) {
+        // Persist opt-out immediately. Provider I/O may still be in flight, so do
+        // not revoke its SAF grant until the current single-flight write completes.
+        val disabled = AutoBackupStore.update(app) {
             it.copy(enabled = false, generation = it.generation + 1, lastError = null)
         }
         runCatching { AutoBackupScheduler.cancel(app) }
-        AutoBackupStore.read(app).destination?.treeUri?.let { releaseOldFolderGrant(app, it) }
-        // No old backup file is deleted when opt-out happens.
+        disabled.destination?.treeUri?.let { priorTree ->
+            CountdownIo.submitDocument(
+                task = {
+                    synchronized(lock) {
+                        // A later opt-in to the same folder must keep its grant.
+                        val current = runCatching { AutoBackupStore.read(app) }.getOrNull()
+                        if (current?.enabled != true || current.destination?.treeUri != priorTree) {
+                            releaseOldFolderGrant(app, priorTree)
+                        }
+                    }
+                },
+                onComplete = { /* Revocation is best-effort; never erase saved files. */ },
+            )
+        }
+        // Saved files survive opt-out, even when a slow provider cannot be stopped.
     }
 
     private fun releaseOldFolderGrant(context: Context, rawUri: String) {
