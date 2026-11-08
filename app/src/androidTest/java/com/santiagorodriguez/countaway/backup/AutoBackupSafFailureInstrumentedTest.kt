@@ -2,9 +2,12 @@ package com.santiagorodriguez.countaway.backup
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.net.Uri
 import android.os.SystemClock
 import android.provider.DocumentsContract
+import android.view.InputDevice
+import android.view.MotionEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import androidx.test.core.app.ActivityScenario
@@ -168,18 +171,75 @@ class AutoBackupSafFailureInstrumentedTest {
     }
 
     private fun chooseFixture(scenario: ActivityScenario<AutoBackupSettingsActivity>) {
+        val authority = context.packageName + ".ci-fault-saf"
+        assertNotNull("Debug provider missing from installed debug APK",
+            context.packageManager.resolveContentProvider(authority, 0))
         scenario.onActivity {
             it.findViewById<Button>(R.id.autoBackupChoose).performClick()
         }
         assertTrue("System picker did not open", waitPicker())
-        val opened = click("CountAway Test Storage", 5_000L) ||
-            (click("Show roots", 3_000L) && click("CountAway Test Storage", 5_000L)) ||
-            (click("Show navigation drawer", 3_000L) &&
-                click("CountAway Test Storage", 5_000L))
-        assertTrue("Debug SAF provider not visible: " + dump(), opened)
+        // Android DocumentsUI opens at the last local folder, with the roots drawer
+        // closed. A custom provider cannot be selected from that document listing.
+        val opened = click("CountAway Test Storage", 2_000L) ||
+            (revealRoots() && click("CountAway Test Storage", 5_000L)) ||
+            (clickCurrentRoot() && click("CountAway Test Storage", 5_000L))
+        assertTrue("Debug provider root unavailable in DocumentsUI: " + dump(), opened)
         assertTrue("Cannot open test folder: " + dump(), click("Backup Scenarios", 7_000L))
         assertTrue("Cannot use test folder: " + dump(), click("Use this folder", 7_000L))
         assertTrue("Permission dialog missing: " + dump(), click("Allow", 7_000L))
+    }
+
+    private fun revealRoots(): Boolean {
+        for (label in listOf("Show roots", "Show navigation drawer",
+                "Open navigation drawer", "Browse")) {
+            if (click(label, 350L)) return true
+        }
+        // Gesture fallback: Android 15/16 Files picker often exposes a hamburger
+        // without a stable accessible label. Swipe from the left screen edge.
+        val root = automation.rootInActiveWindow ?: return false
+        val bounds = Rect().also(root::getBoundsInScreen)
+        val y = bounds.centerY().toFloat()
+        val left = bounds.left + 4f
+        val right = bounds.left + bounds.width() * 0.72f
+        val downTime = SystemClock.uptimeMillis()
+        fun touch(action: Int, x: Float) {
+            val event = MotionEvent.obtain(
+                downTime, SystemClock.uptimeMillis(), action, x, y, 0)
+            event.source = InputDevice.SOURCE_TOUCHSCREEN
+            try {
+                automation.injectInputEvent(event, true)
+            } finally { event.recycle() }
+        }
+        touch(MotionEvent.ACTION_DOWN, left)
+        for (step in 1..12) {
+            SystemClock.sleep(18L)
+            touch(MotionEvent.ACTION_MOVE, left + (right - left) * step / 12f)
+        }
+        touch(MotionEvent.ACTION_UP, right)
+        SystemClock.sleep(400L)
+        return nodes().any {
+            it.isVisibleToUser &&
+                (it.text?.toString() == "CountAway Test Storage" ||
+                    it.contentDescription?.toString() == "CountAway Test Storage")
+        }
+    }
+
+    private fun clickCurrentRoot(): Boolean {
+        // In some DocumentsUI builds the toolbar location opens the same roots
+        // drawer; do not guess at arbitrary unrelated buttons.
+        val currentRoot = nodes().firstOrNull {
+            it.isVisibleToUser &&
+                (it.contentDescription?.toString()?.startsWith("Files on ") == true ||
+                    it.text?.toString()?.startsWith("Files on ") == true)
+        } ?: return false
+        var node: AccessibilityNodeInfo? = currentRoot
+        while (node != null) {
+            if (node.isClickable && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                return true
+            }
+            node = node.parent
+        }
+        return false
     }
 
     private fun waitPicker(): Boolean {
@@ -223,6 +283,9 @@ class AutoBackupSafFailureInstrumentedTest {
     }
 
     private fun dump() = nodes().mapNotNull {
-        it.text?.toString() ?: it.contentDescription?.toString()
-    }.take(55).joinToString(" | ")
+        val label = it.text?.toString() ?: it.contentDescription?.toString()
+        label?.let { text ->
+            "$text [${it.className};id=${it.viewIdResourceName};click=${it.isClickable}]"
+        }
+    }.take(75).joinToString(" | ")
 }
