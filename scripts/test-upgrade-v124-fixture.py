@@ -62,6 +62,12 @@ class UpgradeV124FixtureTest(unittest.TestCase):
                               str(self.before), str(generated)], capture_output=True, text=True)
         self.assertEqual(0, run.returncode, run.stderr)
         self.assertIn("ids_and_values=preserved", run.stdout)
+        self.assertIn("predecessor=1.2.4", run.stdout)
+        current = subprocess.run([sys.executable, str(SCRIPT), "verify",
+                                  str(self.before), str(generated), "--predecessor", "1.2.5"],
+                                 capture_output=True, text=True)
+        self.assertEqual(0, current.returncode, current.stderr)
+        self.assertIn("predecessor=1.2.5", current.stdout)
 
     def test_identity_changes_fail_closed(self):
         for damage in ("missing", "different", "duplicated"):

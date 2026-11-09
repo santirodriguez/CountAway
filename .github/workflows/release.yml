@@ -36,8 +36,8 @@ jobs:
       BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
       EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
       PACKAGE_ID: "com.santiagorodriguez.countaway"
-      PREVIOUS_PUBLIC_VERSION: "1.2.4"
-      PREVIOUS_PUBLIC_APK_BYTES: "540904"
+      PREVIOUS_PUBLIC_VERSION: "1.2.5"
+      PREVIOUS_PUBLIC_APK_BYTES: "545056"
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
@@ -767,10 +767,10 @@ jobs:
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
-      PREVIOUS_PUBLIC_VERSION: "1.2.4"
-      PREVIOUS_PUBLIC_VERSION_CODE: "13"
-      PREVIOUS_PUBLIC_APK_SHA256: "b563da811a8409556127547384f3b849dbebd7bdb99712bc3fba56ce421d86fa"
-      PREVIOUS_PUBLIC_APK_BYTES: "540904"
+      PREVIOUS_PUBLIC_VERSION: "1.2.5"
+      PREVIOUS_PUBLIC_VERSION_CODE: "14"
+      PREVIOUS_PUBLIC_APK_SHA256: "d17de425ec52576e8b11d0ece09e8f2174e4083f4386c81f8e12364ed680820f"
+      PREVIOUS_PUBLIC_APK_BYTES: "545056"
 
     steps:
       - name: Checkout exact candidate source
@@ -1180,7 +1180,7 @@ jobs:
             PREVIOUS_APK="candidate/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v${PREVIOUS_PUBLIC_VERSION}/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
-            UPGRADE_PROBE_TITLE="UpgradeProbe124"
+            UPGRADE_PROBE_TITLE="UpgradeProbe125"
             # Do not execute the signed upgrade with an unrevised versionCode.
             [[ "${VERSION_CODE}" =~ ^[0-9]+$ ]] && (( VERSION_CODE > PREVIOUS_PUBLIC_VERSION_CODE )) || {
               echo "Candidate versionCode must exceed the public predecessor" >&2
@@ -1228,7 +1228,8 @@ jobs:
             export_upgrade_snapshot before
             python3 scripts/upgrade-v124-fixture.py verify \
               "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json" \
-              "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json"
+              "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json" \
+              --predecessor "${PREVIOUS_PUBLIC_VERSION}"
 
             adb shell dumpsys package "${PACKAGE_ID}" \
               > "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
@@ -1259,7 +1260,8 @@ jobs:
             export_upgrade_snapshot after
             python3 scripts/upgrade-v124-fixture.py verify \
               "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json" \
-              "acceptance-evidence/upgrade-after-data-api-${API_LEVEL}.json"
+              "acceptance-evidence/upgrade-after-data-api-${API_LEVEL}.json" \
+              --predecessor "${PREVIOUS_PUBLIC_VERSION}"
 
             PID="$(adb shell pidof "${PACKAGE_ID}" | tr -d '\r')"
             if [[ -z "${PID}" ]]; then

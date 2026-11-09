@@ -115,6 +115,7 @@ def main() -> int:
     check = sub.add_parser("verify")
     check.add_argument("before", type=Path)
     check.add_argument("after", type=Path)
+    check.add_argument("--predecessor", default=PREVIOUS_PUBLIC_VERSION)
     args = parser.parse_args()
     try:
         if args.command == "generate":
@@ -124,7 +125,7 @@ def main() -> int:
             print(f"upgrade_fixture=generated schema={SCHEMA_VERSION} events={len(EVENTS)}")
         else:
             verify(args.before, args.after)
-            print(f"upgrade_fixture=PASS predecessor={PREVIOUS_PUBLIC_VERSION} "
+            print(f"upgrade_fixture=PASS predecessor={args.predecessor} "
                   f"schema={SCHEMA_VERSION} events={len(EVENTS)} ids_and_values=preserved")
     except (ValueError, OSError, json.JSONDecodeError) as error:
         parser.exit(1, f"upgrade_fixture=BLOCKED: {error}\n")
