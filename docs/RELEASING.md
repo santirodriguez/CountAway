@@ -94,7 +94,7 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 - current APK-size delta against the previous public 1.2.5 APK (545,056 bytes);
 - Play-readiness AAB SHA-256/byte size and basic bundle structure, retained only as internal Actions evidence;
 - compiled instrumentation-test APK and ordinary test/lint reports;
-- screenshot SHA-256s during stable preparation;
+- screenshot SHA-256s during stable preparation, including all approved locale sets when a multilingual refresh is part of the release;
 - F-Droid Gate A evidence when preparing a stable draft.
 
 Normal CI executes the complete Android instrumentation suite on API 26 and 36, including Home, editor, storage, language, pinning and widget layout contracts, and retains renders and measurements. Its separate build job runs JVM tests, lint and packaging checks and compiles the instrumentation-test APK. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.2.5 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
@@ -168,7 +168,7 @@ Before any actual draft/tag release preparation, `https://countaway.cajapersonal
 After the exact release candidate and its source-matched hands-on QA APK are accepted, the established F-Droid Gate A remains satisfied, and the release branch is frozen:
 
 1. confirm `versionName` and `versionCode` are final;
-2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, all three Fastlane changelogs, screenshots, and README screenshot references are present and coherent;
+2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, all three Fastlane changelogs, screenshots, and README screenshot references are present and coherent. A multilingual screenshot refresh requires six authentic PNGs each in `fastlane/metadata/android/{en-US,es,ca}/images/phoneScreenshots/`, a single exact-source capture manifest, the true candidate About/version screen and a configured native launcher in slot 6; compare all original bytes against the CI artifact before merge;
 3. confirm the accepted release candidate was built from the exact intended source SHA and review its retained validation report, checksum, APK size/delta, signing identity, permissions, runtime-dependency report, R8 mapping, and independent rebuild result;
 4. confirm blocking emulator acceptance on API 26/33/36, review the API 37 emulator diagnostic, record successful physical Android 17/API 37 acceptance, and verify real upgrade preservation from the previous public release;
 5. confirm the established F-Droid Gate A status without repeating its previously accepted first-time installation check for ordinary updates;

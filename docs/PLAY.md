@@ -180,18 +180,20 @@ The existing Fastlane icon and feature graphic remain source/distribution assets
 
 Phone screenshots have a single canonical **release-evidence** source for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. The release-evidence set retains approved, unmodified captures of unchanged UI; the version-specific About image is updated from the actual candidate when approved. All six files must remain genuine 1080×1920 (9:16), 24-bit RGB PNGs. The earlier accepted v1.2.4 files are historical; their indexed-to-RGB conversion preserved every visible RGB pixel, but they are no longer the current canonical set. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. For the published v1.2.4 Play storefront, the maintainer selected five accurate, version-neutral images and intentionally omitted the About/version capture (`4.png`); `6.png` shows launcher widgets. That storefront selection remains separately managed in Play Console, and newer repository images require an authorized upload to appear there. For future releases, inspect whether existing storefront images remain accurate, and retain accepted current-version captures as release evidence. Never distort, pad or repaint screenshot content.
 
+For an approved localized screenshot refresh, capture all six matching roles from the same app source for **English (`en-US`), Español (`es`) and Català (`ca`)**. The Android CI native-capture job produces a reviewed, checksum-manifested, pixel-unchanged ZIP with 18 files at `fastlane/metadata/android/<locale>/images/phoneScreenshots/{1..6}.png`; its language tags map to Play `en-US`, `es-419` and `ca`. Slot 6 must be an actual configured Android launcher widget, not the in-app preview or an unfinished placeholder. Download the source-bound CI artifact, inspect **all** original PNGs at full resolution and obtain maintainer approval before promoting their exact bytes to the release branch; the handoff ZIP itself is not a publication or automatic commit. Upload missing binary files manually when the GitHub connector cannot safely preserve original bytes.
+
 To stage the accepted screenshots for the Play Console, copy them from the canonical Fastlane files while preserving byte-for-byte identity:
 
 ```bash
 python3 scripts/prepare-play-assets.py \
   --output-dir play-readiness/store-assets \
   --include-phone-screenshots
-python3 scripts/verify-play-assets.py screenshot \
-  play-readiness/store-assets/phoneScreenshots/*.png
+find play-readiness/store-assets/phoneScreenshots -name '*.png' -print0 |
+  xargs -0 python3 scripts/verify-play-assets.py screenshot
 (cd play-readiness/store-assets && sha256sum -c phoneScreenshots.sha256)
 ```
 
-Android CI and the release workflow stage all six accepted screenshots, validate their Play-compatible format, and verify that staged file hashes match the canonical sources. The canonical files are never modified by this helper. Google Play Console still requires the maintainer to upload them; it does not automatically read Fastlane screenshots from GitHub.
+Android CI and the release workflow stage all accepted English screenshots and, when both localized source folders are present, the complete Spanish and Catalan sets (18 total). Missing or malformed halves of a localized pair are rejected rather than silently treated as English; staged hashes match the canonical PNG bytes. The canonical files are never modified by this helper. Google Play Console still requires the maintainer to upload them; it does not automatically read Fastlane screenshots from GitHub.
 
 PNG exports can be checked with `python3 scripts/verify-play-assets.py <icon|feature|screenshot> <file>...`. JPEG screenshot exports remain valid Play inputs and should be inspected with an image tool before submission. Final screenshots are not generated or altered by this pipeline; they must still be genuine exact-candidate captures.
 

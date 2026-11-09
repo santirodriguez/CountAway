@@ -220,51 +220,65 @@ def prepare_feature(source: Path, destination: Path) -> None:
 
 
 def stage_phone_screenshots(output: Path) -> None:
-    """Copy six accepted Fastlane screenshots into Play assets without altering bytes."""
-    source = Path("fastlane/metadata/android/en-US/images/phoneScreenshots")
-    if not source.is_dir():
-        fail(f"{source}: missing canonical screenshot directory")
+    """Stage unchanged Fastlane PNG bytes; include ES/CA only as a complete pair."""
+    source_root = Path("fastlane/metadata/android")
+    expected = [f"{index}.png" for index in range(1, 7)]
+    sources = {
+        locale: source_root / locale / "images" / "phoneScreenshots"
+        for locale in ("en-US", "es", "ca")
+    }
+    if not sources["en-US"].is_dir():
+        fail(f"{sources['en-US']}: missing canonical English screenshot directory")
+    present = [locale for locale in ("es", "ca") if sources[locale].exists()]
+    if present and set(present) != {"es", "ca"}:
+        fail(f"Localized screenshot set incomplete: found {present}, require both ES and CA")
+    locales = ("en-US", "es", "ca") if present else ("en-US",)
 
-    expected = [f"{i}.png" for i in range(1, 7)]
-    actual = sorted(
-        path.name
-        for path in source.iterdir()
-        if path.is_file() and path.suffix.lower() in (".png", ".jpg", ".jpeg")
-    )
-    if actual != sorted(expected):
-        fail(f"{source}: expected exactly {expected}, got {actual}")
-
-    # Validate every source before writing any staged outputs.
-    for name in expected:
-        path = source / name
-        image = decode_png(path)
-        if (image["width"], image["height"]) != (1080, 1920):
-            fail(
-                f"{path}: CountAway phone screenshots must be authentic "
-                f"1080x1920 captures, got {image['width']}x{image['height']}"
-            )
-        if image["color_type"] != 2:
-            fail(f"{path}: screenshot must be a 24-bit RGB PNG without alpha")
+    # Validate every original input before copying any output file.
+    for locale in locales:
+        source = sources[locale]
+        if not source.is_dir():
+            fail(f"{source}: must be a screenshot directory")
+        actual = sorted(
+            path.name for path in source.iterdir()
+            if path.is_file() and path.suffix.lower() in (".png", ".jpg", ".jpeg")
+        )
+        if actual != sorted(expected):
+            fail(f"{source}: expected exactly {expected}, got {actual}")
+        for name in expected:
+            path = source / name
+            image = decode_png(path)
+            if (image["width"], image["height"]) != (1080, 1920):
+                fail(f"{path}: expected an original 1080x1920 Android capture")
+            if image["color_type"] != 2:
+                fail(f"{path}: expected 24-bit RGB PNG with no alpha")
 
     dest = output / "phoneScreenshots"
     if dest.exists():
-        extras = sorted(path.name for path in dest.iterdir() if path.is_file() and path.name not in expected)
+        allowed = set(expected) | ({"es", "ca"} if present else set())
+        extras = sorted(path.name for path in dest.iterdir() if path.name not in allowed)
         if extras:
-            fail(f"{dest}: unexpected existing staged files {extras}")
+            fail(f"{dest}: unexpected staged paths {extras}")
     dest.mkdir(parents=True, exist_ok=True)
 
     manifest = []
-    for name in expected:
-        original = source / name
-        staged = dest / name
-        shutil.copyfile(original, staged)
-        digest = sha256(original)
-        if sha256(staged) != digest:
-            fail(f"{staged}: staged screenshot differs from canonical source")
-        manifest.append(f"{digest}  phoneScreenshots/{name}")
-        print(f"play_screenshot=staged source={original} output={staged} sha256={digest}")
+    for locale in locales:
+        locale_dest = dest if locale == "en-US" else dest / locale
+        locale_dest.mkdir(parents=True, exist_ok=True)
+        for name in expected:
+            original = sources[locale] / name
+            staged = locale_dest / name
+            shutil.copyfile(original, staged)
+            digest = sha256(original)
+            if sha256(staged) != digest:
+                fail(f"{staged}: screenshot differs from original Fastlane bytes")
+            relpath = f"phoneScreenshots/{name}" if locale == "en-US" else f"phoneScreenshots/{locale}/{name}"
+            manifest.append(f"{digest}  {relpath}")
+            print(f"play_screenshot=staged locale={locale} source={original} output={staged} sha256={digest}")
 
     (output / "phoneScreenshots.sha256").write_text("\n".join(manifest) + "\n", encoding="utf-8")
+    print(f"play_screenshot_locales={','.join(locales)} count={len(manifest)}")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()

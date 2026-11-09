@@ -35,7 +35,7 @@ CountAway remains intentionally straightforward for F-Droid:
 - the manifest has no Internet permission;
 - Fastlane metadata lives under `fastlane/metadata/android/`;
 - English metadata uses F-Droid's `en-US` locale, alongside `es` and `ca`;
-- phone screenshots are stored as PNG files under the `en-US` Fastlane metadata;
+- localized phone screenshots use the corresponding `en-US`, `es`, and `ca` Fastlane image directories when approved for the release; do not copy English UI pixels into another locale;
 - official releases use stable semantic `v<version>` tags;
 - release APKs use the same long-lived upstream signing identity.
 
