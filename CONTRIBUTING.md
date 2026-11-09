@@ -56,7 +56,7 @@ Translate **all current translatable** `string`, `plurals`, and `string-array` r
 - Keep each resource's `name`, XML structure, formatting placeholders (`%1$s`, `%2$d`), and markup intact.
 - Keep `string-array` entries in the same order and count.
 - Use plural categories that make sense in your language; every plural resource needs an `other` form.
-- Cover **countdowns and count-up events**, widgets, reminders, Help, accessibility, backup/restore, sharing, and other current screens.
+- Cover **countdowns and count-up events**, Reset to today/Undo, widgets, reminders, Help, accessibility, manual and automatic backups, restore, sharing, and other current screens.
 - Leave the product name as **CountAway**. You can suggest a localized name in the PR, explaining its meaning and tone.
 - Write natural text, ideally by a native or proficient speaker. Translation tools can assist, but don't submit unreviewed machine output or placeholder text.
 

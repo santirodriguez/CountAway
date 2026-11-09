@@ -1,6 +1,6 @@
 # CountAway Privacy Policy
 
-**Effective date:** October 6, 2026
+**Last updated:** November 9, 2026
 
 CountAway is developed by Santiago Rodriguez. The localized app names **Ya Estamos** (Spanish) and **Ja Queda Poc** (Catalan) refer to the same CountAway application and are covered by this policy.
 

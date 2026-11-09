@@ -62,6 +62,7 @@ The release process is intentionally strict:
 - GitHub Actions dependencies are pinned to immutable commit SHAs.
 - Hosted API 37 emulator execution is a non-gating diagnostic while the current Android 17 system images can abort inside SurfaceFlinger/mapper.ranchu before CountAway starts.
 - A successful physical Android 17/API 37 acceptance run is mandatory before release readiness; hosted-emulator diagnostics cannot replace it.
+- Before merging any release branch, complete the applicable pre-merge checks and provide the maintainer with an installable APK tied to the reviewed source SHA. Explicit hands-on approval of that unchanged candidate is mandatory. Fixes require a new tested APK and renewed acceptance of affected behavior; this does not authorize publication.
 
 Normal pull-request CI is useful but not equivalent to candidate validation: GitHub may test a PR merge ref. The release-candidate workflow binds its output to the explicitly supplied source SHA and records that identity in retained validation evidence.
 
@@ -164,13 +165,13 @@ Before any actual draft/tag release preparation, `https://countaway.cajapersonal
 
 ## Prepare a draft release
 
-After the exact release candidate is accepted, Gate A is satisfied, and the release branch is frozen:
+After the exact release candidate and its source-matched hands-on QA APK are accepted, the established F-Droid Gate A remains satisfied, and the release branch is frozen:
 
 1. confirm `versionName` and `versionCode` are final;
 2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, all three Fastlane changelogs, screenshots, and README screenshot references are present and coherent;
 3. confirm the accepted release candidate was built from the exact intended source SHA and review its retained validation report, checksum, APK size/delta, signing identity, permissions, runtime-dependency report, R8 mapping, and independent rebuild result;
 4. confirm blocking emulator acceptance on API 26/33/36, review the API 37 emulator diagnostic, record successful physical Android 17/API 37 acceptance, and verify real upgrade preservation from the previous public release;
-5. confirm Gate A, including the maintainer's F-Droid APK installation check;
+5. confirm the established F-Droid Gate A status without repeating its previously accepted first-time installation check for ordinary updates;
 6. merge the reviewed `release/<version>` pull request into `main` with a normal merge commit unless a different merge strategy has been explicitly reviewed and approved;
 7. verify the merged `main` tree exactly matches the reviewed release-branch tree and wait for Android CI to pass on that exact `main` head;
 8. keep the `release/<version>` branch present through draft/tag/publication verification;
@@ -180,6 +181,7 @@ The normal release path is therefore:
 
 ```text
 accepted release candidate
+-> maintainer-approved, source-matched QA APK
 -> reviewed release branch
 -> merge to main
 -> verify identical tree + green main CI
@@ -210,7 +212,7 @@ The draft must remain unpublished until its configured target commit, release no
 Publishing is intentionally separate from preparation. Before publishing the GitHub Release:
 
 - verify the approved candidate and prepared draft source identity are the intended exact commit;
-- install and smoke-test the signed APK on a physical Android 17/API 37 device;
+- confirm the accepted physical Android 17/API 37 signed-APK test evidence still matches the unchanged candidate;
 - verify an upgrade from the previous public CountAway release preserves countdowns and existing widgets;
 - verify the SHA-256 checksum;
 - verify the signing certificate SHA-256 matches the expected fingerprint above;
