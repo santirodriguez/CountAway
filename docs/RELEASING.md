@@ -161,7 +161,7 @@ For CountAway 1.1.8, Gate A was completed on September 22, 2026. Keep these chec
 
 This gate applies even if a release is prepared manually outside the normal checklist. The app itself performs no network check and receives no Internet permission.
 
-Before any actual draft/tag release preparation, `https://countaway.cajapersonal.org/` and `https://countaway.cajapersonal.org/privacy/` must resolve. The hosted privacy page must expose the CountAway policy title and all three policy languages, while the repository's canonical `PRIVACY.md` must retain the matching multilingual policy headings. This gate also applies to the documented release-branch recovery path; recovery is not allowed to ship a build with a broken project or privacy URL.
+Before any actual draft/tag release preparation, `https://countaway.cajapersonal.org/` and `https://countaway.cajapersonal.org/privacy/` must resolve. The hosted privacy page must expose the CountAway policy title and all three policy languages, while the repository's canonical `PRIVACY.md` must retain matching multilingual headings. **For 1.2.6, additionally verify live policy content** against the updated canonical text in all languages, including optional unencrypted automatic JSON backups, user-selected storage providers, retention and deletion, and the possibility of provider-managed synchronization. The existing automated Site check proves URL/heading availability, **not full policy-content parity**. This gate also applies to the documented release-branch recovery path; no release may ship with a broken or materially stale privacy page.
 
 ## Prepare a draft release
 

@@ -129,7 +129,7 @@ CountAway project site:
 https://countaway.cajapersonal.org/
 ```
 
-The hosted policy is static, public HTML and is store-neutral across CountAway / Ya Estamos / Ja Queda Poc. It was deployed and manually accepted on 2026-10-06 on the CountAway Hostinger project surface. The canonical policy source text remains `PRIVACY.md` in this repository. Editing `PRIVACY.md` does not update the hosted page: before a new store submission or public release, verify that the live page matches the current policy in all three languages, including the optional temporary text-file sharing path.
+CountAway's public website and `/privacy/` are maintained as a separate ChatGPT Site at `countaway.cajapersonal.org`, not in this GitHub repository. The canonical application privacy text is `PRIVACY.md` and applies to CountAway / Ya Estamos / Ja Queda Poc. Updating that file does **not** update the public Site. Previous approval of the hosted page predates the optional automatic backup feature; before the 1.2.6 release, independently compare the actual live content in English, Spanish and Catalan with the current policy. In particular, cover opt-in automatic event backups, plain JSON, storage destinations, external-provider synchronization, retention/deletion, and temporary text-file sharing. Live availability and heading checks alone cannot establish content parity.
 
 Google Play requires the submitted privacy-policy URL to be active, publicly accessible, non-geofenced, non-PDF, and non-editable. Treat the hosted URL as a release gate: if the hosting surface moves or its accessibility changes, update the hosted page, in-app resource, contract tests, release workflow, and this document coherently before release preparation.
 
@@ -146,7 +146,7 @@ Based on the current runtime, CountAway is designed so the developer does not co
 - no Internet permission;
 - count-down/count-up events and settings remain local;
 - reminders/widgets are local;
-- backup export/import is explicitly user-directed through Android's document interface;
+- manual backup export/import is user-directed; optional automatic event-only JSON backups are disabled until enabled, save through Android's local or user-selected document location, and may be synced independently by that provider;
 - event sharing is explicitly user-directed through Android's share sheet.
 
 This is a readiness assessment, **not a permanently valid Play Console declaration**. Google defines collection as transmitting user data off the device; local-only processing is outside that collection definition. Even when an app collects or shares no user data, a Data Safety form and privacy-policy link are still required once the app is active on closed/open/production tracks; an app exclusively on internal testing is currently exempt from the Data Safety form.
