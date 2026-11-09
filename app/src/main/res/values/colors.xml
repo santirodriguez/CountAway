@@ -11,6 +11,8 @@
     <color name="on_accent">#031331</color>
     <color name="outline">#D8E1EC</color>
     <color name="danger">#B83F4B</color>
+    <color name="backup_success">#137A57</color>
+    <color name="backup_success_soft">#E2F6EC</color>
     <color name="danger_surface">#FBE8EA</color>
     <color name="launcher_background">#031331</color>
 

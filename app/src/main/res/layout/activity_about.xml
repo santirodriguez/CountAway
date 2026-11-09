@@ -324,6 +324,12 @@
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp">
 
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginEnd="10dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_backup_shield" />
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
