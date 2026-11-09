@@ -194,6 +194,118 @@ class AutoBackupSafPickerInstrumentedTest {
         }
     }
 
+
+    @Test fun changingDefaultToSafFolderPersistsInSettingsAndUsesChosenDestination() {
+        val oldState = prefs.getString("configuration_v1", null)
+        val oldEvents = (repository.loadResult() as CountdownLoadResult.Success).events
+        val oldGrants = context.contentResolver.persistedUriPermissions.map { it.uri }.toSet()
+        val created = mutableListOf<Uri>()
+        try {
+            AutoBackupScheduler.cancel(context)
+            check(prefs.edit().remove("configuration_v1").commit())
+            repository.save(listOf(sample))
+            assertTrue(AutoBackupEngine.enable(context,
+                AutoBackupStore.Destination(AutoBackupStore.Kind.DEFAULT_DOWNLOADS)).created)
+            val previous = AutoBackupStore.read(context).owned.single()
+            val previousUri = Uri.parse(previous.uri)
+            created += previousUri
+            assertTrue(AutoBackupFiles.verify(context, previousUri, previous.sha256))
+
+            ActivityScenario.launch<AutoBackupSettingsActivity>(
+                Intent(context, AutoBackupSettingsActivity::class.java)
+            ).use { scenario ->
+                scenario.onActivity { activity ->
+                    assertTrue(activity.findViewById<android.widget.Button>(
+                        R.id.autoBackupDefault).isSelected)
+                    activity.findViewById<android.widget.Button>(
+                        R.id.autoBackupChoose).performClick()
+                }
+                assertTrue("Actual system folder picker never opened", waitForExternalPicker())
+                assertTrue("Documents unavailable: " + dumpUi(),
+                    clickAccessible("Documents", 8_000L) ||
+                        (clickAccessible("Show roots", 3_000L) &&
+                            clickAccessible("Documents", 8_000L)) ||
+                        (clickAccessible("Show navigation drawer", 3_000L) &&
+                            clickAccessible("Documents", 8_000L)))
+                assertTrue("Documents folder could not be selected: " + dumpUi(),
+                    clickAccessible("Use this folder", 9_000L))
+                assertTrue("Document permission not granted: " + dumpUi(),
+                    clickAccessible("Allow", 9_000L))
+                val deadline = SystemClock.uptimeMillis() + 20_000L
+                var selected: AutoBackupStore.State
+                do {
+                    selected = AutoBackupStore.read(context)
+                    if (selected.destination?.kind == AutoBackupStore.Kind.SELECTED_FOLDER) break
+                    SystemClock.sleep(150L)
+                } while (SystemClock.uptimeMillis() < deadline)
+                assertTrue("Destination did not switch from Default to SAF", selected.enabled)
+                assertEquals(AutoBackupStore.Kind.SELECTED_FOLDER, selected.destination?.kind)
+                assertEquals("Documents", selected.destination?.label)
+                assertEquals(1, selected.owned.size)
+                val firstCustom = selected.owned.single()
+                created += Uri.parse(firstCustom.uri)
+                assertTrue(AutoBackupFiles.verify(context,
+                    Uri.parse(firstCustom.uri), firstCustom.sha256))
+                assertTrue("Old default backup was lost during folder change",
+                    AutoBackupFiles.verify(context, previousUri, previous.sha256))
+            }
+
+            // Closing and reopening must read the committed destination, not a
+            // transient label or the default folder's previously verified state.
+            ActivityScenario.launch<AutoBackupSettingsActivity>(
+                Intent(context, AutoBackupSettingsActivity::class.java)
+            ).use { scenario ->
+                scenario.onActivity { activity ->
+                    val actual = activity.findViewById<android.widget.TextView>(
+                        R.id.autoBackupDestination).text.toString()
+                    assertTrue("Reopened screen displays old location: " + actual,
+                        actual.contains("Documents") && !actual.contains("Downloads/CountAway"))
+                    assertFalse(activity.findViewById<android.widget.Button>(
+                        R.id.autoBackupDefault).isSelected)
+                    assertTrue(activity.findViewById<android.widget.Button>(
+                        R.id.autoBackupChoose).isSelected)
+                }
+            }
+            val next = sample.copy(date = sample.date.plusDays(1))
+            repository.save(listOf(next))
+            assertTrue("Changed event should create new SAF backup",
+                AutoBackupEngine.backupNow(context).created)
+            val last = AutoBackupStore.read(context)
+            assertEquals(AutoBackupStore.Kind.SELECTED_FOLDER, last.destination?.kind)
+            val lastCopy = last.owned.last()
+            created += Uri.parse(lastCopy.uri)
+            assertTrue(AutoBackupFiles.verify(context,
+                Uri.parse(lastCopy.uri), lastCopy.sha256))
+            val stored = context.contentResolver.openInputStream(Uri.parse(lastCopy.uri))!!.use {
+                CountdownStorageCodec.readUtf8Payload(it)
+            }
+            assertEquals(listOf(next), CountdownStorageCodec.decodeForImport(stored))
+            assertTrue("Original default backup was deleted",
+                AutoBackupFiles.verify(context, previousUri, previous.sha256))
+        } finally {
+            created.distinct().forEach { uri ->
+                runCatching { context.contentResolver.delete(uri, null, null) }
+            }
+            AutoBackupScheduler.cancel(context)
+            runCatching { AutoBackupEngine.disable(context) }
+            context.contentResolver.persistedUriPermissions
+                .filter { it.uri !in oldGrants }
+                .forEach { grant ->
+                    val flags =
+                        (if (grant.isReadPermission) Intent.FLAG_GRANT_READ_URI_PERMISSION else 0) or
+                        (if (grant.isWritePermission) Intent.FLAG_GRANT_WRITE_URI_PERMISSION else 0)
+                    if (flags != 0) runCatching {
+                        context.contentResolver.releasePersistableUriPermission(grant.uri, flags)
+                    }
+                }
+            repository.save(oldEvents)
+            val editor = prefs.edit()
+            if (oldState == null) editor.remove("configuration_v1")
+            else editor.putString("configuration_v1", oldState)
+            check(editor.commit())
+        }
+    }
+
     private fun waitForExternalPicker(): Boolean {
         val until = SystemClock.uptimeMillis() + 8_000L
         do {

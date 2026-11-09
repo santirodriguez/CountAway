@@ -59,6 +59,7 @@ class AutoBackupEngineInstrumentedTest {
         assertTrue(runCatching { AutoBackupEngine.enable(context, target) }.isFailure)
         assertFalse(AutoBackupStore.read(context).enabled)
         assertTrue(AutoBackupStore.read(context).owned.isEmpty())
+        assertEquals("DESTINATION_CHANGE_FAILED", AutoBackupStore.read(context).lastError)
     }
 
     @Test fun corruptStoredEventDataNeverBecomesAnEmptyVerifiedBackup() = isolated { _: MutableSet<String> ->
