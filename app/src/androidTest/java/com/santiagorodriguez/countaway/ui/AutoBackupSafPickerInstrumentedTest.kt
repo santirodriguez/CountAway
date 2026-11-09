@@ -299,16 +299,26 @@ class AutoBackupSafPickerInstrumentedTest {
     }
 
     private fun openDocumentsInPicker(): Boolean {
-        // DocumentsUI remembers its last folder between tests. When it already
-        // shows Documents, the title is not a clickable navigation target.
-        val currentUi = dumpUi()
-        if (currentUi.contains("Files in Documents") &&
-            currentUi.contains("USE THIS FOLDER", ignoreCase = true)) return true
-        return clickAccessible("Documents", 8_000L) ||
+        // DocumentsUI may finish navigating after a click returns. Recognize
+        // its settled folder view even when the accessibility click reported
+        // false; a short bounded poll avoids a false navigation failure.
+        fun documentsReady(): Boolean = dumpUi().let { ui ->
+            ui.contains("Files in Documents") &&
+                ui.contains("USE THIS FOLDER", ignoreCase = true)
+        }
+        if (documentsReady()) return true
+        val navigated = clickAccessible("Documents", 8_000L) ||
             (clickAccessible("Show roots", 3_000L) &&
                 clickAccessible("Documents", 8_000L)) ||
             (clickAccessible("Show navigation drawer", 3_000L) &&
                 clickAccessible("Documents", 8_000L))
+        if (navigated) return true
+        val until = SystemClock.uptimeMillis() + 4_000L
+        do {
+            if (documentsReady()) return true
+            SystemClock.sleep(150L)
+        } while (SystemClock.uptimeMillis() < until)
+        return false
     }
 
     private fun waitForExternalPicker(): Boolean {
