@@ -60,8 +60,8 @@ import org.junit.runner.RunWith
 
 /**
  * Full-screen, unmodified Android UI screenshots for visual review only.
- * Based on the six public v1.2.4 composition roles. Never changes Fastlane
- * assets, and never claims the slot-six preview is an actual launcher.
+ * Uses the same six review roles across en-US/es/ca. Never changes Fastlane
+ * assets; the sixth in-app widget preview remains an alternative, not a launcher.
  */
 @Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
@@ -78,6 +78,29 @@ class ReleaseScreenshotReviewInstrumentedTest {
     private val defaults = WidgetDefaultsPreferences(app)
     private val zone = ZoneId.of("America/Argentina/Buenos_Aires")
     private val visibilityFindings = mutableListOf<String>()
+    private val screenshotLocale: String by lazy {
+        val value = InstrumentationRegistry.getArguments()
+            .getString("countawayScreenshotLocale") ?: "en-US"
+        require(value in setOf("en-US", "es", "ca")) { "Unsupported capture locale: $value" }
+        value
+    }
+    private fun androidLanguage(): String = if (screenshotLocale == "en-US") "en" else screenshotLocale
+
+    private data class DemoLabels(
+        val match: String, val birthday: String, val smoke: String,
+        val born: String, val trip: String, val concert: String, val beach: String,
+    )
+    private fun demoLabels(): DemoLabels = when (screenshotLocale) {
+        "en-US" -> DemoLabels("Vélez plays", "Sophia's birthday", "Smoke-free",
+            "I was born", "Trip to Barcelona", "Concert night", "Beach weekend")
+        "es" -> DemoLabels("Juega Vélez", "Cumpleaños de Sofía", "Sin fumar",
+            "Nací", "Viaje a Barcelona", "Noche de concierto", "Fin de semana en la playa")
+        "ca" -> DemoLabels("Juga el Vélez", "Aniversari de la Sofia", "Sense fumar",
+            "Vaig néixer", "Viatge a Barcelona", "Nit de concert", "Cap de setmana a la platja")
+        else -> error("Unexpected screenshot locale")
+    }
+    private fun reviewFile(name: String): File =
+        File(app.filesDir, "layout-evidence/release-review/$screenshotLocale/$name")
 
     /**
      * Best-effort extra review evidence from the emulator's actual home screen.
@@ -92,9 +115,9 @@ class ReleaseScreenshotReviewInstrumentedTest {
             "Launcher screenshot capture is separate from the standard test suite",
             InstrumentationRegistry.getArguments().getString("countawayLauncherReview") == "true",
         )
-        val file = File(app.filesDir, "layout-evidence/release-review/LAUNCHER_CAPTURE.txt")
+        val file = reviewFile("LAUNCHER_CAPTURE.txt")
         checkNotNull(file.parentFile).mkdirs()
-        val notes = mutableListOf("source=Android API36 emulator launcher; unapproved review evidence")
+        val notes = mutableListOf("source=Android API36 native launcher; locale=$screenshotLocale; review only")
         val previous = (repository.loadResult() as CountdownLoadResult.Success).events
         val previousTheme = prefs.getString("theme", null)
         val hadTheme = prefs.contains("theme")
@@ -112,13 +135,16 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 return
             }
             shell("wm density 280")
-            locale.applicationLocales = LocaleList.forLanguageTags("en")
-            prefs.edit().putString("theme", "DARK").commit()
+            locale.applicationLocales = LocaleList.forLanguageTags(androidLanguage())
+            prefs.edit().putString("theme", "DARK").remove("language").commit()
             val today = LocalDate.now(zone)
-            val day = event("launcher-day", "Trip to Barcelona", today.plusDays(12), EventType.TRIP)
-            val weekend = event("launcher-weekend", "Beach weekend", today.plusDays(36), EventType.TRIP)
-            val newYear = event("launcher-year", "New Year's Eve", today.plusDays(59), EventType.EVENT)
-            val timed = event("launcher-time", "Concert night", today.plusDays(12), EventType.CONCERT)
+            val labels = demoLabels()
+            val day = event("launcher-day", labels.trip, today.plusDays(12), EventType.TRIP)
+            val weekend = event("launcher-weekend", labels.beach, today.plusDays(36), EventType.TRIP)
+            // Stable historical date used for a real count-up (not a countdown).
+            val born = event("launcher-born", labels.born, LocalDate.of(1969, 12, 28), EventType.BIRTHDAY)
+                .copy(countMode = CountMode.COUNT_UP)
+            val timed = event("launcher-time", labels.concert, today.plusDays(12), EventType.CONCERT)
                 .copy(eventTime = LocalTime.of(18, 30), eventZone = ZoneId.of("Europe/Madrid"), repeatRule = RepeatRule.WEEKLY)
             repository.save(listOf(day, weekend, newYear, timed))
             drain()
@@ -128,7 +154,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             val classicSamples = listOf(
                 Triple(day, WidgetAppearance.DARK, WidgetBackground.MONOGRAM),
                 Triple(weekend, WidgetAppearance.LIGHT, WidgetBackground.SUNSET),
-                Triple(newYear, WidgetAppearance.DARK, WidgetBackground.FOREST),
+                Triple(born, WidgetAppearance.DARK, WidgetBackground.FOREST),
             )
             val classicIds = mutableListOf<Int>()
             for ((sample, appearance, background) in classicSamples) {
@@ -145,10 +171,18 @@ class ReleaseScreenshotReviewInstrumentedTest {
 
             val timeProvider = ComponentName(app, TimeWidgetProvider::class.java)
             val timeId = requestLauncherWidget(timeProvider, notes, timed, WidgetAppearance.DARK, WidgetBackground.HORIZON, true)
-            if (timeId != null) {
-                notes += "timed_widget_id=$timeId; native_setup_pending=true"
-            } else {
-                notes += "timed_widget_not_confirmed; retaining_classic_page_evidence"
+            val timeConfigured = if (timeId != null) {
+                // Initialize an actual Android launcher widget through the same
+                // persisted configuration used by the shipping widget settings.
+                widgets.save(timeId, timed.id, WidgetAppearance.DARK,
+                    WidgetBackground.HORIZON, WidgetEventSelection.FIXED)
+                TimeWidgetProvider.updateWidget(app, manager, timeId)
+                widgets.get(timeId)?.eventId == timed.id
+            } else false
+            notes += "timed_widget_id=$timeId; native_configuration_verified=$timeConfigured"
+            if (!timeConfigured) {
+                notes += "status=NOT_CAPTURED; reason=timed_widget_not_configured"
+                return
             }
             shell("input keyevent KEYCODE_HOME")
             SystemClock.sleep(1_800)
@@ -183,10 +217,8 @@ class ReleaseScreenshotReviewInstrumentedTest {
             shell("input swipe 840 880 160 880 460")
             SystemClock.sleep(950)
             capture("7-launcher-page-1-before-setup-review-only")
-            val configured = if (timeId != null) {
-                configureTimeFromLauncher(timed.title, timeId, notes)
-            } else false
-            notes += "time_configured_from_real_widget=$configured"
+            val configured = timeConfigured
+            notes += "time_configured_from_native_settings=$configured"
             shell("input keyevent KEYCODE_HOME")
             SystemClock.sleep(750)
             shell("input swipe 840 880 160 880 460")
@@ -203,11 +235,11 @@ class ReleaseScreenshotReviewInstrumentedTest {
             shell("input swipe 840 880 160 880 460")
             SystemClock.sleep(1_050)
             capture("7-launcher-review-only")
-            notes += if (classicVisible && timedVisible) {
-                "status=CAPTURED_REVIEW_ONLY; both_titles_visible=true"
-            } else {
-                "status=CAPTURED_UNVERIFIED; both_titles_visible=false"
-            }
+            // Slot six is a full-screen capture of real Android launcher widgets;
+            // the in-app preview can never be substituted for this screenshot.
+            capture("6-home-widgets")
+            notes += "status=CAPTURED_REVIEW_ONLY; native_pin_and_widget_config=true"
+            notes += "accessibility_observation=classic:$classicVisible,timed:$timedVisible"
             notes += "required=human_pixel_review_for_all_four_widgets"
         } catch (failure: Exception) {
             notes += "status=NOT_CAPTURED; reason=${failure.javaClass.simpleName}"
@@ -230,45 +262,6 @@ class ReleaseScreenshotReviewInstrumentedTest {
             }
             file.writeText(notes.joinToString("\n", postfix = "\n"))
         }
-    }
-
-    private fun configureTimeFromLauncher(
-        title: String, widgetId: Int, notes: MutableList<String>,
-    ): Boolean {
-        // An actual tap on the unconfigured widget triggers its PendingIntent.
-        shell("input tap 710 385")
-        var saved = false
-        repeat(24) {
-            if (!saved) {
-                SystemClock.sleep(380)
-                instrumentation.runOnMainSync {
-                    val activity = ActivityLifecycleMonitorRegistry.getInstance()
-                        .getActivitiesInStage(Stage.RESUMED)
-                        .filterIsInstance<TimeWidgetConfigActivity>().firstOrNull()
-                    if (activity != null) {
-                        val list = activity.findViewById<ListView>(R.id.widgetEventList)
-                        val position = (0 until list.count).firstOrNull { row ->
-                            list.adapter.getItem(row)?.toString()?.contains(title, ignoreCase = true) == true
-                        } ?: -1
-                        if (position >= 0) {
-                            list.performItemClick(
-                                list.getChildAt(position - list.firstVisiblePosition),
-                                position,
-                                list.adapter.getItemId(position),
-                            )
-                            val button = activity.findViewById<Button>(R.id.widgetSaveButton)
-                            if (button.isEnabled) saved = button.performClick()
-                        }
-                    }
-                }
-            }
-        }
-        if (saved) {
-            drain()
-            TimeWidgetProvider.updateWidget(app, AppWidgetManager.getInstance(app), widgetId)
-        }
-        notes += "time_widget_event_save_invoked=$saved"
-        return saved
     }
 
     // Android input gestures reposition actual launcher widgets, not pixels.
@@ -409,22 +402,23 @@ class ReleaseScreenshotReviewInstrumentedTest {
             // The original density is restored in finally.
             shell("wm density 280")
             SystemClock.sleep(500)
-            locale.applicationLocales = LocaleList.forLanguageTags("en")
-            prefs.edit().putString("theme", "DARK").commit()
+            locale.applicationLocales = LocaleList.forLanguageTags(androidLanguage())
+            prefs.edit().putString("theme", "DARK").remove("language").commit()
             defaults.save(WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.MONOGRAM))
 
             val today = LocalDate.now(zone)
             // Match the balanced public v1.2.4 Home: 2 upcoming, 2 count-up,
             // 1 past. Avoid the crowded four-upcoming list from the first take.
-            val match = event("match", "Juega Vélez", today.plusDays(12), EventType.EVENT)
-            val birthday = event("birthday", "Sophia's birthday", today.plusDays(65), EventType.BIRTHDAY)
-            val smokeFree = event("smoke", "Smoke-free", today.minusDays(6315), EventType.CUSTOM)
+            val labels = demoLabels()
+            val match = event("match", labels.match, today.plusDays(12), EventType.EVENT)
+            val birthday = event("birthday", labels.birthday, today.plusDays(65), EventType.BIRTHDAY)
+            val smokeFree = event("smoke", labels.smoke, today.minusDays(6315), EventType.CUSTOM)
                 .copy(countMode = CountMode.COUNT_UP)
-            val born = event("born", "I was born", today.minusDays(17092), EventType.BIRTHDAY)
-                .copy(countMode = CountMode.COUNT_UP, eventTime = LocalTime.of(12, 55), eventZone = zone)
-            val trip = event("trip", "Trip to Barcelona", today.minusDays(68), EventType.TRIP)
+            val born = event("born", labels.born, LocalDate.of(1969, 12, 28), EventType.BIRTHDAY)
+                .copy(countMode = CountMode.COUNT_UP)
+            val trip = event("trip", labels.trip, today.minusDays(68), EventType.TRIP)
             val homeEvents = listOf(match, birthday, smokeFree, born, trip)
-            val concert = event("concert", "Concert night", today.plusDays(12), EventType.CONCERT)
+            val concert = event("concert", labels.concert, today.plusDays(12), EventType.CONCERT)
                 .copy(eventTime = LocalTime.of(18, 30), eventZone = zone, repeatRule = RepeatRule.WEEKLY)
             repository.save(homeEvents)
             drain()
@@ -560,7 +554,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             // The sixth slot requires actual launcher widgets for historical
             // equivalence. Until those are captured, keep an honestly labeled
             // time-widget configuration alternative (not store-approved).
-            prefs.edit().putString("theme", "DARK").commit()
+            prefs.edit().putString("theme", "DARK").remove("language").commit()
             repository.save(homeEvents + concert)
             drain()
             assertTrue("Widget bind permission failed",
@@ -590,7 +584,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 capture("6-timed-widget-alternative")
             }
 
-            File(app.filesDir, "layout-evidence/release-review/REVIEW_ONLY.txt").writeText(
+            reviewFile("REVIEW_ONLY.txt").writeText(
                 "versionName=$candidateVersion\nversionCode=$candidateVersionCode\n" +
                 "source=real Android API36 UI at 1080x1920, density=280\n" +
                 "status=UNAPPROVED; no cropping, editing, or pixel reconstruction\n" +
@@ -598,8 +592,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 "4 About; 5 light Home; 6 time-widget configuration ALTERNATIVE, NOT launcher\n" +
                 "No canonical Fastlane screenshot was replaced. Human review required.\n"
             )
-            val geometryReport = File(app.filesDir,
-                "layout-evidence/release-review/VISIBILITY_FINDINGS.txt")
+            val geometryReport = reviewFile("VISIBILITY_FINDINGS.txt")
             geometryReport.writeText(
                 if (visibilityFindings.isEmpty()) "PASS: all checked controls fully visible\n"
                 else visibilityFindings.joinToString(separator = "\n", postfix = "\n")
@@ -689,7 +682,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
         try {
             assertEquals("Full 9:16 width", 1080, bitmap.width)
             assertEquals("Full 9:16 height", 1920, bitmap.height)
-            val file = File(app.filesDir, "layout-evidence/release-review/$name.png")
+            val file = reviewFile("$name.png")
             checkNotNull(file.parentFile).mkdirs()
             file.outputStream().use { stream ->
                 assertTrue(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream))
@@ -698,7 +691,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
             if (name == "3-classic-widget-style" || name == "4-about") {
                 val actual = bitmap.getPixel(10, 700)
                 val expected = Color.rgb(6, 17, 38)
-                File(app.filesDir, "layout-evidence/release-review/DARK_CAPTURE_BACKDROP.txt")
+                reviewFile("DARK_CAPTURE_BACKDROP.txt")
                     .appendText("$name actual=${Integer.toHexString(actual)} expected=${Integer.toHexString(expected)}\n")
                 assertEquals("$name has an unexpected window tint", expected, actual)
             }
