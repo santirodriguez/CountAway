@@ -9,6 +9,11 @@ import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
 import com.santiagorodriguez.countaway.data.CountdownRepository
+import com.santiagorodriguez.countaway.countdown.DateOnlyResetPolicy
+import com.santiagorodriguez.countaway.data.CountdownImportSnapshot
+import com.santiagorodriguez.countaway.data.CountdownMutationResult
+import com.santiagorodriguez.countaway.data.CountdownMutations
+import com.santiagorodriguez.countaway.data.EventRevision
 import com.santiagorodriguez.countaway.data.CountdownStorageCodec
 import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
@@ -199,6 +204,77 @@ class AutoBackupEngineInstrumentedTest {
         assertTrue("Disabling must keep the last backup",
             AutoBackupFiles.verify(context, Uri.parse(state.owned.last().uri),
                 state.owned.last().sha256))
+    }
+
+    @SdkSuppress(minSdkVersion = 29)
+    @Test fun resetUndoAndImportCreateVerifiedSnapshotsWithoutLosingIdentity() = isolated { owned ->
+        repository.save(listOf(sample))
+        val target = AutoBackupStore.Destination(AutoBackupStore.Kind.DEFAULT_DOWNLOADS)
+        assertTrue(AutoBackupEngine.enable(context, target).created)
+        owned += AutoBackupStore.read(context).owned.map { it.uri }
+        val mutations = CountdownMutations(context)
+        val reset = requireNotNull(DateOnlyResetPolicy.reset(sample, sample.date.plusDays(2)))
+
+        assertEquals(CountdownMutationResult.APPLIED,
+            mutations.save(EventRevision.of(sample), sample, reset))
+        assertEquals(listOf(reset),
+            (repository.loadResult() as CountdownLoadResult.Success).events)
+        assertTrue("Successful reset must mark an automatic backup dirty",
+            AutoBackupStore.read(context).dirtyRevision >
+                AutoBackupStore.read(context).savedRevision)
+        assertTrue(AutoBackupEngine.backupNow(context).created)
+        var state = AutoBackupStore.read(context)
+        owned += state.owned.map { it.uri }
+        val resetCopy = state.owned.last()
+        val resetUri = Uri.parse(resetCopy.uri)
+        assertTrue(AutoBackupFiles.verify(context, resetUri, resetCopy.sha256))
+        val resetPayload = context.contentResolver.openInputStream(resetUri)!!.use {
+            CountdownStorageCodec.readUtf8Payload(it)
+        }
+        assertEquals(listOf(reset), CountdownStorageCodec.decodeForImport(resetPayload))
+
+        // Undo reuses the exact post-reset revision. A stale second Undo cannot
+        // overwrite intervening work or create a misleading dirty backup.
+        assertEquals(CountdownMutationResult.APPLIED,
+            mutations.save(EventRevision.of(reset), reset, sample))
+        val dirtyAfterUndo = AutoBackupStore.read(context).dirtyRevision
+        assertTrue(dirtyAfterUndo > AutoBackupStore.read(context).savedRevision)
+        assertEquals(CountdownMutationResult.CONFLICT,
+            mutations.save(EventRevision.of(reset), reset, reset.copy(date = reset.date.plusDays(1))))
+        assertEquals(dirtyAfterUndo, AutoBackupStore.read(context).dirtyRevision)
+        assertEquals(listOf(sample),
+            (repository.loadResult() as CountdownLoadResult.Success).events)
+        assertTrue(AutoBackupEngine.backupNow(context).created)
+        state = AutoBackupStore.read(context)
+        owned += state.owned.map { it.uri }
+        val undoCopy = state.owned.last()
+        assertTrue(AutoBackupFiles.verify(context, Uri.parse(undoCopy.uri), undoCopy.sha256))
+
+        // Existing import approval path restores the exact previously verified
+        // reset snapshot. The import itself must also schedule a fresh backup.
+        val snapshot = CountdownImportSnapshot.create(context)
+        try {
+            snapshot.write(resetPayload)
+            mutations.applyImport(snapshot)
+        } finally {
+            snapshot.clear()
+        }
+        assertEquals(listOf(reset),
+            (repository.loadResult() as CountdownLoadResult.Success).events)
+        assertTrue(AutoBackupStore.read(context).dirtyRevision >
+            AutoBackupStore.read(context).savedRevision)
+        assertTrue(AutoBackupEngine.backupNow(context).created)
+        state = AutoBackupStore.read(context)
+        owned += state.owned.map { it.uri }
+        val restoredCopy = state.owned.last()
+        val restoredUri = Uri.parse(restoredCopy.uri)
+        assertTrue(AutoBackupFiles.verify(context, restoredUri, restoredCopy.sha256))
+        val restoredPayload = context.contentResolver.openInputStream(restoredUri)!!.use {
+            CountdownStorageCodec.readUtf8Payload(it)
+        }
+        assertEquals(listOf(reset), CountdownStorageCodec.decodeForImport(restoredPayload))
+        assertEquals(sample.id, reset.id)
+        assertEquals(sample.createdAt, reset.createdAt)
     }
 
     private fun isolated(test: (MutableSet<String>) -> Unit) {
