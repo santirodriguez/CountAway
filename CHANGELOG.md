@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.6
+
+- Reset eligible date-only count-up events to today from Home, with confirmation and Undo.
+- Add opt-in, verified automatic JSON backups of events to Downloads/CountAway or a folder you choose.
+- Keep manual import/export and make backup destination changes and failures clearer.
+
 ## 1.2.5
 
 - Make event times follow the device's 12/24-hour clock setting across editing, Home, widgets, sharing, and notifications.

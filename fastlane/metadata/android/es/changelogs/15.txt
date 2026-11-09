@@ -1,0 +1,1 @@
+Reiniciá a hoy los contadores ascendentes sin hora desde Inicio, con opción de deshacer. Copias automáticas opcionales de tus eventos en JSON, en Descargas/CountAway o en una carpeta que elijas, con verificación y restauración sencilla.

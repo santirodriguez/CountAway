@@ -18,7 +18,9 @@ Reminders and widget refreshes are scheduled and processed locally by Android.
 
 ### Backups and imports
 
-Backup export and import are started explicitly by you. CountAway uses Android's system document interface so you choose where an exported JSON backup is stored and which file is imported. If you choose a cloud or third-party document provider, that provider handles the file under its own privacy terms. CountAway does not upload backups itself.
+Manual export and import happen only when you start them. Automatic event backups are off until you opt in. If enabled, CountAway saves plain, unencrypted JSON files in Downloads/CountAway (Android 10+) or a folder you select using Android's document picker; earlier Android versions require folder selection. The files contain events and their details, not widget placement or general app settings. Anyone with access to that location may read event titles and dates.
+
+CountAway verifies new copies, aims to retain seven distinct verified snapshots in the active destination, and requests later backups on a best-effort schedule without an exact-time guarantee. Disabling backups or changing folders leaves existing files in place. A provider may prevent safe automatic cleanup, in which case older copies remain until you remove them. A cloud or third-party document provider may sync the files independently under its own terms; CountAway itself never uploads them.
 
 ### Sharing
 
@@ -43,7 +45,7 @@ CountAway does not request Internet, location, contacts, microphone, camera, adv
 
 App-internal event data remains on your device until you edit or delete it, clear CountAway's app data, or uninstall the app. CountAway disables Android cloud backup/device-transfer backup for its internal data.
 
-Files you explicitly export and copies you explicitly share exist outside CountAway and remain under your control or the receiving provider's control until deleted there.
+Files saved through manual export, optional automatic backups, or sharing exist outside CountAway and remain there until deleted by you or the receiving provider.
 
 CountAway has no user accounts, so there is no server-side account or profile to delete.
 
@@ -69,7 +71,9 @@ Los recordatorios y las actualizaciones de widgets se programan y procesan local
 
 ### Copias de seguridad e importación
 
-La exportación y la importación de copias se inician únicamente cuando vos las solicitás. CountAway usa la interfaz de documentos de Android para que elijas dónde guardar un archivo JSON exportado y qué archivo importar. Si elegís un proveedor de documentos en la nube o de terceros, ese proveedor gestiona el archivo según sus propias condiciones de privacidad. CountAway no sube copias por su cuenta.
+Las exportaciones e importaciones manuales solo se realizan cuando vos las iniciás. Las copias automáticas de eventos están desactivadas hasta que las habilitás. Si las activás, CountAway guarda archivos JSON sin cifrar en Descargas/CountAway (Android 10 o superior) o en una carpeta que elijas con el selector de Android; en versiones anteriores necesitás elegir una carpeta. Contienen tus eventos y sus datos, pero no la ubicación de los widgets ni los ajustes generales. Quien tenga acceso a esos archivos puede leer títulos y fechas.
+
+CountAway verifica cada copia nueva, procura conservar siete copias distintas verificadas en el destino activo y programa nuevas copias sin garantizar una hora exacta. Desactivar las copias o cambiar de carpeta no borra los archivos anteriores. Si el proveedor impide eliminarlos de forma segura, pueden quedar copias viejas hasta que las borres manualmente. Un proveedor externo o en la nube puede sincronizar esos archivos por su cuenta; CountAway no los sube.
 
 ### Compartir
 
@@ -94,7 +98,7 @@ CountAway no solicita permisos de Internet, ubicación, contactos, micrófono, c
 
 Los datos internos de tus eventos permanecen en tu dispositivo hasta que los edites o elimines, borres los datos de CountAway o desinstales la aplicación. CountAway desactiva la copia de seguridad en la nube y la transferencia entre dispositivos de Android para sus datos internos.
 
-Los archivos que exportes y las copias que compartas explícitamente existen fuera de CountAway y permanecen bajo tu control o el del proveedor receptor hasta que se eliminen allí.
+Los archivos de exportaciones manuales, copias automáticas opcionales y contenido compartido existen fuera de CountAway y permanecen allí hasta que vos o el proveedor receptor los eliminen.
 
 CountAway no tiene cuentas de usuario, por lo que no existe una cuenta o perfil almacenado en un servidor que deba eliminarse.
 
@@ -120,7 +124,9 @@ Els recordatoris i les actualitzacions dels ginys es programen i es processen lo
 
 ### Còpies de seguretat i importació
 
-L'exportació i la importació de còpies només s'inicien quan tu ho demanes. CountAway utilitza la interfície de documents d'Android perquè triïs on es desa un fitxer JSON exportat i quin fitxer s'importa. Si tries un proveïdor de documents al núvol o de tercers, aquest proveïdor gestiona el fitxer segons les seves pròpies condicions de privacitat. CountAway no puja còpies per si mateix.
+L'exportació i la importació manuals només es fan quan tu les inicies. Les còpies automàtiques dels esdeveniments estan desactivades fins que les habilites. Si les actives, CountAway desa fitxers JSON sense xifrar a Baixades/CountAway (Android 10 o superior) o a una carpeta triada amb el selector de documents d'Android; les versions anteriors requereixen triar una carpeta. Contenen els esdeveniments i les seves dades, però no la disposició dels ginys ni els ajustos generals. Qui tingui accés als fitxers pot llegir-ne els títols i les dates.
+
+CountAway verifica les còpies noves, procura conservar set còpies diferents verificades a la destinació activa i en programa de noves sense garantir una hora exacta. Desactivar les còpies o canviar de carpeta no elimina els fitxers anteriors. Si el proveïdor n'impedeix l'eliminació segura, les còpies antigues es conserven fins que les esborris manualment. Un proveïdor extern o al núvol pot sincronitzar aquests fitxers pel seu compte; CountAway no els puja.
 
 ### Compartir
 
@@ -145,7 +151,7 @@ CountAway no sol·licita permisos d'Internet, ubicació, contactes, micròfon, c
 
 Les dades internes dels esdeveniments es mantenen al dispositiu fins que les edites o elimines, esborres les dades de CountAway o desinstal·les l'aplicació. CountAway desactiva la còpia de seguretat al núvol i la transferència entre dispositius d'Android per a les seves dades internes.
 
-Els fitxers que exportis i les còpies que comparteixis explícitament existeixen fora de CountAway i continuen sota el teu control o el del proveïdor receptor fins que s'eliminin allà.
+Els fitxers de les exportacions manuals, les còpies automàtiques opcionals i el contingut compartit existeixen fora de CountAway i s'hi mantenen fins que tu o el proveïdor receptor els elimineu.
 
 CountAway no té comptes d'usuari, de manera que no existeix cap compte o perfil emmagatzemat en un servidor que s'hagi d'eliminar.
 
