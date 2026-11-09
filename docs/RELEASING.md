@@ -129,7 +129,7 @@ A release-candidate run:
 7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
 8. records APK checksum/size, size deltas, and validation reports;
 9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
-10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs a data-bearing signed 1.2.5 -> candidate upgrade on API 33 using the immutable public 1.2.4 APK digest, importing date-only, timed, recurring, and count-up test events through the public backup UI and verifying their exact persisted values survive the in-place upgrade, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
+10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs a data-bearing signed 1.2.5 -> candidate upgrade on API 33 using the immutable public 1.2.5 APK digest, importing date-only, timed, recurring, and count-up test events through the public backup UI and verifying their exact persisted values survive the in-place upgrade, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
 11. uploads the release candidate, validation evidence, reproducibility evidence, per-API acceptance evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:
