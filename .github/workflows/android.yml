@@ -53,7 +53,417 @@ jobs:
               -e class 'com.santiagorodriguez.countaway.ui.AutoBackupSafPickerInstrumentedTest' \
               "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
               > layout-evidence/saf-picker-preflight.txt 2>&1
-            if ! grep -Eq '^OK \(1 test\)' layout-evidence/saf-picker-preflight.txt || \
+            # Both real DocumentsUI scenarios must pass: first opt-in and Default-to-SAF switch.
+            if ! grep -Eq '^OK \(2 tests\)
+               grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' \
+                 layout-evidence/saf-picker-preflight.txt; then
+              echo 'Isolated system SAF-picker contract failed; skipping the long API36 suite'
+              tail -n 110 layout-evidence/saf-picker-preflight.txt
+              adb logcat -d -b main -b crash | grep -A 20 -E 'FATAL EXCEPTION|CountAwaySAF' | tail -n 90 || true
+              exit 1
+            fi
+          fi
+          # Validate Android evidence streams before publishing the artifact.
+          collect() {
+            local test_status="$1"
+            trap - EXIT
+            if (( test_status != 0 )) && [[ -s layout-evidence/reinstall-restore.txt ]]; then
+              echo "Reinstall recovery failure receipt:"
+              tail -n 100 layout-evidence/reinstall-restore.txt
+            fi
+            adb logcat -d > layout-evidence/logcat.txt || true
+            local attempt=1
+            local capture_ok=0
+            while (( attempt <= 3 )); do
+              rm -f layout-evidence/renders.pending.tar
+              local archive_paths=(layout-evidence)
+              if adb shell run-as "$PACKAGE" test -d files/share-evidence > /dev/null 2>&1; then
+                archive_paths+=(share-evidence)
+              fi
+              if adb exec-out run-as "$PACKAGE" tar -C files -cf - "${archive_paths[@]}" \
+                    > layout-evidence/renders.pending.tar &&
+                 tar -tf layout-evidence/renders.pending.tar > layout-evidence/render-manifest.txt &&
+                 grep -Eq '^layout-evidence/.*\.png$' layout-evidence/render-manifest.txt; then
+                mv layout-evidence/renders.pending.tar layout-evidence/renders.tar
+                capture_ok=1
+                break
+              fi
+              echo "Render transfer attempt $attempt failed or returned truncated/empty evidence" >&2
+              attempt=$((attempt + 1))
+              sleep 2
+            done
+            if (( capture_ok == 0 )); then
+              printf 'render_capture=failed\n' > layout-evidence/render-capture.txt
+              echo "No valid Android render evidence after three attempts" >&2
+              exit 1
+            fi
+            printf 'render_capture=verified\ntar_entries=%s\n' \
+              "$(wc -l < layout-evidence/render-manifest.txt)" > layout-evidence/render-capture.txt
+            exit "$test_status"
+          }
+          trap 'collect "$?"' EXIT
+          # Run behavior checks without screenshot setup mutating app/launcher state.
+          echo 'scope=behavior_suite_excludes_store_capture' > layout-evidence/test-classes.txt
+          adb shell am instrument -w \
+            -e notAnnotation com.santiagorodriguez.countaway.ui.IsolatedStoreScreenshot \
+            -e notClass com.santiagorodriguez.countaway.ui.AutoBackupSafPickerInstrumentedTest \
+            "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" | tee layout-evidence/instrumentation.txt
+          grep -Eq '^OK \([1-9][0-9]* tests?\)' layout-evidence/instrumentation.txt
+          ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' layout-evidence/instrumentation.txt
+          if [ "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "36" ]; then
+            # Preserve behavioral render evidence before clearing app data.
+            adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence share-evidence \
+              > layout-evidence/behavior-renders.tar
+            tar -tf layout-evidence/behavior-renders.tar \
+              > layout-evidence/behavior-render-manifest.txt
+            grep -Eq '^layout-evidence/.*\.png$' layout-evidence/behavior-render-manifest.txt
+            # Check persisted backup state across an actual emulator reboot.
+            adb shell am force-stop "$PACKAGE" || true
+            adb shell pm clear "$PACKAGE" > layout-evidence/reboot-prep-clear.txt
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.backup.AutoBackupRebootInstrumentedTest#preparePublicCopyAndPersistedJobsBeforeReboot' \
+              -e countawayRebootStage prepare \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/reboot-prepare.txt 2>&1
+            if ! grep -Eq '^OK \(1 test\)' layout-evidence/reboot-prepare.txt; then
+              cat layout-evidence/reboot-prepare.txt
+              exit 1
+            fi
+            # The user normally opens CountAway to enable backups. Opening the
+            # actual launcher Activity also clears Android's stopped-package state
+            # left by pm clear / instrumentation-only CI setup. Do not skip the
+            # independent persisted-job assertion after the subsequent reboot.
+            adb shell dumpsys package "$PACKAGE" > layout-evidence/reboot-package-before-launch.txt
+            adb shell am start -W -n "$PACKAGE/.ui.MainActivity" > layout-evidence/reboot-app-launch.txt
+            adb shell dumpsys package "$PACKAGE" > layout-evidence/reboot-package-before.txt
+            adb shell dumpsys jobscheduler > layout-evidence/reboot-jobs-before.txt
+            adb reboot
+            adb wait-for-device
+            boot_ready=0
+            for retry in $(seq 1 90); do
+              if [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; then
+                boot_ready=1
+                break
+              fi
+              sleep 2
+            done
+            if (( boot_ready == 0 )); then
+              echo 'Android emulator did not complete reboot' >&2
+              exit 1
+            fi
+            adb shell input keyevent 82 || true
+            adb shell dumpsys package "$PACKAGE" > layout-evidence/reboot-package-after.txt
+            adb shell dumpsys jobscheduler > layout-evidence/reboot-jobs-after.txt
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.backup.AutoBackupRebootInstrumentedTest#restoredStateAndAnotherVerifiedCopyAfterReboot' \
+              -e countawayRebootStage verify \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/reboot-verify.txt 2>&1
+            if ! grep -Eq '^OK \(1 test\)' layout-evidence/reboot-verify.txt; then
+              cat layout-evidence/reboot-verify.txt
+              exit 1
+            fi
+            printf 'real_emulator_reboot_backup_recovery=verified\n' \
+              > layout-evidence/reboot-recovery-status.txt
+            # Source-bound end-to-end public backup recovery across a real reinstall.
+            adb shell am force-stop "$PACKAGE" || true
+            adb shell pm clear "$PACKAGE" > layout-evidence/reinstall-prep-clear.txt
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.ui.AutoBackupReinstallInstrumentedTest#prepareVerifiedPublicBackupBeforeUninstall' \
+              -e countawayReinstallStage prepare \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/reinstall-prepare.txt 2>&1
+            if ! grep -Eq '^OK \(1 test\)' layout-evidence/reinstall-prepare.txt; then
+              cat layout-evidence/reinstall-prepare.txt
+              exit 1
+            fi
+            adb logcat -d -s CountAwayReinstall:I > layout-evidence/reinstall-prepare-logcat.txt
+            backup_name="$(sed -n -E 's/^.*PREPARE_VERIFIED name=(CountAway-[0-9]{8}-[0-9]{6}-[0-9a-f]{8}\.json).*$/\1/p' layout-evidence/reinstall-prepare-logcat.txt | tail -n 1)"
+            if [[ -z "$backup_name" ]]; then
+              echo "Verified backup filename was not captured from preparation" >&2
+              cat layout-evidence/reinstall-prepare.txt >&2
+              exit 1
+            fi
+            adb shell am force-stop "$PACKAGE" || true
+            adb uninstall "$PACKAGE" > layout-evidence/reinstall-uninstall.txt
+            adb install -r app/build/outputs/apk/debug/app-debug.apk > layout-evidence/reinstall-install.txt
+            adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
+              >> layout-evidence/reinstall-install.txt
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.ui.AutoBackupReinstallInstrumentedTest#restorePublicBackupThroughSystemPickerAfterReinstall' \
+              -e countawayReinstallStage restore \
+              -e countawayExpectedBackupName "$backup_name" \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/reinstall-restore.txt 2>&1
+            if ! grep -Eq '^OK \(1 test\)' layout-evidence/reinstall-restore.txt; then
+              cat layout-evidence/reinstall-restore.txt
+              exit 1
+            fi
+            printf 'uninstall_reinstall_manual_import=verified\n' \
+              > layout-evidence/reinstall-recovery-status.txt
+            # Native store screenshots execute on a cleared, disposable emulator.
+            adb shell am force-stop "$PACKAGE" || true
+            adb shell pm clear "$PACKAGE" > layout-evidence/store-capture-data-reset.txt
+            set +e
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.ui.ReleaseScreenshotReviewInstrumentedTest#captureSixCandidateViewsForHumanReview' \
+              -e countawayScreenshotReview true \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/screenshots-instrumentation.txt 2>&1
+            screenshot_exit=$?
+            set -e
+            capture_failed=0
+            if [ "$screenshot_exit" -eq 0 ] &&
+               grep -Eq '^OK \(1 test\)' layout-evidence/screenshots-instrumentation.txt &&
+               ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' layout-evidence/screenshots-instrumentation.txt; then
+              printf 'store_capture=passed\n' > layout-evidence/store-capture-status.txt
+            else
+              capture_failed=1
+              printf 'store_capture=failed\ninstrumentation_exit=%s\n' "$screenshot_exit" > layout-evidence/store-capture-status.txt
+            fi
+            # Only after the full behavioral suite and screenshot check, attempt
+            # actual launcher widgets; this diagnostic is non-gating.
+            adb shell am instrument -w \
+              -e class 'com.santiagorodriguez.countaway.ui.ReleaseScreenshotReviewInstrumentedTest#attemptRealLauncherWidgetCaptureForHumanReview' \
+              -e countawayLauncherReview true \
+              "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+              > layout-evidence/launcher-instrumentation.txt 2>&1 || true
+            if grep -Fq 'OK (1 test)' layout-evidence/launcher-instrumentation.txt; then
+              printf 'launcher_probe=completed\n' > layout-evidence/launcher-probe-status.txt
+            else
+              printf 'launcher_probe=not_completed\n' > layout-evidence/launcher-probe-status.txt
+            fi
+            # Preserve strict visual acceptance: a failed screenshot capture
+            # still fails this job, with its original PNG available in artifacts.
+            if [ "$capture_failed" -ne 0 ]; then exit 1; fi
+          fi
+          SCRIPT
+      - name: Render and verify Android contracts
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: bash .widget-layout-check.sh
+      - name: Upload layout evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CountAway-widget-layout-api-${{ matrix.api }}-${{ github.sha }}
+          path: layout-evidence/
+          if-no-files-found: warn
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BUNDLETOOL_VERSION: "1.18.3"
+      BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
+      PACKAGE_ID: "com.santiagorodriguez.countaway"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Set up JDK
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Record source identity
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence
+          {
+            echo "checked_out_sha=$(git rev-parse HEAD)"
+            echo "github_sha=${GITHUB_SHA}"
+            echo "github_ref=${GITHUB_REF}"
+            echo "event_name=${GITHUB_EVENT_NAME}"
+            echo "pr_head_sha=${{ github.event.pull_request.head.sha || '' }}"
+            echo "instrumented_tests=compiled_not_executed_in_this_job"
+          } > ci-evidence/source.txt
+
+      - name: Test release script safety and formatter contracts
+        run: |
+          set -euo pipefail
+          bash -n scripts/sign-play-bundle.sh
+          python3 -B scripts/test-release-scripts.py -v 2>&1 | tee ci-evidence/release-scripts-tests.txt
+
+      - name: Check upgrade fixture driver
+        run: |
+          set -euo pipefail
+          python3 scripts/test-upgrade-fixture.py -v 2>&1 | tee ci-evidence/upgrade-fixture-tests.txt
+          python3 scripts/test-upgrade-v124-fixture.py -v 2>&1 | tee -a ci-evidence/upgrade-fixture-tests.txt
+
+      - name: Validate localization sources
+        run: |
+          set -euo pipefail
+          python3 scripts/verify-localizations.py 2>&1 | tee ci-evidence/localization-validation.txt
+
+      - name: Self-test Play screenshot staging and release provenance
+        run: |
+          python3 scripts/test-play-screenshot-staging.py
+          python3 scripts/test-release-screenshots.py
+          python3 scripts/test-readme-screenshots.py
+          python3 scripts/verify-readme-screenshots.py
+
+      - name: Prepare and validate reusable Play assets
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare-play-assets.py --output-dir ci-evidence/play-assets --include-phone-screenshots
+          python3 scripts/verify-play-assets.py icon ci-evidence/play-assets/icon.png
+          python3 scripts/verify-play-assets.py feature ci-evidence/play-assets/featureGraphic.png
+          python3 scripts/verify-play-assets.py screenshot ci-evidence/play-assets/phoneScreenshots/*.png
+          (cd ci-evidence/play-assets && sha256sum -c phoneScreenshots.sha256)
+
+      - name: Validate
+        run: ./gradlew test lint assembleDebug assembleDebugAndroidTest assembleRelease bundleRelease --stacktrace
+
+      - name: Validate Play-readiness bundle
+        run: |
+          set -euo pipefail
+
+          AAB="app/build/outputs/bundle/release/app-release.aab"
+          BUNDLETOOL_JAR="${RUNNER_TEMP}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          VERSION="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' app/build.gradle.kts)"
+          VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' app/build.gradle.kts)"
+          test -s "${AAB}"
+          unzip -Z1 "${AAB}" > "${RUNNER_TEMP}/countaway-aab-files.txt"
+          grep -Fxq "BundleConfig.pb" "${RUNNER_TEMP}/countaway-aab-files.txt"
+          grep -Fxq "base/manifest/AndroidManifest.xml" "${RUNNER_TEMP}/countaway-aab-files.txt"
+          grep -Eq '^base/dex/classes([0-9]*)?\.dex$' "${RUNNER_TEMP}/countaway-aab-files.txt"
+
+          if ! curl --fail --location --silent --show-error --retry 2 \
+            "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar" \
+            --output "${BUNDLETOOL_JAR}"; then
+            # Same official GitHub release asset, addressed through the REST API.
+            # Never bypass the pinned SHA-256 verification on either path.
+            rm -f "${BUNDLETOOL_JAR}"
+            curl --fail --location --silent --show-error --retry 2 \
+              --header "Accept: application/octet-stream" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/google/bundletool/releases/assets/329035725" \
+              --output "${BUNDLETOOL_JAR}"
+          fi
+          echo "${BUNDLETOOL_SHA256}  ${BUNDLETOOL_JAR}" | sha256sum --check -
+          java -jar "${BUNDLETOOL_JAR}" validate --bundle="${AAB}"
+          bash scripts/verify-bundle-languages.sh "${AAB}" "${BUNDLETOOL_JAR}" "ci-evidence/bundle-languages"
+
+          ACTUAL_PACKAGE_ID="$(
+            java -jar "${BUNDLETOOL_JAR}" dump manifest --bundle="${AAB}" --module=base --xpath=/manifest/@package | tr -d '\r\n'
+          )"
+          ACTUAL_VERSION_NAME="$(
+            java -jar "${BUNDLETOOL_JAR}" dump manifest --bundle="${AAB}" --module=base --xpath=/manifest/@android:versionName | tr -d '\r\n'
+          )"
+          ACTUAL_VERSION_CODE="$(
+            java -jar "${BUNDLETOOL_JAR}" dump manifest --bundle="${AAB}" --module=base --xpath=/manifest/@android:versionCode | tr -d '\r\n'
+          )"
+
+          [[ "${ACTUAL_PACKAGE_ID}" == "${PACKAGE_ID}" ]] || {
+            echo "AAB package mismatch: ${ACTUAL_PACKAGE_ID} != ${PACKAGE_ID}" >&2
+            exit 1
+          }
+          [[ "${ACTUAL_VERSION_NAME}" == "${VERSION}" ]] || {
+            echo "AAB versionName mismatch: ${ACTUAL_VERSION_NAME} != ${VERSION}" >&2
+            exit 1
+          }
+          [[ "${ACTUAL_VERSION_CODE}" == "${VERSION_CODE}" ]] || {
+            echo "AAB versionCode mismatch: ${ACTUAL_VERSION_CODE} != ${VERSION_CODE}" >&2
+            exit 1
+          }
+
+          {
+            echo "source_sha=${GITHUB_SHA}"
+            echo "application_id=${ACTUAL_PACKAGE_ID}"
+            echo "version=${ACTUAL_VERSION_NAME}"
+            echo "version_code=${ACTUAL_VERSION_CODE}"
+            echo "bundletool_version=${BUNDLETOOL_VERSION}"
+            echo "bundletool_sha256=${BUNDLETOOL_SHA256}"
+            echo "aab_sha256=$(sha256sum "${AAB}" | awk '{print $1}')"
+            echo "aab_bytes=$(stat -c%s "${AAB}")"
+            echo "purpose=play-readiness-validation"
+            echo "public_release_asset=false"
+            echo "play_upload_signing=deferred"
+          } > ci-evidence/play-readiness.txt
+
+      - name: Self-test Play AAB upload signing helper
+        run: |
+          set -euo pipefail
+
+          AAB="app/build/outputs/bundle/release/app-release.aab"
+          BUNDLETOOL_JAR="${RUNNER_TEMP}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          TEST_DIR="${RUNNER_TEMP}/play-upload-signing-self-test"
+          TEST_KEYSTORE="${TEST_DIR}/upload-test.p12"
+          TEST_CERT="${TEST_DIR}/upload-test.pem"
+          WRONG_KEYSTORE="${TEST_DIR}/wrong-test.p12"
+          WRONG_CERT="${TEST_DIR}/wrong-test.pem"
+          SIGNED_AAB="${TEST_DIR}/signed.aab"
+          RECEIPT="ci-evidence/play-upload-signing-self-test.txt"
+          VERSION="$(sed -nE 's/^[[:space:]]*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' app/build.gradle.kts)"
+          VERSION_CODE="$(sed -nE 's/^[[:space:]]*versionCode[[:space:]]*=[[:space:]]*([0-9]+).*/\1/p' app/build.gradle.kts)"
+
+          mkdir -p "${TEST_DIR}"
+          keytool -genkeypair -noprompt \
+            -keystore "${TEST_KEYSTORE}" -storetype PKCS12 \
+            -storepass countaway-ci-test -keypass countaway-ci-test \
+            -alias upload-test -keyalg RSA -keysize 2048 -validity 2 \
+            -dname "CN=CountAway CI Upload Test"
+          keytool -exportcert -rfc \
+            -keystore "${TEST_KEYSTORE}" -storepass countaway-ci-test \
+            -alias upload-test -file "${TEST_CERT}"
+
+          keytool -genkeypair -noprompt \
+            -keystore "${WRONG_KEYSTORE}" -storetype PKCS12 \
+            -storepass countaway-ci-wrong -keypass countaway-ci-wrong \
+            -alias wrong-test -keyalg RSA -keysize 2048 -validity 2 \
+            -dname "CN=CountAway CI Wrong Test"
+          keytool -exportcert -rfc \
+            -keystore "${WRONG_KEYSTORE}" -storepass countaway-ci-wrong \
+            -alias wrong-test -file "${WRONG_CERT}"
+
+          if PLAY_UPLOAD_STORE_PASSWORD=countaway-ci-test \
+             PLAY_UPLOAD_KEY_PASSWORD=countaway-ci-test \
+             bash scripts/sign-play-bundle.sh \
+               "${AAB}" "${TEST_DIR}/must-not-exist.aab" \
+               "${TEST_KEYSTORE}" upload-test "${WRONG_CERT}" \
+               "${BUNDLETOOL_JAR}" "${PACKAGE_ID}" "${VERSION}" "${VERSION_CODE}"; then
+            echo "Signing helper accepted a mismatched public certificate" >&2
+            exit 1
+          fi
+          test ! -e "${TEST_DIR}/must-not-exist.aab"
+
+          PLAY_UPLOAD_STORE_PASSWORD=countaway-ci-test \
+          PLAY_UPLOAD_KEY_PASSWORD=countaway-ci-test \
+            bash scripts/sign-play-bundle.sh \
+              "${AAB}" "${SIGNED_AAB}" \
+              "${TEST_KEYSTORE}" upload-test "${TEST_CERT}" \
+              "${BUNDLETOOL_JAR}" "${PACKAGE_ID}" "${VERSION}" "${VERSION_CODE}" \
+              "${RECEIPT}"
+
+          test -s "${SIGNED_AAB}"
+          test -s "${RECEIPT}"
+          grep -Fq "bundletool_validation=true" "${RECEIPT}"
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CountAway-android-ci-${{ github.sha }}
+          path: |
+            ci-evidence/
+            app/build/reports/
+            app/build/test-results/
+            app/build/outputs/apk/androidTest/debug/
+            app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: warn
+ layout-evidence/saf-picker-preflight.txt || \
                grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' \
                  layout-evidence/saf-picker-preflight.txt; then
               echo 'Isolated system SAF-picker contract failed; skipping the long API36 suite'
