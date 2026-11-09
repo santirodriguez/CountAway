@@ -195,7 +195,13 @@ class AutoBackupSettingsActivity : BaseActivity() {
                 runCatching { AutoBackupScheduler.ensureScheduled(applicationContext) }
                 toast(if (it.created) R.string.auto_backup_verified else R.string.auto_backup_unchanged)
             },
-            onFailure = { toast(R.string.auto_backup_provider_failed) },
+            onFailure = {
+                val error = runCatching { AutoBackupStore.read(applicationContext).lastError }
+                    .getOrNull()
+                toast(if (error == "DESTINATION_CHANGE_FAILED")
+                    R.string.auto_backup_folder_change_failed
+                else R.string.auto_backup_provider_failed)
+            },
         )
         render()
     }
@@ -215,9 +221,28 @@ class AutoBackupSettingsActivity : BaseActivity() {
             findViewById<View>(R.id.autoBackupRecover).visibility = View.VISIBLE
             findViewById<View>(R.id.autoBackupNow).visibility = View.GONE
             findViewById<View>(R.id.autoBackupDisable).visibility = View.GONE
+            findViewById<View>(R.id.autoBackupStatusIcon).visibility = View.GONE
+            findViewById<View>(R.id.autoBackupVerifiedBadge).visibility = View.GONE
             return
         }
         findViewById<View>(R.id.autoBackupRecover).visibility = View.GONE
+        val verified = state.enabled && state.lastVerified > 0L
+        findViewById<View>(R.id.autoBackupStatusIcon).visibility =
+            if (verified) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.autoBackupVerifiedBadge).visibility =
+            if (verified) View.VISIBLE else View.GONE
+        val defaultChoice = findViewById<Button>(R.id.autoBackupDefault)
+        val selectedChoice = findViewById<Button>(R.id.autoBackupChoose)
+        defaultChoice.isSelected = state.enabled &&
+            state.destination?.kind == AutoBackupStore.Kind.DEFAULT_DOWNLOADS
+        selectedChoice.isSelected = state.enabled &&
+            state.destination?.kind == AutoBackupStore.Kind.SELECTED_FOLDER
+        defaultChoice.setCompoundDrawablesRelativeWithIntrinsicBounds(
+            R.drawable.ic_backup_folder, 0,
+            if (defaultChoice.isSelected) R.drawable.ic_backup_check_circle else 0, 0)
+        selectedChoice.setCompoundDrawablesRelativeWithIntrinsicBounds(
+            R.drawable.ic_backup_folder_plus, 0,
+            if (selectedChoice.isSelected) R.drawable.ic_backup_check_circle else 0, 0)
         findViewById<TextView>(R.id.autoBackupStatus).setText(
             if (state.enabled) R.string.auto_backup_on else R.string.auto_backup_off)
         findViewById<View>(R.id.autoBackupNow).visibility = if (state.enabled) View.VISIBLE else View.GONE
@@ -239,6 +264,7 @@ class AutoBackupSettingsActivity : BaseActivity() {
         error.text = when (state.lastError) {
             "CLEANUP_FAILED" -> getString(R.string.auto_backup_cleanup_warning)
             "SCHEDULE_FAILED" -> getString(R.string.auto_backup_schedule_warning)
+            "DESTINATION_CHANGE_FAILED" -> getString(R.string.auto_backup_folder_change_failed)
             null -> ""
             else -> getString(R.string.auto_backup_provider_failed)
         }

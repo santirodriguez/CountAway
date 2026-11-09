@@ -30,7 +30,12 @@ internal object AutoBackupEngine {
             }
             val attempt = System.currentTimeMillis()
             val prepared = prepare(app)
-            val copy = create(app, destination, prepared, attempt)
+            val copy = try {
+                create(app, destination, prepared, attempt)
+            } catch (error: Exception) {
+                markDestinationFailure(app, initial, attempt)
+                throw error
+            }
             // If opt-in cannot be persisted, remove only the new, still-untracked file.
             val final = try {
                 AutoBackupStore.update(app) { current ->
@@ -47,6 +52,7 @@ internal object AutoBackupEngine {
                 }
             } catch (error: Exception) {
                 discardUntrackedCopy(app, copy)
+                markDestinationFailure(app, initial, attempt)
                 throw error
             }
             // Setup must schedule even if the originating Activity is destroyed.
@@ -146,6 +152,27 @@ internal object AutoBackupEngine {
             context.contentResolver.releasePersistableUriPermission(
                 Uri.parse(rawUri), Intent.FLAG_GRANT_READ_URI_PERMISSION or
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        }
+    }
+
+    /** Keep the previous verified destination active, and make a failed switch visible
+     * after the screen is reopened. Never overwrite a newer committed selection. */
+    private fun markDestinationFailure(
+        context: Context,
+        initial: AutoBackupStore.State,
+        attemptedAt: Long,
+    ) {
+        runCatching {
+            AutoBackupStore.update(context) { current ->
+                if (current.generation == initial.generation &&
+                    current.destination == initial.destination) {
+                    current.copy(
+                        lastAttempt = attemptedAt,
+                        lastError = "DESTINATION_CHANGE_FAILED",
+                        failures = (current.failures + 1).coerceAtMost(3),
+                    )
+                } else current
+            }
         }
     }
 

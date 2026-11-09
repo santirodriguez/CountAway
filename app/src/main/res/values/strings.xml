@@ -178,6 +178,7 @@
     <string name="auto_backup_verified">Backup verified and saved.</string>
     <string name="auto_backup_unchanged">Backup verified. No changes since the last copy.</string>
     <string name="auto_backup_working">Checking and saving your events…</string>
+    <string name="auto_backup_folder_change_failed">The new folder could not be activated. Your previous backup location is still in use, if any. Check folder access and try again.</string>
     <string name="auto_backup_permission_failed">The folder did not grant read and write access. Choose another location.</string>
     <string name="auto_backup_provider_failed">Could not verify the backup. Check your folder and try again.</string>
     <string name="auto_backup_settings_failed">Backup settings need attention. Existing files have not been deleted.</string>
