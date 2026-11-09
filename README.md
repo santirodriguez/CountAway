@@ -69,7 +69,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 - **Useful reminders:** optional local notifications for count-down events.
 - **Smart widgets:** fixed widgets support both directions; **Next countdown** follows the nearest upcoming count-down event.
 - **Share without the screenshot ritual:** Send a Ridge-style PNG card, or full text for exceptionally long titles.
-- **Backup and restore:** export or import JSON manually, or opt in to verified automatic event backups in your chosen destination.
+- **Backup and restore:** import/export JSON manually, or opt in to verified automatic event backups. On Android 10+, copies default to Downloads/CountAway; you can choose another folder.
 - **Multilingual:** English, Español, and Català.
 
 ## Screenshots
@@ -93,7 +93,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 </tr>
 </table>
 
-<p align="center"><sub>Original CountAway 1.2.5 Android captures · Unmodified screenshot pixels</sub></p>
+<p align="center"><sub>Genuine Android screenshots · Original, unmodified pixels</sub></p>
 
 ## Privacy, by design
 

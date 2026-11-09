@@ -3,8 +3,8 @@
 ## 1.2.6
 
 - Reset eligible date-only count-up events to today from Home, with confirmation and Undo.
-- Add opt-in, verified automatic JSON backups of events to Downloads/CountAway or a folder you choose.
-- Keep manual import/export and make backup destination changes and failures clearer.
+- Add optional, verified automatic event-only JSON backups to Downloads/CountAway on Android 10+ or a chosen folder (required on Android 8–9).
+- Keep manual import/export, retain seven distinct verified copies when safe, and clarify backup status, destination changes, and errors.
 
 ## 1.2.5
 

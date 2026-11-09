@@ -6,6 +6,8 @@ Add an optional time to an event for live hours, minutes and seconds on Home. A 
 
 Count-down events can optionally repeat weekly, monthly, or yearly. Monthly dates keep their original day when possible and use the last valid day in shorter months. Optional local reminders can alert you on the event day or 1, 3, or 7 days before.
 
-Share an event as a local image card, export or restore your events with a JSON backup, and switch explicitly between English, Español, and Català or follow the system language.
+Reset an eligible date-only count-up to today from Home, with confirmation and Undo. Share an event as a local image card, import or export JSON backups manually, and switch between English, Español, and Català or follow the system language.
 
-Everything stays on your device. No accounts, ads, analytics, cloud synchronization, or Internet permission.
+Automatic event backups are optional and off until you enable them. Verified JSON copies go to Downloads/CountAway by default on Android 10+, or to a folder you choose. Android 8–9 asks you to select a folder. CountAway aims to keep seven distinct verified copies when safe cleanup is available; restore events with Import.
+
+CountAway works without accounts, ads, analytics, or an Internet permission. Event data stays local unless you choose to save a backup through a document provider, which may sync that file independently.
