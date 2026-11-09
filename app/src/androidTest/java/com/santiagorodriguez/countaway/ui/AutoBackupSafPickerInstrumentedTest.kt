@@ -68,11 +68,7 @@ class AutoBackupSafPickerInstrumentedTest {
                 }
                 // Do not bypass the Android picker: drive its real accessible UI.
                 assertTrue("System folder picker did not open", waitForExternalPicker())
-                val openedDocuments = clickAccessible("Documents", 8_000L)
-                    || (clickAccessible("Show roots", 3_000L) &&
-                        clickAccessible("Documents", 8_000L))
-                    || (clickAccessible("Show navigation drawer", 3_000L) &&
-                        clickAccessible("Documents", 8_000L))
+                val openedDocuments = openDocumentsInPicker()
                 assertTrue("Documents is unavailable in the system picker: " + dumpUi(),
                     openedDocuments)
                 assertTrue("Cannot select Documents in system picker: " + dumpUi(),
@@ -222,11 +218,7 @@ class AutoBackupSafPickerInstrumentedTest {
                 }
                 assertTrue("Actual system folder picker never opened", waitForExternalPicker())
                 assertTrue("Documents unavailable: " + dumpUi(),
-                    clickAccessible("Documents", 8_000L) ||
-                        (clickAccessible("Show roots", 3_000L) &&
-                            clickAccessible("Documents", 8_000L)) ||
-                        (clickAccessible("Show navigation drawer", 3_000L) &&
-                            clickAccessible("Documents", 8_000L)))
+                    openDocumentsInPicker())
                 assertTrue("Documents folder could not be selected: " + dumpUi(),
                     clickAccessible("Use this folder", 9_000L))
                 assertTrue("Document permission not granted: " + dumpUi(),
@@ -304,6 +296,19 @@ class AutoBackupSafPickerInstrumentedTest {
             else editor.putString("configuration_v1", oldState)
             check(editor.commit())
         }
+    }
+
+    private fun openDocumentsInPicker(): Boolean {
+        // DocumentsUI remembers its last folder between tests. When it already
+        // shows Documents, the title is not a clickable navigation target.
+        val currentUi = dumpUi()
+        if (currentUi.contains("Files in Documents") &&
+            currentUi.contains("USE THIS FOLDER", ignoreCase = true)) return true
+        return clickAccessible("Documents", 8_000L) ||
+            (clickAccessible("Show roots", 3_000L) &&
+                clickAccessible("Documents", 8_000L)) ||
+            (clickAccessible("Show navigation drawer", 3_000L) &&
+                clickAccessible("Documents", 8_000L))
     }
 
     private fun waitForExternalPicker(): Boolean {
