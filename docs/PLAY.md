@@ -14,10 +14,10 @@ This is the **default procedure for every future CountAway version**, not a one-
 6. **Submit for review with separate approval.** Obtain explicit authorization for the exact AAB upload and review submission; inspect Console-parsed package/versionCode, release notes, track and pending changes. **Confirm Managed publishing is ON before submitting for review** when publication must remain under the maintainer's control; without it, approved changes may publish automatically.
 7. **Publish and confirm.** After Google approves, obtain separate explicit authorization to publish the approved changes. Confirm the live Production release and, when available, verify a Play-delivered installation/update and cross-store signing compatibility. Keep F-Droid's build/index confirmation as a separate distribution path.
 
-## Release baseline (observed 2026-10-31)
+## Distribution baseline (GitHub checked 2026-11-09; Play last confirmed 2026-10-31)
 
 - applicationId: `com.santiagorodriguez.countaway`
-- GitHub public stable release: **1.2.4 / versionCode 13** (tag `v1.2.4` at `fb0cd3f61921813c1e409443717de2dfe76780d2`), published on 2026-10-31.
+- Latest verified public GitHub release: **1.2.5 / versionCode 14** (tag `v1.2.5` at `45d3d7dfcd0af2f01c0103af3c1ba410768baeb5`), published on 2026-11-07. This does not independently establish the currently published Play version.
 - First Google Play Production release: **1.2.3 / versionCode 12**, confirmed publicly available on 2026-10-30.
 - Google Play 1.2.4 / versionCode 13: the maintainer confirmed Production publication after Google's approval and Managed publishing on 2026-10-31, together with the English, Spanish and Catalan listing changes. Independent Play-delivered install/update verification was not recorded. For later changes, the live Console remains authoritative.
 - minSdk: 26
