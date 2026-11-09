@@ -146,7 +146,7 @@ class ReleaseScreenshotReviewInstrumentedTest {
                 .copy(countMode = CountMode.COUNT_UP)
             val timed = event("launcher-time", labels.concert, today.plusDays(12), EventType.CONCERT)
                 .copy(eventTime = LocalTime.of(18, 30), eventZone = ZoneId.of("Europe/Madrid"), repeatRule = RepeatRule.WEEKLY)
-            repository.save(listOf(day, weekend, newYear, timed))
+            repository.save(listOf(day, weekend, born, timed))
             drain()
 
             val classicProvider = ComponentName(app,
