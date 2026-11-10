@@ -22,8 +22,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  render-evidence-preflight:
+    name: Render evidence contract (fast)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Verify archive integrity contract
+        run: python3 -B scripts/test-ci-render-evidence.py -v
+
   widget-layout:
     name: Android contracts (API ${{ matrix.api }})
+    needs: render-evidence-preflight
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -81,33 +92,50 @@ jobs:
               tail -n 100 layout-evidence/reinstall-restore.txt
             fi
             adb logcat -d > layout-evidence/logcat.txt || true
-            local attempt=1
             local capture_ok=0
-            while (( attempt <= 3 )); do
-              rm -f layout-evidence/renders.pending.tar
-              local archive_paths=(layout-evidence)
-              if adb shell run-as "$PACKAGE" test -d files/share-evidence > /dev/null 2>&1; then
-                archive_paths+=(share-evidence)
-              fi
-              if adb exec-out run-as "$PACKAGE" tar -C files -cf - "${archive_paths[@]}" \
-                    > layout-evidence/renders.pending.tar &&
-                 tar -tf layout-evidence/renders.pending.tar > layout-evidence/render-manifest.txt &&
-                 grep -Eq '^layout-evidence/.*\.png$' layout-evidence/render-manifest.txt; then
-                mv layout-evidence/renders.pending.tar layout-evidence/renders.tar
+            local capture_source=live_device_after_tests
+            local pending=layout-evidence/renders.pending.tar
+            local manifest=layout-evidence/render-manifest.txt
+            if [[ "${CAPTURE_STORE_SCREENSHOTS:-false}" != "true" &&
+                  -s layout-evidence/behavior-renders.tar ]]; then
+              # API36 retained the original rendered evidence on the runner
+              # before the reboot / pm clear / uninstall-reinstall tests. Once
+              # those tests run, the original in-app directory no longer exists.
+              capture_source=preserved_before_reset
+              cp layout-evidence/behavior-renders.tar "$pending"
+              if python3 -B scripts/verify-ci-render-evidence.py "$pending" "$manifest"; then
+                mv "$pending" layout-evidence/renders.tar
                 capture_ok=1
-                break
               fi
-              echo "Render transfer attempt $attempt failed or returned truncated/empty evidence" >&2
-              attempt=$((attempt + 1))
-              sleep 2
-            done
+            else
+              # API26 and explicit new screenshot-capture runs still collect
+              # from their current, unreset app state.
+              local attempt=1
+              while (( attempt <= 3 )); do
+                rm -f "$pending"
+                local archive_paths=(layout-evidence)
+                if adb shell run-as "$PACKAGE" test -d files/share-evidence > /dev/null 2>&1; then
+                  archive_paths+=(share-evidence)
+                fi
+                if adb exec-out run-as "$PACKAGE" tar -C files -cf - "${archive_paths[@]}" > "$pending" &&
+                   python3 -B scripts/verify-ci-render-evidence.py "$pending" "$manifest"; then
+                  mv "$pending" layout-evidence/renders.tar
+                  capture_ok=1
+                  break
+                fi
+                echo "Render transfer attempt $attempt failed or returned invalid evidence" >&2
+                attempt=$((attempt + 1))
+                sleep 2
+              done
+            fi
             if (( capture_ok == 0 )); then
-              printf 'render_capture=failed\n' > layout-evidence/render-capture.txt
-              echo "No valid Android render evidence after three attempts" >&2
+              printf 'render_capture=failed\nsource=%s\n' "$capture_source" \
+                > layout-evidence/render-capture.txt
+              echo "No valid Android render evidence from $capture_source" >&2
               exit 1
             fi
-            printf 'render_capture=verified\ntar_entries=%s\n' \
-              "$(wc -l < layout-evidence/render-manifest.txt)" > layout-evidence/render-capture.txt
+            printf 'render_capture=verified\nsource=%s\ntar_entries=%s\n' \
+              "$capture_source" "$(wc -l < "$manifest")" > layout-evidence/render-capture.txt
             if [[ -s layout-evidence/localized-review-capture.txt ]]; then
               # Validate all three language sets from the same original Android
               # screenshot stream; never edit or synthesize the PNG pixels.
@@ -133,9 +161,11 @@ jobs:
             # Preserve behavioral render evidence before clearing app data.
             adb exec-out run-as "$PACKAGE" tar -C files -cf - layout-evidence share-evidence \
               > layout-evidence/behavior-renders.tar
-            tar -tf layout-evidence/behavior-renders.tar \
-              > layout-evidence/behavior-render-manifest.txt
-            grep -Eq '^layout-evidence/.*\.png$' layout-evidence/behavior-render-manifest.txt
+            # Verify and preserve the original in-app render stream before
+            # wiping the app's data for reboot and reinstall recovery tests.
+            python3 -B scripts/verify-ci-render-evidence.py \
+              layout-evidence/behavior-renders.tar \
+              layout-evidence/behavior-render-manifest.txt
             # Check persisted backup state across an actual emulator reboot.
             adb shell am force-stop "$PACKAGE" || true
             adb shell pm clear "$PACKAGE" > layout-evidence/reboot-prep-clear.txt
