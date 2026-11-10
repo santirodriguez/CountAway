@@ -792,20 +792,23 @@ class EditorActivity : BaseActivity() {
             }
             watchTimeInput(picker)
             positiveButton?.setOnClickListener {
-                val displayed = LocalTime.of(picker.hour, picker.minute)
+                // The native 12-hour picker may restore its previous hour when
+                // the focused field loses focus. Save the validated selection
+                // before that transition rather than reading a reverted value.
+                val proposed = LocalTime.of(picker.hour, picker.minute)
+                val validBeforeFocusLoss = picker.validateInput()
                 if (picker.findFocus() is EditText) picker.clearFocus()
-                val validAfterFocus = picker.validateInput()
-                val unchangedValidInitial =
-                    validatedInitialTime && !textEdited && displayed == starting
-                if (!validAfterFocus && !unchangedValidInitial) return@setOnClickListener
-                // Prefer the validated post-focus selection. Only an untouched,
-                // previously validated value may bypass transient re-validation.
-                val chosen = if (validAfterFocus) {
-                    LocalTime.of(picker.hour, picker.minute)
-                } else {
-                    displayed
-                }
-                accept(chosen.hour, chosen.minute)
+                val validAfterFocusLoss = picker.validateInput()
+                if (!TimePickerCommitPolicy.canAccept(
+                        proposed = proposed,
+                        starting = starting,
+                        initiallyValid = validatedInitialTime,
+                        validBeforeFocusLoss = validBeforeFocusLoss,
+                        validAfterFocusLoss = validAfterFocusLoss,
+                        textEdited = textEdited,
+                    )
+                ) return@setOnClickListener
+                accept(proposed.hour, proposed.minute)
                 dialog.dismiss()
             }
         }

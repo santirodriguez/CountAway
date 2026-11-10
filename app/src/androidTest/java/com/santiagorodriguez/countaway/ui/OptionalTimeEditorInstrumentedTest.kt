@@ -148,6 +148,8 @@ class OptionalTimeEditorInstrumentedTest {
                 picker.minute = 45
                 assertEquals(21, picker.hour)
                 assertEquals(45, picker.minute)
+                assertTrue("A valid changed hour must pass the native pre-focus check",
+                    picker.validateInput())
             }
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
             scenario.onActivity { activity ->

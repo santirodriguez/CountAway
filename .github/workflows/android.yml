@@ -32,9 +32,72 @@ jobs:
       - name: Verify archive integrity contract
         run: python3 -B scripts/test-ci-render-evidence.py -v
 
+  time-picker-preflight:
+    name: Native TimePicker API36 (focused)
+    needs: render-evidence-preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - name: Set up JDK
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - name: Build focused instrumentation tests
+        run: |
+          set -euo pipefail
+          test -e /dev/kvm
+          sudo chmod 666 /dev/kvm
+          ./gradlew assembleDebug assembleDebugAndroidTest --stacktrace
+          cat > .native-time-picker-preflight.sh <<'SCRIPT'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          PACKAGE=com.santiagorodriguez.countaway
+          mkdir -p time-picker-evidence
+          adb install -r app/build/outputs/apk/debug/app-debug.apk
+          adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          # Exercise the real 12-hour Android picker on API36.
+          adb shell settings put system time_12_24 12
+          if ! adb shell am instrument -w \
+            -e class 'com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#changingExistingEveningTimePersistsAfterRecreation,com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#timeIsOffByDefaultAndPickerSavesOnlyWhenExplicitlyChosen,com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#midnightAndNoonRemainsConfirmableInNativeTimePicker,com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#afternoonTimeSurvivesNativePickerAndRecreation' \
+            "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+            > time-picker-evidence/instrumentation.txt 2>&1; then
+            cat time-picker-evidence/instrumentation.txt
+            exit 1
+          fi
+          cat time-picker-evidence/instrumentation.txt
+          if ! grep -Eq '^OK \(4 tests\)$' time-picker-evidence/instrumentation.txt || \
+             grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' \
+               time-picker-evidence/instrumentation.txt; then
+            echo 'Native TimePicker preflight failed; full Android contracts not started' >&2
+            exit 1
+          fi
+          SCRIPT
+      - name: Run focused native TimePicker checks (API 36)
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: bash .native-time-picker-preflight.sh
+      - name: Upload focused TimePicker evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CountAway-time-picker-api36-${{ github.sha }}
+          path: time-picker-evidence/
+          if-no-files-found: warn
+
   widget-layout:
     name: Android contracts (API ${{ matrix.api }})
-    needs: render-evidence-preflight
+    needs: [render-evidence-preflight, time-picker-preflight]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
