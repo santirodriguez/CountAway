@@ -32,7 +32,23 @@ if a[:2] == ['shell', 'uiautomator']:
         raise SystemExit(1)
 elif a[0] == 'pull':
     root = ET.Element('hierarchy')
-    if s.get('saved'):
+    if s.get('picker_mode'):
+        if s.get('picker_confirm'):
+            ET.SubElement(root, 'node', {'package': 'app',
+                'resource-id': 'android:id/button1', 'enabled': 'true',
+                'bounds': '[850,1300][1030,1400]'})
+        else:
+            if s.get('has_document', True):
+                ET.SubElement(root, 'node', {'text': 'CountAway-upgrade-v124.json',
+                    'resource-id': 'android:id/title', 'enabled': 'true',
+                    'bounds': '[189,515][761,572]'})
+            if s.get('drawer_open'):
+                ET.SubElement(root, 'node', {'text': 'Open from', 'enabled': 'true',
+                    'bounds': '[42,83][340,168]'})
+                if s.get('has_downloads', True):
+                    ET.SubElement(root, 'node', {'text': 'Downloads', 'enabled': 'true',
+                        'bounds': '[168,405][714,456]'})
+    elif s.get('saved'):
         ET.SubElement(root, 'node', {'text': s['actual'], 'resource-id': 'app:id/eventTitle'})
     else:
         ET.SubElement(root, 'node', {'text': s.get('actual') or 'Trip',
@@ -47,7 +63,9 @@ elif a[0] == 'pull':
     ET.ElementTree(root).write(a[2], encoding='unicode')
 elif a[:3] == ['shell', 'input', 'keyevent']:
     for key in a[3:]:
-        if key == 'KEYCODE_DEL':
+        if s.get('picker_mode') and key == 'KEYCODE_BACK':
+            s['drawer_open'] = False
+        elif key == 'KEYCODE_DEL':
             s['actual'] = s.get('actual', '')[:-1]
         elif key != 'KEYCODE_MOVE_END':
             raise SystemExit('Unexpected key event')
@@ -61,7 +79,19 @@ elif a[:3] == ['shell', 'input', 'text']:
 elif a[:3] == ['shell', 'input', 'swipe']:
     s['scrolled'] = True
 elif a[:3] == ['shell', 'input', 'tap']:
-    if int(a[4]) > 400:
+    if s.get('picker_mode'):
+        x, y = int(a[3]), int(a[4])
+        if s.get('drawer_open'):
+            if s.get('has_downloads', True) and 350 <= y <= 505 and x <= 735:
+                s['drawer_open'] = False
+                s['drawer_navigation_count'] = s.get('drawer_navigation_count', 0) + 1
+            else:
+                s['occluded_taps'] = s.get('occluded_taps', 0) + 1
+        elif s.get('has_document', True) and 480 <= y <= 650:
+            s['file_taps'] = s.get('file_taps', 0) + 1
+            if not s.get('ignore_file_tap'):
+                s['picker_confirm'] = True
+    elif int(a[4]) > 400:
         s['saved'] = True
         s['save_count'] = s.get('save_count', 0) + 1
 else:
@@ -172,6 +202,35 @@ wait_for_text UpgradeProbe123 acceptance-evidence/saved.xml
             'tap_predecessor_about missing-home.xml\n')
         self.assertNotEqual(0, result.returncode)
         self.assertNotIn(['shell', 'input', 'tap', '964', '152'], state['commands'])
+
+    def run_picker_fixture(self, setup: str) -> tuple[subprocess.CompletedProcess, dict]:
+        extra = """python3 - <<'PY'
+import json
+from pathlib import Path
+p = Path('state.json')
+state = json.loads(p.read_text())
+state.update({"picker_mode": True, "drawer_open": True, """ + setup + """})
+p.write_text(json.dumps(state))
+PY
+tap_document_file CountAway-upgrade-v124.json
+"""
+        result, state, _ = self.run_fixture({'actual': ''}, extra)
+        return result, state
+
+    def test_picker_closes_open_drawer_before_tapping_visible_file_label(self):
+        result, state = self.run_picker_fixture('"has_downloads": True')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue(state.get('picker_confirm'))
+        self.assertEqual(1, state.get('drawer_navigation_count'))
+        self.assertEqual(1, state.get('file_taps'))
+        self.assertEqual(0, state.get('occluded_taps', 0))
+
+    def test_picker_closes_unroutable_drawer_before_tapping_file(self):
+        result, state = self.run_picker_fixture('"has_downloads": False')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue(state.get('picker_confirm'))
+        self.assertEqual(1, state.get('file_taps'))
+        self.assertIn(['shell', 'input', 'keyevent', 'KEYCODE_BACK'], state['commands'])
 
     def test_signed_upgrade_still_requires_version_and_exact_data_verification(self):
         after_install = self.source.split('            adb install -r "${CANDIDATE_APK}"', 1)[1]

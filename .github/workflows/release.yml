@@ -895,6 +895,19 @@ jobs:
                       sys.exit(0)
               sys.exit(1)
 
+          if mode == "app-confirm":
+              for node in root.iter():
+                  if (node.get("package") != query
+                          or node.get("resource-id") != "android:id/button1"
+                          or node.get("enabled") != "true"):
+                      continue
+                  rect = bounds(node)
+                  if rect:
+                      x1, y1, x2, y2 = rect
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      sys.exit(0)
+              sys.exit(1)
+
           if mode == "text":
               sys.exit(0 if any(node.get("text") == query for node in root.iter()) else 1)
 
@@ -1080,14 +1093,38 @@ jobs:
 
           tap_document_file() {
             local document="$1" xml="acceptance-evidence/picker-import-api-${API_LEVEL}.xml"
-            local attempt coords x y location=""
+            local confirmed="acceptance-evidence/picker-import-result-api-${API_LEVEL}.xml"
+            local attempt ready coords x y location=""
             for attempt in {1..20}; do
-              dump_ui "${xml}"
+              dump_ui "${xml}" || return 1
+              # DocumentsUI can expose file labels underneath its open roots
+              # drawer. Their coordinates are then occluded and cannot select
+              # the document. Close/navigate the drawer *before* looking at files.
+              if python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "Open from" "${xml}" > /dev/null 2>&1; then
+                coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "Downloads" "${xml}" 2>/dev/null)" || coords=""
+                if [[ -n "${coords}" ]]; then
+                  read -r x y <<< "${coords}"
+                  adb shell input tap "${x}" "${y}"
+                else
+                  adb shell input keyevent KEYCODE_BACK
+                fi
+                sleep 1
+                continue
+              fi
               coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "${document}" "${xml}" 2>/dev/null)" || coords=""
               if [[ -n "${coords}" ]]; then
                 read -r x y <<< "${coords}"
                 adb shell input tap "${x}" "${y}"
-                return 0
+                for ready in {1..5}; do
+                  dump_ui "${confirmed}" || return 1
+                  # A tap only succeeds when CountAway, not DocumentsUI, owns
+                  # an enabled import-confirmation dialog.
+                  if python3 "${RUNNER_TEMP}/countaway-ui.py" app-confirm "${PACKAGE_ID}" "${confirmed}" > /dev/null 2>&1; then
+                    return 0
+                  fi
+                  sleep 1
+                done
+                continue
               fi
               for location in "Downloads" "Download" "Show roots" "Show navigation drawer"; do
                 coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "${location}" "${xml}" 2>/dev/null)" || coords=""
@@ -1099,7 +1136,7 @@ jobs:
               done
               sleep 1
             done
-            echo "Document picker did not expose upgrade fixture: ${document}" >&2
+            echo "Document picker did not return a CountAway import confirmation for ${document}" >&2
             return 1
           }
 
@@ -1217,7 +1254,7 @@ jobs:
             confirm_coords=""
             for attempt in {1..15}; do
               dump_ui "${confirm_xml}"
-              confirm_coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" center "android:id/button1" "${confirm_xml}" 2>/dev/null)" || confirm_coords=""
+              confirm_coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" app-confirm "${PACKAGE_ID}" "${confirm_xml}" 2>/dev/null)" || confirm_coords=""
               if [[ -n "${confirm_coords}" ]]; then break; fi
               sleep 1
             done

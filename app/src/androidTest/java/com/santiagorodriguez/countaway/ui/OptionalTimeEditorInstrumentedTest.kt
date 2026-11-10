@@ -50,6 +50,8 @@ class OptionalTimeEditorInstrumentedTest {
             onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, _ ->
                 val picker = view as TimePicker
                 offeredTime = LocalTime.of(picker.hour, picker.minute)
+                assertTrue("A new native picker must expose a valid initial time",
+                    picker.validateInput())
                 val focused = picker.findFocus()
                 pickerFocusBeforeConfirm = "is24Hour=${picker.is24HourView}; " +
                     "focused=${focused?.javaClass?.simpleName}; shown=${focused?.isShown}"

@@ -764,12 +764,47 @@ class EditorActivity : BaseActivity() {
             // The platform's validation state can change after restoring an
             // initial 12-hour display (notably at midnight). Never force-enable
             // a genuinely invalid time, but honor a valid restored selection.
-            positiveButton?.isEnabled = picker.validateInput()
+            val validatedInitialTime = picker.validateInput()
+            positiveButton?.isEnabled = validatedInitialTime
+            // A few native 12-hour pickers transiently report invalid after
+            // focus moves to OK, despite a valid, untouched initial selection.
+            // Track actual text edits so invalid manual input cannot use this
+            // narrow fallback to commit an old time.
+            var textEdited = false
+            fun watchTimeInput(view: View) {
+                if (view is EditText) {
+                    view.addTextChangedListener(object : TextWatcher {
+                        override fun beforeTextChanged(
+                            text: CharSequence?, start: Int, count: Int, after: Int,
+                        ) = Unit
+                        override fun onTextChanged(
+                            text: CharSequence?, start: Int, before: Int, count: Int,
+                        ) {
+                            if (view.hasFocus()) textEdited = true
+                        }
+                        override fun afterTextChanged(text: Editable?) = Unit
+                    })
+                } else if (view is ViewGroup) {
+                    for (index in 0 until view.childCount) {
+                        watchTimeInput(view.getChildAt(index))
+                    }
+                }
+            }
+            watchTimeInput(picker)
             positiveButton?.setOnClickListener {
-                // Validate committed user input before reading the selection.
+                val displayed = LocalTime.of(picker.hour, picker.minute)
                 if (picker.findFocus() is EditText) picker.clearFocus()
-                if (!picker.validateInput()) return@setOnClickListener
-                val chosen = LocalTime.of(picker.hour, picker.minute)
+                val validAfterFocus = picker.validateInput()
+                val unchangedValidInitial =
+                    validatedInitialTime && !textEdited && displayed == starting
+                if (!validAfterFocus && !unchangedValidInitial) return@setOnClickListener
+                // Prefer the validated post-focus selection. Only an untouched,
+                // previously validated value may bypass transient re-validation.
+                val chosen = if (validAfterFocus) {
+                    LocalTime.of(picker.hour, picker.minute)
+                } else {
+                    displayed
+                }
                 accept(chosen.hour, chosen.minute)
                 dialog.dismiss()
             }

@@ -6,6 +6,13 @@ on:
     branches:
       - main
       - 'release/**'
+  workflow_dispatch:
+    inputs:
+      capture_store_screenshots:
+        description: Generate new, original localized Android screenshots for review
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -19,6 +26,8 @@ jobs:
     name: Android contracts (API ${{ matrix.api }})
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      CAPTURE_STORE_SCREENSHOTS: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_store_screenshots && 'true' || 'false' }}
     strategy:
       fail-fast: false
       matrix:
@@ -211,61 +220,69 @@ jobs:
             fi
             printf 'uninstall_reinstall_manual_import=verified\n' \
               > layout-evidence/reinstall-recovery-status.txt
-            # Generate all supported store languages in one exact-source run.
-            # Preserve prior locale artifacts: clear app data just once.
-            adb shell am force-stop "$PACKAGE" || true
-            adb shell pm clear "$PACKAGE" > layout-evidence/store-capture-data-reset.txt
-            capture_failed=0
-            for screenshot_locale in en-US es ca; do
-              set +e
-              adb shell am instrument -w \
-                -e class 'com.santiagorodriguez.countaway.ui.ReleaseScreenshotReviewInstrumentedTest#captureSixCandidateViewsForHumanReview' \
-                -e countawayScreenshotReview true \
-                -e countawayScreenshotLocale "$screenshot_locale" \
-                "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
-                > "layout-evidence/screenshots-$screenshot_locale-instrumentation.txt" 2>&1
-              screenshot_exit=$?
-              set -e
-              if [ "$screenshot_exit" -eq 0 ] &&
-                 grep -Eq '^OK \(1 test\)' "layout-evidence/screenshots-$screenshot_locale-instrumentation.txt" &&
-                 ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' \
-                   "layout-evidence/screenshots-$screenshot_locale-instrumentation.txt"; then
-                printf 'locale=%s store_capture=passed\n' "$screenshot_locale" \
-                  >> layout-evidence/store-capture-status.txt
+            # Approved canonical screenshots are checked byte-for-byte and for
+            # store format in the build job. Re-capturing launcher widgets is a
+            # separate opt-in review step, not a requirement for routine CI.
+            if [[ "${CAPTURE_STORE_SCREENSHOTS:-false}" == "true" ]]; then
+              # Generate all supported store languages in one exact-source run.
+              # Preserve prior locale artifacts: clear app data just once.
+              adb shell am force-stop "$PACKAGE" || true
+              adb shell pm clear "$PACKAGE" > layout-evidence/store-capture-data-reset.txt
+              capture_failed=0
+              for screenshot_locale in en-US es ca; do
+                set +e
+                adb shell am instrument -w \
+                  -e class 'com.santiagorodriguez.countaway.ui.ReleaseScreenshotReviewInstrumentedTest#captureSixCandidateViewsForHumanReview' \
+                  -e countawayScreenshotReview true \
+                  -e countawayScreenshotLocale "$screenshot_locale" \
+                  "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+                  > "layout-evidence/screenshots-$screenshot_locale-instrumentation.txt" 2>&1
+                screenshot_exit=$?
+                set -e
+                if [ "$screenshot_exit" -eq 0 ] &&
+                   grep -Eq '^OK \(1 test\)' "layout-evidence/screenshots-$screenshot_locale-instrumentation.txt" &&
+                   ! grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' \
+                     "layout-evidence/screenshots-$screenshot_locale-instrumentation.txt"; then
+                  printf 'locale=%s store_capture=passed\n' "$screenshot_locale" \
+                    >> layout-evidence/store-capture-status.txt
+                else
+                  capture_failed=1
+                  printf 'locale=%s store_capture=failed instrument_exit=%s\n' \
+                    "$screenshot_locale" "$screenshot_exit" >> layout-evidence/store-capture-status.txt
+                fi
+  
+                # Capture actual launcher widgets with the same localized native
+                # widget preferences and a historical date-only count-up.
+                set +e
+                adb shell am instrument -w \
+                  -e class 'com.santiagorodriguez.countaway.ui.ReleaseScreenshotReviewInstrumentedTest#attemptRealLauncherWidgetCaptureForHumanReview' \
+                  -e countawayLauncherReview true \
+                  -e countawayScreenshotLocale "$screenshot_locale" \
+                  "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
+                  > "layout-evidence/launcher-$screenshot_locale-instrumentation.txt" 2>&1
+                launcher_exit=$?
+                set -e
+                if [ "$launcher_exit" -eq 0 ] &&
+                   grep -Eq '^OK \(1 test\)' "layout-evidence/launcher-$screenshot_locale-instrumentation.txt"; then
+                  printf 'locale=%s launcher_probe=completed\n' "$screenshot_locale" \
+                    >> layout-evidence/launcher-probe-status.txt
+                else
+                  capture_failed=1
+                  printf 'locale=%s launcher_probe=failed instrument_exit=%s\n' \
+                    "$screenshot_locale" "$launcher_exit" >> layout-evidence/launcher-probe-status.txt
+                fi
+              done
+              # The EXIT collector must package and independently verify all 18.
+              if [ "$capture_failed" -eq 0 ]; then
+                printf 'source=localized_native_capture\nlocales=en-US,es,ca\n' \
+                  > layout-evidence/localized-review-capture.txt
               else
-                capture_failed=1
-                printf 'locale=%s store_capture=failed instrument_exit=%s\n' \
-                  "$screenshot_locale" "$screenshot_exit" >> layout-evidence/store-capture-status.txt
+                echo 'Localized native screenshot batch failed; inspect source-bound artifacts' >&2
+                exit 1
               fi
-
-              # Capture actual launcher widgets with the same localized native
-              # widget preferences and a historical date-only count-up.
-              set +e
-              adb shell am instrument -w \
-                -e class 'com.santiagorodriguez.countaway.ui.ReleaseScreenshotReviewInstrumentedTest#attemptRealLauncherWidgetCaptureForHumanReview' \
-                -e countawayLauncherReview true \
-                -e countawayScreenshotLocale "$screenshot_locale" \
-                "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
-                > "layout-evidence/launcher-$screenshot_locale-instrumentation.txt" 2>&1
-              launcher_exit=$?
-              set -e
-              if [ "$launcher_exit" -eq 0 ] &&
-                 grep -Eq '^OK \(1 test\)' "layout-evidence/launcher-$screenshot_locale-instrumentation.txt"; then
-                printf 'locale=%s launcher_probe=completed\n' "$screenshot_locale" \
-                  >> layout-evidence/launcher-probe-status.txt
-              else
-                capture_failed=1
-                printf 'locale=%s launcher_probe=failed instrument_exit=%s\n' \
-                  "$screenshot_locale" "$launcher_exit" >> layout-evidence/launcher-probe-status.txt
-              fi
-            done
-            # The EXIT collector must package and independently verify all 18.
-            if [ "$capture_failed" -eq 0 ]; then
-              printf 'source=localized_native_capture\nlocales=en-US,es,ca\n' \
-                > layout-evidence/localized-review-capture.txt
             else
-              echo 'Localized native screenshot batch failed; inspect source-bound artifacts' >&2
-              exit 1
+              printf 'localized_screenshot_capture=skipped; canonical_assets_checked_by_build\n' \
+                > layout-evidence/localized-screenshot-status.txt
             fi
           fi
           SCRIPT
