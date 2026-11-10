@@ -160,7 +160,7 @@
     <string name="auto_backup_on">On</string>
     <string name="auto_backup_off">Off</string>
     <string name="auto_backup_back">Back to About</string>
-    <string name="auto_backup_description">Keep recoverable copies of your events. Nothing is saved automatically until you turn this on and the first backup is verified.</string>
+    <string name="auto_backup_description">Up to 7 verified copies. Tries to back up after changes and checks daily; Android decides when.</string>
     <string name="auto_backup_destination_title">Where to save</string>
     <string name="auto_backup_default">Use Downloads/CountAway</string>
     <string name="auto_backup_default_note">The recommended local folder. On Android 8–9, choose a CountAway folder with the system picker.</string>

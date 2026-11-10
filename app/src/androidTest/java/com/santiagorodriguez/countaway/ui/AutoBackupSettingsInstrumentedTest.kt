@@ -39,6 +39,18 @@ import org.junit.runner.RunWith
 class AutoBackupSettingsInstrumentedTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
+    @Test fun backupSummaryExplainsRetentionAndFlexibleTimingInAllLanguages() {
+        for (language in listOf("en", "es", "ca")) {
+            val configuration = Configuration(context.resources.configuration).apply {
+                setLocale(Locale.forLanguageTag(language))
+            }
+            val localized = context.createConfigurationContext(configuration)
+            val summary = localized.getString(R.string.auto_backup_description)
+            assertTrue("$language: verified copy limit missing", summary.contains("7"))
+            assertTrue("$language: Android scheduling caveat missing", summary.contains("Android"))
+        }
+    }
+
     @Test fun settingsRemainScrollableWithLargeTextInAllThreeLanguagesAndThemes() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.runOnMainSync {

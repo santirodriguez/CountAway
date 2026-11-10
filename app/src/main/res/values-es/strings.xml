@@ -152,7 +152,7 @@
     <string name="auto_backup_on">Activadas</string>
     <string name="auto_backup_off">Desactivadas</string>
     <string name="auto_backup_back">Volver a Acerca de</string>
-    <string name="auto_backup_description">Conservá copias recuperables de tus eventos. No se guarda nada automáticamente hasta que las actives y se verifique la primera copia.</string>
+    <string name="auto_backup_description">Hasta 7 copias verificadas. Intenta guardar tras cambios y comprobar a diario; Android decide cuándo.</string>
     <string name="auto_backup_destination_title">Dónde guardar</string>
     <string name="auto_backup_default">Usar Descargas/CountAway</string>
     <string name="auto_backup_default_note">La carpeta local recomendada. En Android 8–9, elegí una carpeta CountAway con el selector del sistema.</string>

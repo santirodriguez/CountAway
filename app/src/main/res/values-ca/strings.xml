@@ -152,7 +152,7 @@
     <string name="auto_backup_on">Activades</string>
     <string name="auto_backup_off">Desactivades</string>
     <string name="auto_backup_back">Torna a Sobre l’app</string>
-    <string name="auto_backup_description">Conserva còpies recuperables dels esdeveniments. No es desa res automàticament fins que les actives i es verifica la primera còpia.</string>
+    <string name="auto_backup_description">Fins a 7 còpies verificades. S’intenta desar després dels canvis i comprovar cada dia; Android decideix quan.</string>
     <string name="auto_backup_destination_title">On es desen</string>
     <string name="auto_backup_default">Utilitza Descàrregues/CountAway</string>
     <string name="auto_backup_default_note">La carpeta local recomanada. A Android 8–9, tria una carpeta CountAway amb el selector del sistema.</string>
