@@ -7,9 +7,11 @@ internal object AutoBackupFolderGrantPolicy {
     fun releaseFlags(
         hadRead: Boolean,
         hadWrite: Boolean,
-        stillCommitted: Boolean,
+        destinationEnabled: Boolean,
+        committedTreeUri: String?,
+        attemptedTreeUri: String,
     ): Int {
-        if (stillCommitted) return 0
+        if (destinationEnabled && committedTreeUri == attemptedTreeUri) return 0
         return (if (hadRead) 0 else Intent.FLAG_GRANT_READ_URI_PERMISSION) or
             (if (hadWrite) 0 else Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
     }

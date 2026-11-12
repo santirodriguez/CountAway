@@ -188,8 +188,14 @@ class AutoBackupSettingsActivity : BaseActivity() {
                 // Never release a grant used by the committed destination.
                 val current = runCatching { AutoBackupStore.read(app).destination?.treeUri }
                 if (current.isSuccess) {
+                    val state = current.getOrThrow()
                     val releaseFlags = AutoBackupFolderGrantPolicy.releaseFlags(
-                        hadRead, hadWrite, current.getOrNull() == uri.toString())
+                        hadRead = hadRead,
+                        hadWrite = hadWrite,
+                        destinationEnabled = state.enabled,
+                        committedTreeUri = state.destination?.treeUri,
+                        attemptedTreeUri = uri.toString(),
+                    )
                     if (releaseFlags != 0) runCatching {
                         app.contentResolver.releasePersistableUriPermission(uri, releaseFlags)
                     }
