@@ -63,14 +63,14 @@ jobs:
           # Exercise the real 12-hour Android picker on API36.
           adb shell settings put system time_12_24 12
           if ! adb shell am instrument -w \
-            -e class 'com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#changingExistingEveningTimePersistsAfterRecreation,com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#timeIsOffByDefaultAndPickerSavesOnlyWhenExplicitlyChosen,com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#midnightAndNoonRemainsConfirmableInNativeTimePicker,com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#afternoonTimeSurvivesNativePickerAndRecreation' \
+            -e class 'com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#changingExistingEveningTimePersistsAfterRecreation,com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#timeIsOffByDefaultAndPickerSavesOnlyWhenExplicitlyChosen,com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#midnightAndNoonRemainsConfirmableInNativeTimePicker,com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#afternoonTimeSurvivesNativePickerAndRecreation,com.santiagorodriguez.countaway.ui.OptionalTimeEditorInstrumentedTest#typedNativeMinuteIsCommittedBeforeSaving' \
             "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
             > time-picker-evidence/instrumentation.txt 2>&1; then
             cat time-picker-evidence/instrumentation.txt
             exit 1
           fi
           cat time-picker-evidence/instrumentation.txt
-          if ! grep -Eq '^OK \(4 tests\)$' time-picker-evidence/instrumentation.txt || \
+          if ! grep -Eq '^OK \(5 tests\)$' time-picker-evidence/instrumentation.txt || \
              grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' \
                time-picker-evidence/instrumentation.txt; then
             echo 'Native TimePicker preflight failed; full Android contracts not started' >&2
@@ -136,8 +136,8 @@ jobs:
               -e class 'com.santiagorodriguez.countaway.ui.AutoBackupSafPickerInstrumentedTest' \
               "$PACKAGE.test/androidx.test.runner.AndroidJUnitRunner" \
               > layout-evidence/saf-picker-preflight.txt 2>&1
-            # Both real DocumentsUI scenarios must pass: initial opt-in and Default-to-SAF switch.
-            if ! grep -Eq '^OK \(2 tests\)$' layout-evidence/saf-picker-preflight.txt || \
+            # All three real DocumentsUI scenarios must pass, including rejected-folder cleanup.
+            if ! grep -Eq '^OK \(3 tests\)$' layout-evidence/saf-picker-preflight.txt || \
                grep -Eq 'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed' \
                  layout-evidence/saf-picker-preflight.txt; then
               echo 'Isolated system SAF-picker contract failed; skipping the long API36 suite'
