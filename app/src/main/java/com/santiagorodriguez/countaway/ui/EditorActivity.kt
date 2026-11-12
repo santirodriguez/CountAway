@@ -791,6 +791,10 @@ class EditorActivity : BaseActivity() {
                 }
             }
             watchTimeInput(picker)
+            // Initial touch focus on OK stabilized the restored 12-hour clock.
+            // Restore normal button touch behavior before editing: touching OK
+            // must not steal focus from typed input before validation runs.
+            positiveButton?.isFocusableInTouchMode = false
             positiveButton?.setOnClickListener {
                 // The native 12-hour picker may restore its previous hour when
                 // the focused field loses focus. Save the validated selection
