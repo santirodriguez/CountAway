@@ -249,6 +249,10 @@ jobs:
             adb shell am start -W -n "$PACKAGE/.ui.MainActivity" > layout-evidence/reboot-app-launch.txt
             adb shell dumpsys package "$PACKAGE" > layout-evidence/reboot-package-before.txt
             adb shell dumpsys jobscheduler > layout-evidence/reboot-jobs-before.txt
+            # JobScheduler flushes persisted jobs asynchronously. Allow its disk
+            # write to settle before the emulator performs an immediate reboot.
+            sleep 5
+            adb shell sync
             adb reboot
             adb wait-for-device
             boot_ready=0
