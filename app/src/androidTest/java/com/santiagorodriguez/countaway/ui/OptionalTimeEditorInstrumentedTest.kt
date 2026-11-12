@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.DatePicker
+import android.widget.EditText
 import android.widget.TimePicker
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
@@ -163,6 +164,53 @@ class OptionalTimeEditorInstrumentedTest {
             }
             drain()
             assertEquals(event.copy(eventTime = LocalTime.of(21, 45)),
+                events().single { it.id == event.id })
+        }
+    }
+
+    @Test fun typedNativeMinuteIsCommittedBeforeSaving() = isolated {
+        val event = fixture().copy(eventTime = LocalTime.of(18, 30),
+            eventZone = ZoneId.of("America/Argentina/Buenos_Aires"))
+        repository.save(original() + event)
+        ActivityScenario.launch<EditorActivity>(intent(event)).use { scenario ->
+            drain()
+            scenario.onActivity { activity ->
+                activity.findViewById<Button>(R.id.timeButton).performClick()
+            }
+            // Use native text input, not an assignment to picker.minute.
+            onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, error ->
+                if (error != null) throw error
+                val picker = view as TimePicker
+                val toggleId = picker.resources.getIdentifier("toggle_mode", "id", "android")
+                val minuteId = picker.resources.getIdentifier("input_minute", "id", "android")
+                assertTrue("Native picker has no keyboard-mode toggle", toggleId != 0)
+                assertTrue("Native picker has no minute input field", minuteId != 0)
+                val toggle = picker.findViewById<View>(toggleId)
+                assertNotNull("Native keyboard-mode toggle is missing", toggle)
+                assertTrue("Cannot enter native keyboard mode", requireNotNull(toggle).performClick())
+                val minute = picker.findViewById<EditText>(minuteId)
+                assertNotNull("Native minute text input is missing", minute)
+                val input = requireNotNull(minute)
+                assertTrue("Native minute text input is not visible", input.isShown)
+                assertTrue("Cannot focus native minute text input", input.requestFocus())
+                input.setText("47")
+                input.setSelection(input.text.length)
+                assertTrue("Native minute input lost focus before OK", input.hasFocus())
+            }
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
+            scenario.onActivity { activity ->
+                assertEditorTime(activity, LocalTime.of(18, 47),
+                    "typed minute after native confirmation")
+            }
+            scenario.recreate()
+            drain()
+            scenario.onActivity { activity ->
+                assertEditorTime(activity, LocalTime.of(18, 47),
+                    "typed minute after Activity recreation")
+                activity.findViewById<Button>(R.id.saveButton).performClick()
+            }
+            drain()
+            assertEquals(event.copy(eventTime = LocalTime.of(18, 47)),
                 events().single { it.id == event.id })
         }
     }

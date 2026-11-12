@@ -77,6 +77,7 @@ class AutoBackupEngineInstrumentedTest {
         }.isFailure)
         assertFalse(AutoBackupStore.read(context).enabled)
         assertEquals(0, AutoBackupStore.read(context).owned.size)
+        assertEquals("DESTINATION_CHANGE_FAILED", AutoBackupStore.read(context).lastError)
     }
 
     @Test fun aSuccessfulMutationCreatesOneCoalescedJobAndARequiredDailyRecheck() = isolated { _: MutableSet<String> ->

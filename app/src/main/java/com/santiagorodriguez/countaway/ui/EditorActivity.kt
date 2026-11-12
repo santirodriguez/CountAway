@@ -791,12 +791,18 @@ class EditorActivity : BaseActivity() {
                 }
             }
             watchTimeInput(picker)
+            // Initial touch focus on OK stabilized the restored 12-hour clock.
+            // Restore normal button touch behavior before editing: touching OK
+            // must not steal focus from typed input before validation runs.
+            positiveButton?.isFocusableInTouchMode = false
             positiveButton?.setOnClickListener {
                 // The native 12-hour picker may restore its previous hour when
                 // the focused field loses focus. Save the validated selection
                 // before that transition rather than reading a reverted value.
-                val proposed = LocalTime.of(picker.hour, picker.minute)
+                // Validation commits typed input to the native picker; read the
+                // resulting time before focus loss can restore an older value.
                 val validBeforeFocusLoss = picker.validateInput()
+                val proposed = LocalTime.of(picker.hour, picker.minute)
                 if (picker.findFocus() is EditText) picker.clearFocus()
                 val validAfterFocusLoss = picker.validateInput()
                 if (!TimePickerCommitPolicy.canAccept(

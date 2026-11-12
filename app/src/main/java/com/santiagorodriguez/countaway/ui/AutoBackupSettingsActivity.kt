@@ -152,17 +152,21 @@ class AutoBackupSettingsActivity : BaseActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode != REQUEST_FOLDER || resultCode != Activity.RESULT_OK) return
         val uri = data?.data ?: return
-        val grants = data.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or
-            Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-        if (grants != (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)) {
+        if (session.work.running) return
+        val app = applicationContext
+        val accessFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        if ((data.flags and accessFlags) != accessFlags) {
             toast(R.string.auto_backup_permission_failed)
             return
         }
+        // Release only the permissions acquired by this selection on failure.
+        val priorGrant = app.contentResolver.persistedUriPermissions
+            .firstOrNull { it.uri == uri }
+        val hadRead = priorGrant?.isReadPermission == true
+        val hadWrite = priorGrant?.isWritePermission == true
         if (runCatching {
-                contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
-                )
+                app.contentResolver.takePersistableUriPermission(uri, accessFlags)
             }.isFailure) {
             toast(R.string.auto_backup_permission_failed)
             return
@@ -174,10 +178,30 @@ class AutoBackupSettingsActivity : BaseActivity() {
         }.getOrDefault(getString(R.string.auto_backup_chosen_folder))
         val label = if (choosingLegacyDefault) getString(R.string.auto_backup_legacy_label, folderName)
             else folderName
+        val destination = AutoBackupStore.Destination(AutoBackupStore.Kind.SELECTED_FOLDER,
+            treeUri = uri.toString(), label = label)
         startWork {
-            AutoBackupEngine.enable(applicationContext,
-                AutoBackupStore.Destination(AutoBackupStore.Kind.SELECTED_FOLDER,
-                    treeUri = uri.toString(), label = label))
+            try {
+                AutoBackupEngine.enable(app, destination)
+            } catch (error: Exception) {
+                // Clean up on the document worker, even across Activity recreation.
+                // Never release a grant used by the committed destination.
+                val current = runCatching { AutoBackupStore.read(app) }
+                if (current.isSuccess) {
+                    val state = current.getOrThrow()
+                    val releaseFlags = AutoBackupFolderGrantPolicy.releaseFlags(
+                        hadRead = hadRead,
+                        hadWrite = hadWrite,
+                        destinationEnabled = state.enabled,
+                        committedTreeUri = state.destination?.treeUri,
+                        attemptedTreeUri = uri.toString(),
+                    )
+                    if (releaseFlags != 0) runCatching {
+                        app.contentResolver.releasePersistableUriPermission(uri, releaseFlags)
+                    }
+                }
+                throw error
+            }
         }
         choosingLegacyDefault = false
     }

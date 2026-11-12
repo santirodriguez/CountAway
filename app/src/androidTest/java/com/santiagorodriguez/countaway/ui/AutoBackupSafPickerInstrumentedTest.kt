@@ -191,6 +191,99 @@ class AutoBackupSafPickerInstrumentedTest {
     }
 
 
+    @Test fun failedFolderActivationReleasesNewGrantAndKeepsVerifiedDefaultBackup() {
+        val oldState = prefs.getString("configuration_v1", null)
+        val originalFiles = listOf("countaways.json", "countaways.json.bak", "countaways.json.new")
+            .associate { name -> java.io.File(context.filesDir, name).let { file ->
+                file to if (file.exists()) file.readBytes() else null
+            } }
+        val oldGrants = context.contentResolver.persistedUriPermissions.map { it.uri }.toSet()
+        val created = mutableListOf<Uri>()
+        try {
+            AutoBackupScheduler.cancel(context)
+            check(prefs.edit().remove("configuration_v1").commit())
+            repository.save(listOf(sample))
+            assertTrue(AutoBackupEngine.enable(context,
+                AutoBackupStore.Destination(AutoBackupStore.Kind.DEFAULT_DOWNLOADS)).created)
+            val baseline = AutoBackupStore.read(context)
+            val originalCopy = baseline.owned.single()
+            val originalUri = Uri.parse(originalCopy.uri)
+            created += originalUri
+            assertTrue(AutoBackupFiles.verify(context, originalUri, originalCopy.sha256))
+
+            // Make the new destination fail before it can replace a valid backup.
+            java.io.File(context.filesDir, "countaways.json").writeText(
+                "{invalid event data", Charsets.UTF_8)
+            ActivityScenario.launch<AutoBackupSettingsActivity>(
+                Intent(context, AutoBackupSettingsActivity::class.java)
+            ).use { scenario ->
+                scenario.onActivity { activity ->
+                    activity.findViewById<android.widget.Button>(R.id.autoBackupChoose)
+                        .performClick()
+                }
+                assertTrue("System folder picker did not open", waitForExternalPicker())
+                assertTrue("Documents is unavailable in the picker", openDocumentsInPicker())
+                assertTrue("Could not select Documents", clickAccessible("Use this folder", 9_000L))
+                assertTrue("Provider denied folder confirmation", clickAccessible("Allow", 9_000L))
+                val tree = Uri.parse(
+                    "content://com.android.externalstorage.documents/tree/primary%3ADocuments")
+                assertFalse("Test requires a newly acquired Documents grant", tree in oldGrants)
+
+                val deadline = SystemClock.uptimeMillis() + 20_000L
+                var completed = false
+                do {
+                    val state = AutoBackupStore.read(context)
+                    var choiceReady = false
+                    scenario.onActivity { activity ->
+                        choiceReady = activity.findViewById<android.widget.Button>(
+                            R.id.autoBackupChoose).isEnabled
+                    }
+                    val retained = context.contentResolver.persistedUriPermissions
+                        .any { it.uri == tree }
+                    if (state.lastError == "DESTINATION_CHANGE_FAILED" &&
+                        choiceReady && !retained) {
+                        completed = true
+                        break
+                    }
+                    SystemClock.sleep(150L)
+                } while (SystemClock.uptimeMillis() < deadline)
+
+                assertTrue("Failed folder activation retained a new persisted grant", completed)
+                val after = AutoBackupStore.read(context)
+                assertEquals("Failed activation changed the committed folder",
+                    baseline.destination, after.destination)
+                assertEquals("Failed activation replaced verified backups",
+                    baseline.owned, after.owned)
+                assertTrue("Previous verified default backup must remain intact",
+                    AutoBackupFiles.verify(context, originalUri, originalCopy.sha256))
+            }
+        } finally {
+            AutoBackupScheduler.cancel(context)
+            runCatching { AutoBackupEngine.disable(context) }
+            created.distinct().forEach { uri ->
+                runCatching { context.contentResolver.delete(uri, null, null) }
+            }
+            for (grant in context.contentResolver.persistedUriPermissions) {
+                if (grant.uri !in oldGrants) {
+                    val flags = (if (grant.isReadPermission)
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION else 0) or
+                        (if (grant.isWritePermission)
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION else 0)
+                    if (flags != 0) runCatching {
+                        context.contentResolver.releasePersistableUriPermission(grant.uri, flags)
+                    }
+                }
+            }
+            originalFiles.forEach { (file, bytes) ->
+                if (bytes == null) file.delete() else file.writeBytes(bytes)
+            }
+            val edit = prefs.edit()
+            if (oldState == null) edit.remove("configuration_v1")
+            else edit.putString("configuration_v1", oldState)
+            check(edit.commit())
+        }
+    }
+
     @Test fun changingDefaultToSafFolderPersistsInSettingsAndUsesChosenDestination() {
         val oldState = prefs.getString("configuration_v1", null)
         val oldEvents = (repository.loadResult() as CountdownLoadResult.Success).events
