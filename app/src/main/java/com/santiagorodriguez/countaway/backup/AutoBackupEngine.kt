@@ -29,7 +29,15 @@ internal object AutoBackupEngine {
                 return@synchronized backupNow(app)
             }
             val attempt = System.currentTimeMillis()
-            val prepared = prepare(app)
+            // Preparation can fail before a provider is contacted (e.g. corrupt
+            // event data). Record the same visible destination error without
+            // touching the previously committed folder or verified copies.
+            val prepared = try {
+                prepare(app)
+            } catch (error: Exception) {
+                markDestinationFailure(app, initial, attempt)
+                throw error
+            }
             val copy = try {
                 create(app, destination, prepared, attempt)
             } catch (error: Exception) {
