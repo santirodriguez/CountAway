@@ -186,7 +186,7 @@ class AutoBackupSettingsActivity : BaseActivity() {
             } catch (error: Exception) {
                 // Clean up on the document worker, even across Activity recreation.
                 // Never release a grant used by the committed destination.
-                val current = runCatching { AutoBackupStore.read(app).destination?.treeUri }
+                val current = runCatching { AutoBackupStore.read(app) }
                 if (current.isSuccess) {
                     val state = current.getOrThrow()
                     val releaseFlags = AutoBackupFolderGrantPolicy.releaseFlags(
