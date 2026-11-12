@@ -29,14 +29,11 @@ class PlayScreenshotStagingTests(unittest.TestCase):
         os.chdir(self.root)
         self.addCleanup(os.chdir, self.cwd)
 
-    def write_test_image(self, name, width=1080, height=1920, color_type=2):
+    def write_test_image(self, name, width=1080, height=1920, color_type=2, locale="en-US"):
         channels = 3 if color_type == 2 else 4
         row = bytes(width * channels)
-        assets.write_png(
-            self.source / name,
-            width, height, color_type,
-            [row] * height,
-        )
+        location = self.root / "fastlane/metadata/android" / locale / "images/phoneScreenshots" / name
+        assets.write_png(location, width, height, color_type, [row] * height)
 
     def populate(self):
         for number in range(1, 7):
@@ -70,6 +67,39 @@ class PlayScreenshotStagingTests(unittest.TestCase):
     def test_rejects_alpha_before_staging(self):
         self.populate()
         self.write_test_image("6.png", color_type=6)
+        with self.assertRaises(SystemExit):
+            assets.stage_phone_screenshots(self.output)
+        self.assertFalse((self.output / "phoneScreenshots").exists())
+
+    def test_stages_all_three_locales_without_reencoding(self):
+        self.populate()
+        for locale in ("es", "ca"):
+            for number in range(1, 7):
+                self.write_test_image(f"{number}.png", locale=locale)
+        assets.stage_phone_screenshots(self.output)
+        manifest = (self.output / "phoneScreenshots.sha256").read_text(encoding="utf-8")
+        self.assertEqual(18, len(manifest.splitlines()))
+        for locale in ("es", "ca"):
+            for number in range(1, 7):
+                name = f"{number}.png"
+                original = self.root / "fastlane/metadata/android" / locale / "images/phoneScreenshots" / name
+                staged = self.output / "phoneScreenshots" / locale / name
+                self.assertEqual(original.read_bytes(), staged.read_bytes())
+                self.assertIn(f"  phoneScreenshots/{locale}/{name}", manifest)
+
+    def test_rejects_one_localized_directory_without_the_other(self):
+        self.populate()
+        self.write_test_image("1.png", locale="es")
+        with self.assertRaises(SystemExit):
+            assets.stage_phone_screenshots(self.output)
+        self.assertFalse((self.output / "phoneScreenshots").exists())
+
+    def test_rejects_malformed_catalan_image_before_staging(self):
+        self.populate()
+        for locale in ("es", "ca"):
+            for number in range(1, 7):
+                self.write_test_image(f"{number}.png", locale=locale)
+        self.write_test_image("4.png", width=540, locale="ca")
         with self.assertRaises(SystemExit):
             assets.stage_phone_screenshots(self.output)
         self.assertFalse((self.output / "phoneScreenshots").exists())

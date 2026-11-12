@@ -62,6 +62,7 @@ The release process is intentionally strict:
 - GitHub Actions dependencies are pinned to immutable commit SHAs.
 - Hosted API 37 emulator execution is a non-gating diagnostic while the current Android 17 system images can abort inside SurfaceFlinger/mapper.ranchu before CountAway starts.
 - A successful physical Android 17/API 37 acceptance run is mandatory before release readiness; hosted-emulator diagnostics cannot replace it.
+- Before merging any release branch, complete the applicable pre-merge checks and provide the maintainer with an installable APK tied to the reviewed source SHA. Explicit hands-on approval of that unchanged candidate is mandatory. Fixes require a new tested APK and renewed acceptance of affected behavior; this does not authorize publication.
 
 Normal pull-request CI is useful but not equivalent to candidate validation: GitHub may test a PR merge ref. The release-candidate workflow binds its output to the explicitly supplied source SHA and records that identity in retained validation evidence.
 
@@ -90,21 +91,21 @@ Release-candidate and draft-preparation runs retain their validation/reproducibi
 - package, min/target/compile SDKs, and exact manifest permission surface;
 - release runtime dependency report, no app-declared runtime libraries, the expected Kotlin/annotations baseline, and absence of native libraries;
 - presence of R8 mapping and resource shrinking;
-- current APK-size delta against the previous public 1.2.4 APK (540,904 bytes);
+- current APK-size delta against the previous public 1.2.5 APK (545,056 bytes);
 - Play-readiness AAB SHA-256/byte size and basic bundle structure, retained only as internal Actions evidence;
 - compiled instrumentation-test APK and ordinary test/lint reports;
-- screenshot SHA-256s during stable preparation;
+- screenshot SHA-256s during stable preparation, including all approved locale sets when a multilingual refresh is part of the release;
 - F-Droid Gate A evidence when preparing a stable draft.
 
-Normal CI executes the complete Android instrumentation suite on API 26 and 36, including Home, editor, storage, language, pinning and widget layout contracts, and retains renders and measurements. Its separate build job runs JVM tests, lint and packaging checks and compiles the instrumentation-test APK. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.2.4 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
+Normal CI executes the complete Android instrumentation suite on API 26 and 36, including Home, editor, storage, language, pinning and widget layout contracts, and retains renders and measurements. Its separate build job runs JVM tests, lint and packaging checks and compiles the instrumentation-test APK. A `release-candidate` run uses API 26/33/36 emulators as blocking automated acceptance: it smoke-launches the exact signed candidate and executes the instrumentation suite, while API 33 also verifies that the immutable public 1.2.5 APK can be upgraded in place to the signed candidate. Emulator provisioning/boot is delegated to `ReactiveCircus/android-emulator-runner` v2.38.0 pinned to immutable commit `a421e43855164a8197daf9d8d40fe71c6996bb0d`; this action has explicit Ubuntu-24.04 AVD handling, configurable boot timeouts, non-integer system-image API support, and `google_apis_ps16k` support.
 
 API 37 remains an acceptance target, but its hosted-emulator job is explicitly diagnostic and non-gating. Current Android 17 `google_apis_ps16k` images can abort in `SurfaceFlinger`/`mapper.ranchu` on the host-advertised `ReadColorBufferDMA` path, tearing down framework services before CountAway starts; this reproduced with both canary/default-graphics and stable/`swangle_indirect` configurations. The diagnostic retains the best-known stable configuration—platform/system image 37.0, emulator 37.1.11 build 15917651, `swangle_indirect`, 4 GB RAM, and a 420-second boot timeout—and records its outcome without treating it as product acceptance. Reinstate it as a blocking automated gate only after an updated system image/emulator no longer exhibits the framework abort. Until then, a successful physical Android 17/API 37 run is mandatory before release readiness.
 
-API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. On API 33, the upgrade gate installs the immutable public 1.2.4 APK, exercises the existing editor with a disposable title, then imports four known schema-8 backup events through the public About flow: a date-only event, a timed event, a weekly timed recurrence, and a timed count-up. It exports exact persisted data through the same public UI before and after the in-place signed upgrade, checking event IDs and all saved fields. This signed upgrade remains a separately authorized release-candidate gate. Physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
+API 26/33/36 retain the stable channel, channel-default emulator, `swiftshader_indirect` graphics, and 300-second boot timeouts. The CountAway-specific signed APK, upgrade, instrumentation, alarm/logcat, and artifact checks remain repository-owned scripts around that emulator lifecycle. On API 33, the upgrade gate installs the immutable public 1.2.5 APK, exercises the existing editor with a disposable title, then imports four known schema-8 backup events through the public About flow: a date-only event, a timed event, a weekly timed recurrence, and a timed count-up. It exports exact persisted data through the same public UI before and after the in-place signed upgrade, checking event IDs and all saved fields. This signed upgrade remains a separately authorized release-candidate gate. Physical-device, launcher, Doze, TalkBack, and other human checks remain separate release gates.
 
-The API 33 auxiliary creation probe focuses the title field, clears existing input, enters `UpgradeProbe124`, and verifies the exact value before one Save. The subsequent public backup import replaces that probe with four schema-8 events; their identities and all serialized event fields must be retained across the signed upgrade. An empty `EditText` can expose its hint (`Trip`) as XML text, so an empty XML value is not a reliable intermediate assertion. The driver instead requires the exact replacement text, finds an enabled Save button through bounded UI-aware scrolling, and taps it once. Exact saved-title assertions before and after upgrade remain mandatory; malformed input is a fixture failure, not a reason to accept a substring or skip the data-preservation gate. Input and saved-UI evidence are retained for diagnosis.
+The API 33 auxiliary creation probe focuses the title field, clears existing input, enters `UpgradeProbe125`, and verifies the exact value before one Save. The subsequent public backup import replaces that probe with four schema-8 events; their identities and all serialized event fields must be retained across the signed upgrade. An empty `EditText` can expose its hint (`Trip`) as XML text, so an empty XML value is not a reliable intermediate assertion. The driver instead requires the exact replacement text, finds an enabled Save button through bounded UI-aware scrolling, and taps it once. Exact saved-title assertions before and after upgrade remain mandatory; malformed input is a fixture failure, not a reason to accept a substring or skip the data-preservation gate. Input and saved-UI evidence are retained for diagnosis.
 
-Normal CI runs `scripts/test-upgrade-fixture.py` (mocked title/save input and failure cases) and `scripts/test-upgrade-v124-fixture.py` (schema-8 field/identity equality, missing data, and negative tests). These deterministic tests do not replace the real public DocumentsUI import/export or separately authorized signed upgrade.
+Normal CI runs `scripts/test-upgrade-fixture.py` (mocked title/save input and failure cases) and `scripts/test-upgrade-v124-fixture.py` (historical schema-8 field/identity equality, missing data, and negative tests). The historical fixture is reused for the current predecessor, while the signed-upgrade workflow supplies the actual public version in its verification receipt. These deterministic tests do not replace the real public DocumentsUI import/export or separately authorized signed upgrade.
 
 ## Independent rebuild comparison
 
@@ -129,7 +130,7 @@ A release-candidate run:
 7. verifies signing certificate, package/version/SDK information, exact permissions, absence of native code, R8 mapping, and resource shrinking;
 8. records APK checksum/size, size deltas, and validation reports;
 9. independently rebuilds the same unsigned APK on another runner and compares SHA-256;
-10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs a data-bearing signed 1.2.4 -> candidate upgrade on API 33 using the immutable public 1.2.4 APK digest, importing date-only, timed, recurring, and count-up test events through the public backup UI and verifying their exact persisted values survive the in-place upgrade, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
+10. for `release-candidate`, uses API 26/33/36 emulators as blocking signed-launch and instrumentation acceptance, performs a data-bearing signed 1.2.5 -> candidate upgrade on API 33 using the immutable public 1.2.5 APK digest, importing date-only, timed, recurring, and count-up test events through the public backup UI and verifying their exact persisted values survive the in-place upgrade, and separately attempts the same API 37 path as a non-gating hosted-emulator diagnostic;
 11. uploads the release candidate, validation evidence, reproducibility evidence, per-API acceptance evidence, and R8 mapping as workflow artifacts.
 
 Public release files use this naming convention:
@@ -160,17 +161,17 @@ For CountAway 1.1.8, Gate A was completed on September 22, 2026. Keep these chec
 
 This gate applies even if a release is prepared manually outside the normal checklist. The app itself performs no network check and receives no Internet permission.
 
-Before any actual draft/tag release preparation, `https://countaway.cajapersonal.org/` and `https://countaway.cajapersonal.org/privacy/` must resolve. The hosted privacy page must expose the CountAway policy title and all three policy languages, while the repository's canonical `PRIVACY.md` must retain the matching multilingual policy headings. This gate also applies to the documented release-branch recovery path; recovery is not allowed to ship a build with a broken project or privacy URL.
+Before any actual draft/tag release preparation, `https://countaway.cajapersonal.org/` and `https://countaway.cajapersonal.org/privacy/` must resolve. The hosted privacy page must expose the CountAway policy title and all three policy languages, while the repository's canonical `PRIVACY.md` must retain matching multilingual headings. **For 1.2.6, additionally verify live policy content** against the updated canonical text in all languages, including optional unencrypted automatic JSON backups, user-selected storage providers, retention and deletion, and the possibility of provider-managed synchronization. The existing automated Site check proves URL/heading availability, **not full policy-content parity**. This gate also applies to the documented release-branch recovery path; no release may ship with a broken or materially stale privacy page.
 
 ## Prepare a draft release
 
-After the exact release candidate is accepted, Gate A is satisfied, and the release branch is frozen:
+After the exact release candidate and its source-matched hands-on QA APK are accepted, the established F-Droid Gate A remains satisfied, and the release branch is frozen:
 
 1. confirm `versionName` and `versionCode` are final;
-2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, all three Fastlane changelogs, screenshots, and README screenshot references are present and coherent;
+2. confirm `CHANGELOG.md`, `docs/releases/<version>.md`, all three Fastlane changelogs, screenshots, and README screenshot references are present and coherent. A multilingual screenshot refresh requires six authentic PNGs each in `fastlane/metadata/android/{en-US,es,ca}/images/phoneScreenshots/`, a single exact-source capture manifest, the true candidate About/version screen and a configured native launcher in slot 6; compare all original bytes against the CI artifact before merge;
 3. confirm the accepted release candidate was built from the exact intended source SHA and review its retained validation report, checksum, APK size/delta, signing identity, permissions, runtime-dependency report, R8 mapping, and independent rebuild result;
 4. confirm blocking emulator acceptance on API 26/33/36, review the API 37 emulator diagnostic, record successful physical Android 17/API 37 acceptance, and verify real upgrade preservation from the previous public release;
-5. confirm Gate A, including the maintainer's F-Droid APK installation check;
+5. confirm the established F-Droid Gate A status without repeating its previously accepted first-time installation check for ordinary updates;
 6. merge the reviewed `release/<version>` pull request into `main` with a normal merge commit unless a different merge strategy has been explicitly reviewed and approved;
 7. verify the merged `main` tree exactly matches the reviewed release-branch tree and wait for Android CI to pass on that exact `main` head;
 8. keep the `release/<version>` branch present through draft/tag/publication verification;
@@ -180,6 +181,7 @@ The normal release path is therefore:
 
 ```text
 accepted release candidate
+-> maintainer-approved, source-matched QA APK
 -> reviewed release branch
 -> merge to main
 -> verify identical tree + green main CI
@@ -210,11 +212,11 @@ The draft must remain unpublished until its configured target commit, release no
 Publishing is intentionally separate from preparation. Before publishing the GitHub Release:
 
 - verify the approved candidate and prepared draft source identity are the intended exact commit;
-- install and smoke-test the signed APK on a physical Android 17/API 37 device;
+- confirm the accepted physical Android 17/API 37 signed-APK test evidence still matches the unchanged candidate;
 - verify an upgrade from the previous public CountAway release preserves countdowns and existing widgets;
 - verify the SHA-256 checksum;
 - verify the signing certificate SHA-256 matches the expected fingerprint above;
-- review APK size against the previous public 1.2.4 release and explain material growth;
+- review APK size against the previous public 1.2.5 release and explain material growth;
 - confirm final release notes, Fastlane metadata, screenshots, and public assets;
 - confirm Gate A remains satisfied;
 - confirm the release is still a draft and targets the intended commit.

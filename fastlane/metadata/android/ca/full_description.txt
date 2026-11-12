@@ -6,6 +6,8 @@ Afegeix una hora opcional a un esdeveniment per veure hores, minuts i segons en 
 
 Els esdeveniments de compte enrere es poden repetir cada setmana, cada mes o cada any. Les repeticions mensuals mantenen el dia original quan existeix i fan servir l’últim dia vàlid als mesos més curts. Els recordatoris locals opcionals poden avisar-te el mateix dia o 1, 3 o 7 dies abans.
 
-Comparteix un esdeveniment com a imatge local, exporta o restaura els esdeveniments amb una còpia JSON i canvia explícitament entre English, Español i Català, o segueix l’idioma del sistema.
+Reinicia a avui els comptadors ascendents sense hora des de la pantalla inicial, amb confirmació i opció de desfer. Comparteix esdeveniments com a imatges locals, importa o exporta còpies JSON manualment i tria entre English, Español i Català o l'idioma del sistema.
 
-Tot queda al dispositiu. Sense comptes, publicitat, analítica, sincronització al núvol ni permís d’Internet.
+Les còpies automàtiques dels esdeveniments són opcionals i estan desactivades fins que les habilites. Els fitxers JSON verificats es desen a Descàrregues/CountAway a Android 10 o superior, o a una carpeta que triïs. A Android 8–9 has de seleccionar una carpeta. CountAway procura conservar set còpies diferents verificades quan és segur eliminar les anteriors; restaura els esdeveniments amb Importa.
+
+CountAway funciona sense comptes, publicitat, analítica ni permís d'Internet. Els esdeveniments es desen al dispositiu tret que triïs desar una còpia amb un proveïdor extern, que pot sincronitzar el fitxer pel seu compte.

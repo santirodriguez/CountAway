@@ -36,8 +36,8 @@ jobs:
       BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
       EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
       PACKAGE_ID: "com.santiagorodriguez.countaway"
-      PREVIOUS_PUBLIC_VERSION: "1.2.4"
-      PREVIOUS_PUBLIC_APK_BYTES: "540904"
+      PREVIOUS_PUBLIC_VERSION: "1.2.5"
+      PREVIOUS_PUBLIC_APK_BYTES: "545056"
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
@@ -767,10 +767,10 @@ jobs:
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
-      PREVIOUS_PUBLIC_VERSION: "1.2.4"
-      PREVIOUS_PUBLIC_VERSION_CODE: "13"
-      PREVIOUS_PUBLIC_APK_SHA256: "b563da811a8409556127547384f3b849dbebd7bdb99712bc3fba56ce421d86fa"
-      PREVIOUS_PUBLIC_APK_BYTES: "540904"
+      PREVIOUS_PUBLIC_VERSION: "1.2.5"
+      PREVIOUS_PUBLIC_VERSION_CODE: "14"
+      PREVIOUS_PUBLIC_APK_SHA256: "d17de425ec52576e8b11d0ece09e8f2174e4083f4386c81f8e12364ed680820f"
+      PREVIOUS_PUBLIC_APK_BYTES: "545056"
 
     steps:
       - name: Checkout exact candidate source
@@ -887,6 +887,19 @@ jobs:
                   if node.get("text") != query and node.get("content-desc") != query:
                       continue
                   if node.get("enabled") == "false":
+                      continue
+                  rect = bounds(node)
+                  if rect:
+                      x1, y1, x2, y2 = rect
+                      print((x1 + x2) // 2, (y1 + y2) // 2)
+                      sys.exit(0)
+              sys.exit(1)
+
+          if mode == "app-confirm":
+              for node in root.iter():
+                  if (node.get("package") != query
+                          or node.get("resource-id") != "android:id/button1"
+                          or node.get("enabled") != "true"):
                       continue
                   rect = bounds(node)
                   if rect:
@@ -1080,14 +1093,38 @@ jobs:
 
           tap_document_file() {
             local document="$1" xml="acceptance-evidence/picker-import-api-${API_LEVEL}.xml"
-            local attempt coords x y location=""
+            local confirmed="acceptance-evidence/picker-import-result-api-${API_LEVEL}.xml"
+            local attempt ready coords x y location=""
             for attempt in {1..20}; do
-              dump_ui "${xml}"
+              dump_ui "${xml}" || return 1
+              # DocumentsUI can expose file labels underneath its open roots
+              # drawer. Their coordinates are then occluded and cannot select
+              # the document. Close/navigate the drawer *before* looking at files.
+              if python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "Open from" "${xml}" > /dev/null 2>&1; then
+                coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "Downloads" "${xml}" 2>/dev/null)" || coords=""
+                if [[ -n "${coords}" ]]; then
+                  read -r x y <<< "${coords}"
+                  adb shell input tap "${x}" "${y}"
+                else
+                  adb shell input keyevent KEYCODE_BACK
+                fi
+                sleep 1
+                continue
+              fi
               coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "${document}" "${xml}" 2>/dev/null)" || coords=""
               if [[ -n "${coords}" ]]; then
                 read -r x y <<< "${coords}"
                 adb shell input tap "${x}" "${y}"
-                return 0
+                for ready in {1..5}; do
+                  dump_ui "${confirmed}" || return 1
+                  # A tap only succeeds when CountAway, not DocumentsUI, owns
+                  # an enabled import-confirmation dialog.
+                  if python3 "${RUNNER_TEMP}/countaway-ui.py" app-confirm "${PACKAGE_ID}" "${confirmed}" > /dev/null 2>&1; then
+                    return 0
+                  fi
+                  sleep 1
+                done
+                continue
               fi
               for location in "Downloads" "Download" "Show roots" "Show navigation drawer"; do
                 coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" label-center "${location}" "${xml}" 2>/dev/null)" || coords=""
@@ -1099,7 +1136,7 @@ jobs:
               done
               sleep 1
             done
-            echo "Document picker did not expose upgrade fixture: ${document}" >&2
+            echo "Document picker did not return a CountAway import confirmation for ${document}" >&2
             return 1
           }
 
@@ -1180,7 +1217,7 @@ jobs:
             PREVIOUS_APK="candidate/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             PREVIOUS_APK_URL="https://github.com/santirodriguez/CountAway/releases/download/v${PREVIOUS_PUBLIC_VERSION}/CountAway-v${PREVIOUS_PUBLIC_VERSION}.apk"
             CANDIDATE_APK="candidate/CountAway-v${VERSION}.apk"
-            UPGRADE_PROBE_TITLE="UpgradeProbe124"
+            UPGRADE_PROBE_TITLE="UpgradeProbe125"
             # Do not execute the signed upgrade with an unrevised versionCode.
             [[ "${VERSION_CODE}" =~ ^[0-9]+$ ]] && (( VERSION_CODE > PREVIOUS_PUBLIC_VERSION_CODE )) || {
               echo "Candidate versionCode must exceed the public predecessor" >&2
@@ -1217,7 +1254,7 @@ jobs:
             confirm_coords=""
             for attempt in {1..15}; do
               dump_ui "${confirm_xml}"
-              confirm_coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" center "android:id/button1" "${confirm_xml}" 2>/dev/null)" || confirm_coords=""
+              confirm_coords="$(python3 "${RUNNER_TEMP}/countaway-ui.py" app-confirm "${PACKAGE_ID}" "${confirm_xml}" 2>/dev/null)" || confirm_coords=""
               if [[ -n "${confirm_coords}" ]]; then break; fi
               sleep 1
             done
@@ -1228,7 +1265,8 @@ jobs:
             export_upgrade_snapshot before
             python3 scripts/upgrade-v124-fixture.py verify \
               "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json" \
-              "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json"
+              "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json" \
+              --predecessor "${PREVIOUS_PUBLIC_VERSION}"
 
             adb shell dumpsys package "${PACKAGE_ID}" \
               > "acceptance-evidence/upgrade-before-package-api-${API_LEVEL}.txt"
@@ -1259,7 +1297,8 @@ jobs:
             export_upgrade_snapshot after
             python3 scripts/upgrade-v124-fixture.py verify \
               "acceptance-evidence/upgrade-before-data-api-${API_LEVEL}.json" \
-              "acceptance-evidence/upgrade-after-data-api-${API_LEVEL}.json"
+              "acceptance-evidence/upgrade-after-data-api-${API_LEVEL}.json" \
+              --predecessor "${PREVIOUS_PUBLIC_VERSION}"
 
             PID="$(adb shell pidof "${PACKAGE_ID}" | tr -d '\r')"
             if [[ -z "${PID}" ]]; then

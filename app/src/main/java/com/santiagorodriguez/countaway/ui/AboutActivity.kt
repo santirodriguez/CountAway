@@ -14,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.data.BackupFlow
+import com.santiagorodriguez.countaway.backup.AutoBackupStore
 
 class AboutActivity : BaseActivity() {
     private lateinit var flow: BackupFlow
@@ -49,6 +50,9 @@ class AboutActivity : BaseActivity() {
         importButton = findViewById(R.id.importButton)
         exportButton.setOnClickListener { exportBackup() }
         importButton.setOnClickListener { importBackup() }
+        findViewById<View>(R.id.automaticBackupRow).setOnClickListener {
+            startActivity(Intent(this, AutoBackupSettingsActivity::class.java))
+        }
         findViewById<Button>(R.id.donateButton).setOnClickListener {
             openExternal(DONATE_WEBSITE)
         }
@@ -78,6 +82,7 @@ class AboutActivity : BaseActivity() {
         super.onResume()
         resumed = true
         renderBackup()
+        renderAutomaticBackup()
     }
 
     override fun onPause() {
@@ -200,6 +205,14 @@ class AboutActivity : BaseActivity() {
             .setType("application/json")
         runCatching { startActivityForResult(intent, REQUEST_IMPORT) }
             .onFailure { flow.providerUnavailable() }
+    }
+
+    private fun renderAutomaticBackup() {
+        val status = findViewById<TextView>(R.id.automaticBackupSummary)
+        status.setText(runCatching {
+            if (AutoBackupStore.read(this).enabled) R.string.auto_backup_on
+            else R.string.auto_backup_off
+        }.getOrDefault(R.string.auto_backup_settings_failed))
     }
 
     private fun renderBackup() {

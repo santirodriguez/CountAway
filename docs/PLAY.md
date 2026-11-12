@@ -14,10 +14,10 @@ This is the **default procedure for every future CountAway version**, not a one-
 6. **Submit for review with separate approval.** Obtain explicit authorization for the exact AAB upload and review submission; inspect Console-parsed package/versionCode, release notes, track and pending changes. **Confirm Managed publishing is ON before submitting for review** when publication must remain under the maintainer's control; without it, approved changes may publish automatically.
 7. **Publish and confirm.** After Google approves, obtain separate explicit authorization to publish the approved changes. Confirm the live Production release and, when available, verify a Play-delivered installation/update and cross-store signing compatibility. Keep F-Droid's build/index confirmation as a separate distribution path.
 
-## Release baseline (observed 2026-10-31)
+## Distribution baseline (GitHub checked 2026-11-09; Play last confirmed 2026-10-31)
 
 - applicationId: `com.santiagorodriguez.countaway`
-- GitHub public stable release: **1.2.4 / versionCode 13** (tag `v1.2.4` at `fb0cd3f61921813c1e409443717de2dfe76780d2`), published on 2026-10-31.
+- Latest verified public GitHub release: **1.2.5 / versionCode 14** (tag `v1.2.5` at `45d3d7dfcd0af2f01c0103af3c1ba410768baeb5`), published on 2026-11-07. This does not independently establish the currently published Play version.
 - First Google Play Production release: **1.2.3 / versionCode 12**, confirmed publicly available on 2026-10-30.
 - Google Play 1.2.4 / versionCode 13: the maintainer confirmed Production publication after Google's approval and Managed publishing on 2026-10-31, together with the English, Spanish and Catalan listing changes. Independent Play-delivered install/update verification was not recorded. For later changes, the live Console remains authoritative.
 - minSdk: 26
@@ -129,7 +129,7 @@ CountAway project site:
 https://countaway.cajapersonal.org/
 ```
 
-The hosted policy is static, public HTML and is store-neutral across CountAway / Ya Estamos / Ja Queda Poc. It was deployed and manually accepted on 2026-10-06 on the CountAway Hostinger project surface. The canonical policy source text remains `PRIVACY.md` in this repository. Editing `PRIVACY.md` does not update the hosted page: before a new store submission or public release, verify that the live page matches the current policy in all three languages, including the optional temporary text-file sharing path.
+CountAway's public website and `/privacy/` are maintained as a separate ChatGPT Site at `countaway.cajapersonal.org`, not in this GitHub repository. The canonical application privacy text is `PRIVACY.md` and applies to CountAway / Ya Estamos / Ja Queda Poc. Updating that file does **not** update the public Site. Previous approval of the hosted page predates the optional automatic backup feature; before the 1.2.6 release, independently compare the actual live content in English, Spanish and Catalan with the current policy. In particular, cover opt-in automatic event backups, plain JSON, storage destinations, external-provider synchronization, retention/deletion, and temporary text-file sharing. Live availability and heading checks alone cannot establish content parity.
 
 Google Play requires the submitted privacy-policy URL to be active, publicly accessible, non-geofenced, non-PDF, and non-editable. Treat the hosted URL as a release gate: if the hosting surface moves or its accessibility changes, update the hosted page, in-app resource, contract tests, release workflow, and this document coherently before release preparation.
 
@@ -146,7 +146,7 @@ Based on the current runtime, CountAway is designed so the developer does not co
 - no Internet permission;
 - count-down/count-up events and settings remain local;
 - reminders/widgets are local;
-- backup export/import is explicitly user-directed through Android's document interface;
+- manual backup export/import is user-directed; optional automatic event-only JSON backups are disabled until enabled, save through Android's local or user-selected document location, and may be synced independently by that provider;
 - event sharing is explicitly user-directed through Android's share sheet.
 
 This is a readiness assessment, **not a permanently valid Play Console declaration**. Google defines collection as transmitting user data off the device; local-only processing is outside that collection definition. Even when an app collects or shares no user data, a Data Safety form and privacy-policy link are still required once the app is active on closed/open/production tracks; an app exclusively on internal testing is currently exempt from the Data Safety form.
@@ -163,14 +163,14 @@ Keep one global version sequence across every store.
 
 ## Store assets and console setup
 
-Play assets are release inputs, not permission to fabricate app UI. The six approved v1.2.5 phone screenshots are genuine 1080×1920 RGB PNG captures in Fastlane. They replaced the previous release-evidence set without recompression or retouching. Updating this repository does not upload screenshots to the live Play listing.
+Play assets are release inputs, not permission to fabricate app UI. The canonical phone screenshots are genuine 1080×1920 RGB PNG captures in Fastlane, preserved without retouching. Keep accurate previously approved captures for unchanged screens; version-specific About captures must match the candidate. Updating this repository does not upload screenshots to the live Play listing.
 
 Required Play export checks:
 
 - 512×512 32-bit PNG app icon, at most 1024 KB;
 - 1024×500 feature graphic as JPEG or 24-bit PNG without alpha;
 - at least two genuine phone screenshots, JPEG or RGB PNG, each side 320–3840 px and longest side no more than twice the shortest side;
-- release-evidence screenshots must genuinely depict the accepted candidate, including an About/version capture showing its actual versionName; never reuse a previous release's screenshots as evidence for a new release. The Play storefront may deliberately use a **subset of accurate, version-neutral screenshots** without requiring a new About/version image on every update.
+- release-evidence screenshots must accurately depict the accepted candidate, including an About/version capture showing its actual versionName; previously accepted captures of unchanged screens may be reused byte-for-byte. The Play storefront may deliberately use a **subset of accurate, version-neutral screenshots** without requiring a new About/version image on every update.
 
 Do not stretch or repaint an old screenshot to satisfy dimensions. Capture a suitable final-candidate viewport and export it without changing the represented UI.
 
@@ -178,7 +178,9 @@ Store locale mapping comes from `app/src/main/res/xml/supported_languages.xml`. 
 
 The existing Fastlane icon and feature graphic remain source/distribution assets and are not rewritten merely for Play. CI and the Release workflow create visually identical Play derivatives with `scripts/prepare-play-assets.py`: the 512×512 icon is encoded as 32-bit RGBA with opaque alpha, and the 1024×500 feature graphic is encoded as 24-bit RGB. The generator decodes both source and output and fails if any visible RGB pixel changes. Generated release derivatives are retained under `play-readiness/store-assets/`.
 
-Phone screenshots have a single canonical **release-evidence** source for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. The current six approved v1.2.5 files are genuine 1080×1920 (9:16), 24-bit RGB PNG captures, preserved byte-for-byte when promoted into Fastlane. The earlier accepted v1.2.4 files are historical; their indexed-to-RGB conversion preserved every visible RGB pixel, but they are no longer the current canonical set. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. For the published v1.2.4 Play storefront, the maintainer selected five accurate, version-neutral images and intentionally omitted the About/version capture (`4.png`); `6.png` shows launcher widgets. That storefront selection remains separately managed in Play Console, and newer repository images require an authorized upload to appear there. For future releases, inspect whether existing storefront images remain accurate, and retain accepted current-version captures as release evidence. Never distort, pad or repaint screenshot content.
+Phone screenshots have a single canonical **release-evidence** source for F-Droid, the README, and Play: `fastlane/metadata/android/en-US/images/phoneScreenshots/1.png` through `6.png`. The release-evidence set retains approved, unmodified captures of unchanged UI; the version-specific About image is updated from the actual candidate when approved. All six files must remain genuine 1080×1920 (9:16), 24-bit RGB PNGs. The earlier accepted v1.2.4 files are historical; their indexed-to-RGB conversion preserved every visible RGB pixel, but they are no longer the current canonical set. Keep the six filenames and order stable unless the README and release checks are deliberately updated together. For the published v1.2.4 Play storefront, the maintainer selected five accurate, version-neutral images and intentionally omitted the About/version capture (`4.png`); `6.png` shows launcher widgets. That storefront selection remains separately managed in Play Console, and newer repository images require an authorized upload to appear there. For future releases, inspect whether existing storefront images remain accurate, and retain accepted current-version captures as release evidence. Never distort, pad or repaint screenshot content.
+
+For an approved localized screenshot refresh, capture all six matching roles from the same app source for **English (`en-US`), Español (`es`) and Català (`ca`)**. The Android CI native-capture job produces a reviewed, checksum-manifested, pixel-unchanged ZIP with 18 files at `fastlane/metadata/android/<locale>/images/phoneScreenshots/{1..6}.png`; its language tags map to Play `en-US`, `es-419` and `ca`. Slot 6 must be an actual configured Android launcher widget, not the in-app preview or an unfinished placeholder. Download the source-bound CI artifact, inspect **all** original PNGs at full resolution and obtain maintainer approval before promoting their exact bytes to the release branch; the handoff ZIP itself is not a publication or automatic commit. Upload missing binary files manually when the GitHub connector cannot safely preserve original bytes.
 
 To stage the accepted screenshots for the Play Console, copy them from the canonical Fastlane files while preserving byte-for-byte identity:
 
@@ -186,12 +188,12 @@ To stage the accepted screenshots for the Play Console, copy them from the canon
 python3 scripts/prepare-play-assets.py \
   --output-dir play-readiness/store-assets \
   --include-phone-screenshots
-python3 scripts/verify-play-assets.py screenshot \
-  play-readiness/store-assets/phoneScreenshots/*.png
+find play-readiness/store-assets/phoneScreenshots -name '*.png' -print0 |
+  xargs -0 python3 scripts/verify-play-assets.py screenshot
 (cd play-readiness/store-assets && sha256sum -c phoneScreenshots.sha256)
 ```
 
-Android CI and the release workflow stage all six accepted screenshots, validate their Play-compatible format, and verify that staged file hashes match the canonical sources. The canonical files are never modified by this helper. Google Play Console still requires the maintainer to upload them; it does not automatically read Fastlane screenshots from GitHub.
+Android CI and the release workflow stage all accepted English screenshots and, when both localized source folders are present, the complete Spanish and Catalan sets (18 total). Missing or malformed halves of a localized pair are rejected rather than silently treated as English; staged hashes match the canonical PNG bytes. The canonical files are never modified by this helper. Google Play Console still requires the maintainer to upload them; it does not automatically read Fastlane screenshots from GitHub.
 
 PNG exports can be checked with `python3 scripts/verify-play-assets.py <icon|feature|screenshot> <file>...`. JPEG screenshot exports remain valid Play inputs and should be inspected with an image tool before submission. Final screenshots are not generated or altered by this pipeline; they must still be genuine exact-candidate captures.
 

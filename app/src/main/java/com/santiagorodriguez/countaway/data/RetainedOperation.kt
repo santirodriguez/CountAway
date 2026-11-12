@@ -19,5 +19,17 @@ class RetainedOperation<T> {
         }
     }
 
+    /** Document-provider work must not block the serial event mutation queue. */
+    fun startDocument(task: () -> T) {
+        check(!running)
+        running = true
+        result = null
+        CountdownIo.submitDocument(task) { completed ->
+            running = false
+            result = completed
+            onChanged?.invoke()
+        }
+    }
+
     fun takeResult(): Result<T>? = result.also { result = null }
 }

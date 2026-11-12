@@ -6,6 +6,8 @@ Agregale una hora opcional a un evento para ver horas, minutos y segundos en viv
 
 Los eventos de cuenta regresiva pueden repetirse cada semana, cada mes o cada año. Las repeticiones mensuales mantienen el día original cuando existe y usan el último día válido en los meses más cortos. Los recordatorios locales opcionales pueden avisarte el mismo día o 1, 3 o 7 días antes.
 
-Compartí un evento como imagen local, exportá o restaurá tus eventos con una copia JSON y cambiá explícitamente entre English, Español y Català, o seguí el idioma del sistema.
+Reiniciá a hoy los contadores ascendentes sin hora desde Inicio, con confirmación y opción de deshacer. Compartí eventos como imágenes locales, importá o exportá copias JSON manualmente y elegí entre English, Español y Català o el idioma del sistema.
 
-Todo queda en tu dispositivo. Sin cuentas, publicidad, analytics, sincronización en la nube ni permiso de Internet.
+Las copias automáticas de eventos son opcionales y están desactivadas hasta que las habilitás. Los archivos JSON verificados se guardan en Descargas/CountAway en Android 10 o superior, o en una carpeta que elijas. En Android 8–9 tenés que seleccionar una carpeta. CountAway procura conservar siete copias distintas verificadas cuando es seguro borrar las anteriores; restaurá los eventos con Importar.
+
+CountAway funciona sin cuentas, publicidad, analíticas ni permiso de Internet. Tus eventos quedan en el dispositivo salvo que elijas guardar una copia mediante un proveedor externo, que puede sincronizar ese archivo por su cuenta.

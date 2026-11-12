@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import android.view.View
 import android.widget.Button
 import android.widget.ListView
@@ -84,15 +85,28 @@ class TimeWidgetSelectionLifecycleInstrumentedTest {
                 assertFalse(activity.findViewById<Button>(R.id.widgetSaveButton).isEnabled)
                 create.performClick()
             }
-            // Wait for the actual editor window, not just the idle launch queue.
+            // ActivityScenario may briefly foreground its own invoker while
+            // Android switches from the widget configuration to the editor.
+            // Wait for the real editor to be resumed, visible and focused;
+            // a single immediate Espresso root query can see the old window.
+            val deadline = SystemClock.elapsedRealtime() + TimeUnit.SECONDS.toMillis(12)
+            var editor: EditorActivity? = null
+            while (editor == null && SystemClock.elapsedRealtime() < deadline) {
+                instrumentation.waitForIdleSync()
+                instrumentation.runOnMainSync {
+                    editor = ActivityLifecycleMonitorRegistry.getInstance()
+                        .getActivitiesInStage(Stage.RESUMED)
+                        .filterIsInstance<EditorActivity>()
+                        .singleOrNull { opened ->
+                            opened.findViewById<View>(R.id.editorRoot)?.isShown == true &&
+                                opened.window.decorView.hasWindowFocus()
+                        }
+                }
+                if (editor == null) SystemClock.sleep(100)
+            }
+            assertNotNull("Create must foreground a visible, focused ordinary editor", editor)
             onView(withId(R.id.editorRoot)).check(matches(isDisplayed()))
             drain()
-            var editor: EditorActivity? = null
-            instrumentation.runOnMainSync {
-                editor = ActivityLifecycleMonitorRegistry.getInstance()
-                    .getActivitiesInStage(Stage.RESUMED).filterIsInstance<EditorActivity>().singleOrNull()
-            }
-            assertNotNull("Create must open the ordinary editor", editor)
             instrumentation.runOnMainSync {
                 val opened = checkNotNull(editor)
                 assertEquals(opened.getString(R.string.event_new_title),

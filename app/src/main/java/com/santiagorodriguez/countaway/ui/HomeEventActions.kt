@@ -9,11 +9,14 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.countdown.DateOnlyResetPolicy
 import com.santiagorodriguez.countaway.data.CountdownMutationResult
 import com.santiagorodriguez.countaway.data.CountdownMutations
 import com.santiagorodriguez.countaway.data.EventRevision
@@ -21,6 +24,9 @@ import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.data.RetainedOperation
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.share.EventShareLauncher
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 internal class HomeEventActions(
     private val activity: Activity,
@@ -29,8 +35,18 @@ internal class HomeEventActions(
     private val addWidget: (CountdownEvent) -> Unit,
     private val refresh: () -> Unit,
 ) {
+    internal data class DateTransition(
+        val before: CountdownEvent,
+        val after: CountdownEvent,
+        val isUndo: Boolean,
+    )
+
+    /** Only model data and retained IO outcomes survive rotation; no Activity or View reference. */
     class Session {
         val deletion = RetainedOperation<CountdownMutationResult>()
+        val dateChange = RetainedOperation<CountdownMutationResult>()
+        internal var transition: DateTransition? = null
+        internal var undoableReset: DateTransition? = null
     }
 
     private var popup: PopupWindow? = null
@@ -39,10 +55,22 @@ internal class HomeEventActions(
     private var sharing = false
     private val focus = EditorDialogFocus(activity)
 
-    init { session.deletion.onChanged = ::consumeResult }
+    init {
+        session.deletion.onChanged = ::consumeDeleteResult
+        session.dateChange.onChanged = ::consumeDateChangeResult
+        activity.findViewById<View>(R.id.homeResetUndoButton).setOnClickListener { undoReset() }
+        activity.findViewById<View>(R.id.homeResetUndoDismiss).setOnClickListener {
+            if (!session.dateChange.running) {
+                session.undoableReset = null
+                renderUndo()
+                activity.findViewById<View>(R.id.addCountdownButton).requestFocus()
+            }
+        }
+    }
 
     fun show(event: CountdownEvent, anchor: View) {
-        if (!resumed || sharing || session.deletion.running || popup != null || confirmation != null) return
+        if (!resumed || sharing || session.deletion.running || session.dateChange.running ||
+            popup != null || confirmation != null) return
         focus.capture(anchor)
         val popupParent = anchor.rootView as? ViewGroup ?: return
         val content = LayoutInflater.from(activity).inflate(R.layout.event_actions_popup, popupParent, false)
@@ -64,7 +92,7 @@ internal class HomeEventActions(
 
         fun action(viewId: Int, block: () -> Unit) {
             content.findViewById<View>(viewId).setOnClickListener {
-                if (!resumed || session.deletion.running) return@setOnClickListener
+                if (!resumed || session.deletion.running || session.dateChange.running) return@setOnClickListener
                 restoreAfterDismiss = false
                 menu.dismiss()
                 block()
@@ -72,6 +100,9 @@ internal class HomeEventActions(
         }
         action(R.id.home_event_widget) { addWidget(event) }
         action(R.id.home_event_edit) { edit(event) }
+        content.findViewById<View>(R.id.home_event_reset_today).visibility =
+            if (DateOnlyResetPolicy.canReset(event, CountdownTime.snapshot().today)) View.VISIBLE else View.GONE
+        action(R.id.home_event_reset_today) { confirmReset(event, anchor) }
         action(R.id.home_event_duplicate) {
             activity.startActivity(
                 Intent(activity, EditorActivity::class.java)
@@ -100,7 +131,7 @@ internal class HomeEventActions(
         anchor.getLocationInWindow(location)
         val root = anchor.rootView
         val margin = dp(12)
-        // A fifth action needs scrolling on shorter windows, rather than clipping Delete.
+        // Keep all contextual actions reachable on small screens, including Delete.
         val shownHeight = content.measuredHeight.coerceAtMost((root.height - 2 * margin).coerceAtLeast(1))
         menu.height = shownHeight
         val desiredX = if (anchor.layoutDirection == View.LAYOUT_DIRECTION_RTL) location[0]
@@ -113,20 +144,100 @@ internal class HomeEventActions(
         menu.showAtLocation(anchor, Gravity.TOP or Gravity.START, x, y)
         val firstAction = content.findViewById<View>(R.id.home_event_widget)
         // PopupWindow attachment timing differs across Android releases.
-        // Request initial keyboard focus after the popup content is attached.
         firstAction.post {
             if (popup === menu && menu.isShowing) firstAction.requestFocus()
         }
     }
 
+    private fun confirmReset(event: CountdownEvent, anchor: View) {
+        var displayedToday = CountdownTime.snapshot().today
+        if (!DateOnlyResetPolicy.canReset(event, displayedToday) ||
+            session.dateChange.running || session.deletion.running || confirmation != null) return
+
+        val dialog = AlertDialog.Builder(activity)
+            .setTitle(R.string.event_reset_confirm_title)
+            .setMessage(resetMessage(event, displayedToday))
+            .setNegativeButton(R.string.action_cancel, null)
+            .setPositiveButton(R.string.event_reset_confirm_action, null)
+            .create()
+        confirmation = dialog
+        dialog.setOnDismissListener {
+            if (confirmation === dialog) confirmation = null
+            restoreFocus(anchor, event.id)
+        }
+        dialog.show()
+        DialogPresentation.polish(dialog)
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            if (session.dateChange.running || session.deletion.running) return@setOnClickListener
+            val actualToday = CountdownTime.snapshot().today
+            // Do not silently commit a different date if the calendar changed while confirming.
+            if (actualToday != displayedToday) {
+                displayedToday = actualToday
+                dialog.setMessage(resetMessage(event, actualToday))
+                return@setOnClickListener
+            }
+            val target = DateOnlyResetPolicy.reset(event, actualToday)
+            dialog.dismiss()
+            if (target != null) startDateChange(DateTransition(event, target, isUndo = false))
+            else refresh()
+        }
+    }
+
+    private fun resetMessage(event: CountdownEvent, today: LocalDate): String {
+        val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+            .withLocale(activity.resources.configuration.locales[0])
+        return activity.getString(
+            R.string.event_reset_confirm_message,
+            EventTransport.preview(event.title),
+            dateFormat.format(event.date),
+            dateFormat.format(today),
+        )
+    }
+
+    private fun startDateChange(change: DateTransition) {
+        if (!resumed || session.dateChange.running || session.deletion.running) return
+        val mutations = CountdownMutations(activity.applicationContext)
+        val expectedRevision = EventRevision.of(change.before)
+        session.transition = change
+        session.dateChange.start { mutations.save(expectedRevision, change.before, change.after) }
+        renderUndo()
+    }
+
+    private fun undoReset() {
+        val last = session.undoableReset ?: return
+        startDateChange(DateTransition(last.after, last.before, isUndo = true))
+    }
+
+    /** Old edits/imports/deletes invalidate Undo; CAS is still the final concurrency guard. */
+    fun reconcileUndo(events: List<CountdownEvent>) {
+        if (session.dateChange.running || session.transition != null) return
+        val last = session.undoableReset ?: return
+        if (events.none { it.id == last.after.id && EventRevision.of(it) == EventRevision.of(last.after) }) {
+            session.undoableReset = null
+            renderUndo()
+        }
+    }
+
+    private fun renderUndo() {
+        val bar = activity.findViewById<View>(R.id.homeResetUndoBar)
+        val undo = session.undoableReset
+        bar.visibility = if (resumed && undo != null) View.VISIBLE else View.GONE
+        if (undo == null || !resumed) return
+        activity.findViewById<TextView>(R.id.homeResetUndoMessage).text =
+            activity.getString(R.string.event_reset_undo_message, EventTransport.preview(undo.after.title))
+        val enabled = !session.dateChange.running && !session.deletion.running
+        activity.findViewById<Button>(R.id.homeResetUndoButton).isEnabled = enabled
+        activity.findViewById<View>(R.id.homeResetUndoDismiss).isEnabled = enabled
+    }
+
     private fun confirmDelete(event: CountdownEvent, anchor: View) {
-        if (session.deletion.running || confirmation != null) return
+        if (session.deletion.running || session.dateChange.running || confirmation != null) return
         val dialog = AlertDialog.Builder(activity)
             .setTitle(R.string.delete_title)
             .setMessage(activity.getString(R.string.delete_message, event.title))
             .setNegativeButton(R.string.action_cancel, null)
             .setPositiveButton(R.string.action_delete) { _, _ ->
-                if (!session.deletion.running) {
+                if (!session.deletion.running && !session.dateChange.running) {
                     val mutations = CountdownMutations(activity.applicationContext)
                     val id = event.id
                     val revision = EventRevision.of(event)
@@ -149,7 +260,9 @@ internal class HomeEventActions(
 
     fun resume() {
         resumed = true
-        consumeResult()
+        consumeDeleteResult()
+        consumeDateChangeResult()
+        renderUndo()
     }
 
     fun pause() {
@@ -162,11 +275,12 @@ internal class HomeEventActions(
     fun close() {
         pause()
         session.deletion.onChanged = null
+        session.dateChange.onChanged = null
     }
 
     private fun dp(value: Int) = (value * activity.resources.displayMetrics.density).toInt()
 
-    private fun consumeResult() {
+    private fun consumeDeleteResult() {
         if (!resumed || activity.isFinishing || activity.isDestroyed) return
         val result = session.deletion.takeResult() ?: return
         result.onSuccess {
@@ -175,6 +289,41 @@ internal class HomeEventActions(
             }
         }.onFailure {
             Toast.makeText(activity, R.string.data_delete_failed, Toast.LENGTH_LONG).show()
+        }
+        refresh()
+    }
+
+    private fun consumeDateChangeResult() {
+        if (!resumed || activity.isFinishing || activity.isDestroyed) return
+        val result = session.dateChange.takeResult() ?: return
+        val change = session.transition ?: return
+        session.transition = null
+        when (result.getOrNull()) {
+            CountdownMutationResult.APPLIED -> {
+                if (change.isUndo) {
+                    session.undoableReset = null
+                    Toast.makeText(activity, R.string.event_reset_undone, Toast.LENGTH_SHORT).show()
+                } else {
+                    session.undoableReset = change
+                }
+            }
+            CountdownMutationResult.CONFLICT -> {
+                if (change.isUndo) session.undoableReset = null
+                Toast.makeText(activity, R.string.event_action_stale, Toast.LENGTH_LONG).show()
+            }
+            null -> Toast.makeText(activity,
+                if (change.isUndo) R.string.event_reset_undo_failed else R.string.event_reset_failed,
+                Toast.LENGTH_LONG).show()
+        }
+        renderUndo()
+        if (result.getOrNull() == CountdownMutationResult.APPLIED && !change.isUndo) {
+            val bar = activity.findViewById<View>(R.id.homeResetUndoBar)
+            bar.post {
+                if (bar.isShown && !activity.isDestroyed) {
+                    bar.announceForAccessibility(activity.getString(R.string.event_reset_undo_message,
+                        EventTransport.preview(change.after.title)))
+                }
+            }
         }
         refresh()
     }

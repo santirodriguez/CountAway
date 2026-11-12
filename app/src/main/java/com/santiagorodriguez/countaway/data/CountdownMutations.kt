@@ -2,6 +2,7 @@ package com.santiagorodriguez.countaway.data
 
 import android.content.Context
 import com.santiagorodriguez.countaway.countdown.CountdownTime
+import com.santiagorodriguez.countaway.backup.AutoBackupScheduler
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationPolicy
 import com.santiagorodriguez.countaway.notification.ArrivalNotificationScheduler
@@ -24,6 +25,7 @@ class CountdownMutations(context: Context) {
             }
             runCatching { ArrivalNotifier.cancelEvent(context, event.id) }
             reconcile()
+            AutoBackupScheduler.mutationCommitted(context)
         }
         return result
     }
@@ -34,6 +36,7 @@ class CountdownMutations(context: Context) {
             runCatching { ArrivalNotificationState(context).remove(id) }
             runCatching { ArrivalNotifier.cancelEvent(context, id) }
             reconcile()
+            AutoBackupScheduler.mutationCommitted(context)
         }
         return result
     }
@@ -44,6 +47,7 @@ class CountdownMutations(context: Context) {
             runCatching { ArrivalNotificationState(context).clear() }
             runCatching { ArrivalNotifier.cancelAllEventNotifications(context) }
             reconcile()
+            AutoBackupScheduler.mutationCommitted(context)
         } finally {
             runCatching { snapshot.clear() }
         }

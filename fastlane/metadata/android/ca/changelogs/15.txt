@@ -1,0 +1,1 @@
+Reinicia a avui els comptadors ascendents sense hora des de la pantalla inicial, amb opció de desfer. Còpies automàtiques opcionals dels esdeveniments en JSON a Baixades/CountAway o en una carpeta triada, amb verificació i restauració senzilla.

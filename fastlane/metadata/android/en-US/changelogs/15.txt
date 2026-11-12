@@ -1,0 +1,1 @@
+Reset date-only count-up events to today from Home, with Undo. Optional automatic JSON backups of your events to Downloads/CountAway or a chosen folder, with verified copies and simple restore.

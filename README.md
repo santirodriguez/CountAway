@@ -51,7 +51,7 @@ CountAway skips all that. It counts the days and leaves you alone.
     </td>
     <td width="33%" valign="top">
       <strong>Keep it yours</strong><br /><br />
-      Everything stays local. Backup and restore with JSON when <em>you</em> want portability. No dashboard required.
+      CountAway stays offline. Export JSON manually or opt in to backups in a folder you choose. No dashboard required.
     </td>
   </tr>
 </table>
@@ -59,6 +59,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 ## Highlights
 
 - **Count both ways:** count down to future dates or count up from a start date.
+- **Start fresh when needed:** reset eligible date-only count-up events to today from Home, with confirmation and Undo.
 - **Optional event times:** show live hours, minutes, and seconds; event clock labels follow your device's 12/24-hour setting.
 - **Two kinds of widgets:** classic day-count widgets and a dedicated live-hours widget for timed events, with a compact 2×1 option on compatible launchers.
 - **Widget-first:** long-press an event, choose a style, preview it, and add it to Home.
@@ -68,7 +69,7 @@ CountAway skips all that. It counts the days and leaves you alone.
 - **Useful reminders:** optional local notifications for count-down events.
 - **Smart widgets:** fixed widgets support both directions; **Next countdown** follows the nearest upcoming count-down event.
 - **Share without the screenshot ritual:** Send a Ridge-style PNG card, or full text for exceptionally long titles.
-- **Local portability:** JSON export/import stays entirely under your control.
+- **Backup and restore:** import/export JSON manually, or opt in to verified automatic event backups. On Android 10+, copies default to Downloads/CountAway; you can choose another folder.
 - **Multilingual:** English, Español, and Català.
 
 ## Screenshots
@@ -92,13 +93,13 @@ CountAway skips all that. It counts the days and leaves you alone.
 </tr>
 </table>
 
-<p align="center"><sub>Original CountAway 1.2.5 Android captures · Unmodified screenshot pixels</sub></p>
+<p align="center"><sub>Genuine Android screenshots · Original, unmodified pixels</sub></p>
 
 ## Privacy, by design
 
 CountAway has no Internet permission, accounts, ads, analytics, or cloud sync.
 
-Your events stay on your device. Revolutionary stuff, apparently.
+CountAway does not send your events online. Optional JSON backups stay in the destination you choose; an external document provider may sync them independently.
 
 ## Help improve CountAway
 

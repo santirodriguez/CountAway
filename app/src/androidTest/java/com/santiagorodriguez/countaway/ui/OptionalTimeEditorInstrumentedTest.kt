@@ -50,6 +50,8 @@ class OptionalTimeEditorInstrumentedTest {
             onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, _ ->
                 val picker = view as TimePicker
                 offeredTime = LocalTime.of(picker.hour, picker.minute)
+                assertTrue("A new native picker must expose a valid initial time",
+                    picker.validateInput())
                 val focused = picker.findFocus()
                 pickerFocusBeforeConfirm = "is24Hour=${picker.is24HourView}; " +
                     "focused=${focused?.javaClass?.simpleName}; shown=${focused?.isShown}"
@@ -69,6 +71,35 @@ class OptionalTimeEditorInstrumentedTest {
             val saved = events().single { it.id == event.id }
             assertEquals("after repository save", expectedTime, saved.eventTime)
             assertNotNull(saved.eventZone)
+        }
+    }
+
+    @Test fun midnightAndNoonRemainsConfirmableInNativeTimePicker() = isolated {
+        val base = fixture().copy(eventZone = ZoneId.of("America/Argentina/Buenos_Aires"))
+        for (hour in listOf(0, 12)) {
+            val selected = LocalTime.of(hour, 20)
+            val event = base.copy(eventTime = selected)
+            repository.save(original() + event)
+            ActivityScenario.launch<EditorActivity>(intent(event)).use { scenario ->
+                drain()
+                scenario.onActivity { activity ->
+                    activity.findViewById<Button>(R.id.timeButton).performClick()
+                }
+                onView(isAssignableFrom(TimePicker::class.java)).inRoot(isDialog()).check { view, error ->
+                    if (error != null) throw error
+                    val picker = view as TimePicker
+                    assertEquals("Initial native hour", hour, picker.hour)
+                    assertEquals("Initial native minute", 20, picker.minute)
+                    assertTrue("Native time should validate when no edits were entered", picker.validateInput())
+                }
+                onView(withId(android.R.id.button1)).inRoot(isDialog()).check { view, error ->
+                    if (error != null) throw error
+                    assertTrue("A valid initial time must permit confirmation", view.isEnabled)
+                }.perform(click())
+                scenario.onActivity { activity ->
+                    assertEditorTime(activity, selected, "after native confirmation at $hour:20")
+                }
+            }
         }
     }
 
@@ -117,6 +148,8 @@ class OptionalTimeEditorInstrumentedTest {
                 picker.minute = 45
                 assertEquals(21, picker.hour)
                 assertEquals(45, picker.minute)
+                assertTrue("A valid changed hour must pass the native pre-focus check",
+                    picker.validateInput())
             }
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click())
             scenario.onActivity { activity ->

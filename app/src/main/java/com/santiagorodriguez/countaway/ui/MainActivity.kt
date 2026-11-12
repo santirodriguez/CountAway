@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.ListView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
+import com.santiagorodriguez.countaway.backup.AutoBackupScheduler
 import com.santiagorodriguez.countaway.countdown.CountdownEventOrder
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
@@ -115,6 +116,7 @@ class MainActivity : BaseActivity() {
             recreate()
             return
         }
+        runCatching { AutoBackupScheduler.ensureScheduled(applicationContext) }
         val snapshot = CountdownTime.snapshot()
         temporalInvalidationController.start(snapshot)
         refreshTemporalState(snapshot)
@@ -186,6 +188,7 @@ class MainActivity : BaseActivity() {
     private fun renderData(result: CountdownLoadResult, today: LocalDate) {
         when (result) {
             is CountdownLoadResult.Success -> {
+                eventActions.reconcileUndo(result.events)
                 adapter.submit(CountdownEventOrder.sortedForDisplay(result.events, today), today)
                 scheduleClockTick()
                 emptyStateIcon.visibility = View.VISIBLE

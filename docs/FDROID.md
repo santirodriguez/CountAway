@@ -35,7 +35,7 @@ CountAway remains intentionally straightforward for F-Droid:
 - the manifest has no Internet permission;
 - Fastlane metadata lives under `fastlane/metadata/android/`;
 - English metadata uses F-Droid's `en-US` locale, alongside `es` and `ca`;
-- phone screenshots are stored as PNG files under the `en-US` Fastlane metadata;
+- localized phone screenshots use the corresponding `en-US`, `es`, and `ca` Fastlane image directories when approved for the release; do not copy English UI pixels into another locale;
 - official releases use stable semantic `v<version>` tags;
 - release APKs use the same long-lived upstream signing identity.
 
@@ -66,7 +66,7 @@ Gate A is satisfied only when all of the following are true:
 
 A merged metadata change, merged inclusion MR, passing inclusion pipeline, F-Droid website 404, API error, or failed fetch is not by itself proof that Gate A passed or failed.
 
-The CountAway release workflow verifies items 1–3 during stable draft preparation and fails closed on missing/error evidence. Item 4 remains a human release checklist requirement. For CountAway 1.1.8, all four Gate A items were completed by September 22, 2026. No Gate A network logic is included in the Android app.
+The CountAway release workflow verifies items 1–3 during stable draft preparation and fails closed on missing/error evidence. The original maintainer installation check (item 4) was accepted with CountAway 1.1.8 by September 22, 2026 and is not a recurring requirement for ordinary updates. Recheck it only for an actual signing, distribution, or compatibility regression. No Gate A network logic is included in the Android app.
 
 ## Stable tag and upstream binary gates
 
@@ -126,7 +126,7 @@ For CountAway 1.1.8 and later stable releases:
 2. Get normal Android CI green and review its retained reports; remember that pull-request CI may validate a merge ref rather than the raw branch SHA.
 3. Build the signed `release-candidate` from the exact frozen release-branch SHA and review checksum, signing, package/SDK, permission, dependency, native-code, R8, APK-size, independent-rebuild, emulator, and instrumentation evidence.
 4. Complete the required human/device acceptance, including a real data-bearing upgrade from the previous public release.
-5. Verify Gate A from the official public F-Droid package/API, downloadable APK, signing identity, and a maintainer installation smoke test.
+5. Let the existing automated draft-preparation checks verify the public F-Droid package/API, APK and signing identity. Carry forward the previously accepted Gate A installation check unless evidence of a relevant regression requires new human testing.
 6. Keep the exact `release/<version>` branch present and frozen while the reviewed release is integrated.
 7. Merge the reviewed release pull request into `main`, verify that the merged tree exactly matches the reviewed release-branch tree, and require Android CI green on that exact `main` head.
 8. Run `prepare-draft-release` from the exact current `main` head and supply that exact SHA. The workflow re-fetches `main` and rejects stale or mismatched heads. The version-derived release branch remains available as a recovery/exception path.
