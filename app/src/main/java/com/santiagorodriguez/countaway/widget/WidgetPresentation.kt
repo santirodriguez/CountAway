@@ -1,6 +1,7 @@
 package com.santiagorodriguez.countaway.widget
 
 import android.view.View
+import android.util.TypedValue
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.ArrivalMood
@@ -155,6 +156,7 @@ internal object WidgetRemoteViewsPresentation {
         size: WidgetSize,
         fontScale: Float,
         heightDp: Int = WidgetPreviewSizing.representative(size).heightDp,
+        widthDp: Int = WidgetPreviewSizing.representative(size).widthDp,
     ) {
         val presentation = WidgetPresentationResolver.resolve(content, size, fontScale, heightDp)
         views.setViewVisibility(R.id.widgetIcon, if (presentation.showIcon) View.VISIBLE else View.GONE)
@@ -162,6 +164,16 @@ internal object WidgetRemoteViewsPresentation {
         views.setInt(R.id.widgetTitle, "setMaxLines", presentation.titleMaxLines)
         views.setImageViewResource(R.id.widgetIcon, content.iconRes)
         views.setTextViewText(R.id.widgetTitle, content.title)
+        if (size == WidgetSize.COMPACT && presentation.showTitle &&
+            WidgetCompactTitleFitter.isSingleWord(content.title)
+        ) {
+            // For a single long word use measured fitting before the host may
+            // split its last two letters onto a dangling second line.
+            views.setInt(R.id.widgetTitle, "setMaxLines", 1)
+            views.setTextViewTextSize(R.id.widgetTitle, TypedValue.COMPLEX_UNIT_SP,
+                WidgetCompactTitleFitter.fittedSizeSp(context, content.title, widthDp)
+                    ?: WidgetCompactTitleFitter.normalSizeSp)
+        }
         views.setTextViewText(R.id.widgetCount, presentation.countText)
         views.setTextViewText(R.id.widgetUnit, presentation.unitRes?.let(context::getString).orEmpty())
         views.setTextViewText(R.id.widgetDate, content.dateText(context))
