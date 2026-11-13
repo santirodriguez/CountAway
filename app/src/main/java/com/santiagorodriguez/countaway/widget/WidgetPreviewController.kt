@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.util.TypedValue
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
@@ -62,6 +63,16 @@ internal class WidgetPreviewController(
         titleView.maxLines = presentation.titleMaxLines
         iconView.setImageResource(content.iconRes)
         titleView.text = content.title
+        if (currentSize == WidgetSize.COMPACT) {
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, WidgetCompactTitleFitter.normalSizeSp)
+            if (presentation.showTitle && WidgetCompactTitleFitter.isSingleWord(content.title)) {
+                titleView.maxLines = 1
+                titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP,
+                    WidgetCompactTitleFitter.fittedSizeSp(context, content.title,
+                        requireNotNull(currentDimensions).widthDp)
+                        ?: WidgetCompactTitleFitter.normalSizeSp)
+            }
+        }
         countView.text = presentation.countText
         unitView.text = presentation.unitRes?.let(context::getString).orEmpty()
         milestoneView.text = presentation.milestone.orEmpty()
