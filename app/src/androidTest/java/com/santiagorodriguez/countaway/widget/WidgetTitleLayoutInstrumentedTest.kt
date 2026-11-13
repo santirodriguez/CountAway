@@ -67,6 +67,35 @@ class WidgetTitleLayoutInstrumentedTest {
         }
     }
 
+    @Test fun compactSingleWordTitleHasNoOrphanLastLine() = instrumentation.runOnMainSync {
+        val wordEvent = birthday.copy(title = "Nacimiento")
+        val examples = listOf(
+            WidgetPreviewDimensions(56, 50),
+            WidgetPreviewDimensions(57, 102),
+            WidgetPreviewDimensions(90, 180),
+        )
+        for (scale in listOf(1f, 1.3f, 2f)) for (dimensions in examples) {
+            val context = context(scale, "es")
+            val root = WidgetPreviewFactory.remoteViews(
+                context, wordEvent,
+                WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.CLASSIC),
+                today, dimensions,
+            ).apply(context, FrameLayout(context))
+            layout(context, root, dimensions)
+            val title = root.findViewById<TextView>(R.id.widgetTitle)
+            if (title.visibility == View.VISIBLE) {
+                assertTrue("Do not split a single-word title: $dimensions scale=$scale",
+                    title.lineCount <= 1)
+                assertFits(root, title)
+            }
+            assertCountFits(root)
+            if (scale == 1f && dimensions.widthDp == 90) {
+                assertEquals(View.VISIBLE, title.visibility)
+                assertFalse("Nacimiento should fit at 90dp", hasEllipsis(title))
+            }
+        }
+    }
+
     @Test fun responsiveTitlesNeverPushCountsOutsideTheWidget() = instrumentation.runOnMainSync {
         val problems = mutableListOf<String>()
         val dimensions = listOf(WidgetPreviewDimensions(56, 50), WidgetPreviewDimensions(57, 102),
