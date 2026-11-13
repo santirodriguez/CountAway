@@ -219,7 +219,7 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                             noUpcoming = configuration?.eventSelection == WidgetEventSelection.NEXT,
                             size = size, heightDp = heightDp)
                     } else {
-                        renderEvent(displayContext, views, appWidgetId, event, today, size, heightDp)
+                        renderEvent(displayContext, views, appWidgetId, event, today, size, widthDp, heightDp)
                     }
                 }
             }
@@ -227,9 +227,9 @@ class CountdownWidgetProvider : AppWidgetProvider() {
         }
 
         private fun renderEvent(context: Context, views: RemoteViews, appWidgetId: Int,
-            event: CountdownEvent, today: LocalDate, size: WidgetSize, heightDp: Int) {
+            event: CountdownEvent, today: LocalDate, size: WidgetSize, widthDp: Int, heightDp: Int) {
             WidgetRemoteViewsPresentation.applyEvent(context, views, WidgetEventContentFactory.from(event.copy(title = EventTransport.preview(event.title)), today),
-                size, context.resources.configuration.fontScale, heightDp)
+                size, context.resources.configuration.fontScale, heightDp, widthDp)
             views.setOnClickPendingIntent(R.id.widgetRoot, editPendingIntent(context, appWidgetId, event.id))
         }
 
