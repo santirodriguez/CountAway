@@ -8,6 +8,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import com.santiagorodriguez.countaway.R
+import kotlin.math.roundToInt
 
 internal class WidgetPreviewController(
     private val context: Context,
@@ -118,8 +119,22 @@ internal class WidgetPreviewController(
 
     private fun applyFrame(dimensions: WidgetPreviewDimensions) {
         container.post {
+            if (currentDimensions != dimensions || container.width <= 0 || container.height <= 0) {
+                return@post
+            }
+            // Inflate at the same logical dp size used by the provider. Scale the
+            // entire composition, not only the frame: dp/sp children, corners,
+            // title breaks and icon spacing then preserve production proportions.
+            val density = context.resources.displayMetrics.density
+            val widthPx = (dimensions.widthDp * density).roundToInt().coerceAtLeast(1)
+            val heightPx = (dimensions.heightDp * density).roundToInt().coerceAtLeast(1)
             val fitted = WidgetPreviewSizing.fit(container.width, container.height, dimensions)
-            frame.layoutParams = FrameLayout.LayoutParams(fitted.width, fitted.height, Gravity.CENTER)
+            frame.layoutParams = FrameLayout.LayoutParams(widthPx, heightPx, Gravity.CENTER)
+            frame.pivotX = widthPx / 2f
+            frame.pivotY = heightPx / 2f
+            val scale = minOf(fitted.width.toFloat() / widthPx, fitted.height.toFloat() / heightPx)
+            frame.scaleX = scale
+            frame.scaleY = scale
         }
     }
 }
