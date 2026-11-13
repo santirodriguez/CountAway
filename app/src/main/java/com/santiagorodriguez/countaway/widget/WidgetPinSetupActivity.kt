@@ -432,7 +432,8 @@ class WidgetPinSetupActivity : BaseActivity() {
 
             addView(
                 ImageView(this@WidgetPinSetupActivity).apply {
-                    scaleType = ImageView.ScaleType.FIT_XY
+                    // Keep every 72x44 artwork swatch at its original ratio.
+                    scaleType = ImageView.ScaleType.FIT_CENTER
                     setImageBitmap(
                         WidgetBackgroundRenderer.render(
                             context = applicationContext,
@@ -445,10 +446,9 @@ class WidgetPinSetupActivity : BaseActivity() {
                     contentDescription = null
                     importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 },
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    dp(44),
-                ),
+                LinearLayout.LayoutParams(dp(72), dp(44)).apply {
+                    gravity = Gravity.CENTER
+                },
             )
             addView(
                 TextView(this@WidgetPinSetupActivity).apply {
