@@ -66,11 +66,11 @@ internal class WidgetPreviewController(
         if (currentSize == WidgetSize.COMPACT) {
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, WidgetCompactTitleFitter.normalSizeSp)
             if (presentation.showTitle && WidgetCompactTitleFitter.isSingleWord(content.title)) {
-                titleView.maxLines = 1
-                titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP,
-                    WidgetCompactTitleFitter.fittedSizeSp(context, content.title,
-                        requireNotNull(currentDimensions).widthDp)
-                        ?: WidgetCompactTitleFitter.normalSizeSp)
+                val fitted = WidgetCompactTitleFitter.fit(context, content.title,
+                    requireNotNull(currentDimensions).widthDp, presentation.titleMaxLines)
+                titleView.maxLines = fitted.maxLines
+                titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, fitted.sizeSp)
+                titleView.text = fitted.text
             }
         }
         countView.text = presentation.countText

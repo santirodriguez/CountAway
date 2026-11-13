@@ -170,12 +170,12 @@ internal object WidgetRemoteViewsPresentation {
         if (size == WidgetSize.COMPACT && presentation.showTitle &&
             WidgetCompactTitleFitter.isSingleWord(content.title)
         ) {
-            // For a single long word use measured fitting before the host may
-            // split its last two letters onto a dangling second line.
-            views.setInt(R.id.widgetTitle, "setMaxLines", 1)
-            views.setTextViewTextSize(R.id.widgetTitle, TypedValue.COMPLEX_UNIT_SP,
-                WidgetCompactTitleFitter.fittedSizeSp(context, content.title, widthDp)
-                    ?: WidgetCompactTitleFitter.normalSizeSp)
+            val fitted = WidgetCompactTitleFitter.fit(
+                context, content.title, widthDp, presentation.titleMaxLines,
+            )
+            views.setInt(R.id.widgetTitle, "setMaxLines", fitted.maxLines)
+            views.setTextViewTextSize(R.id.widgetTitle, TypedValue.COMPLEX_UNIT_SP, fitted.sizeSp)
+            views.setTextViewText(R.id.widgetTitle, fitted.text)
         }
         views.setTextViewText(R.id.widgetCount, presentation.countText)
         views.setTextViewText(R.id.widgetUnit, presentation.unitRes?.let(context::getString).orEmpty())

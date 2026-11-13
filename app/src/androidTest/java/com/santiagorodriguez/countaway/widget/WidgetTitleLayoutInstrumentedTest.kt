@@ -13,6 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.model.CountMode
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
@@ -72,6 +73,7 @@ class WidgetTitleLayoutInstrumentedTest {
         val examples = listOf(
             WidgetPreviewDimensions(56, 50),
             WidgetPreviewDimensions(57, 102),
+            WidgetPreviewDimensions(64, 102),
             WidgetPreviewDimensions(90, 90),
             WidgetPreviewDimensions(90, 180),
         )
@@ -85,11 +87,26 @@ class WidgetTitleLayoutInstrumentedTest {
             layout(context, root, dimensions)
             val title = root.findViewById<TextView>(R.id.widgetTitle)
             if (title.visibility == View.VISIBLE) {
-                assertTrue("Do not split a single-word title: $dimensions scale=$scale",
-                    title.lineCount <= 1)
+                val display = title.text.toString()
+                assertEquals("Preserve all letters in the widget text",
+                    wordEvent.title, display.replace("\n", ""))
+                val fragments = display.split("\n")
+                assertTrue("At most two balanced title rows: $dimensions font=$scale",
+                    fragments.size <= 2 && title.lineCount <= 2)
+                if (fragments.size == 2) {
+                    assertTrue("No orphan title fragment: $dimensions font=$scale",
+                        fragments.all { it.length >= 3 })
+                    assertFalse("Balanced title must be fully visible", hasEllipsis(title))
+                }
+                if (dimensions.heightDp >= 102 && dimensions.widthDp >= 57 && scale <= 1.3f) {
+                    assertFalse("Tall 1x1 must show the complete title", hasEllipsis(title))
+                }
                 assertFits(root, title)
             }
             assertCountFits(root)
+            if (dimensions.heightDp == 102 && dimensions.widthDp in listOf(57, 64)) {
+                capture(root, "nacimiento-narrow-${dimensions.widthDp}x102-scale-$scale")
+            }
             if (dimensions.widthDp == 90 && dimensions.heightDp == 90) {
                 if (scale == 1f || scale == 2f) assertEquals(
                     "Roomy 1x1 must preserve its icon: font=$scale",
@@ -101,6 +118,49 @@ class WidgetTitleLayoutInstrumentedTest {
                 assertEquals(View.VISIBLE, title.visibility)
                 assertFalse("Nacimiento should fit at 90dp", hasEllipsis(title))
             }
+        }
+    }
+
+
+    @Test fun realNarrowTallNacimientoKeepsSignedCountAndIcon() = instrumentation.runOnMainSync {
+        val event = birthday.copy(title = "Nacimiento", date = today.minusDays(11_949),
+            countMode = CountMode.COUNT_UP)
+        val dimensions = listOf(WidgetPreviewDimensions(57, 102),
+            WidgetPreviewDimensions(64, 102))
+        for (scale in listOf(1f, 1.3f, 2f)) for (size in dimensions) {
+            val context = context(scale, "es")
+            val style = WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.SUNSET)
+            val remote = WidgetPreviewFactory.remoteViews(context, event, style, today, size)
+            val root = remote.apply(context, FrameLayout(context))
+            layout(context, root, size)
+
+            val count = root.findViewById<TextView>(R.id.widgetCount)
+            val title = root.findViewById<TextView>(R.id.widgetTitle)
+            val icon = root.findViewById<View>(R.id.widgetIcon)
+            assertEquals("Count-up signed value must survive narrow cells", "+11949",
+                count.text.toString())
+            assertCountFits(root)
+            assertEquals("Event icon must remain in tall narrow cells", View.VISIBLE,
+                icon.visibility)
+            assertFits(root, icon)
+            if (scale <= 1.3f) {
+                assertEquals(View.VISIBLE, title.visibility)
+                assertEquals("Nacimiento", title.text.toString().replace("\n", ""))
+                assertFalse("No title ellipsis when two readable rows fit", hasEllipsis(title))
+                assertTrue("No dangling two-letter line",
+                    title.text.toString().split("\n").all { it.length >= 3 })
+                assertFits(root, title)
+            }
+            capture(root, "nacimiento-signed-tall-${size.widthDp}x102-scale-$scale")
+
+            val container = FrameLayout(context)
+            val frame = FrameLayout(context)
+            container.addView(frame)
+            val preview = WidgetPreviewController(context, container, frame)
+            preview.renderStyle(style, size)
+            preview.renderEvent(WidgetEventContentFactory.from(event, today))
+            assertEquals("Setup preview must agree with the provider title",
+                title.text.toString(), frame.findViewById<TextView>(R.id.widgetTitle).text.toString())
         }
     }
 
