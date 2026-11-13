@@ -148,12 +148,20 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                     configuration, renderData, options, backgroundCache)
                 if (responsive != null) return responsive
             }
-            val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, DEFAULT_MIN_WIDTH_DP)
-                .takeIf { it > 0 } ?: DEFAULT_MIN_WIDTH_DP
-            val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, DEFAULT_MIN_HEIGHT_DP)
-                .takeIf { it > 0 } ?: DEFAULT_MIN_HEIGHT_DP
-            return renderForSize(context, displayContext, appWidgetId, today, configuration,
-                renderData, widthDp, heightDp, backgroundCache)
+            val pair = WidgetHostGeometry.legacy(
+                WidgetLegacyOptions(
+                    options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0),
+                    options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0),
+                    options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0),
+                    options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0),
+                ),
+                WidgetLegacyDefaults(56, 120, 50, 102),
+            )
+            val portrait = renderForSize(context, displayContext, appWidgetId, today, configuration,
+                renderData, pair.portrait.widthDp, pair.portrait.heightDp, backgroundCache)
+            val landscape = renderForSize(context, displayContext, appWidgetId, today, configuration,
+                renderData, pair.landscape.widthDp, pair.landscape.heightDp, backgroundCache)
+            return RemoteViews(landscape, portrait)
         }
 
         @TargetApi(Build.VERSION_CODES.S)
@@ -168,15 +176,17 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             options: Bundle,
             backgroundCache: MutableMap<BackgroundKey, Bitmap>,
         ): RemoteViews? {
-            val sizes = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
-                .orEmpty().distinct()
+            val candidates = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
+                .orEmpty().map { WidgetHostDimensions(it.width, it.height) }
+            val sizes = WidgetHostGeometry.responsive(candidates, context.resources.displayMetrics.density)
             if (sizes.isEmpty()) return null
             val mapping = LinkedHashMap<SizeF, RemoteViews>(sizes.size)
             sizes.forEach { size ->
-                mapping[size] = renderForSize(context, displayContext, appWidgetId, today,
-                    configuration, renderData,
-                    size.width.roundToInt().coerceAtLeast(MIN_RENDER_DIMENSION_DP),
-                    size.height.roundToInt().coerceAtLeast(MIN_RENDER_DIMENSION_DP), backgroundCache)
+                mapping[SizeF(size.widthDp, size.heightDp)] = renderForSize(
+                    context, displayContext, appWidgetId, today, configuration, renderData,
+                    size.widthDp.roundToInt().coerceAtLeast(1),
+                    size.heightDp.roundToInt().coerceAtLeast(1), backgroundCache,
+                )
             }
             return RemoteViews(mapping)
         }
@@ -289,9 +299,6 @@ class CountdownWidgetProvider : AppWidgetProvider() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }
 
-        private const val DEFAULT_MIN_WIDTH_DP = 56
-        private const val DEFAULT_MIN_HEIGHT_DP = 50
-        private const val MIN_RENDER_DIMENSION_DP = 1
         private const val CONFIG_REQUEST_CODE_OFFSET = 100_000
         private const val DATA_ERROR_REQUEST_CODE_OFFSET = 200_000
     }
