@@ -1,5 +1,6 @@
 package com.santiagorodriguez.countaway.widget
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Paint
 import android.graphics.Typeface
@@ -54,7 +55,7 @@ internal object WidgetCompactTitleFitter {
                 size(sp)
                 val layout = StaticLayout.Builder.obtain(title, 0, title.length, paint, availablePx)
                     .setIncludePad(false)
-                    .setBreakStrategy(Layout.BREAK_STRATEGY_BALANCED)
+                    .setBalancedBreakStrategy()
                     .setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_FULL)
                     .build()
                 if (layout.lineCount != 2) continue
@@ -76,6 +77,13 @@ internal object WidgetCompactTitleFitter {
         // than an arbitrary, hard-to-read fragment. Accessibility remains full.
         return WidgetCompactTitleLayout(title, 9f, 1)
     }
+
+    // StaticLayout accepts Layout.BREAK_STRATEGY_BALANCED since API 23.
+    // Current lint annotations list its API 29 LineBreaker alias instead.
+    // Keep the API 23 value and suppress only that false-positive check.
+    @SuppressLint("WrongConstant")
+    private fun StaticLayout.Builder.setBalancedBreakStrategy(): StaticLayout.Builder =
+        setBreakStrategy(Layout.BREAK_STRATEGY_BALANCED)
 
     val normalSizeSp: Float get() = FULL_TITLE_SP
 }
