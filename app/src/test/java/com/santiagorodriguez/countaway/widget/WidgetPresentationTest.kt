@@ -52,6 +52,22 @@ class WidgetPresentationTest {
     }
 
     @Test
+    fun largeTextKeepsEventIconWhenARoomyCompactCellCanFitIt() {
+        val roomy = WidgetPresentationResolver.resolve(
+            content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT,
+            fontScale = 2f, heightDp = 90,
+        )
+        assertTrue(roomy.showIcon)
+        assertFalse(roomy.showTitle)
+        val trulyMinimum = WidgetPresentationResolver.resolve(
+            content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT,
+            fontScale = 2f, heightDp = 50,
+        )
+        assertFalse(trulyMinimum.showIcon)
+        assertFalse(trulyMinimum.showTitle)
+    }
+
+    @Test
     fun extraHeightRestoresDetailsEvenAtLargeFontScale() {
         val result = WidgetPresentationResolver.resolve(
             content(CountdownStatus.FUTURE, "91"), WidgetSize.COMPACT, 2f, heightDp = 180,

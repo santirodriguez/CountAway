@@ -91,8 +91,10 @@ class WidgetTitleLayoutInstrumentedTest {
             }
             assertCountFits(root)
             if (dimensions.widthDp == 90 && dimensions.heightDp == 90) {
-                if (scale == 1f) assertEquals(View.VISIBLE,
-                    root.findViewById<View>(R.id.widgetIcon).visibility)
+                if (scale == 1f || scale == 2f) assertEquals(
+                    "Roomy 1x1 must preserve its icon: font=$scale",
+                    View.VISIBLE, root.findViewById<View>(R.id.widgetIcon).visibility,
+                )
                 capture(root, "nacimiento-90x90-scale-$scale")
             }
             if (scale == 1f && dimensions.widthDp == 90) {

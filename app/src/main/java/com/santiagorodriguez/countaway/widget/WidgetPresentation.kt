@@ -56,7 +56,10 @@ internal object WidgetPresentationResolver {
         val showDate = size == WidgetSize.LARGE && fontScale < DATE_HIDE_FONT_SCALE
         val compactCountHeight = ceil(28 * fontScale).toInt()
         val compactLineHeight = ceil(14 * fontScale).toInt()
-        val compactIconFits = heightDp >= 8 + compactCountHeight + compactLineHeight + 16
+        // Large accessibility fonts may use every title row. Still keep the
+        // fixed-size event icon when it fits beside the essential count.
+        val compactIconFits = heightDp >= 8 + compactCountHeight +
+            (if (largeFont) 0 else compactLineHeight) + 16
         val compactTitleLines = ((heightDp - 8 - compactCountHeight -
             if (compactIconFits) 16 else 0) / compactLineHeight).coerceIn(0, 3)
         val showIcon = when (size) {
