@@ -19,6 +19,12 @@ class WidgetPreviewSizingTest {
     }
 
     @Test
+    fun defaultDaysPreviewIsASquareCompactSlotNotAnExtremeMinimum() {
+        assertEquals(WidgetPreviewDimensions(90, 90), WidgetPreviewSizing.defaultDays)
+        assertEquals(WidgetSize.COMPACT, WidgetPreviewSizing.defaultDays.size)
+    }
+
+    @Test
     fun previewFitPreservesAspectRatioWithoutOverflow() {
         WidgetPreviewSizing.orderedSizes.forEach { size ->
             val dimensions = WidgetPreviewSizing.representative(size)

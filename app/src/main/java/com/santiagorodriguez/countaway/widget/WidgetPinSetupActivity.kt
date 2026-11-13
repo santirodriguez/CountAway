@@ -494,7 +494,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         )
         previewController.renderStyle(
             selection = selection,
-            dimensions = WidgetPreviewSizing.representative(WidgetSize.COMPACT),
+            dimensions = WidgetPreviewSizing.defaultDays,
         )
         previewController.renderEvent(
             WidgetEventContentFactory.from(currentEvent.copy(title = EventTransport.preview(currentEvent.title)), snapshot.today),

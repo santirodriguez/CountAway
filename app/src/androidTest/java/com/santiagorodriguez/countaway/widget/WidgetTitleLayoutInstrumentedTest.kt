@@ -72,6 +72,7 @@ class WidgetTitleLayoutInstrumentedTest {
         val examples = listOf(
             WidgetPreviewDimensions(56, 50),
             WidgetPreviewDimensions(57, 102),
+            WidgetPreviewDimensions(90, 90),
             WidgetPreviewDimensions(90, 180),
         )
         for (scale in listOf(1f, 1.3f, 2f)) for (dimensions in examples) {
@@ -89,6 +90,11 @@ class WidgetTitleLayoutInstrumentedTest {
                 assertFits(root, title)
             }
             assertCountFits(root)
+            if (dimensions.widthDp == 90 && dimensions.heightDp == 90) {
+                if (scale == 1f) assertEquals(View.VISIBLE,
+                    root.findViewById<View>(R.id.widgetIcon).visibility)
+                capture(root, "nacimiento-90x90-scale-$scale")
+            }
             if (scale == 1f && dimensions.widthDp == 90) {
                 assertEquals(View.VISIBLE, title.visibility)
                 assertFalse("Nacimiento should fit at 90dp", hasEllipsis(title))

@@ -10,7 +10,7 @@ import java.time.LocalDate
 internal object WidgetPreviewFactory {
     fun remoteViews(context: Context): RemoteViews {
         val style = WidgetDefaultsPreferences(context.applicationContext).get()
-        val dimensions = WidgetPreviewSizing.representative(WidgetSize.COMPACT)
+        val dimensions = WidgetPreviewSizing.defaultDays
         val theme = WidgetThemeResolver.resolve(context, style.appearance, style.background)
         return RemoteViews(context.packageName, WidgetLayoutResolver.layoutRes(dimensions.size)).apply {
             applyTheme(context, this, style, theme, dimensions)
@@ -32,7 +32,7 @@ internal object WidgetPreviewFactory {
         event: CountdownEvent,
         style: WidgetStyleSelection,
         today: LocalDate = CountdownTime.snapshot().today,
-        dimensions: WidgetPreviewDimensions = WidgetPreviewSizing.representative(WidgetSize.COMPACT),
+        dimensions: WidgetPreviewDimensions = WidgetPreviewSizing.defaultDays,
     ): RemoteViews {
         val content = WidgetEventContentFactory.from(event, today)
         val theme = WidgetThemeResolver.resolve(context, style.appearance, style.background)

@@ -16,6 +16,8 @@ internal data class WidgetPreviewPixels(
 )
 
 internal object WidgetPreviewSizing {
+    /** A typical 1x1 host slot, not the minimum-resize stress fixture. */
+    val defaultDays = WidgetPreviewDimensions(90, 90)
     val orderedSizes: List<WidgetSize> = listOf(
         WidgetSize.COMPACT,
         WidgetSize.SHORT,
