@@ -61,8 +61,14 @@ object WidgetBackgroundRenderer {
 
         return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bitmap ->
             val canvas = Canvas(bitmap)
-            drawable.setBounds(0, 0, width, height)
+            // Draw XML shapes at full logical density, then downsample the whole
+            // result uniformly. Scaling only the bounds enlarges 20dp corners
+            // and 1dp strokes when the host stretches a capped bitmap.
+            canvas.save()
+            canvas.scale(scale, scale)
+            drawable.setBounds(0, 0, rawWidth, rawHeight)
             drawable.draw(canvas)
+            canvas.restore()
 
             canvas.save()
             canvas.clipPath(
