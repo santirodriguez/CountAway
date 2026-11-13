@@ -36,8 +36,8 @@ jobs:
       BUNDLETOOL_SHA256: "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
       EXPECTED_SIGNING_CERT_SHA256: "dfbf9e4ba5b71bc4f7e70ee58f514410f90fb1aee9e9ebe522af68ad93cad42a"
       PACKAGE_ID: "com.santiagorodriguez.countaway"
-      PREVIOUS_PUBLIC_VERSION: "1.2.5"
-      PREVIOUS_PUBLIC_APK_BYTES: "545056"
+      PREVIOUS_PUBLIC_VERSION: "1.2.6"
+      PREVIOUS_PUBLIC_APK_BYTES: "582648"
     outputs:
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
@@ -767,10 +767,10 @@ jobs:
       VERSION: ${{ needs.build-signed-apk.outputs.version }}
       VERSION_CODE: ${{ needs.build-signed-apk.outputs.version_code }}
       SOURCE_SHA: ${{ needs.build-signed-apk.outputs.source_sha }}
-      PREVIOUS_PUBLIC_VERSION: "1.2.5"
-      PREVIOUS_PUBLIC_VERSION_CODE: "14"
-      PREVIOUS_PUBLIC_APK_SHA256: "d17de425ec52576e8b11d0ece09e8f2174e4083f4386c81f8e12364ed680820f"
-      PREVIOUS_PUBLIC_APK_BYTES: "545056"
+      PREVIOUS_PUBLIC_VERSION: "1.2.6"
+      PREVIOUS_PUBLIC_VERSION_CODE: "15"
+      PREVIOUS_PUBLIC_APK_SHA256: "20f8760dce408c4ddecdf354164a583728c20dea11a74b65767c83d6c2e5566b"
+      PREVIOUS_PUBLIC_APK_BYTES: "582648"
 
     steps:
       - name: Checkout exact candidate source

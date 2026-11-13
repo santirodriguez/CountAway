@@ -1,0 +1,1 @@
+Improved widget sizing, background rendering and previews. Better title wrapping in narrow, tall day-count widgets while keeping icons and signed counts readable.

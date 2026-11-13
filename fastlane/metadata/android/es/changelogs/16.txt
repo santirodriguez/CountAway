@@ -1,0 +1,1 @@
+Mejoras en el tamaño, los fondos y las vistas previas de los widgets. Títulos más claros en widgets estrechos y altos, sin perder el ícono ni el contador.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.7
+
+- Make classic and live widget geometry, backgrounds, and previews more consistent across launcher sizes and orientations.
+- Improve title fitting in narrow, tall widgets, avoiding orphaned syllables while preserving signed counts and event icons when space permits.
+- Improve minimum-size accessibility and keep existing widget providers and stored configuration compatible.
+
 ## 1.2.6
 
 - Reset eligible date-only count-up events to today from Home, with confirmation and Undo.

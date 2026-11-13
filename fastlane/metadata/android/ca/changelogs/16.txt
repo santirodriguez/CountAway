@@ -1,0 +1,1 @@
+Millores de mida, fons i previsualització dels ginys. Títols més llegibles en ginys estrets i alts, sense perdre la icona ni el recompte.
