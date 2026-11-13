@@ -82,11 +82,20 @@ internal object TimeWidgetRenderer {
         val background = configuration?.background ?: WidgetBackground.HORIZON
         val theme = WidgetThemeResolver.resolve(context, appearance, background)
         val key = TimeWidgetBackgroundKey(background, theme.dark, widthDp, heightDp)
-        val bitmap = cache.getOrPut(key) {
-            WidgetBackgroundRenderer.render(context.applicationContext, background, theme.dark, widthDp, heightDp,
-                hideHorizonDisc = widthDp <= 320)
+        val bitmap = try {
+            cache.getOrPut(key) {
+                WidgetBackgroundRenderer.render(context.applicationContext, background, theme.dark, widthDp, heightDp,
+                    hideHorizonDisc = widthDp <= 320)
+            }
+        } catch (failure: RuntimeException) {
+            android.util.Log.w("CountAwayTimeWidget", "Background bitmap unavailable; using native drawable", failure)
+            null
         }
-        views.setImageViewBitmap(R.id.timeWidgetBackground, bitmap)
+        if (bitmap == null) {
+            views.setImageViewResource(R.id.timeWidgetBackground, background.drawableRes(theme.dark))
+        } else {
+            views.setImageViewBitmap(R.id.timeWidgetBackground, bitmap)
+        }
         views.setInt(R.id.timeWidgetIcon, "setColorFilter", theme.accentTextColor)
         views.setInt(R.id.timeWidgetAccentLine, "setColorFilter", theme.accentTextColor)
         views.setInt(R.id.timeWidgetLiveDot, "setColorFilter", theme.accentTextColor)
