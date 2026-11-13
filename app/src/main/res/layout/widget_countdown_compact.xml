@@ -28,6 +28,7 @@
             android:gravity="center"
             android:includeFontPadding="false"
             android:maxLines="2"
+            android:layout_marginBottom="1dp"
             android:textSize="10sp" />
 
         <ImageView
@@ -57,6 +58,8 @@
             android:autoSizeStepGranularity="1sp"
             android:autoSizeTextType="uniform"
             android:fontFamily="sans-serif-condensed"
+            android:fontFeatureSettings="tnum"
+            android:layout_marginTop="2dp"
             android:gravity="center"
             android:includeFontPadding="false"
             android:maxLines="1"

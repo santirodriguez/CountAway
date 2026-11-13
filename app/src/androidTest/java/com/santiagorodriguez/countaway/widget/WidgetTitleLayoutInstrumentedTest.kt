@@ -88,18 +88,15 @@ class WidgetTitleLayoutInstrumentedTest {
             val title = root.findViewById<TextView>(R.id.widgetTitle)
             if (title.visibility == View.VISIBLE) {
                 val display = title.text.toString()
-                assertEquals("Preserve all letters in the widget text",
-                    wordEvent.title, display.replace("\n", ""))
                 val fragments = display.split("\n")
-                assertTrue("At most two balanced title rows: $dimensions font=$scale",
-                    fragments.size <= 2 && title.lineCount <= 2)
+                assertTrue("Never invent an arbitrary break: $dimensions font=$scale",
+                    fragments.size == 1 || (fragments.size == 2 && fragments[0].endsWith("-")))
+                assertEquals("Keep the full original event identity",
+                    wordEvent.title, display.replace("-\n", "").replace("\n", ""))
                 if (fragments.size == 2) {
-                    assertTrue("No orphan title fragment: $dimensions font=$scale",
-                        fragments.all { it.length >= 3 })
-                    assertFalse("Balanced title must be fully visible", hasEllipsis(title))
-                }
-                if (dimensions.heightDp >= 102 && dimensions.widthDp >= 57 && scale <= 1.3f) {
-                    assertFalse("Tall 1x1 must show the complete title", hasEllipsis(title))
+                    assertTrue("No orphan syllables: $dimensions font=$scale",
+                        fragments[0].dropLast(1).length >= 3 && fragments[1].length >= 3)
+                    assertFalse("Valid hyphenation must fit", hasEllipsis(title))
                 }
                 assertFits(root, title)
             }
@@ -145,10 +142,19 @@ class WidgetTitleLayoutInstrumentedTest {
             assertFits(root, icon)
             if (scale <= 1.3f) {
                 assertEquals(View.VISIBLE, title.visibility)
-                assertEquals("Nacimiento", title.text.toString().replace("\n", ""))
-                assertFalse("No title ellipsis when two readable rows fit", hasEllipsis(title))
-                assertTrue("No dangling two-letter line",
-                    title.text.toString().split("\n").all { it.length >= 3 })
+                val shown = title.text.toString()
+                assertEquals("Original title remains unchanged",
+                    "Nacimiento", shown.replace("-\n", "").replace("\n", ""))
+                assertFalse("No arbitrary mid-word split", shown.contains("\n") &&
+                    !shown.contains("-\n"))
+                if (shown.contains("-\n")) {
+                    val parts = shown.split("\n")
+                    assertTrue("Keep both syllable fragments readable",
+                        parts[0].dropLast(1).length >= 3 && parts[1].length >= 3)
+                    assertFalse("Hyphenated title must not ellipsize", hasEllipsis(title))
+                } else {
+                    assertTrue("Intact or end-ellipsized single-line name", title.lineCount == 1)
+                }
                 assertFits(root, title)
             }
             capture(root, "nacimiento-signed-tall-${size.widthDp}x102-scale-$scale")
@@ -161,6 +167,27 @@ class WidgetTitleLayoutInstrumentedTest {
             preview.renderEvent(WidgetEventContentFactory.from(event, today))
             assertEquals("Setup preview must agree with the provider title",
                 title.text.toString(), frame.findViewById<TextView>(R.id.widgetTitle).text.toString())
+        }
+    }
+
+    @Test fun compactNineBackgroundsKeepSignedDaysReadable() = instrumentation.runOnMainSync {
+        val context = context(1f, "es")
+        val event = birthday.copy(title = "Nacimiento", date = today.minusDays(11_949),
+            countMode = CountMode.COUNT_UP)
+        val size = WidgetPreviewDimensions(64, 102)
+        for (background in WidgetBackground.entries) {
+            for (appearance in listOf(WidgetAppearance.LIGHT, WidgetAppearance.DARK)) {
+                val style = WidgetStyleSelection(appearance, background)
+                val root = WidgetPreviewFactory.remoteViews(context, event, style, today, size)
+                    .apply(context, FrameLayout(context))
+                layout(context, root, size)
+                assertEquals("+11949", root.findViewById<TextView>(R.id.widgetCount).text.toString())
+                assertCountFits(root)
+                assertEquals(View.VISIBLE, root.findViewById<View>(R.id.widgetIcon).visibility)
+                assertFits(root, root.findViewById(R.id.widgetIcon))
+                capture(root, "p3a-days-" + background.name.lowercase() + "-" +
+                    appearance.name.lowercase())
+            }
         }
     }
 
