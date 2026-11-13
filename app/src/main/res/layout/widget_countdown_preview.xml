@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Static picker preview for the default 1x1 Days widget. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widgetPinPreviewRoot"
     android:layout_width="match_parent"
@@ -17,48 +18,32 @@
         android:layout_height="match_parent"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:padding="4dp">
 
         <TextView
             android:id="@+id/widgetPinPreviewTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
             android:fontFamily="sans-serif-medium"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:maxLines="1"
             android:text="@string/app_name"
             android:textColor="@color/widget_light_text"
-            android:textSize="13sp" />
-
-        <ImageView
-            android:id="@+id/widgetPinPreviewIcon"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:layout_marginTop="3dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_event_calendar"
-            android:tint="@color/widget_light_accent" />
+            android:textSize="9sp" />
 
         <TextView
             android:id="@+id/widgetPinPreviewCount"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-condensed"
             android:gravity="center"
             android:includeFontPadding="false"
+            android:maxLines="1"
             android:text="@string/widget_preview_sample_count"
             android:textColor="@color/widget_light_accent"
-            android:textSize="34sp"
+            android:textSize="25sp"
             android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/widgetPinPreviewUnit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:gravity="center"
-            android:text="@string/widget_days_left"
-            android:textColor="@color/widget_light_secondary_text"
-            android:textSize="11sp" />
     </LinearLayout>
 </FrameLayout>
