@@ -134,13 +134,27 @@ class TimeWidgetProvider : AppWidgetProvider() {
                         responsive(context, displayContext, id, configuration, event, problem, snapshot,
                             options, backgroundCache)
                     } else null
-                    val fallback = views ?: TimeWidgetRenderer.render(
-                        context, displayContext, id, configuration, event, problem, snapshot,
-                        options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 150).coerceAtLeast(1),
-                        options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 90).coerceAtLeast(1),
-                        backgroundCache,
-                    )
-                    manager.updateAppWidget(id, fallback)
+                    val output = if (views != null) views else {
+                        val pair = WidgetHostGeometry.legacy(
+                            WidgetLegacyOptions(
+                                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0),
+                                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0),
+                                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0),
+                                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0),
+                            ),
+                            WidgetLegacyDefaults(150, 269, 50, 102),
+                        )
+                        val portrait = TimeWidgetRenderer.render(
+                            context, displayContext, id, configuration, event, problem, snapshot,
+                            pair.portrait.widthDp, pair.portrait.heightDp, backgroundCache,
+                        )
+                        val landscape = TimeWidgetRenderer.render(
+                            context, displayContext, id, configuration, event, problem, snapshot,
+                            pair.landscape.widthDp, pair.landscape.heightDp, backgroundCache,
+                        )
+                        RemoteViews(landscape, portrait)
+                    }
+                    manager.updateAppWidget(id, output)
                 },
                 onFailure = { id, error ->
                     android.util.Log.e("CountAwayTimeWidget", "Failed to update widget " + id, error)
@@ -162,15 +176,16 @@ class TimeWidgetProvider : AppWidgetProvider() {
             problem: com.santiagorodriguez.countaway.data.CountdownDataProblem?,
             snapshot: CountdownTimeSnapshot, options: Bundle,
             backgroundCache: MutableMap<TimeWidgetBackgroundKey, Bitmap>): RemoteViews? {
-            val sizes = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
-                .orEmpty().distinct()
+            val candidates = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
+                .orEmpty().map { WidgetHostDimensions(it.width, it.height) }
+            val sizes = WidgetHostGeometry.responsive(candidates, context.resources.displayMetrics.density)
             if (sizes.isEmpty()) return null
             val mapping = LinkedHashMap<SizeF, RemoteViews>()
             for (size in sizes) {
-                mapping[size] = TimeWidgetRenderer.render(
+                mapping[SizeF(size.widthDp, size.heightDp)] = TimeWidgetRenderer.render(
                     context, displayContext, id, configuration, event, problem, snapshot,
-                    size.width.roundToInt().coerceAtLeast(1),
-                    size.height.roundToInt().coerceAtLeast(1), backgroundCache,
+                    size.widthDp.roundToInt().coerceAtLeast(1),
+                    size.heightDp.roundToInt().coerceAtLeast(1), backgroundCache,
                 )
             }
             return RemoteViews(mapping)
