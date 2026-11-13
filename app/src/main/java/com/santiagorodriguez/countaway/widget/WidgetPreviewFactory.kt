@@ -1,7 +1,6 @@
 package com.santiagorodriguez.countaway.widget
 
 import android.content.Context
-import android.view.View
 import android.widget.RemoteViews
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownTime
@@ -11,18 +10,16 @@ import java.time.LocalDate
 internal object WidgetPreviewFactory {
     fun remoteViews(context: Context): RemoteViews {
         val style = WidgetDefaultsPreferences(context.applicationContext).get()
-        val dimensions = WidgetPreviewSizing.representative(WidgetSize.STANDARD)
+        val dimensions = WidgetPreviewSizing.representative(WidgetSize.COMPACT)
         val theme = WidgetThemeResolver.resolve(context, style.appearance, style.background)
         return RemoteViews(context.packageName, WidgetLayoutResolver.layoutRes(dimensions.size)).apply {
             applyTheme(context, this, style, theme, dimensions)
-            setImageViewResource(R.id.widgetIcon, R.drawable.ic_event_calendar)
-            setTextViewText(R.id.widgetTitle, context.getString(R.string.widget_select_event))
-            setTextViewText(R.id.widgetCount, context.getString(R.string.widget_preview_value))
-            setTextViewText(R.id.widgetUnit, context.getString(R.string.widget_tap_to_configure))
-            setTextViewText(R.id.widgetMilestone, "")
-            setTextViewText(R.id.widgetDate, "")
-            setViewVisibility(R.id.widgetMilestone, View.GONE)
-            setViewVisibility(R.id.widgetDate, View.GONE)
+            WidgetRemoteViewsPresentation.applyPlaceholder(
+                this, dimensions.size, context.resources.configuration.fontScale,
+                context.getString(R.string.widget_select_event),
+                context.getString(R.string.widget_tap_to_configure),
+                context.getString(R.string.widget_preview_value), dimensions.heightDp,
+            )
             setContentDescription(R.id.widgetRoot, listOf(
                 context.getString(R.string.widget_select_event),
                 context.getString(R.string.widget_tap_to_configure),
@@ -35,7 +32,7 @@ internal object WidgetPreviewFactory {
         event: CountdownEvent,
         style: WidgetStyleSelection,
         today: LocalDate = CountdownTime.snapshot().today,
-        dimensions: WidgetPreviewDimensions = WidgetPreviewSizing.representative(WidgetSize.STANDARD),
+        dimensions: WidgetPreviewDimensions = WidgetPreviewSizing.representative(WidgetSize.COMPACT),
     ): RemoteViews {
         val content = WidgetEventContentFactory.from(event, today)
         val theme = WidgetThemeResolver.resolve(context, style.appearance, style.background)
@@ -48,6 +45,7 @@ internal object WidgetPreviewFactory {
             size = dimensions.size,
             fontScale = context.resources.configuration.fontScale,
             heightDp = dimensions.heightDp,
+            widthDp = dimensions.widthDp,
         )
         return views
     }
