@@ -263,10 +263,20 @@ class CountdownWidgetProvider : AppWidgetProvider() {
             background: WidgetBackground, widthDp: Int, heightDp: Int,
             backgroundCache: MutableMap<BackgroundKey, Bitmap>) {
             val key = BackgroundKey(background, theme.dark, widthDp, heightDp)
-            val bitmap = backgroundCache.getOrPut(key) {
-                WidgetBackgroundRenderer.render(context.applicationContext, background, theme.dark, widthDp, heightDp)
+            val bitmap = try {
+                backgroundCache.getOrPut(key) {
+                    WidgetBackgroundRenderer.render(context.applicationContext, background, theme.dark, widthDp, heightDp)
+                }
+            } catch (failure: RuntimeException) {
+                android.util.Log.w("CountAwayWidget", "Background bitmap unavailable; using native drawable", failure)
+                null
             }
-            views.setImageViewBitmap(R.id.widgetBackground, bitmap)
+            if (bitmap == null) {
+                // A failing image must not make the installed widget disappear.
+                views.setImageViewResource(R.id.widgetBackground, background.drawableRes(theme.dark))
+            } else {
+                views.setImageViewBitmap(R.id.widgetBackground, bitmap)
+            }
             views.setInt(R.id.widgetIcon, "setColorFilter", theme.accentTextColor)
             views.setTextColor(R.id.widgetTitle, theme.primaryTextColor)
             views.setTextColor(R.id.widgetCount, theme.accentTextColor)
