@@ -17,6 +17,7 @@ import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
+import com.santiagorodriguez.countaway.model.EventIcon
 import com.santiagorodriguez.countaway.ui.EventTimeText
 import java.io.File
 import java.time.Instant
@@ -77,7 +78,7 @@ class TimeWidgetNativeInstrumentedTest {
         val legacyTime = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
             .withLocale(Locale.US).format(target)
         assertTrue("Localized date/time must contain its localized time", legacyTarget.contains(legacyTime))
-        val sizes = listOf(160 to 55, 240 to 55, 300 to 58, 160 to 90, 240 to 95, 180 to 120, 160 to 190,
+        val sizes = listOf(140 to 48, 150 to 50, 160 to 55, 240 to 55, 300 to 58, 160 to 90, 240 to 95, 180 to 120, 160 to 190,
             240 to 180, 280 to 210, 320 to 250)
         val fonts = listOf(1f, 1.3f, 2f)
         val themes = listOf(WidgetAppearance.DARK, WidgetAppearance.LIGHT)
@@ -100,11 +101,19 @@ class TimeWidgetNativeInstrumentedTest {
             val density = context.resources.displayMetrics.density
             val card = root.findViewById<View>(R.id.timeWidgetContent)
             val brand = root.findViewById<ImageView>(R.id.timeWidgetBrandLogo)
-            assertEquals(name + " colorful CountAway branding", View.VISIBLE, brand.visibility)
-            assertTrue(name + " missing original brand artwork", brand.drawable != null &&
-                brand.width > 0 && brand.height > 0)
-            assertEquals(name + " event icon must be replaced", View.GONE,
-                root.findViewById<View>(R.id.timeWidgetIcon).visibility)
+            val compactIdentity = height < 110
+            val eventIcon = root.findViewById<ImageView>(R.id.timeWidgetIcon)
+            assertEquals(name + " event identity in short Time widget",
+                if (compactIdentity) View.VISIBLE else View.GONE, eventIcon.visibility)
+            assertEquals(name + " brand retained only in roomy Time layouts",
+                if (compactIdentity) View.GONE else View.VISIBLE, brand.visibility)
+            assertTrue(name + " missing active identity artwork",
+                (if (compactIdentity) eventIcon else brand).let {
+                    it.drawable != null && it.width > 0 && it.height > 0
+                })
+            assertEquals(name + " live indicator visibility",
+                if (plan.showLiveIndicator) View.VISIBLE else View.GONE,
+                root.findViewById<View>(R.id.timeWidgetLiveDot).visibility)
             assertEquals(name + " horizontal padding", (plan.horizontalPaddingDp * density).roundToInt(),
                 card.paddingLeft)
             val baselinePaddingPx = (plan.verticalPaddingDp * density).roundToInt()
@@ -157,6 +166,63 @@ class TimeWidgetNativeInstrumentedTest {
             capture(root, name + ".png")
         }
     }
+
+    @Test fun compactTimeShowsEventIconAndNineStylesWithoutLosingNativeSeconds() =
+        instrumentation.runOnMainSync {
+            val now = ZonedDateTime.now(snapshot.zone)
+            val future = now.plusDays(5).withSecond(0).withNano(0)
+            val eventWithIcon = event.copy(title = "Holiday countdown",
+                icon = EventIcon.CAKE, date = future.toLocalDate(),
+                eventTime = future.toLocalTime())
+            val sizes = listOf(140 to 48, 150 to 50, 160 to 55, 240 to 55, 240 to 95)
+            for (font in listOf(1f, 2f)) for ((width, height) in sizes) {
+                val context = fontContext(font)
+                val remote = TimeWidgetRenderer.render(context, context, 951,
+                    WidgetConfiguration(eventWithIcon.id, WidgetAppearance.DARK, WidgetBackground.HORIZON),
+                    eventWithIcon, null, CountdownTimeSnapshot(now), width, height,
+                    hashMapOf(), interactive = false)
+                val root = remote.apply(context, FrameLayout(context)) as FrameLayout
+                layout(root, context, width, height)
+                val name = "p3b-compact-" + width + "x" + height + "-font" +
+                    (font * 100).toInt()
+                val clock = root.findViewById<Chronometer>(R.id.timeWidgetClock)
+                val icon = root.findViewById<ImageView>(R.id.timeWidgetIcon)
+                val title = root.findViewById<TextView>(R.id.timeWidgetTitle)
+                assertEquals(name + " native clock", View.VISIBLE, clock.visibility)
+                assertTrue(name + " native clock missing seconds", clock.text.contains(":"))
+                assertEquals(name + " event icon missing", View.VISIBLE, icon.visibility)
+                assertNotNull(name + " event icon drawable missing", icon.drawable)
+                assertEquals(name + " brand should not replace event", View.GONE,
+                    root.findViewById<View>(R.id.timeWidgetBrandLogo).visibility)
+                assertTrue(name + " title lost", title.visibility == View.VISIBLE && title.height > 0)
+                for (element in listOf<View>(icon, title, clock)) {
+                    val rect = Rect(0, 0, element.width, element.height)
+                    root.offsetDescendantRectToMyCoords(element, rect)
+                    assertTrue(name + " content outside host " + rect,
+                        rect.left >= 0 && rect.top >= 0 &&
+                            rect.right <= root.width && rect.bottom <= root.height)
+                }
+                capture(root, name + ".png")
+            }
+
+            val context = fontContext(1f)
+            for (background in WidgetBackground.entries) {
+                for (appearance in listOf(WidgetAppearance.DARK, WidgetAppearance.LIGHT)) {
+                    val style = WidgetConfiguration(eventWithIcon.id, appearance, background)
+                    val remote = TimeWidgetRenderer.render(context, context, 951, style,
+                        eventWithIcon, null, CountdownTimeSnapshot(now), 160, 55,
+                        hashMapOf(), interactive = false)
+                    val root = remote.apply(context, FrameLayout(context)) as FrameLayout
+                    layout(root, context, 160, 55)
+                    assertEquals(View.VISIBLE,
+                        root.findViewById<View>(R.id.timeWidgetClock).visibility)
+                    assertEquals(View.VISIBLE,
+                        root.findViewById<View>(R.id.timeWidgetIcon).visibility)
+                    capture(root, "p3b-style-" + background.storageKey + "-" +
+                        appearance.storageKey + ".png")
+                }
+            }
+        }
 
     @Test fun pickerNamesLeadWithDaysOrLiveHoursInAllLanguages() {
         for ((tag,days,hours) in listOf(

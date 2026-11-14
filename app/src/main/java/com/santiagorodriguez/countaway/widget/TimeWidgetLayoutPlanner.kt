@@ -49,7 +49,10 @@ internal object TimeWidgetLayoutPlanner {
                 !enlarged || height >= 230 || (height >= 205 && width >= 255)
             ),
             showAccent = height >= 130,
-            showLiveIndicator = width >= 210 && height >= 158,
+            // A small status dot adds meaning in a wide one-row slot without
+            // stealing space from the event label or accessibility-sized clock.
+            showLiveIndicator = (width >= 210 && height >= 158) ||
+                (height in 55..109 && width >= 210 && fontScale < 1.6f),
         )
     }
 }

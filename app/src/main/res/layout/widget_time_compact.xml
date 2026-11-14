@@ -27,7 +27,7 @@
                 android:id="@+id/timeWidgetIcon"
                 android:layout_width="16dp"
                 android:layout_height="16dp"
-                android:layout_marginEnd="5dp"
+                android:layout_marginEnd="4dp"
                 android:src="@drawable/ic_event_calendar"
                 android:contentDescription="@null" />
             <ImageView
@@ -92,7 +92,7 @@
             android:id="@+id/timeWidgetClock"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
+            android:layout_marginTop="2dp"
             android:fontFamily="sans-serif-condensed"
             android:fontFeatureSettings="tnum"
             android:includeFontPadding="false"

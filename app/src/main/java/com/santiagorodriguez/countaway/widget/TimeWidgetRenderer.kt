@@ -20,6 +20,7 @@ import com.santiagorodriguez.countaway.data.EventTransport
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.EventTimeText
+import com.santiagorodriguez.countaway.ui.EventIconPresentation
 import java.time.Duration
 import java.time.Instant
 import java.text.NumberFormat
@@ -48,6 +49,9 @@ internal object TimeWidgetRenderer {
         // A true one-cell-high layout keeps the title and native clock visible.
         // Larger host bounds retain the established full-height presentation.
         val compact = heightDp < 70
+        // One-row/short Time widgets prioritize the actual event over app branding.
+        // Roomier Time layouts preserve the established brand presentation.
+        val compactIdentity = heightDp < 110
         val views = RemoteViews(context.packageName,
             if (compact) R.layout.widget_time_compact else R.layout.widget_time_live)
         val layout = TimeWidgetLayoutPlanner.plan(widthDp, heightDp,
@@ -131,8 +135,12 @@ internal object TimeWidgetRenderer {
             return views
         }
 
-        views.setViewVisibility(R.id.timeWidgetIcon, View.GONE)
-        views.setViewVisibility(R.id.timeWidgetBrandLogo, View.VISIBLE)
+        views.setImageViewResource(R.id.timeWidgetIcon,
+            EventIconPresentation.drawableRes(timed.icon))
+        views.setViewVisibility(R.id.timeWidgetIcon,
+            if (compactIdentity) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.timeWidgetBrandLogo,
+            if (compactIdentity) View.GONE else View.VISIBLE)
         views.setTextViewText(R.id.timeWidgetTitle, EventTransport.preview(timed.title))
         // The ticking digits identify this as a live timer; omit the old oversized label.
         views.setViewVisibility(R.id.timeWidgetCaption, View.GONE)

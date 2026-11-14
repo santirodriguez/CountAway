@@ -20,6 +20,13 @@ class TimeWidgetLayoutPlannerTest {
         }
     }
 
+    @Test fun wideCompactCanShowLiveStatusWithoutCrowdingLargeText() {
+        assertTrue(TimeWidgetLayoutPlanner.plan(240, 55, 1f).showLiveIndicator)
+        assertTrue(TimeWidgetLayoutPlanner.plan(240, 95, 1.3f).showLiveIndicator)
+        assertFalse(TimeWidgetLayoutPlanner.plan(240, 55, 2f).showLiveIndicator)
+        assertFalse(TimeWidgetLayoutPlanner.plan(140, 48, 1f).showLiveIndicator)
+    }
+
     @Test fun compactOneRowRetainsTitleAndClockWithoutOverflowBudget() {
         val short = TimeWidgetLayoutPlanner.plan(160, 90, 1f)
         assertEquals(1, short.titleLines)
