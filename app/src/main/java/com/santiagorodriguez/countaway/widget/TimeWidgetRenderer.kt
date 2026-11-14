@@ -162,11 +162,13 @@ internal object TimeWidgetRenderer {
         views.setTextViewText(R.id.timeWidgetDate,
             targetText + if (showDetailedZone) "" else zoneSuffix)
         if (showDetailedZone) {
-            val place = count.target.zone.id.substringAfterLast('/').replace('_', ' ')
+            // Preserve the exact IANA zone identity from the original date
+            // label; a city-only abbreviation can be ambiguous after travel.
+            val zoneId = count.target.zone.id
             val offset = count.target.offset.id
             val offsetLabel = if (offset == "Z") "UTC" else "UTC$offset"
-            val zoneLabel = if (place == offsetLabel || place == "UTC") offsetLabel
-                else "$place · $offsetLabel"
+            val zoneLabel = if (zoneId == "UTC") offsetLabel
+                else "$zoneId · $offsetLabel"
             views.setTextViewText(R.id.timeWidgetZone, zoneLabel)
             views.setViewVisibility(R.id.timeWidgetZone, View.VISIBLE)
         }

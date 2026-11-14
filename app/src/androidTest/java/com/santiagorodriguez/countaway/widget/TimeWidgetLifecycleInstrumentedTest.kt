@@ -103,9 +103,17 @@ class TimeWidgetLifecycleInstrumentedTest {
                     val root = views.apply(localized, FrameLayout(localized)) as FrameLayout
                     val caption = root.findViewById<TextView>(R.id.timeWidgetCaption)
                     val date = root.findViewById<TextView>(R.id.timeWidgetDate)
+                    val zone = root.findViewById<TextView>(R.id.timeWidgetZone)
                     val clock = root.findViewById<Chronometer>(R.id.timeWidgetClock)
                     assertEquals("No live-caption duplication: " + tag, View.GONE, caption.visibility)
-                    assertTrue(tag + " target zone missing: " + date.text,
+                    // Expanded Time moves the saved IANA zone out of the date.
+                    // Check the original information in its new location.
+                    assertEquals(View.VISIBLE, zone.visibility)
+                    assertTrue(tag + " target zone missing: " + zone.text,
+                        zone.text.toString().contains("Europe/Paris"))
+                    assertTrue(tag + " UTC offset missing: " + zone.text,
+                        zone.text.toString().contains("UTC"))
+                    assertFalse(tag + " duplicate zone in date: " + date.text,
                         date.text.toString().contains("Europe/Paris"))
                     assertEquals(View.VISIBLE, clock.visibility)
                     assertTrue("No native clock for " + tag, clock.text.toString().contains(":"))

@@ -171,9 +171,17 @@ class ArrivalAccentInstrumentedTest {
         val parent = slot.parent as LinearLayout
         val index = parent.indexOfChild(slot)
         val count = slot.findViewById<TextView>(R.id.widgetCount)
+        val slotMargins = slot.layoutParams as LinearLayout.LayoutParams
         slot.removeView(count)
         parent.removeView(slot)
-        parent.addView(count, index, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 0, 1f))
+        // Preserve the expanded card's optical spacing when comparing
+        // nested and unnested count bounds. The production layout is unchanged.
+        parent.addView(count, index, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, 0, 1f,
+        ).apply {
+            setMargins(slotMargins.leftMargin, slotMargins.topMargin,
+                slotMargins.rightMargin, slotMargins.bottomMargin)
+        })
     }
 
     private fun assertContentUnchanged(before: View, after: View) {
