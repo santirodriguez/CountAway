@@ -224,6 +224,59 @@ class TimeWidgetNativeInstrumentedTest {
             }
         }
 
+    @Test fun expandedTimeDetailKeepsNativeClockAndSeparatesSavedTargetZone() =
+        instrumentation.runOnMainSync {
+            val now = ZonedDateTime.now(snapshot.zone)
+            val madrid = ZoneId.of("Europe/Madrid")
+            val target = now.withZoneSameInstant(madrid).plusDays(8)
+                .withSecond(0).withNano(0)
+            val timed = event.copy(title = "Madrid birthday celebration",
+                date = target.toLocalDate(), eventTime = target.toLocalTime(),
+                eventZone = madrid)
+            for (scale in listOf(1f, 1.3f, 2f)) {
+                val context = fontContext(scale)
+                for ((width, height) in listOf(240 to 180, 280 to 210, 320 to 250)) {
+                    val config = WidgetConfiguration(timed.id, WidgetAppearance.DARK,
+                        WidgetBackground.HORIZON)
+                    val remote = TimeWidgetRenderer.render(context, context, 3307, config,
+                        timed, null, CountdownTimeSnapshot(now), width, height,
+                        hashMapOf(), interactive = false)
+                    val root = remote.apply(context, FrameLayout(context)) as FrameLayout
+                    layout(root, context, width, height)
+                    val plan = TimeWidgetLayoutPlanner.plan(width, height, scale)
+                    val zone = root.findViewById<TextView>(R.id.timeWidgetZone)
+                    val date = root.findViewById<TextView>(R.id.timeWidgetDate)
+                    val clock = root.findViewById<Chronometer>(R.id.timeWidgetClock)
+                    val name = "p3c-time-" + width + "x" + height + "-scale" +
+                        (scale * 100).toInt()
+                    assertEquals(name + " zone visibility",
+                        if (plan.showZone) View.VISIBLE else View.GONE, zone.visibility)
+                    assertEquals(name + " date visibility",
+                        if (plan.showDate) View.VISIBLE else View.GONE, date.visibility)
+                    assertEquals(name + " Chronometer still runs", View.VISIBLE, clock.visibility)
+                    assertTrue(name + " native clock has hours/minutes/seconds",
+                        clock.text.contains(":"))
+                    if (plan.showZone) {
+                        assertTrue(name + " missing Madrid", zone.text.contains("Madrid"))
+                        assertTrue(name + " missing offset", zone.text.contains("UTC"))
+                        assertFalse(name + " repeated zone in date",
+                            date.text.contains("Europe/Madrid"))
+                    }
+                    for (view in listOf<View>(root.findViewById(R.id.timeWidgetTitle),
+                            clock, date, zone)) {
+                        if (view.visibility != View.VISIBLE) continue
+                        val rect = Rect(0, 0, view.width, view.height)
+                        root.offsetDescendantRectToMyCoords(view, rect)
+                        assertTrue(name + " clipped view " + rect,
+                            view.width > 0 && view.height > 0 && rect.left >= 0 &&
+                                rect.top >= 0 && rect.right <= root.width &&
+                                rect.bottom <= root.height)
+                    }
+                    capture(root, name + ".png")
+                }
+            }
+        }
+
     @Test fun pickerNamesLeadWithDaysOrLiveHoursInAllLanguages() {
         for ((tag,days,hours) in listOf(
             Triple("en", "Days", "Live hours"),

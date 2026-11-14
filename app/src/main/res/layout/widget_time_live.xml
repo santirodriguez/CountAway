@@ -147,5 +147,19 @@
             android:textSize="11sp"
             android:maxLines="2"
             android:ellipsize="end" />
+
+        <!-- Time Detail 3x2: separate local target zone only where it fits. -->
+        <TextView
+            android:id="@+id/timeWidgetZone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:fontFamily="sans-serif-medium"
+            android:includeFontPadding="false"
+            android:textColor="@color/widget_dark_secondary_text"
+            android:textSize="10sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:visibility="gone" />
     </LinearLayout>
 </FrameLayout>

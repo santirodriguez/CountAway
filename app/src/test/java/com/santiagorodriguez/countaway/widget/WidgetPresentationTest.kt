@@ -14,7 +14,7 @@ class WidgetPresentationTest {
         val event = content(CountdownStatus.FUTURE, "365")
         assertEquals(1, WidgetPresentationResolver.resolve(event, WidgetSize.STANDARD, 1.7f, 144).titleMaxLines)
         assertEquals(2, WidgetPresentationResolver.resolve(event, WidgetSize.STANDARD, 1.7f, 172).titleMaxLines)
-        assertEquals(1, WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1.4f, 180).titleMaxLines)
+        assertEquals(2, WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1.4f, 180).titleMaxLines)
         assertEquals(2, WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1.4f, 237).titleMaxLines)
     }
 
@@ -105,6 +105,25 @@ class WidgetPresentationTest {
         assertTrue(roomy.showIcon)
         assertEquals(2, roomy.titleMaxLines)
         assertFalse(roomy.showMilestone)
+    }
+
+    @Test
+    fun expandedCardRevealsSecondaryDataOnlyWhenHostHasRoom() {
+        val event = content(CountdownStatus.FUTURE, "11949")
+        val minimum = WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1f, 120)
+        assertFalse(minimum.showDate)
+        assertFalse(minimum.showUnit)
+        assertEquals("11949", minimum.countText.removePrefix("+"))
+        val regular = WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1f, 160)
+        assertTrue(regular.showUnit)
+        assertTrue(regular.showDate)
+        assertTrue(regular.showIcon)
+        val enlarged = WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1.4f, 180)
+        assertTrue(enlarged.showUnit)
+        assertFalse(enlarged.showDate)
+        val spacious = WidgetPresentationResolver.resolve(event, WidgetSize.LARGE, 1.4f, 237)
+        assertTrue(spacious.showDate)
+        assertTrue(spacious.showIcon)
     }
 
     @Test

@@ -72,6 +72,9 @@ internal object TimeWidgetRenderer {
         views.setTextViewTextSize(R.id.timeWidgetDate, TypedValue.COMPLEX_UNIT_SP, layout.dateSizeSp)
         views.setViewVisibility(R.id.timeWidgetDate,
             if (layout.showDate) View.VISIBLE else View.GONE)
+        if (!compact) {
+            views.setViewVisibility(R.id.timeWidgetZone, View.GONE)
+        }
         views.setViewVisibility(R.id.timeWidgetAccentLine,
             if (layout.showAccent) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.timeWidgetLiveDot,
@@ -110,6 +113,7 @@ internal object TimeWidgetRenderer {
         views.setTextColor(R.id.timeWidgetDetailHint, theme.secondaryTextColor)
         views.setTextColor(R.id.timeWidgetFallback, theme.accentTextColor)
         views.setTextColor(R.id.timeWidgetDate, theme.secondaryTextColor)
+        if (!compact) views.setTextColor(R.id.timeWidgetZone, theme.secondaryTextColor)
 
         val timed = event?.takeIf { it.eventTime != null && it.eventZone != null }
         val count = timed?.let { runCatching { TimedEventResolver.resolve(it, snapshot.now) }.getOrNull() }
@@ -150,11 +154,22 @@ internal object TimeWidgetRenderer {
         val zoneSuffix = if (count.target.zone != snapshot.zone || ambiguous) {
             " · " + count.target.zone.id + (if (ambiguous) " (${count.target.offset})" else "")
         } else ""
-        views.setTextViewText(R.id.timeWidgetDate, targetText + zoneSuffix)
         val clockNow = Instant.now()
         val plan = TimeWidgetClockPolicy.plan(
             clockNow, count.target.toInstant(), SystemClock.elapsedRealtime(), timed.countMode,
         )
+        val showDetailedZone = !compact && layout.showZone && plan != null
+        views.setTextViewText(R.id.timeWidgetDate,
+            targetText + if (showDetailedZone) "" else zoneSuffix)
+        if (showDetailedZone) {
+            val place = count.target.zone.id.substringAfterLast('/').replace('_', ' ')
+            val offset = count.target.offset.id
+            val offsetLabel = if (offset == "Z") "UTC" else "UTC$offset"
+            val zoneLabel = if (place == offsetLabel || place == "UTC") offsetLabel
+                else "$place · $offsetLabel"
+            views.setTextViewText(R.id.timeWidgetZone, zoneLabel)
+            views.setViewVisibility(R.id.timeWidgetZone, View.VISIBLE)
+        }
         if (plan != null) {
             views.setViewVisibility(R.id.timeWidgetClock, View.VISIBLE)
             views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
@@ -201,6 +216,7 @@ internal object TimeWidgetRenderer {
                     if (showAccent) View.VISIBLE else View.GONE)
                 views.setViewVisibility(R.id.timeWidgetDate,
                     if (showDate) View.VISIBLE else View.GONE)
+                if (!compact) views.setViewVisibility(R.id.timeWidgetZone, View.GONE)
                 views.setViewVisibility(R.id.timeWidgetClock,
                     if (showSubday) View.VISIBLE else View.GONE)
                 views.setViewVisibility(R.id.timeWidgetLiveDot,

@@ -11,6 +11,7 @@ internal data class TimeWidgetLayoutPlan(
     val showDate: Boolean,
     val showAccent: Boolean,
     val showLiveIndicator: Boolean,
+    val showZone: Boolean,
 )
 
 internal object TimeWidgetLayoutPlanner {
@@ -53,6 +54,8 @@ internal object TimeWidgetLayoutPlanner {
             // stealing space from the event label or accessibility-sized clock.
             showLiveIndicator = (width >= 210 && height >= 158) ||
                 (height in 55..109 && width >= 210 && fontScale < 1.6f),
+            // 3x2 is a visual target only; reveal the zone from actual bounds.
+            showZone = width >= 260 && height >= 205 && fontScale < 1.4f,
         )
     }
 }

@@ -50,10 +50,14 @@ internal object WidgetPresentationResolver {
     ): WidgetPresentation {
         val largeFont = fontScale >= LARGE_FONT_SCALE
         val milestone = content.status?.let(ArrivalMood::marker)
-        val showUnit = (size == WidgetSize.STANDARD || size == WidgetSize.LARGE) && !largeFont
+        val showUnit = (size == WidgetSize.STANDARD || size == WidgetSize.LARGE) &&
+            !largeFont && (size != WidgetSize.LARGE || heightDp >=
+                if (fontScale >= 1.3f) 165 else 130)
         val showMilestone = milestone != null &&
             size != WidgetSize.SHORT && size != WidgetSize.COMPACT && fontScale < 1.3f
-        val showDate = size == WidgetSize.LARGE && fontScale < DATE_HIDE_FONT_SCALE
+        // Date is a secondary detail: do not compress the number on a short 2x2 host.
+        val showDate = size == WidgetSize.LARGE && fontScale < DATE_HIDE_FONT_SCALE &&
+            heightDp >= (if (fontScale >= 1.3f) 210 else 155)
         val compactCountHeight = ceil(28 * fontScale).toInt()
         val compactLineHeight = ceil(14 * fontScale).toInt()
         // Large accessibility fonts may use every title row. Still keep the
@@ -65,6 +69,8 @@ internal object WidgetPresentationResolver {
         val showIcon = when (size) {
             WidgetSize.COMPACT -> compactIconFits
             WidgetSize.SHORT -> fontScale < LARGE_FONT_SCALE || content.countTextFor(WidgetSize.SHORT, false).length <= 5
+            WidgetSize.LARGE -> milestone == null &&
+                (fontScale < 1.3f || (fontScale < 1.6f && heightDp >= 205))
             else -> fontScale < 1.3f && milestone == null
         }
         // Reserve space for the count and visible details before allowing another title line.
@@ -74,9 +80,10 @@ internal object WidgetPresentationResolver {
             WidgetSize.SHORT -> shortTitleLines(heightDp, fontScale)
             WidgetSize.STANDARD, WidgetSize.LARGE -> {
                 val isLarge = size == WidgetSize.LARGE
-                val padding = if (isLarge) 28 else 20
+                val padding = if (isLarge) 24 else 20
                 val count = ceil((if (isLarge) 22 else 20) * fontScale).toInt()
-                val icon = if (showIcon) { if (isLarge) 35 else 25 } else 0
+                // In the expanded card the icon shares a row with the title.
+                val icon = if (showIcon && !isLarge) 25 else 0
                 // Both detail TextViews allow two lines (including localized labels/dates).
                 // Reserve their full height before giving the title another line.
                 val unit = if (showUnit) 2 * ceil((if (isLarge) 20 else 16) * fontScale).toInt() else 0

@@ -286,6 +286,52 @@ class WidgetTitleLayoutInstrumentedTest {
         assertTrue(problems.joinToString("\n"), problems.isEmpty())
     }
 
+    @Test fun expandedDaysCardPreservesCountAndEventAcrossRealTwoByTwoHosts() =
+        instrumentation.runOnMainSync {
+            val event = birthday.copy(title = "Birthday celebration in Buenos Aires",
+                date = today.minusDays(11_949), countMode = CountMode.COUNT_UP)
+            for (scale in listOf(1f, 1.3f, 2f)) {
+                val context = context(scale, "es")
+                for ((width, height) in listOf(180 to 120, 240 to 160, 240 to 180, 280 to 210)) {
+                    val dimensions = WidgetPreviewDimensions(width, height)
+                    assertEquals(WidgetSize.LARGE, dimensions.size)
+                    val style = WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.HORIZON)
+                    val root = WidgetPreviewFactory.remoteViews(context, event, style, today,
+                        dimensions).apply(context, FrameLayout(context))
+                    layout(context, root, dimensions)
+                    val content = WidgetEventContentFactory.from(event, today)
+                    val presentation = WidgetPresentationResolver.resolve(content, dimensions.size,
+                        scale, height)
+                    val count = root.findViewById<TextView>(R.id.widgetCount)
+                    assertEquals(presentation.countText, count.text.toString())
+                    assertCountFits(root)
+                    for (id in listOf(R.id.widgetTitle, R.id.widgetIcon, R.id.widgetUnit,
+                            R.id.widgetDate)) {
+                        val view = root.findViewById<View>(id)
+                        if (view.visibility == View.VISIBLE) assertFits(root, view)
+                    }
+                    if (height == 120) {
+                        assertEquals(View.GONE,
+                            root.findViewById<View>(R.id.widgetDate).visibility)
+                    }
+                    capture(root, "p3c-days-" + width + "x" + height +
+                        "-scale" + (scale * 100).toInt())
+                }
+            }
+            val context = context(1f, "en")
+            for (styleId in WidgetBackground.entries)
+                for (appearance in listOf(WidgetAppearance.LIGHT, WidgetAppearance.DARK)) {
+                    val dimensions = WidgetPreviewDimensions(240, 180)
+                    val style = WidgetStyleSelection(appearance, styleId)
+                    val root = WidgetPreviewFactory.remoteViews(context, event, style, today,
+                        dimensions).apply(context, FrameLayout(context))
+                    layout(context, root, dimensions)
+                    assertCountFits(root)
+                    capture(root, "p3c-days-" + styleId.storageKey + "-" +
+                        appearance.storageKey)
+                }
+        }
+
     private fun context(scale: Float, language: String = "en"): Context {
         val config = Configuration(instrumentation.targetContext.resources.configuration).apply {
             fontScale = scale

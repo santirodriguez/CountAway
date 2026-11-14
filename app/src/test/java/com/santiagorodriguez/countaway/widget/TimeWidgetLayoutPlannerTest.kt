@@ -62,6 +62,14 @@ class TimeWidgetLayoutPlannerTest {
         assertTrue(roomy.showAccent)
     }
 
+    @Test fun threeByTwoDetailsRevealZoneOnlyWithAdequateSpace() {
+        assertFalse(TimeWidgetLayoutPlanner.plan(240, 180, 1f).showZone)
+        assertTrue(TimeWidgetLayoutPlanner.plan(280, 210, 1f).showZone)
+        assertFalse(TimeWidgetLayoutPlanner.plan(280, 210, 2f).showZone)
+        assertFalse(TimeWidgetLayoutPlanner.plan(320, 190, 1f).showZone)
+        assertFalse(TimeWidgetLayoutPlanner.plan(160, 55, 1f).showZone)
+    }
+
     @Test fun largerCardsKeepTheTimerAsTheVisualFocus() {
         val full = TimeWidgetLayoutPlanner.plan(320, 250, 1f)
         assertEquals(48f, full.clockMaxSizeSp, 0f)
