@@ -326,7 +326,12 @@ class TimeWidgetNativeInstrumentedTest {
                     assertTrue(name + " missing numeric days", days.text.toString().contains("day"))
                     assertEquals(name + " no generic fallback", View.GONE,
                         root.findViewById<View>(R.id.timeWidgetFallback).visibility)
-                    assertEquals(name + " branded", View.VISIBLE,
+                    val compactIdentity = height < 110
+                    assertEquals(name + " compact event icon",
+                        if (compactIdentity) View.VISIBLE else View.GONE,
+                        root.findViewById<View>(R.id.timeWidgetIcon).visibility)
+                    assertEquals(name + " branding retained on roomy widgets",
+                        if (compactIdentity) View.GONE else View.VISIBLE,
                         root.findViewById<View>(R.id.timeWidgetBrandLogo).visibility)
                     val visible = height >= 115 && (font < 1.6f || height >= 175)
                     assertEquals(name + " native short clock",
