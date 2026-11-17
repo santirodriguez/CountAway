@@ -215,6 +215,7 @@ class TimeWidgetConfigActivity : BaseActivity() {
             AppWidgetManager.getInstance(applicationContext).getAppWidgetOptions(widgetId),
             resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE,
             timed = true,
+            density = resources.displayMetrics.density,
         )
         val views = TimeWidgetRenderer.render(
             this, this, widgetId, configuration, event, null, displayedSnapshot,

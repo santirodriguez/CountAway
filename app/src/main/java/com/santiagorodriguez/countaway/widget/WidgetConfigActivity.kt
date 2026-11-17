@@ -317,6 +317,7 @@ class WidgetConfigActivity : BaseActivity() {
             AppWidgetManager.getInstance(applicationContext).getAppWidgetOptions(appWidgetId),
             resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE,
             timed = false,
+            density = resources.displayMetrics.density,
         )
     }
 
