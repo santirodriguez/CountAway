@@ -3,6 +3,7 @@
     android:configure="com.santiagorodriguez.countaway.widget.TimeWidgetConfigActivity"
     android:description="@string/time_widget_description"
     android:initialLayout="@layout/widget_time_live"
+    android:previewImage="@drawable/time_widget_picker_preview"
     android:previewLayout="@layout/widget_time_preview"
     android:minWidth="150dp"
     android:minHeight="50dp"
