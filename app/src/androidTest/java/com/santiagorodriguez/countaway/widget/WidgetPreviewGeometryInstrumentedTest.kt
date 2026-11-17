@@ -78,5 +78,31 @@ class WidgetPreviewGeometryInstrumentedTest {
         }
     }
 
+    @Test fun placeholderRestoresTitleSizeAfterFittedEvent() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.runOnMainSync {
+            val context = instrumentation.targetContext
+            val container = android.widget.FrameLayout(context)
+            val frame = android.widget.FrameLayout(context)
+            container.addView(frame)
+            val controller = WidgetPreviewController(context, container, frame)
+            controller.renderStyle(WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.CLASSIC),
+                WidgetPreviewDimensions(90, 90))
+            val event = com.santiagorodriguez.countaway.model.CountdownEvent(
+                "preview-reset", "ExtraordinarilyLongSingleWord",
+                java.time.LocalDate.of(2026, 11, 20),
+                com.santiagorodriguez.countaway.model.EventType.EVENT,
+                createdAt = java.time.Instant.EPOCH)
+            controller.renderEvent(WidgetEventContentFactory.from(event, java.time.LocalDate.of(2026, 11, 16)))
+            controller.renderPlaceholder("Choose an event", "Tap to configure")
+            val title = frame.findViewById<android.widget.TextView>(
+                com.santiagorodriguez.countaway.R.id.widgetTitle)
+            val expected = android.util.TypedValue.applyDimension(
+                android.util.TypedValue.COMPLEX_UNIT_SP, WidgetCompactTitleFitter.normalSizeSp,
+                context.resources.displayMetrics)
+            assertEquals(expected, title.textSize, 0.01f)
+        }
+    }
+
     private data class PickerSample(val name: String, val layout: Int, val width: Int, val height: Int)
 }

@@ -90,6 +90,9 @@ internal class WidgetPreviewController(
         iconRes: Int = R.drawable.ic_event_calendar,
     ) {
         currentContent = null
+        if (currentSize == WidgetSize.COMPACT) {
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, WidgetCompactTitleFitter.normalSizeSp)
+        }
         val presentation = WidgetPresentationResolver.placeholder(requireNotNull(currentSize),
             context.resources.configuration.fontScale, currentHeightDp)
         iconView.visibility = if (presentation.showIcon) View.VISIBLE else View.GONE
