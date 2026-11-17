@@ -96,6 +96,11 @@ class TimeWidgetConfigIntegrationInstrumentedTest {
                 drain()
                 scenario.onActivity { activity ->
                     val list = activity.findViewById<ListView>(R.id.widgetEventList)
+                    list.setSelection(list.count - 1)
+                }
+                instrumentation.waitForIdleSync()
+                scenario.onActivity { activity ->
+                    val list = activity.findViewById<ListView>(R.id.widgetEventList)
                     assertEquals(1, list.checkedItemPosition)
                     assertEquals(WidgetAppearance.entries.indexOf(WidgetAppearance.DARK),
                         activity.findViewById<Spinner>(R.id.widgetAppearanceSpinner).selectedItemPosition)
