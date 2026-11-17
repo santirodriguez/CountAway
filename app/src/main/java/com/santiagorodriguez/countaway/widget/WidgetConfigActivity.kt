@@ -313,15 +313,11 @@ class WidgetConfigActivity : BaseActivity() {
     }
 
     private fun previewDimensions(): WidgetPreviewDimensions {
-        val options = AppWidgetManager.getInstance(applicationContext).getAppWidgetOptions(appWidgetId)
-        val fallback = WidgetPreviewSizing.representative(WidgetSize.STANDARD)
-        val widthDp = options
-            .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, fallback.widthDp)
-            .takeIf { it > 0 } ?: fallback.widthDp
-        val heightDp = options
-            .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, fallback.heightDp)
-            .takeIf { it > 0 } ?: fallback.heightDp
-        return WidgetPreviewDimensions(widthDp, heightDp)
+        return WidgetPreviewGeometry.dimensions(
+            AppWidgetManager.getInstance(applicationContext).getAppWidgetOptions(appWidgetId),
+            resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE,
+            timed = false,
+        )
     }
 
     private fun updateContentPreview(today: LocalDate = CountdownTime.snapshot().today) {

@@ -102,6 +102,18 @@ class TimeWidgetConfigIntegrationInstrumentedTest {
                     assertEquals(WidgetBackground.entries.indexOf(WidgetBackground.MONOGRAM),
                         activity.findViewById<Spinner>(R.id.widgetBackgroundSpinner).selectedItemPosition)
                     assertTrue(activity.findViewById<Button>(R.id.widgetSaveButton).isEnabled)
+                    val frame = activity.findViewById<android.widget.FrameLayout>(R.id.widgetPreviewFrame)
+                    val density = activity.resources.displayMetrics.density
+                    assertTrue(kotlin.math.abs((240 * density).toInt() - frame.layoutParams.width) <= 1)
+                    assertTrue(kotlin.math.abs((180 * density).toInt() - frame.layoutParams.height) <= 1)
+                    assertEquals(frame.scaleX, frame.scaleY, 0.0001f)
+                    val bitmap = android.graphics.Bitmap.createBitmap(frame.width, frame.height,
+                        android.graphics.Bitmap.Config.ARGB_8888)
+                    frame.draw(android.graphics.Canvas(bitmap))
+                    val file = java.io.File(activity.filesDir, "layout-evidence/p3d-time-config-preview.png")
+                    file.parentFile!!.mkdirs()
+                    file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+                    bitmap.recycle()
                     activity.findViewById<Button>(R.id.widgetSaveButton).performClick()
                 }
             }

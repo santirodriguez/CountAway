@@ -4,7 +4,6 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -212,17 +211,18 @@ class TimeWidgetConfigActivity : BaseActivity() {
         }
         val configuration = WidgetConfiguration(selectedId, appearance, background)
         val event = events.firstOrNull { it.id == selectedId }
+        val dimensions = WidgetPreviewGeometry.dimensions(
+            AppWidgetManager.getInstance(applicationContext).getAppWidgetOptions(widgetId),
+            resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE,
+            timed = true,
+        )
         val views = TimeWidgetRenderer.render(
             this, this, widgetId, configuration, event, null, displayedSnapshot,
-            180, 140, hashMapOf(), interactive = false)
+            dimensions.widthDp, dimensions.heightDp, hashMapOf(), interactive = false)
         runCatching {
             preview.removeAllViews()
             preview.addView(views.apply(this, preview))
-            previewContainer.post {
-                val fit = WidgetPreviewSizing.fit(previewContainer.width, previewContainer.height,
-                    WidgetPreviewDimensions(180, 140))
-                preview.layoutParams = FrameLayout.LayoutParams(fit.width, fit.height, Gravity.CENTER)
-            }
+            WidgetPreviewGeometry.fit(previewContainer, preview, dimensions)
         }.onFailure { android.util.Log.w("CountAwayTimeWidget", "Preview unavailable", it) }
         footer.findViewById<TextView>(R.id.widgetStyleSummary).text = getString(
             R.string.widget_style_summary,
