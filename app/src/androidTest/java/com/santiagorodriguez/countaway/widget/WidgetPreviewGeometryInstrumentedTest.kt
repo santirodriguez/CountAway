@@ -81,7 +81,9 @@ class WidgetPreviewGeometryInstrumentedTest {
     @Test fun placeholderRestoresTitleSizeAfterFittedEvent() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.runOnMainSync {
-            val context = instrumentation.targetContext
+            val config = android.content.res.Configuration(
+                instrumentation.targetContext.resources.configuration).apply { fontScale = 1f }
+            val context = instrumentation.targetContext.createConfigurationContext(config)
             val container = android.widget.FrameLayout(context)
             val frame = android.widget.FrameLayout(context)
             container.addView(frame)
@@ -94,6 +96,12 @@ class WidgetPreviewGeometryInstrumentedTest {
                 com.santiagorodriguez.countaway.model.EventType.EVENT,
                 createdAt = java.time.Instant.EPOCH)
             controller.renderEvent(WidgetEventContentFactory.from(event, java.time.LocalDate.of(2026, 11, 16)))
+            val fittedTitle = frame.findViewById<android.widget.TextView>(
+                com.santiagorodriguez.countaway.R.id.widgetTitle)
+            val normalPixels = android.util.TypedValue.applyDimension(
+                android.util.TypedValue.COMPLEX_UNIT_SP, WidgetCompactTitleFitter.normalSizeSp,
+                context.resources.displayMetrics)
+            assertTrue("Fixture must actually reduce the title", fittedTitle.textSize < normalPixels)
             controller.renderPlaceholder("Choose an event", "Tap to configure")
             val title = frame.findViewById<android.widget.TextView>(
                 com.santiagorodriguez.countaway.R.id.widgetTitle)
@@ -101,6 +109,54 @@ class WidgetPreviewGeometryInstrumentedTest {
                 android.util.TypedValue.COMPLEX_UNIT_SP, WidgetCompactTitleFitter.normalSizeSp,
                 context.resources.displayMetrics)
             assertEquals(expected, title.textSize, 0.01f)
+        }
+    }
+
+    @Test fun daysPreviewMatchesProductionAcrossLocalesSizesAndLargeFonts() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        instrumentation.runOnMainSync {
+            val today = java.time.LocalDate.of(2026, 11, 16)
+            for (language in listOf("en", "es", "ca")) for (scale in listOf(1f, 2f)) {
+                val config = android.content.res.Configuration(
+                    instrumentation.targetContext.resources.configuration).apply {
+                    fontScale = scale
+                    setLocale(java.util.Locale.forLanguageTag(language))
+                }
+                val context = instrumentation.targetContext.createConfigurationContext(config)
+                for (dimensions in listOf(WidgetPreviewDimensions(57, 102),
+                    WidgetPreviewDimensions(90, 90), WidgetPreviewDimensions(180, 50),
+                    WidgetPreviewDimensions(240, 180))) {
+                    val style = WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.MONOGRAM)
+                    val event = com.santiagorodriguez.countaway.model.CountdownEvent(
+                        "preview-parity", "Nacimiento",
+                        today.minusDays(11949), com.santiagorodriguez.countaway.model.EventType.EVENT,
+                        createdAt = java.time.Instant.EPOCH)
+                    val frame = android.widget.FrameLayout(context)
+                    val container = android.widget.FrameLayout(context).apply { addView(frame) }
+                    val controller = WidgetPreviewController(context, container, frame)
+                    controller.renderStyle(style, dimensions)
+                    controller.renderEvent(WidgetEventContentFactory.from(event, today))
+                    val production = WidgetPreviewFactory.remoteViews(context, event, style, today, dimensions)
+                        .apply(context, android.widget.FrameLayout(context))
+                    for (id in listOf(com.santiagorodriguez.countaway.R.id.widgetTitle,
+                        com.santiagorodriguez.countaway.R.id.widgetCount,
+                        com.santiagorodriguez.countaway.R.id.widgetUnit,
+                        com.santiagorodriguez.countaway.R.id.widgetDate)) {
+                        val previewText = frame.findViewById<android.widget.TextView>(id)
+                        val productionText = production.findViewById<android.widget.TextView>(id)
+                        val tag = "$language font=$scale size=$dimensions id=$id"
+                        assertEquals(tag, productionText.text.toString(), previewText.text.toString())
+                        assertEquals(tag, productionText.visibility, previewText.visibility)
+                        assertEquals(tag, productionText.maxLines, previewText.maxLines)
+                        assertEquals(tag, productionText.currentTextColor, previewText.currentTextColor)
+                        if (id == com.santiagorodriguez.countaway.R.id.widgetTitle)
+                            assertEquals(tag, productionText.textSize, previewText.textSize, 0.01f)
+                    }
+                    val icon = com.santiagorodriguez.countaway.R.id.widgetIcon
+                    assertEquals(production.findViewById<android.view.View>(icon).visibility,
+                        frame.findViewById<android.view.View>(icon).visibility)
+                }
+            }
         }
     }
 
