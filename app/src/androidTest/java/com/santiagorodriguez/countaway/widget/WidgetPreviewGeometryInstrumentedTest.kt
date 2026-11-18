@@ -36,10 +36,10 @@ class WidgetPreviewGeometryInstrumentedTest {
             putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 51)
             putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 102)
             putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES,
-                arrayListOf(SizeF(Float.NaN, 90f), SizeF(57.4f, 102.2f),
-                    SizeF(127.2f, 51.1f), SizeF(57.4f, 102.2f)))
+                arrayListOf(SizeF(0f, 90f), SizeF(59.6f, 105.2f),
+                    SizeF(127.2f, 51.1f), SizeF(59.6f, 105.2f)))
         }
-        assertEquals(WidgetPreviewDimensions(57, 102),
+        assertEquals(WidgetPreviewDimensions(60, 105),
             WidgetPreviewGeometry.dimensions(options, false, false))
         assertEquals(WidgetPreviewDimensions(127, 51),
             WidgetPreviewGeometry.dimensions(options, true, false))
@@ -73,6 +73,17 @@ class WidgetPreviewGeometryInstrumentedTest {
                     file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
                     bitmap.recycle()
                     assertTrue(file.length() > 0)
+                    if (name == "time") {
+                        val count = root.findViewById<android.widget.TextView>(
+                            com.santiagorodriguez.countaway.R.id.timeWidgetPickerPreviewCount)
+                        val layout = requireNotNull(count.layout)
+                        val availableWidth = count.width - count.totalPaddingLeft - count.totalPaddingRight
+                        val availableHeight = count.height - count.compoundPaddingTop - count.compoundPaddingBottom
+                        assertTrue("Timer exceeds available height at font scale $scale",
+                            layout.height <= availableHeight)
+                        assertTrue("Timer exceeds available width at font scale $scale",
+                            layout.getLineWidth(0) <= availableWidth)
+                    }
                 }
             }
         }

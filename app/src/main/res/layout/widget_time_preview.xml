@@ -42,7 +42,13 @@
         </LinearLayout>
         <TextView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:id="@+id/timeWidgetPickerPreviewCount"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="8sp"
+            android:autoSizeMaxTextSize="22sp"
+            android:autoSizeStepGranularity="1sp"
             android:fontFamily="sans-serif-condensed"
             android:fontFeatureSettings="tnum"
             android:gravity="center_vertical"
