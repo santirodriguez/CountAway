@@ -102,7 +102,7 @@ class WidgetPreviewGeometryInstrumentedTest {
             controller.renderStyle(WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.CLASSIC),
                 WidgetPreviewDimensions(90, 90))
             val event = com.santiagorodriguez.countaway.model.CountdownEvent(
-                "preview-reset", "ExtraordinarilyLongSingleWord",
+                "preview-reset", "1234567890123456789012345678901234567890",
                 java.time.LocalDate.of(2026, 11, 20),
                 com.santiagorodriguez.countaway.model.EventType.EVENT,
                 createdAt = java.time.Instant.EPOCH)
@@ -160,8 +160,10 @@ class WidgetPreviewGeometryInstrumentedTest {
                         assertEquals(tag, productionText.visibility, previewText.visibility)
                         assertEquals(tag, productionText.maxLines, previewText.maxLines)
                         assertEquals(tag, productionText.currentTextColor, previewText.currentTextColor)
-                        if (id == com.santiagorodriguez.countaway.R.id.widgetTitle)
-                            assertEquals(tag, productionText.textSize, previewText.textSize, 0.01f)
+                        if (id == com.santiagorodriguez.countaway.R.id.widgetTitle) {
+                            // RemoteViews can round the resolved SP size to a whole pixel.
+                            assertEquals(tag, productionText.textSize, previewText.textSize, 0.5001f)
+                        }
                     }
                     val icon = com.santiagorodriguez.countaway.R.id.widgetIcon
                     assertEquals(production.findViewById<android.view.View>(icon).visibility,
