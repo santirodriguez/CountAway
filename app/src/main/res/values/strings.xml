@@ -192,4 +192,10 @@
     <string name="auto_backup_recover">Recover backup settings</string>
     <string name="auto_backup_recover_title">Reset backup settings?</string>
     <string name="auto_backup_recover_message">This turns off automatic backups and requires a new folder choice. Existing backup files will not be deleted.</string>
+    <string name="widget_home_days">Days (1×1)</string>
+    <string name="widget_home_time">Time (2×1)</string>
+    <string name="widget_home_add_time">Add a time to this event</string>
+    <string name="widget_home_preview_expanded">Preview a larger widget</string>
+    <string name="widget_home_resize_hint">Widget size depends on your home screen. To resize after adding, touch and hold the widget.</string>
+    <string name="widget_home_edit_existing">Edit existing widgets</string>
 </resources>

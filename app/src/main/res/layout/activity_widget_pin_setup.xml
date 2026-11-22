@@ -74,6 +74,98 @@
             </LinearLayout>
         </LinearLayout>
 
+        <RadioGroup
+            android:id="@+id/widgetPinSetupFamily"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/widgetPinSetupDays"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/widget_home_days"
+                android:textColor="@color/foreground" />
+
+            <RadioButton
+                android:id="@+id/widgetPinSetupTime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/widget_home_time"
+                android:textColor="@color/foreground" />
+        </RadioGroup>
+
+        <Button
+            android:id="@+id/widgetPinSetupEditEvent"
+            style="@style/Widget.CountAway.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_home_add_time"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/widget_preview_label"
+            android:textColor="@color/secondary_text"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/widgetPinSetupStyleSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:textColor="@color/secondary_text"
+            android:textSize="12sp" />
+
+        <FrameLayout
+            android:id="@+id/widgetPinSetupPreviewContainer"
+            android:layout_width="match_parent"
+            android:layout_height="184dp"
+            android:layout_marginTop="6dp"
+            android:importantForAccessibility="no">
+
+            <FrameLayout
+                android:id="@+id/widgetPinSetupPreviewFrame"
+                android:layout_width="160dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center" />
+            <FrameLayout
+                android:id="@+id/widgetPinSetupTimeFrame"
+                android:layout_width="150dp"
+                android:layout_height="50dp"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <CheckBox
+            android:id="@+id/widgetPinSetupExpanded"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/widget_home_preview_expanded"
+            android:textColor="@color/foreground" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_home_resize_hint"
+            android:textColor="@color/secondary_text"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/widgetPinSetupEditExisting"
+            style="@style/Widget.CountAway.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_home_edit_existing"
+            android:visibility="gone" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -148,37 +240,6 @@
             android:text="@string/widget_pin_setup_system_hint"
             android:textColor="@color/secondary_text"
             android:textSize="12sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:text="@string/widget_preview_label"
-            android:textColor="@color/secondary_text"
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/widgetPinSetupStyleSummary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="center"
-            android:textColor="@color/secondary_text"
-            android:textSize="12sp" />
-
-        <FrameLayout
-            android:id="@+id/widgetPinSetupPreviewContainer"
-            android:layout_width="match_parent"
-            android:layout_height="184dp"
-            android:layout_marginTop="6dp"
-            android:importantForAccessibility="no">
-
-            <FrameLayout
-                android:id="@+id/widgetPinSetupPreviewFrame"
-                android:layout_width="160dp"
-                android:layout_height="100dp"
-                android:layout_gravity="center" />
-        </FrameLayout>
 
         <Button
             android:id="@+id/widgetPinSetupAddButton"

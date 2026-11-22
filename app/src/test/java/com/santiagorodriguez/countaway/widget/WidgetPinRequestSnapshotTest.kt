@@ -15,12 +15,20 @@ class WidgetPinRequestSnapshotTest {
                 background = WidgetBackground.MONOGRAM,
             ),
             requestToken = "request / token?one",
+            family = WidgetFamily.TIME,
         )
 
         assertEquals(
             snapshot,
             WidgetPinRequestSnapshot.fromCallbackData(snapshot.callbackData()),
         )
+    }
+
+    @Test
+    fun oldCallbacksDefaultToDaysAndUnknownFamiliesAreRejected() {
+        val old = "countaway://widget/pin/request?event=event-a&appearance=light&background=classic"
+        assertEquals(WidgetFamily.DAYS, WidgetPinRequestSnapshot.fromCallbackData(old)?.family)
+        assertNull(WidgetPinRequestSnapshot.fromCallbackData("$old&family=unknown"))
     }
 
     @Test

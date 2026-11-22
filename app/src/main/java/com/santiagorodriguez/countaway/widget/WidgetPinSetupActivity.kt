@@ -1,7 +1,11 @@
 package com.santiagorodriguez.countaway.widget
 
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
+import android.content.Intent
+import android.app.AlertDialog
+import android.view.View
+import android.widget.CheckBox
+import com.santiagorodriguez.countaway.ui.EditorActivity
 import android.os.Bundle
 import android.view.Gravity
 import android.widget.Button
@@ -36,8 +40,12 @@ class WidgetPinSetupActivity : BaseActivity() {
     private lateinit var addButton: Button
     private lateinit var eventId: String
     private var event: CountdownEvent? = null
+    private var availableEvents = emptyList<CountdownEvent>()
+    private var family = WidgetFamily.DAYS
+    private lateinit var familyGroup: RadioGroup
     private var selectedBackground = WidgetBackground.CLASSIC
     private var loadGeneration = 0
+    private var eventLoading = true
     private lateinit var temporalInvalidation: TemporalInvalidationController
 
     private var pendingSnapshot: WidgetPinRequestSnapshot? = null
@@ -84,6 +92,20 @@ class WidgetPinSetupActivity : BaseActivity() {
             frame = findViewById(R.id.widgetPinSetupPreviewFrame),
         )
         addButton = findViewById(R.id.widgetPinSetupAddButton)
+        familyGroup = findViewById(R.id.widgetPinSetupFamily)
+        family = WidgetFamily.fromKey(savedInstanceState?.getString(STATE_FAMILY)) ?: WidgetFamily.DAYS
+        familyGroup.check(if (family == WidgetFamily.TIME) R.id.widgetPinSetupTime else R.id.widgetPinSetupDays)
+        familyGroup.setOnCheckedChangeListener { _, checked ->
+            family = if (checked == R.id.widgetPinSetupTime) WidgetFamily.TIME else WidgetFamily.DAYS
+            updatePreview()
+        }
+        findViewById<CheckBox>(R.id.widgetPinSetupExpanded).setOnCheckedChangeListener { _, _ ->
+            updatePreview()
+        }
+        findViewById<Button>(R.id.widgetPinSetupEditEvent).setOnClickListener {
+            startActivity(Intent(this, EditorActivity::class.java).putExtra(EditorActivity.EXTRA_EVENT_ID, eventId))
+        }
+        findViewById<Button>(R.id.widgetPinSetupEditExisting).setOnClickListener { editExisting() }
 
         val stored = WidgetDefaultsPreferences(applicationContext).get()
         val restored = WidgetStyleSelectionResolver.restore(
@@ -148,6 +170,7 @@ class WidgetPinSetupActivity : BaseActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         val selection = currentSelection()
+        outState.putString(STATE_FAMILY, family.key)
         outState.putString(STATE_APPEARANCE, selection.appearance.name)
         outState.putString(STATE_BACKGROUND, selection.background.name)
         outState.putBoolean(STATE_AWAITING_PIN, awaitingPinResult)
@@ -155,6 +178,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         outState.putIntArray(STATE_BASELINE_IDS, baselineWidgetIds.toIntArray())
         pendingSnapshot?.let { snapshot ->
             outState.putString(STATE_REQUEST_TOKEN, snapshot.requestToken)
+            outState.putString(STATE_REQUEST_FAMILY, snapshot.family.key)
             outState.putString(STATE_REQUEST_EVENT_ID, snapshot.eventId)
             outState.putString(STATE_REQUEST_APPEARANCE, snapshot.style.appearance.name)
             outState.putString(STATE_REQUEST_BACKGROUND, snapshot.style.background.name)
@@ -170,6 +194,7 @@ class WidgetPinSetupActivity : BaseActivity() {
     }
 
     private fun loadEvent(eventId: String) {
+        eventLoading = true
         val generation = ++loadGeneration
         val repository = repository
         setAddEnabled(false)
@@ -177,9 +202,8 @@ class WidgetPinSetupActivity : BaseActivity() {
             task = { repository.loadResult() },
             onComplete = { result ->
                 if (generation != loadGeneration || isFinishing || isDestroyed) return@submit
-                val loaded = (result.getOrNull() as? CountdownLoadResult.Success)
-                    ?.events
-                    ?.let { EventTransport.resolve(it, eventId) }
+                availableEvents = (result.getOrNull() as? CountdownLoadResult.Success)?.events.orEmpty()
+                val loaded = EventTransport.resolve(availableEvents, eventId)
                 if (loaded == null) {
                     Toast.makeText(
                         this,
@@ -190,6 +214,7 @@ class WidgetPinSetupActivity : BaseActivity() {
                     return@submit
                 }
 
+                eventLoading = false
                 event = loaded
                 findViewById<ImageView>(R.id.widgetPinSetupEventIcon).apply {
                     setImageResource(EventIconPresentation.drawableRes(loaded.icon))
@@ -204,10 +229,10 @@ class WidgetPinSetupActivity : BaseActivity() {
 
     private fun requestPin() {
         if (awaitingPinResult || !addButton.isEnabled) return
-        val currentEvent = event ?: return
+        val currentEvent = event?.takeIf(family::accepts) ?: return
         val style = currentSelection()
-        val snapshot = WidgetPinRequestSnapshot.create(currentEvent.id, style)
-        baselineWidgetIds = providerWidgetIds()
+        val snapshot = WidgetPinRequestSnapshot.create(currentEvent.id, style, family = family)
+        baselineWidgetIds = providerWidgetIds(snapshot.family)
         pendingSnapshot = snapshot
         awaitingPinResult = true
         pinUiWasShown = false
@@ -251,7 +276,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         }
         when (val outcome = WidgetPinFallbackResolver.resolve(
             baselineIds = baselineWidgetIds,
-            currentIds = providerWidgetIds(),
+            currentIds = providerWidgetIds(snapshot.family),
         )) {
             WidgetPinFallbackOutcome.None -> {
                 if (reconcileAttempt < RECONCILE_DELAYS_MS.lastIndex) {
@@ -321,13 +346,50 @@ class WidgetPinSetupActivity : BaseActivity() {
         reconcileAttempt = 0
         reconcileGeneration += 1
         reconcileScheduled = false
-        setAddEnabled(event != null)
+        setAddEnabled(!eventLoading && event?.let(family::accepts) == true)
         setStyleEnabled(true)
     }
 
-    private fun providerWidgetIds(): Set<Int> {
+    private fun editExisting() {
+        val manager = AppWidgetManager.getInstance(this)
+        val preferences = WidgetPreferences(applicationContext)
+        val choices = WidgetFamily.entries.flatMap { widgetFamily ->
+            providerWidgetIds(widgetFamily).sorted().map { id -> widgetFamily to id }
+        }.filter { (widgetFamily, id) ->
+            WidgetInstanceValidator.isOwnedBy(manager, id, widgetFamily.provider(this))
+        }
+        if (choices.isEmpty()) {
+            updatePreview()
+            return
+        }
+        fun open(choice: Pair<WidgetFamily, Int>) {
+            val (widgetFamily, id) = choice
+            if (!WidgetInstanceValidator.isOwnedBy(manager, id, widgetFamily.provider(this))) {
+                updatePreview()
+                return
+            }
+            startActivity(Intent(this, widgetFamily.configClass)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id))
+        }
+        if (choices.size == 1) {
+            open(choices.single())
+            return
+        }
+        val labels = choices.map { (widgetFamily, id) ->
+            val config = preferences.get(id)
+            val title = EventTransport.resolve(availableEvents, config?.eventId)?.title
+            val familyLabel = getString(if (widgetFamily == WidgetFamily.TIME) R.string.widget_home_time
+                else R.string.widget_home_days)
+            listOfNotNull(familyLabel, title?.let(EventTransport::preview),
+                config?.background?.let { getString(backgroundLabel(it)) }, "#$id").joinToString(" · ")
+        }.toTypedArray()
+        AlertDialog.Builder(this).setTitle(R.string.widget_home_edit_existing)
+            .setItems(labels) { _, index -> open(choices[index]) }.show()
+    }
+
+    private fun providerWidgetIds(family: WidgetFamily): Set<Int> {
         val manager = AppWidgetManager.getInstance(applicationContext)
-        val provider = ComponentName(applicationContext, CountdownWidgetProvider::class.java)
+        val provider = family.provider(applicationContext)
         return runCatching { manager.getAppWidgetIds(provider).toSet() }.getOrDefault(emptySet())
     }
 
@@ -345,6 +407,7 @@ class WidgetPinSetupActivity : BaseActivity() {
             eventId = eventId,
             style = WidgetStyleSelection(appearance, background),
             requestToken = token,
+            family = WidgetFamily.fromKey(state.getString(STATE_REQUEST_FAMILY)) ?: return null,
         )
     }
 
@@ -487,14 +550,38 @@ class WidgetPinSetupActivity : BaseActivity() {
             getString(appearanceLabel(selection.appearance)),
         )
         val currentEvent = event ?: return
+        val eligible = family.accepts(currentEvent)
+        setAddEnabled(eligible && !awaitingPinResult && !eventLoading)
+        val needsTime = family == WidgetFamily.TIME && !eligible
+        findViewById<Button>(R.id.widgetPinSetupEditEvent).visibility = if (needsTime) View.VISIBLE else View.GONE
+        findViewById<Button>(R.id.widgetPinSetupEditExisting).visibility =
+            if (WidgetFamily.entries.any { providerWidgetIds(it).isNotEmpty() }) View.VISIBLE else View.GONE
+        val expanded = findViewById<CheckBox>(R.id.widgetPinSetupExpanded)
+        expanded.visibility = if (eligible) View.VISIBLE else View.GONE
+        val daysFrame = findViewById<FrameLayout>(R.id.widgetPinSetupPreviewFrame)
+        val timeFrame = findViewById<FrameLayout>(R.id.widgetPinSetupTimeFrame)
+        val previewContainer = findViewById<FrameLayout>(R.id.widgetPinSetupPreviewContainer)
+        previewContainer.visibility = if (eligible) View.VISIBLE else View.GONE
+        daysFrame.visibility = if (family == WidgetFamily.DAYS) View.VISIBLE else View.GONE
+        timeFrame.visibility = if (family == WidgetFamily.TIME) View.VISIBLE else View.GONE
+        timeFrame.removeAllViews()
+        if (family == WidgetFamily.TIME && eligible) {
+            val size = if (expanded.isChecked) WidgetPreviewDimensions(280, 210) else WidgetPreviewDimensions(150, 50)
+            val views = TimeWidgetRenderer.render(this, this, AppWidgetManager.INVALID_APPWIDGET_ID,
+                WidgetConfiguration(currentEvent.id, selection.appearance, selection.background),
+                currentEvent, null, snapshot, size.widthDp, size.heightDp, mutableMapOf(), interactive = false)
+            timeFrame.addView(views.apply(this, timeFrame))
+            WidgetPreviewGeometry.fit(previewContainer, timeFrame, size)
+        }
         val locale = resources.configuration.locales[0]
         val displayDate = CountdownOccurrenceResolver.displayDate(currentEvent, snapshot.today)
         findViewById<TextView>(R.id.widgetPinSetupEventDate).text = displayDate.format(
             DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
         )
+        if (family != WidgetFamily.DAYS) return
         previewController.renderStyle(
             selection = selection,
-            dimensions = WidgetPreviewSizing.defaultDays,
+            dimensions = if (expanded.isChecked) WidgetPreviewDimensions(240, 180) else WidgetPreviewSizing.defaultDays,
         )
         previewController.renderEvent(
             WidgetEventContentFactory.from(currentEvent.copy(title = EventTransport.preview(currentEvent.title)), snapshot.today),
@@ -514,6 +601,8 @@ class WidgetPinSetupActivity : BaseActivity() {
                 for (index in 0 until view.childCount) enable(view.getChildAt(index))
             }
         }
+        enable(familyGroup)
+        enable(findViewById(R.id.widgetPinSetupEditExisting))
         enable(appearanceGroup)
         enable(backgroundRows)
     }
@@ -529,6 +618,8 @@ class WidgetPinSetupActivity : BaseActivity() {
     companion object {
         const val EXTRA_EVENT_ID = "event_id"
 
+        private const val STATE_FAMILY = "pin_setup_family"
+        private const val STATE_REQUEST_FAMILY = "pin_setup_request_family"
         private const val STATE_APPEARANCE = "pin_setup_appearance"
         private const val STATE_BACKGROUND = "pin_setup_background"
         private const val STATE_AWAITING_PIN = "pin_setup_awaiting_pin"

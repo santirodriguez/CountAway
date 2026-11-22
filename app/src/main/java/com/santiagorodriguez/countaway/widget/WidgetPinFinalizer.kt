@@ -1,7 +1,6 @@
 package com.santiagorodriguez.countaway.widget
 
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import com.santiagorodriguez.countaway.countdown.CountdownTime
 import com.santiagorodriguez.countaway.data.CountdownLoadResult
@@ -28,13 +27,19 @@ internal object WidgetPinFinalizer {
         }
 
         val appContext = context.applicationContext
-        val resolved = if (EventTransport.isReference(snapshot.eventId)) {
+        val manager = AppWidgetManager.getInstance(appContext)
+        val provider = snapshot.family.provider(appContext)
+        val actual = runCatching { manager.getAppWidgetInfo(appWidgetId)?.provider }.getOrNull()
+        if (actual != null && actual != provider) return WidgetPinFinalizeResult.CONFLICT
+
+        val resolved = run {
             val events = (CountdownRepository(appContext).loadResult() as? CountdownLoadResult.Success)
                 ?.events ?: return WidgetPinFinalizeResult.EVENT_MISSING
             val event = EventTransport.resolve(events, snapshot.eventId)
                 ?: return WidgetPinFinalizeResult.EVENT_MISSING
+            if (!snapshot.family.accepts(event)) return WidgetPinFinalizeResult.EVENT_MISSING
             snapshot.copy(eventId = event.id)
-        } else snapshot
+        }
         val preferences = WidgetPreferences(appContext)
         val existing = preferences.get(appWidgetId)
         if (existing != null) {
@@ -46,19 +51,6 @@ internal object WidgetPinFinalizer {
             }
         }
 
-        val eventExists = when (val result = CountdownRepository(appContext).loadResult()) {
-            is CountdownLoadResult.Success -> result.events.any { it.id == resolved.eventId }
-            is CountdownLoadResult.Failure -> false
-        }
-        if (!WidgetPinResultPolicy.shouldApply(
-                validWidgetId = true,
-                eventExists = eventExists,
-                existing = null,
-            )
-        ) {
-            return WidgetPinFinalizeResult.EVENT_MISSING
-        }
-
         preferences.save(
             appWidgetId = appWidgetId,
             eventId = resolved.eventId,
@@ -68,11 +60,12 @@ internal object WidgetPinFinalizer {
         )
         WidgetDefaultsPreferences(appContext).save(snapshot.style)
 
-        val manager = AppWidgetManager.getInstance(appContext)
-        val provider = ComponentName(appContext, CountdownWidgetProvider::class.java)
         if (WidgetInstanceValidator.isOwnedBy(manager, appWidgetId, provider)) {
             val timeSnapshot = CountdownTime.snapshot()
-            CountdownWidgetProvider.updateWidget(appContext, manager, appWidgetId, timeSnapshot)
+            when (snapshot.family) {
+                WidgetFamily.DAYS -> CountdownWidgetProvider.updateWidget(appContext, manager, appWidgetId, timeSnapshot)
+                WidgetFamily.TIME -> TimeWidgetProvider.updateWidget(appContext, manager, appWidgetId, timeSnapshot)
+            }
             WidgetUpdateScheduler.ensureScheduled(appContext, timeSnapshot)
         } else {
             WidgetUpdateScheduler.ensureScheduled(appContext, CountdownTime.snapshot())

@@ -184,4 +184,10 @@
     <string name="auto_backup_recover">Restablecer configuración</string>
     <string name="auto_backup_recover_title">¿Restablecer copias automáticas?</string>
     <string name="auto_backup_recover_message">Se desactivarán las copias automáticas y tendrás que elegir la carpeta otra vez. Los archivos existentes no se borrarán.</string>
+    <string name="widget_home_days">Días (1×1)</string>
+    <string name="widget_home_time">Tiempo (2×1)</string>
+    <string name="widget_home_add_time">Agregá una hora a este evento</string>
+    <string name="widget_home_preview_expanded">Ver una versión más grande</string>
+    <string name="widget_home_resize_hint">El tamaño depende de tu pantalla de inicio. Para cambiarlo, mantené presionado el widget después de agregarlo.</string>
+    <string name="widget_home_edit_existing">Editar widgets existentes</string>
 </resources>

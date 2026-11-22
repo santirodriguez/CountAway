@@ -17,10 +17,25 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
+internal enum class WidgetFamily(val key: String, val providerClass: Class<*>, val configClass: Class<*>) {
+    DAYS("days", CountdownWidgetProvider::class.java, WidgetConfigActivity::class.java),
+    TIME("time", TimeWidgetProvider::class.java, TimeWidgetConfigActivity::class.java);
+
+    fun provider(context: Context) = ComponentName(context, providerClass)
+
+    fun accepts(event: CountdownEvent): Boolean =
+        this == DAYS || (event.eventTime != null && event.eventZone != null)
+
+    companion object {
+        fun fromKey(key: String?): WidgetFamily? = if (key == null) DAYS else entries.firstOrNull { it.key == key }
+    }
+}
+
 internal data class WidgetPinRequestSnapshot(
     val requestToken: String,
     val eventId: String,
     val style: WidgetStyleSelection,
+    val family: WidgetFamily = WidgetFamily.DAYS,
 ) {
     fun callbackData(): String = buildString {
         append("countaway://widget/pin/")
@@ -31,6 +46,8 @@ internal data class WidgetPinRequestSnapshot(
         append(encode(style.appearance.storageKey))
         append("&background=")
         append(encode(style.background.storageKey))
+        append("&family=")
+        append(family.key)
     }
 
     companion object {
@@ -38,10 +55,12 @@ internal data class WidgetPinRequestSnapshot(
             eventId: String,
             style: WidgetStyleSelection,
             requestToken: String = UUID.randomUUID().toString(),
+            family: WidgetFamily = WidgetFamily.DAYS,
         ): WidgetPinRequestSnapshot = WidgetPinRequestSnapshot(
             requestToken = requestToken,
             eventId = EventTransport.wireId(eventId),
             style = style,
+            family = family,
         )
 
         fun fromCallbackData(raw: String?): WidgetPinRequestSnapshot? {
@@ -73,6 +92,7 @@ internal data class WidgetPinRequestSnapshot(
 
             return WidgetPinRequestSnapshot(
                 requestToken = requestToken,
+                family = WidgetFamily.fromKey(values["family"]) ?: return null,
                 eventId = eventId,
                 style = WidgetStyleSelection(
                     appearance = appearance,
@@ -119,16 +139,28 @@ object WidgetPinning {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0,
     )
 
+    internal fun timePreview(
+        context: Context,
+        event: CountdownEvent,
+        style: WidgetStyleSelection,
+    ): android.widget.RemoteViews = TimeWidgetRenderer.render(
+        context, context, AppWidgetManager.INVALID_APPWIDGET_ID,
+        WidgetConfiguration(event.id, style.appearance, style.background), event, null,
+        com.santiagorodriguez.countaway.countdown.CountdownTime.snapshot(),
+        150, 50, mutableMapOf(), interactive = false,
+    )
+
     private fun requestInternal(
         activity: Activity,
         event: CountdownEvent,
         snapshot: WidgetPinRequestSnapshot,
     ): Boolean {
         val manager = AppWidgetManager.getInstance(activity)
-        if (!manager.isRequestPinAppWidgetSupported) return false
+        if (!snapshot.family.accepts(event) || !manager.isRequestPinAppWidgetSupported) return false
 
-        val provider = ComponentName(activity, CountdownWidgetProvider::class.java)
-        val preview = WidgetPreviewFactory.remoteViews(
+        val provider = snapshot.family.provider(activity)
+        val preview = if (snapshot.family == WidgetFamily.TIME) timePreview(activity, event, snapshot.style)
+        else WidgetPreviewFactory.remoteViews(
             context = activity,
             event = event.copy(title = EventTransport.preview(event.title)),
             style = snapshot.style,

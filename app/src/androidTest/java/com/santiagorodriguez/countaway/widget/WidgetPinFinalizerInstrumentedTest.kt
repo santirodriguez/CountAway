@@ -102,6 +102,24 @@ class WidgetPinFinalizerInstrumentedTest {
         }
     }
 
+    @Test
+    fun timeRemovedWhilePinIsPendingDoesNotWriteWidgetPreferences() {
+        withIsolatedContext { context ->
+            val id = 841_003
+            val event = event("untimed-event")
+            CountdownRepository(context).save(listOf(event))
+            val preferences = WidgetPreferences(context)
+            preferences.remove(id)
+            val snapshot = WidgetPinRequestSnapshot.create(event.id,
+                WidgetStyleSelection(WidgetAppearance.DARK, WidgetBackground.PULSE),
+                family = WidgetFamily.TIME)
+
+            assertEquals(WidgetPinFinalizeResult.EVENT_MISSING,
+                WidgetPinFinalizer.finalize(context, id, snapshot))
+            assertNull(preferences.get(id))
+        }
+    }
+
     private fun withIsolatedContext(block: (Context) -> Unit) {
         val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
         val isolatedFilesDir = File(

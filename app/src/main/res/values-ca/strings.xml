@@ -184,4 +184,10 @@
     <string name="auto_backup_recover">Restableix els ajustos</string>
     <string name="auto_backup_recover_title">Vols restablir les còpies?</string>
     <string name="auto_backup_recover_message">Les còpies automàtiques es desactivaran i hauràs de triar la carpeta de nou. No s’esborraran els fitxers existents.</string>
+    <string name="widget_home_days">Dies (1×1)</string>
+    <string name="widget_home_time">Temps (2×1)</string>
+    <string name="widget_home_add_time">Afegeix una hora a aquest esdeveniment</string>
+    <string name="widget_home_preview_expanded">Mostra un giny més gran</string>
+    <string name="widget_home_resize_hint">La mida depèn de la pantalla d’inici. Per canviar-la, mantén premut el giny després d’afegir-lo.</string>
+    <string name="widget_home_edit_existing">Edita els ginys existents</string>
 </resources>
