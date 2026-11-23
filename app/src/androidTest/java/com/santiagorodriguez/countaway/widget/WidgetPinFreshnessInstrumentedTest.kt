@@ -21,6 +21,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -76,6 +77,54 @@ class WidgetPinFreshnessInstrumentedTest {
             repository.save(original)
         }
     }
+    @Test fun timeSelectionSurvivesRecreationAndTracksSavedEventTime() {
+        val original = (repository.loadResult() as CountdownLoadResult.Success).events
+        val event = CountdownEvent(UUID.randomUUID().toString(), "Home widget choice",
+            LocalDate.now().plusDays(1), EventType.EVENT, createdAt = Instant.now())
+        val timed = event.copy(eventTime = LocalTime.NOON, eventZone = ZoneId.of("UTC"))
+        repository.save(original + event)
+        try {
+            ActivityScenario.launch<WidgetPinSetupActivity>(Intent(context, WidgetPinSetupActivity::class.java)
+                .putExtra(WidgetPinSetupActivity.EXTRA_EVENT_ID, event.id)).use { scenario ->
+                drain()
+                scenario.onActivity {
+                    val family = it.findViewById<RadioGroup>(R.id.widgetPinSetupFamily)
+                    assertEquals(R.id.widgetPinSetupDays, family.checkedRadioButtonId)
+                    assertTrue(it.findViewById<Button>(R.id.widgetPinSetupAddButton).isEnabled)
+                    family.check(R.id.widgetPinSetupTime)
+                    assertFalse(it.findViewById<Button>(R.id.widgetPinSetupAddButton).isEnabled)
+                    assertEquals(android.view.View.VISIBLE,
+                        it.findViewById<Button>(R.id.widgetPinSetupEditEvent).visibility)
+                }
+                scenario.moveToState(Lifecycle.State.CREATED)
+                repository.save(original + timed)
+                scenario.moveToState(Lifecycle.State.RESUMED)
+                drain()
+                scenario.recreate()
+                drain()
+                scenario.onActivity {
+                    assertEquals(R.id.widgetPinSetupTime,
+                        it.findViewById<RadioGroup>(R.id.widgetPinSetupFamily).checkedRadioButtonId)
+                    assertTrue(it.findViewById<Button>(R.id.widgetPinSetupAddButton).isEnabled)
+                    assertEquals("Home widget choice",
+                        it.findViewById<TextView>(R.id.timeWidgetTitle).text.toString())
+                }
+                scenario.moveToState(Lifecycle.State.CREATED)
+                repository.save(original + event)
+                scenario.moveToState(Lifecycle.State.RESUMED)
+                drain()
+                scenario.onActivity {
+                    assertFalse(it.findViewById<Button>(R.id.widgetPinSetupAddButton).isEnabled)
+                    assertEquals(android.view.View.VISIBLE,
+                        it.findViewById<Button>(R.id.widgetPinSetupEditEvent).visibility)
+                }
+            }
+        } finally {
+            drain()
+            repository.save(original)
+        }
+    }
+
     private fun drain() {
         val done = CountDownLatch(1)
         CountdownIo.submit({ Unit }) { done.countDown() }
