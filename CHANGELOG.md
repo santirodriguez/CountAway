@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.7
+
+- Add Days Card and Time Detail widgets directly from an event on Home, with style previews and launcher resize guidance.
+- Improve widget and configuration previews, including large-text layouts and separate date and time zone details where space allows.
+- Open CountAway’s widget setup from Home to edit an existing widget in place.
+
 ## 1.2.6
 
 - Reset eligible date-only count-up events to today from Home, with confirmation and Undo.

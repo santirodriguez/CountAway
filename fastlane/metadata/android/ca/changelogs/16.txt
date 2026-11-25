@@ -1,0 +1,1 @@
+Afegeix els ginys de dies i de temps des de la pantalla inicial, previsualitza’n els estils i edita els ginys existents al seu lloc. Hem millorat la presentació en diferents mides de giny i amb text gran.

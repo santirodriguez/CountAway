@@ -1,0 +1,1 @@
+Add Days Card and Time Detail widgets from Home, preview their styles, and edit existing widgets in place. Both widgets adapt more clearly to different sizes and larger text.
