@@ -10,8 +10,8 @@ android {
         applicationId = "com.santiagorodriguez.countaway"
         minSdk = 26
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.2.6"
+        versionCode = 16
+        versionName = "1.2.7"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
