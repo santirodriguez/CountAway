@@ -180,7 +180,7 @@ internal object TimeWidgetRenderer {
         }
         if (format != TimeWidgetFormat.LEGACY) {
             renderFormat(views, displayContext, format, timed, count.target, snapshot.now,
-                plan, layout, widthDp, heightDp, theme.secondaryTextColor)
+                plan, layout, widthDp, heightDp)
         } else if (plan != null) {
             views.setViewVisibility(R.id.timeWidgetClock, View.VISIBLE)
             views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
@@ -262,7 +262,7 @@ internal object TimeWidgetRenderer {
     private fun renderFormat(
         views: RemoteViews, context: Context, format: TimeWidgetFormat, event: CountdownEvent,
         target: ZonedDateTime, now: ZonedDateTime, clock: TimeWidgetClockPlan?,
-        layout: TimeWidgetLayoutPlan, widthDp: Int, heightDp: Int, markColor: Int,
+        layout: TimeWidgetLayoutPlan, widthDp: Int, heightDp: Int,
     ) {
         val scale = context.resources.configuration.fontScale
         val compact = heightDp < 70
@@ -320,7 +320,6 @@ internal object TimeWidgetRenderer {
 
         views.setViewVisibility(R.id.timeWidgetBrandLogo, View.GONE)
         views.setViewVisibility(R.id.timeWidgetIcon, View.VISIBLE)
-        views.setInt(R.id.timeWidgetMark, "setColorFilter", markColor)
         val showMark = widthDp >= 144 && !large && (!compact || EventTransport.preview(event.title).length <= 16)
         views.setViewVisibility(R.id.timeWidgetMark, if (showMark) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.timeWidgetLiveDot, View.GONE)
