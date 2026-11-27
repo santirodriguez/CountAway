@@ -15,6 +15,7 @@ import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
 import com.santiagorodriguez.countaway.R
 import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.model.EventType
 import com.santiagorodriguez.countaway.model.EventIcon
@@ -414,6 +415,61 @@ class TimeWidgetNativeInstrumentedTest {
         assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetBrandLogo).visibility)
         assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetClock).visibility)
     }
+
+    @Test fun selectableTimeFormatsKeepTheirEssentialRowsAtTwoHundredPercent() =
+        instrumentation.runOnMainSync {
+            val now = ZonedDateTime.now(snapshot.zone)
+            val target = now.plusHours(77).plusMinutes(42)
+            val trip = event.copy(title = "Trip", date = target.toLocalDate(),
+                eventTime = target.toLocalTime(), icon = EventIcon.AIRPLANE, countMode = CountMode.COUNT_DOWN)
+            for (format in TimeWidgetFormat.selectable) {
+                for (scale in listOf(1f, 2f)) {
+                    val context = fontContext(scale)
+                    for ((width, height) in listOf(140 to 48, 150 to 50, 280 to 210)) {
+                        val configuration = WidgetConfiguration(trip.id, WidgetAppearance.DARK,
+                            WidgetBackground.HORIZON, timeFormat = format)
+                        val rendered = TimeWidgetRenderer.render(context, context, 1234,
+                            configuration, trip, null, CountdownTimeSnapshot(now), width, height,
+                            hashMapOf(), interactive = false)
+                        val root = rendered.apply(context, FrameLayout(context)) as FrameLayout
+                        layout(root, context, width, height)
+                        val static = format == TimeWidgetFormat.DAYS_HOURS
+                        val valueId = if (static) R.id.timeWidgetLongDays else R.id.timeWidgetClock
+                        val title = root.findViewById<TextView>(R.id.timeWidgetTitle)
+                        val value = root.findViewById<TextView>(valueId)
+                        val meta = root.findViewById<TextView>(R.id.timeWidgetDetailHint)
+                        val name = "format-${format.key}-${width}x${height}-f${(scale * 100).toInt()}"
+                        capture(root, "$name.png")
+                        assertEquals("Trip", title.text.toString())
+                        assertEquals(View.VISIBLE, root.findViewById<View>(R.id.timeWidgetIcon).visibility)
+                        assertEquals(if (scale == 1f && width >= 144) View.VISIBLE else View.GONE,
+                            root.findViewById<View>(R.id.timeWidgetMark).visibility)
+                        assertEquals(if (static) View.GONE else View.VISIBLE,
+                            root.findViewById<View>(R.id.timeWidgetClock).visibility)
+                        if (static) {
+                            assertTrue(value.text.startsWith("≈"))
+                            assertTrue(meta.text.startsWith("As of "))
+                        } else {
+                            assertTrue(value.text.contains(":"))
+                            assertEquals(value.text.startsWith("↓"), format == TimeWidgetFormat.LIVE_COUNTER)
+                            assertEquals(context.getString(R.string.widget_clock_legend), meta.text.toString())
+                        }
+                        for (field in listOf(title, value, meta)) {
+                            val textLayout = requireNotNull(field.layout)
+                            val box = Rect(0, 0, field.width, field.height)
+                            root.offsetDescendantRectToMyCoords(field, box)
+                            assertEquals(name, View.VISIBLE, field.visibility)
+                            assertTrue("$name clipped ${field.text}: $box",
+                                box.top >= 0 && box.bottom <= root.height && box.height() > 0)
+                            assertTrue("$name clips ${field.text}",
+                                textLayout.getEllipsisCount(0) == 0 &&
+                                    textLayout.getLineWidth(0) <= field.width &&
+                                    textLayout.height <= field.height)
+                        }
+                    }
+                }
+            }
+        }
 
     private fun fontContext(scale: Float): Context = app.createConfigurationContext(
         Configuration(app.resources.configuration).apply { fontScale = scale; setLocale(Locale.US) })

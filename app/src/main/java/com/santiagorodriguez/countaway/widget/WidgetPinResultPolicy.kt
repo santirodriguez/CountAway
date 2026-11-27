@@ -15,5 +15,5 @@ internal object WidgetPinResultPolicy {
             existing.eventId == snapshot.eventId &&
             existing.appearance == snapshot.style.appearance &&
             existing.background == snapshot.style.background &&
-            existing.onlyHours == snapshot.onlyHours
+            existing.timeFormat == snapshot.timeFormat
 }

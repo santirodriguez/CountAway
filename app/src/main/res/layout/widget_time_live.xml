@@ -53,6 +53,15 @@
                 android:maxLines="3"
                 android:ellipsize="end" />
             <ImageView
+                android:id="@+id/timeWidgetMark"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_launcher_monochrome"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null"
+                android:visibility="gone" />
+            <ImageView
                 android:id="@+id/timeWidgetLiveDot"
                 android:layout_width="7dp"
                 android:layout_height="7dp"

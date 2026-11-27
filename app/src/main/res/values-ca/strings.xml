@@ -185,7 +185,7 @@
     <string name="auto_backup_recover_title">Vols restablir les còpies?</string>
     <string name="auto_backup_recover_message">Les còpies automàtiques es desactivaran i hauràs de triar la carpeta de nou. No s’esborraran els fitxers existents.</string>
     <string name="widget_home_days">Dies (1×1)</string>
-    <string name="widget_home_time">Dies + rellotge (2×1)</string>
+    <string name="widget_home_time">Dies + hores (2×1)</string>
     <string name="widget_home_add_time">Afegeix una hora a aquest esdeveniment</string>
     <string name="widget_home_preview_expanded">Mostra un giny més gran</string>
     <string name="widget_home_resize_hint">Mantén premut el giny i arrossega’n les vores per veure més detalls.</string>
@@ -193,9 +193,20 @@
     <string name="picker_trip_title">Viatge</string>
     <string name="picker_time_example">3 d · 04:15</string>
     <string name="widget_only_hours">Només hores</string>
-    <string name="widget_hours_info">Suma les hores fins i tot després d’un dia.</string>
+    <string name="widget_hours_info">Suma les hores fins i tot després d’un dia.\n77:42:00</string>
     <string name="widget_hours_value">%1$s h</string>
     <string name="widget_format_info">Sobre aquest format</string>
     <string name="widget_days_info">Dies de calendari fins a l’esdeveniment o des de l’inici.</string>
-    <string name="widget_dayclock_info">A partir de 24 hores, mostra dies i el temps restant.</string>
+    <string name="widget_dayclock_info">Dies i hores aproximats, amb la data i l’hora del càlcul.\n≈ 3 d 6 h</string>
+    <string name="widget_live_counter">Comptador en viu (2×1)</string>
+    <string name="widget_live_counter_info">Un rellotge gran. La fletxa indica si el compte és ascendent o descendent.\n↓ 2:14:37</string>
+    <string name="widget_clock_legend">h (si n’hi ha) · min · s</string>
+    <string name="widget_snapshot_stamp">A %1$s</string>
+    <string name="widget_snapshot_under_hour">Menys d’1 h</string>
+    <string name="widget_snapshot_days_hours">≈ %1$s d %2$s h</string>
+    <string name="widget_snapshot_hours">≈ %1$s h</string>
+    <string name="widget_snapshot_remaining">Queden %1$s</string>
+    <string name="widget_snapshot_elapsed">Han transcorregut %1$s</string>
+    <string name="widget_time_format_label">Format</string>
+    <string name="widget_time_legacy">Rellotge clàssic</string>
 </resources>

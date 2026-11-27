@@ -8,9 +8,20 @@
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_marginTop="8dp" android:text="@string/time_widget_config_description"
         android:textColor="@color/secondary_text" android:textSize="14sp" />
-    <CheckBox android:id="@+id/timeConfigOnlyHours"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:minHeight="48dp" android:text="@string/widget_only_hours" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:labelFor="@+id/timeConfigFormat"
+        android:text="@string/widget_time_format_label"
+        android:textColor="@color/secondary_text"
+        android:textSize="14sp" />
+    <Spinner
+        android:id="@id/timeConfigFormat"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:prompt="@string/widget_format_info" />
     <TextView android:id="@+id/widgetEmptyState"
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_marginTop="16dp" android:background="@drawable/surface_card"

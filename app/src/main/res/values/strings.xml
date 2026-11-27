@@ -193,7 +193,7 @@
     <string name="auto_backup_recover_title">Reset backup settings?</string>
     <string name="auto_backup_recover_message">This turns off automatic backups and requires a new folder choice. Existing backup files will not be deleted.</string>
     <string name="widget_home_days">Days (1×1)</string>
-    <string name="widget_home_time">Days + clock (2×1)</string>
+    <string name="widget_home_time">Days + hours (2×1)</string>
     <string name="widget_home_add_time">Add a time to this event</string>
     <string name="widget_home_preview_expanded">Preview a larger widget</string>
     <string name="widget_home_resize_hint">Touch and hold the widget, then drag its edges to see more detail.</string>
@@ -201,9 +201,20 @@
     <string name="picker_trip_title">Trip</string>
     <string name="picker_time_example">3 d · 04:15</string>
     <string name="widget_only_hours">Only hours</string>
-    <string name="widget_hours_info">Total hours, even after a full day.</string>
+    <string name="widget_hours_info">Total hours, even after a full day.\n77:42:00</string>
     <string name="widget_hours_value">%1$s h</string>
     <string name="widget_format_info">About this format</string>
     <string name="widget_days_info">Calendar days until or since the event.</string>
-    <string name="widget_dayclock_info">After 24 hours, see days and the remaining time.</string>
+    <string name="widget_dayclock_info">Approximate days and hours, with the time the value was calculated.\n≈ 3 d 6 h</string>
+    <string name="widget_live_counter">Live counter (2×1)</string>
+    <string name="widget_live_counter_info">A large clock. The arrow shows whether it counts up or down.\n↓ 2:14:37</string>
+    <string name="widget_clock_legend">h (if shown) · min · sec</string>
+    <string name="widget_snapshot_stamp">As of %1$s</string>
+    <string name="widget_snapshot_under_hour">Under 1 h</string>
+    <string name="widget_snapshot_days_hours">≈ %1$s d %2$s h</string>
+    <string name="widget_snapshot_hours">≈ %1$s h</string>
+    <string name="widget_snapshot_remaining">%1$s remaining</string>
+    <string name="widget_snapshot_elapsed">%1$s elapsed</string>
+    <string name="widget_time_format_label">Display</string>
+    <string name="widget_time_legacy">Classic timer</string>
 </resources>

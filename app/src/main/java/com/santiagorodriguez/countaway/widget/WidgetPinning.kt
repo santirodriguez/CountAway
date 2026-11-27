@@ -36,7 +36,7 @@ internal data class WidgetPinRequestSnapshot(
     val eventId: String,
     val style: WidgetStyleSelection,
     val family: WidgetFamily = WidgetFamily.DAYS,
-    val onlyHours: Boolean = false,
+    val timeFormat: TimeWidgetFormat = TimeWidgetFormat.LEGACY,
 ) {
     fun callbackData(): String = buildString {
         append("countaway://widget/pin/")
@@ -49,7 +49,10 @@ internal data class WidgetPinRequestSnapshot(
         append(encode(style.background.storageKey))
         append("&family=")
         append(family.key)
-        if (onlyHours) append("&hours=1")
+        if (family == WidgetFamily.TIME) {
+            append("&format=")
+            append(timeFormat.key)
+        }
     }
 
     companion object {
@@ -58,13 +61,13 @@ internal data class WidgetPinRequestSnapshot(
             style: WidgetStyleSelection,
             requestToken: String = UUID.randomUUID().toString(),
             family: WidgetFamily = WidgetFamily.DAYS,
-            onlyHours: Boolean = false,
+            timeFormat: TimeWidgetFormat = TimeWidgetFormat.LEGACY,
         ): WidgetPinRequestSnapshot = WidgetPinRequestSnapshot(
             requestToken = requestToken,
             eventId = EventTransport.wireId(eventId),
             style = style,
             family = family,
-            onlyHours = onlyHours,
+            timeFormat = timeFormat,
         )
 
         fun fromCallbackData(raw: String?): WidgetPinRequestSnapshot? {
@@ -94,10 +97,17 @@ internal data class WidgetPinRequestSnapshot(
                 it.storageKey == values["background"]
             } ?: return null
 
+            val family = WidgetFamily.fromKey(values["family"]) ?: return null
+            val format = when {
+                family == WidgetFamily.DAYS -> TimeWidgetFormat.LEGACY
+                "format" in values -> TimeWidgetFormat.fromKey(values["format"]) ?: return null
+                values["hours"] == "1" -> TimeWidgetFormat.HOURS
+                else -> TimeWidgetFormat.DAYS_HOURS
+            }
             return WidgetPinRequestSnapshot(
                 requestToken = requestToken,
-                onlyHours = values["hours"] == "1",
-                family = WidgetFamily.fromKey(values["family"]) ?: return null,
+                timeFormat = format,
+                family = family,
                 eventId = eventId,
                 style = WidgetStyleSelection(
                     appearance = appearance,
@@ -148,10 +158,10 @@ object WidgetPinning {
         context: Context,
         event: CountdownEvent,
         style: WidgetStyleSelection,
-        onlyHours: Boolean = false,
+        timeFormat: TimeWidgetFormat = TimeWidgetFormat.LEGACY,
     ): android.widget.RemoteViews = TimeWidgetRenderer.render(
         context, context, AppWidgetManager.INVALID_APPWIDGET_ID,
-        WidgetConfiguration(event.id, style.appearance, style.background, onlyHours = onlyHours, dayClock = !onlyHours), event, null,
+        WidgetConfiguration(event.id, style.appearance, style.background, timeFormat = timeFormat), event, null,
         com.santiagorodriguez.countaway.countdown.CountdownTime.snapshot(),
         150, 50, mutableMapOf(), interactive = false,
     )
@@ -165,7 +175,7 @@ object WidgetPinning {
         if (!snapshot.family.accepts(event) || !manager.isRequestPinAppWidgetSupported) return false
 
         val provider = snapshot.family.provider(activity)
-        val preview = if (snapshot.family == WidgetFamily.TIME) timePreview(activity, event, snapshot.style, snapshot.onlyHours)
+        val preview = if (snapshot.family == WidgetFamily.TIME) timePreview(activity, event, snapshot.style, snapshot.timeFormat)
         else WidgetPreviewFactory.remoteViews(
             context = activity,
             event = event.copy(title = EventTransport.preview(event.title)),

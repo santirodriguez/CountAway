@@ -90,8 +90,9 @@ class WidgetPinFreshnessInstrumentedTest {
                 scenario.onActivity {
                     val family = it.findViewById<RadioGroup>(R.id.widgetPinSetupFamily)
                     assertEquals(R.id.widgetPinSetupDays, family.checkedRadioButtonId)
+                    assertEquals(R.id.widgetPinSetupDays, family.getChildAt(0).id)
                     assertTrue(it.findViewById<Button>(R.id.widgetPinSetupAddButton).isEnabled)
-                    family.check(R.id.widgetPinSetupHours)
+                    family.check(R.id.widgetPinSetupCounter)
                     assertFalse(it.findViewById<Button>(R.id.widgetPinSetupAddButton).isEnabled)
                     assertEquals(android.view.View.VISIBLE,
                         it.findViewById<Button>(R.id.widgetPinSetupEditEvent).visibility)
@@ -103,8 +104,10 @@ class WidgetPinFreshnessInstrumentedTest {
                 scenario.recreate()
                 drain()
                 scenario.onActivity {
-                    assertEquals(R.id.widgetPinSetupHours,
+                    assertEquals(R.id.widgetPinSetupCounter,
                         it.findViewById<RadioGroup>(R.id.widgetPinSetupFamily).checkedRadioButtonId)
+                    assertEquals(R.id.widgetPinSetupTime,
+                        it.findViewById<RadioGroup>(R.id.widgetPinSetupFamily).getChildAt(0).id)
                     assertTrue(it.findViewById<Button>(R.id.widgetPinSetupAddButton).isEnabled)
                     assertEquals("Home widget choice",
                         it.findViewById<TextView>(R.id.timeWidgetTitle).text.toString())

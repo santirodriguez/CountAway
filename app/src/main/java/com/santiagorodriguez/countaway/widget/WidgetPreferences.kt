@@ -7,8 +7,7 @@ data class WidgetConfiguration(
     val appearance: WidgetAppearance,
     val background: WidgetBackground = WidgetBackground.CLASSIC,
     val eventSelection: WidgetEventSelection = WidgetEventSelection.FIXED,
-    val onlyHours: Boolean = false,
-    val dayClock: Boolean = false,
+    val timeFormat: TimeWidgetFormat = TimeWidgetFormat.LEGACY,
 )
 
 class WidgetPreferences(context: Context) {
@@ -26,8 +25,12 @@ class WidgetPreferences(context: Context) {
             appearance = WidgetAppearance.fromStorageKey(preferences.getString(appearanceKey(appWidgetId), null)),
             background = WidgetBackground.fromStorageKey(preferences.getString(backgroundKey(appWidgetId), null)),
             eventSelection = eventSelection,
-            onlyHours = preferences.getBoolean(hoursKey(appWidgetId), false),
-            dayClock = preferences.getBoolean(dayKey(appWidgetId), false),
+            timeFormat = TimeWidgetFormat.fromKey(preferences.getString(formatKey(appWidgetId), null))
+                ?: when {
+                    preferences.getBoolean(hoursKey(appWidgetId), false) -> TimeWidgetFormat.HOURS
+                    preferences.getBoolean(dayKey(appWidgetId), false) -> TimeWidgetFormat.DAYS_HOURS
+                    else -> TimeWidgetFormat.LEGACY
+                },
         )
     }
 
@@ -37,12 +40,12 @@ class WidgetPreferences(context: Context) {
         appearance: WidgetAppearance,
         background: WidgetBackground,
         eventSelection: WidgetEventSelection,
-        onlyHours: Boolean = false,
-        dayClock: Boolean = false,
+        timeFormat: TimeWidgetFormat = TimeWidgetFormat.LEGACY,
     ) {
         preferences.edit()
-            .putBoolean(dayKey(appWidgetId), dayClock)
-            .putBoolean(hoursKey(appWidgetId), onlyHours)
+            .putString(formatKey(appWidgetId), timeFormat.key)
+            .remove(dayKey(appWidgetId))
+            .remove(hoursKey(appWidgetId))
             .putString(eventKey(appWidgetId), eventId)
             .putString(appearanceKey(appWidgetId), appearance.storageKey)
             .putString(backgroundKey(appWidgetId), background.storageKey)
@@ -54,6 +57,7 @@ class WidgetPreferences(context: Context) {
         if (oldAppWidgetId == newAppWidgetId) return
         val configuration = get(oldAppWidgetId)
         val editor = preferences.edit()
+            .remove(formatKey(newAppWidgetId))
             .remove(dayKey(newAppWidgetId))
             .remove(hoursKey(newAppWidgetId))
             .remove(eventKey(newAppWidgetId))
@@ -63,8 +67,7 @@ class WidgetPreferences(context: Context) {
 
         configuration?.let { current ->
             editor
-                .putBoolean(dayKey(newAppWidgetId), current.dayClock)
-                .putBoolean(hoursKey(newAppWidgetId), current.onlyHours)
+                .putString(formatKey(newAppWidgetId), current.timeFormat.key)
                 .putString(eventKey(newAppWidgetId), current.eventId)
                 .putString(appearanceKey(newAppWidgetId), current.appearance.storageKey)
                 .putString(backgroundKey(newAppWidgetId), current.background.storageKey)
@@ -72,6 +75,7 @@ class WidgetPreferences(context: Context) {
         }
 
         editor
+            .remove(formatKey(oldAppWidgetId))
             .remove(dayKey(oldAppWidgetId))
             .remove(hoursKey(oldAppWidgetId))
             .remove(eventKey(oldAppWidgetId))
@@ -83,6 +87,7 @@ class WidgetPreferences(context: Context) {
 
     fun remove(appWidgetId: Int) {
         preferences.edit()
+            .remove(formatKey(appWidgetId))
             .remove(dayKey(appWidgetId))
             .remove(hoursKey(appWidgetId))
             .remove(eventKey(appWidgetId))
@@ -92,6 +97,7 @@ class WidgetPreferences(context: Context) {
             .apply()
     }
 
+    private fun formatKey(id: Int) = "widget_${id}_time_format"
     private fun dayKey(id: Int) = "widget_${id}_day_clock"
     private fun hoursKey(id: Int) = "widget_${id}_hours"
     private fun eventKey(appWidgetId: Int) = "widget_${appWidgetId}_event"

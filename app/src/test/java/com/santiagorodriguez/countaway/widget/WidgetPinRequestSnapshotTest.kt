@@ -16,7 +16,7 @@ class WidgetPinRequestSnapshotTest {
             ),
             requestToken = "request / token?one",
             family = WidgetFamily.TIME,
-            onlyHours = true,
+            timeFormat = TimeWidgetFormat.LIVE_COUNTER,
         )
 
         assertEquals(
@@ -30,6 +30,11 @@ class WidgetPinRequestSnapshotTest {
         val old = "countaway://widget/pin/request?event=event-a&appearance=light&background=classic"
         assertEquals(WidgetFamily.DAYS, WidgetPinRequestSnapshot.fromCallbackData(old)?.family)
         assertNull(WidgetPinRequestSnapshot.fromCallbackData("$old&family=unknown"))
+        assertEquals(TimeWidgetFormat.HOURS,
+            WidgetPinRequestSnapshot.fromCallbackData("$old&family=time&hours=1")?.timeFormat)
+        assertEquals(TimeWidgetFormat.DAYS_HOURS,
+            WidgetPinRequestSnapshot.fromCallbackData("$old&family=time")?.timeFormat)
+        assertNull(WidgetPinRequestSnapshot.fromCallbackData("$old&family=time&format=unknown"))
     }
 
     @Test

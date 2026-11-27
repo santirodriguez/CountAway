@@ -17,12 +17,16 @@ import com.santiagorodriguez.countaway.countdown.CountdownTimeSnapshot
 import com.santiagorodriguez.countaway.countdown.TimedEventResolver
 import com.santiagorodriguez.countaway.data.CountdownDataProblem
 import com.santiagorodriguez.countaway.data.EventTransport
+import com.santiagorodriguez.countaway.model.CountMode
 import com.santiagorodriguez.countaway.model.CountdownEvent
 import com.santiagorodriguez.countaway.ui.EditorActivity
 import com.santiagorodriguez.countaway.ui.EventTimeText
 import com.santiagorodriguez.countaway.ui.EventIconPresentation
 import java.time.Duration
 import java.time.Instant
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.text.NumberFormat
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -48,6 +52,7 @@ internal object TimeWidgetRenderer {
     ): RemoteViews {
         // A true one-cell-high layout keeps the title and native clock visible.
         // Larger host bounds retain the established full-height presentation.
+        val format = configuration?.timeFormat ?: TimeWidgetFormat.LEGACY
         val compact = heightDp < 70
         // One-row/short Time widgets prioritize the actual event over app branding.
         // Roomier Time layouts preserve the established brand presentation.
@@ -82,6 +87,7 @@ internal object TimeWidgetRenderer {
         // The actual colorful CA artwork is a separate ImageView, never color-filtered.
         // Explicit state changes remain correct when Android re-applies RemoteViews.
         views.setViewVisibility(R.id.timeWidgetBrandLogo, View.GONE)
+        views.setViewVisibility(R.id.timeWidgetMark, View.GONE)
         views.setViewVisibility(R.id.timeWidgetIcon, View.VISIBLE)
         views.setViewVisibility(R.id.timeWidgetLongDays, View.GONE)
         views.setViewVisibility(R.id.timeWidgetDetailHint, View.GONE)
@@ -155,12 +161,10 @@ internal object TimeWidgetRenderer {
             " · " + count.target.zone.id + (if (ambiguous) " (${count.target.offset})" else "")
         } else ""
         val clockNow = Instant.now()
-        val duration = Duration.between(clockNow, count.target.toInstant())
-        val splitDays = configuration?.dayClock == true && duration.abs() >= Duration.ofDays(1)
-        val plan = if (splitDays) null else TimeWidgetClockPolicy.plan(
+        val plan = TimeWidgetClockPolicy.plan(
             clockNow, count.target.toInstant(), SystemClock.elapsedRealtime(), timed.countMode,
         )
-        val showDetailedZone = !compact && layout.showZone && plan != null
+        val showDetailedZone = !compact && layout.showZone && layout.showDate && plan != null
         views.setTextViewText(R.id.timeWidgetDate,
             targetText + if (showDetailedZone) "" else zoneSuffix)
         if (showDetailedZone) {
@@ -174,21 +178,9 @@ internal object TimeWidgetRenderer {
             views.setTextViewText(R.id.timeWidgetZone, zoneLabel)
             views.setViewVisibility(R.id.timeWidgetZone, View.VISIBLE)
         }
-        val totalHours = duration.toHours()
-        val compactHours = configuration?.onlyHours == true &&
-            (plan == null || (widthDp < 220 && abs(totalHours) >= 1000))
-        if (compactHours) {
-            val hours = if (timed.countMode == com.santiagorodriguez.countaway.model.CountMode.COUNT_DOWN)
-                totalHours else -totalHours
-            val number = NumberFormat.getIntegerInstance(displayContext.resources.configuration.locales[0]).format(hours)
-            val label = displayContext.getString(R.string.widget_hours_value, number)
-            views.setTextViewText(R.id.timeWidgetLongDays, label)
-            views.setTextViewTextSize(R.id.timeWidgetLongDays, TypedValue.COMPLEX_UNIT_SP,
-                fittedLongDaySizeSp(displayContext, widthDp, layout.horizontalPaddingDp, label, layout.clockMaxSizeSp))
-            views.setViewVisibility(R.id.timeWidgetLongDays, View.VISIBLE)
-            views.setViewVisibility(R.id.timeWidgetClock, View.GONE)
-            views.setViewVisibility(R.id.timeWidgetLiveDot, View.GONE)
-            views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
+        if (format != TimeWidgetFormat.LEGACY) {
+            renderFormat(views, displayContext, format, timed, count.target, snapshot.now,
+                plan, layout, widthDp, heightDp, theme.secondaryTextColor)
         } else if (plan != null) {
             views.setViewVisibility(R.id.timeWidgetClock, View.VISIBLE)
             views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
@@ -267,6 +259,94 @@ internal object TimeWidgetRenderer {
         return views
     }
 
+    private fun renderFormat(
+        views: RemoteViews, context: Context, format: TimeWidgetFormat, event: CountdownEvent,
+        target: ZonedDateTime, now: ZonedDateTime, clock: TimeWidgetClockPlan?,
+        layout: TimeWidgetLayoutPlan, widthDp: Int, heightDp: Int, markColor: Int,
+    ) {
+        val scale = context.resources.configuration.fontScale
+        val compact = heightDp < 70
+        val large = scale >= 1.6f
+        val padding = layout.horizontalPaddingDp
+        val isCounter = format == TimeWidgetFormat.LIVE_COUNTER
+        val direction = if (event.countMode == CountMode.COUNT_DOWN) "↓" else "↑"
+        val arrow = if (isCounter) "$direction " else ""
+        val targetInstant = target.toInstant()
+        val instant = now.toInstant()
+        val totalHours = Duration.between(instant, targetInstant).toHours()
+        val hoursFallback = clock == null || (widthDp < 220 && abs(totalHours) >= 1000)
+        val snapshot = format == TimeWidgetFormat.DAYS_HOURS
+        val staticValue = snapshot || hoursFallback
+        val locale = context.resources.configuration.locales[0]
+        val numbers = NumberFormat.getIntegerInstance(locale)
+        val maxClock = when {
+            !compact -> layout.clockMaxSizeSp
+            large -> if (heightDp < 53) 8.5f else 10f
+            scale >= 1.3f -> 15f
+            isCounter -> 23f
+            else -> 20f
+        }
+        val meta = if (staticValue) {
+            val date = now.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
+            val stamp = "$date · ${EventTimeText.time(context, now)}"
+            context.getString(R.string.widget_snapshot_stamp, stamp)
+        } else context.getString(R.string.widget_clock_legend)
+        val metaSp = fittedLongDaySizeSp(context, widthDp, padding, meta,
+            if (compact) (if (large) 7f else 9f) else 11f)
+
+        views.setViewVisibility(R.id.timeWidgetBrandLogo, View.GONE)
+        views.setViewVisibility(R.id.timeWidgetIcon, View.VISIBLE)
+        views.setInt(R.id.timeWidgetMark, "setColorFilter", markColor)
+        val showMark = widthDp >= 144 && !large && (!compact || EventTransport.preview(event.title).length <= 16)
+        views.setViewVisibility(R.id.timeWidgetMark, if (showMark) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.timeWidgetLiveDot, View.GONE)
+        views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
+        if (compact) {
+            val density = context.resources.displayMetrics.density
+            val horizontal = (padding * density).roundToInt()
+            val vertical = density.roundToInt()
+            views.setViewPadding(R.id.timeWidgetContent, horizontal, vertical, horizontal, vertical)
+            views.setTextViewTextSize(R.id.timeWidgetTitle, TypedValue.COMPLEX_UNIT_SP,
+                if (large) 7f else layout.titleSizeSp)
+        }
+        views.setTextViewText(R.id.timeWidgetDetailHint, meta)
+        views.setTextViewTextSize(R.id.timeWidgetDetailHint, TypedValue.COMPLEX_UNIT_SP, metaSp)
+        views.setViewVisibility(R.id.timeWidgetDetailHint, View.VISIBLE)
+        views.setViewVisibility(R.id.timeWidgetClock, if (staticValue) View.GONE else View.VISIBLE)
+        views.setViewVisibility(R.id.timeWidgetLongDays, if (staticValue) View.VISIBLE else View.GONE)
+        if (staticValue) {
+            val value = if (snapshot) {
+                val reading = TimeWidgetSnapshotPolicy.calculate(instant, targetInstant)
+                when {
+                    reading.underHour -> context.getString(R.string.widget_snapshot_under_hour)
+                    reading.days > 0 -> context.getString(R.string.widget_snapshot_days_hours,
+                        numbers.format(reading.days), numbers.format(reading.hours))
+                    reading.hours == 0L -> context.getString(R.string.widget_hours_value, numbers.format(0))
+                    else -> context.getString(R.string.widget_snapshot_hours, numbers.format(reading.hours))
+                }
+            } else {
+                val signedHours = if (event.countMode == CountMode.COUNT_DOWN) totalHours else -totalHours
+                context.getString(R.string.widget_snapshot_hours, numbers.format(signedHours))
+            }
+            val label = arrow + value
+            views.setTextViewText(R.id.timeWidgetLongDays, label)
+            val spokenValue = if (snapshot && totalHours == 0L && instant == targetInstant) label
+                else if (snapshot) context.getString(
+                    if (targetInstant.isAfter(instant)) R.string.widget_snapshot_remaining
+                    else R.string.widget_snapshot_elapsed, label)
+                else label
+            views.setContentDescription(R.id.timeWidgetLongDays, spokenValue)
+            views.setTextViewTextSize(R.id.timeWidgetLongDays, TypedValue.COMPLEX_UNIT_SP,
+                fittedLongDaySizeSp(context, widthDp, padding, label, maxClock))
+        } else if (clock != null) {
+            views.setTextViewTextSize(R.id.timeWidgetClock, TypedValue.COMPLEX_UNIT_SP,
+                liveClockTextSizeSp(context, widthDp, padding, maxClock, instant, targetInstant, arrow))
+            views.setChronometer(R.id.timeWidgetClock, clock.elapsedRealtimeBase,
+                if (isCounter) "$arrow%s" else null, true)
+            views.setChronometerCountDown(R.id.timeWidgetClock, clock.countDown)
+        }
+    }
+
     /**
      * Chronometer changes its text in the launcher after the initial layout.
      * Fit a deliberately wider future sample once, instead of relying on
@@ -274,16 +354,16 @@ internal object TimeWidgetRenderer {
      */
     private fun liveClockTextSizeSp(
         context: Context, widthDp: Int, horizontalPaddingDp: Int, maximumSizeSp: Float,
-        now: Instant, target: Instant,
+        now: Instant, target: Instant, prefix: String = "",
     ): Float {
         val metrics = context.resources.displayMetrics
         val hoursUntilRefresh = kotlin.math.abs(Duration.between(now, target).seconds) / 3_600L + 48L
         val hourDigits = hoursUntilRefresh.toString().length.coerceAtLeast(2)
-        val widestLabel = "-" + "8".repeat(hourDigits) + ":88:88"
+        val widestLabel = prefix + "-" + "8".repeat(hourDigits) + ":88:88"
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
             fontFeatureSettings = "tnum"
-            textSize = maximumSizeSp * metrics.scaledDensity
+            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, maximumSizeSp, metrics)
         }
         val availablePixels = (widthDp - 2 * horizontalPaddingDp - 4)
             .coerceAtLeast(1) * metrics.density
@@ -301,7 +381,7 @@ internal object TimeWidgetRenderer {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
             fontFeatureSettings = "tnum"
-            textSize = maxSp * metrics.scaledDensity
+            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, maxSp, metrics)
         }
         val available = (widthDp - 2 * paddingDp - 4).coerceAtLeast(1) * metrics.density
         return (maxSp * available / paint.measureText(text).coerceAtLeast(1f) * 0.94f)

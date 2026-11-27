@@ -51,6 +51,15 @@
                 android:textColor="@color/widget_dark_text"
                 android:textSize="10sp" />
             <ImageView
+                android:id="@+id/timeWidgetMark"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_launcher_monochrome"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null"
+                android:visibility="gone" />
+            <ImageView
                 android:id="@+id/timeWidgetLiveDot"
                 android:layout_width="7dp"
                 android:layout_height="7dp"
@@ -106,6 +115,8 @@
             android:id="@+id/timeWidgetDetailHint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:singleLine="true"
             android:textSize="10sp"
             android:visibility="gone" />
         <TextView

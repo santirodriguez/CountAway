@@ -185,7 +185,7 @@
     <string name="auto_backup_recover_title">¿Restablecer copias automáticas?</string>
     <string name="auto_backup_recover_message">Se desactivarán las copias automáticas y tendrás que elegir la carpeta otra vez. Los archivos existentes no se borrarán.</string>
     <string name="widget_home_days">Días (1×1)</string>
-    <string name="widget_home_time">Días + reloj (2×1)</string>
+    <string name="widget_home_time">Días + horas (2×1)</string>
     <string name="widget_home_add_time">Agregá una hora a este evento</string>
     <string name="widget_home_preview_expanded">Ver una versión más grande</string>
     <string name="widget_home_resize_hint">Mantené presionado el widget y arrastrá sus bordes para ver más detalles.</string>
@@ -193,9 +193,20 @@
     <string name="picker_trip_title">Viaje</string>
     <string name="picker_time_example">3 d · 04:15</string>
     <string name="widget_only_hours">Solo horas</string>
-    <string name="widget_hours_info">Suma las horas incluso después de un día.</string>
+    <string name="widget_hours_info">Suma las horas incluso después de un día.\n77:42:00</string>
     <string name="widget_hours_value">%1$s h</string>
     <string name="widget_format_info">Sobre este formato</string>
     <string name="widget_days_info">Días del calendario hasta el evento o desde su inicio.</string>
-    <string name="widget_dayclock_info">Desde las 24 horas, muestra días y el tiempo restante.</string>
+    <string name="widget_dayclock_info">Días y horas aproximados, con la fecha y hora del cálculo.\n≈ 3 d 6 h</string>
+    <string name="widget_live_counter">Contador en vivo (2×1)</string>
+    <string name="widget_live_counter_info">Un reloj grande. La flecha indica si cuenta hacia arriba o hacia abajo.\n↓ 2:14:37</string>
+    <string name="widget_clock_legend">h (si hay) · min · seg</string>
+    <string name="widget_snapshot_stamp">Al %1$s</string>
+    <string name="widget_snapshot_under_hour">Menos de 1 h</string>
+    <string name="widget_snapshot_days_hours">≈ %1$s d %2$s h</string>
+    <string name="widget_snapshot_hours">≈ %1$s h</string>
+    <string name="widget_snapshot_remaining">Quedan %1$s</string>
+    <string name="widget_snapshot_elapsed">Transcurrieron %1$s</string>
+    <string name="widget_time_format_label">Formato</string>
+    <string name="widget_time_legacy">Reloj clásico</string>
 </resources>

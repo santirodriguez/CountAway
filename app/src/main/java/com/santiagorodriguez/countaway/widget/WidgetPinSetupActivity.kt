@@ -42,7 +42,8 @@ class WidgetPinSetupActivity : BaseActivity() {
     private var event: CountdownEvent? = null
     private var availableEvents = emptyList<CountdownEvent>()
     private var chooseInitialFamily = true
-    private var onlyHours = false
+    private var timeFormat = TimeWidgetFormat.DAYS_HOURS
+    private var orderedForTime: Boolean? = null
     private var family = WidgetFamily.DAYS
     private lateinit var familyGroup: RadioGroup
     private var selectedBackground = WidgetBackground.CLASSIC
@@ -96,21 +97,31 @@ class WidgetPinSetupActivity : BaseActivity() {
         addButton = findViewById(R.id.widgetPinSetupAddButton)
         familyGroup = findViewById(R.id.widgetPinSetupFamily)
         family = WidgetFamily.fromKey(savedInstanceState?.getString(STATE_FAMILY)) ?: WidgetFamily.DAYS
-        chooseInitialFamily = savedInstanceState?.containsKey(STATE_FAMILY) != true
-        onlyHours = savedInstanceState?.getBoolean("onlyHours") == true
-        familyGroup.check(if (onlyHours) R.id.widgetPinSetupHours else if (family == WidgetFamily.TIME) R.id.widgetPinSetupTime else R.id.widgetPinSetupDays)
+        chooseInitialFamily = savedInstanceState?.getBoolean(STATE_CHOOSE_DEFAULT, false) ?: true
+        timeFormat = TimeWidgetFormat.fromKey(savedInstanceState?.getString(STATE_TIME_FORMAT))
+            ?: TimeWidgetFormat.DAYS_HOURS
+        familyGroup.check(when {
+            family == WidgetFamily.DAYS -> R.id.widgetPinSetupDays
+            timeFormat == TimeWidgetFormat.HOURS -> R.id.widgetPinSetupHours
+            timeFormat == TimeWidgetFormat.LIVE_COUNTER -> R.id.widgetPinSetupCounter
+            else -> R.id.widgetPinSetupTime
+        })
         familyGroup.setOnCheckedChangeListener { _, checked ->
-            onlyHours = checked == R.id.widgetPinSetupHours
-            family = if (onlyHours || checked == R.id.widgetPinSetupTime) WidgetFamily.TIME else WidgetFamily.DAYS
+            if (checked == View.NO_ID) return@setOnCheckedChangeListener
+            family = if (checked == R.id.widgetPinSetupDays) WidgetFamily.DAYS else WidgetFamily.TIME
+            timeFormat = when (checked) {
+                R.id.widgetPinSetupHours -> TimeWidgetFormat.HOURS
+                R.id.widgetPinSetupCounter -> TimeWidgetFormat.LIVE_COUNTER
+                else -> TimeWidgetFormat.DAYS_HOURS
+            }
             updatePreview()
         }
-        findViewById<View>(R.id.widgetFormatInfo).setOnClickListener { anchor ->
-            val message = when {
-                onlyHours -> R.string.widget_hours_info
-                family == WidgetFamily.TIME -> R.string.widget_dayclock_info
-                else -> R.string.widget_days_info
-            }
-            android.widget.Toast.makeText(anchor.context, message, android.widget.Toast.LENGTH_LONG).show()
+        findViewById<View>(R.id.widgetFormatInfo).setOnClickListener {
+            val message = if (family == WidgetFamily.TIME) timeFormat.help else R.string.widget_days_info
+            AlertDialog.Builder(this)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
         }
         findViewById<CheckBox>(R.id.widgetPinSetupExpanded).setOnCheckedChangeListener { _, _ ->
             updatePreview()
@@ -183,7 +194,8 @@ class WidgetPinSetupActivity : BaseActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         val selection = currentSelection()
-        outState.putBoolean("onlyHours", onlyHours)
+        outState.putBoolean(STATE_CHOOSE_DEFAULT, chooseInitialFamily)
+        outState.putString(STATE_TIME_FORMAT, timeFormat.key)
         outState.putString(STATE_FAMILY, family.key)
         outState.putString(STATE_APPEARANCE, selection.appearance.name)
         outState.putString(STATE_BACKGROUND, selection.background.name)
@@ -192,7 +204,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         outState.putIntArray(STATE_BASELINE_IDS, baselineWidgetIds.toIntArray())
         pendingSnapshot?.let { snapshot ->
             outState.putString(STATE_REQUEST_TOKEN, snapshot.requestToken)
-            outState.putBoolean("requestHours", snapshot.onlyHours)
+            outState.putString(STATE_REQUEST_FORMAT, snapshot.timeFormat.key)
             outState.putString(STATE_REQUEST_FAMILY, snapshot.family.key)
             outState.putString(STATE_REQUEST_EVENT_ID, snapshot.eventId)
             outState.putString(STATE_REQUEST_APPEARANCE, snapshot.style.appearance.name)
@@ -231,24 +243,7 @@ class WidgetPinSetupActivity : BaseActivity() {
 
                 eventLoading = false
                 event = loaded
-                val timed = WidgetFamily.TIME.accepts(loaded)
-                val first = familyGroup.findViewById<View>(
-                    if (timed) R.id.widgetPinSetupTime else R.id.widgetPinSetupDays)
-                if (familyGroup.indexOfChild(first) != 0) {
-                    val selected = familyGroup.checkedRadioButtonId
-                    familyGroup.removeView(first)
-                    familyGroup.addView(first, 0)
-                    if (timed) {
-                        val hours = familyGroup.findViewById<View>(R.id.widgetPinSetupHours)
-                        familyGroup.removeView(hours)
-                        familyGroup.addView(hours, 1)
-                    }
-                    familyGroup.check(selected)
-                }
-                if (chooseInitialFamily) {
-                    chooseInitialFamily = false
-                    familyGroup.check(first.id)
-                }
+                orderFormats(WidgetFamily.TIME.accepts(loaded))
                 findViewById<ImageView>(R.id.widgetPinSetupEventIcon).apply {
                     setImageResource(EventIconPresentation.drawableRes(loaded.icon))
                     contentDescription = getString(EventIconPresentation.labelRes(loaded.icon))
@@ -260,11 +255,29 @@ class WidgetPinSetupActivity : BaseActivity() {
         )
     }
 
+    private fun orderFormats(timed: Boolean) {
+        if (orderedForTime == timed) return
+        orderedForTime = timed
+        val timeOptions = listOf(R.id.widgetPinSetupTime, R.id.widgetPinSetupHours, R.id.widgetPinSetupCounter)
+        val order = if (timed) timeOptions + R.id.widgetPinSetupDays else listOf(R.id.widgetPinSetupDays) + timeOptions
+        val selected = if (chooseInitialFamily) order.first() else familyGroup.checkedRadioButtonId
+        chooseInitialFamily = false
+        val buttons = order.map { familyGroup.findViewById<android.widget.RadioButton>(it) }
+        familyGroup.clearCheck()
+        familyGroup.removeAllViews()
+        buttons.forEach {
+            it.isChecked = false
+            familyGroup.addView(it)
+        }
+        familyGroup.check(selected)
+    }
+
     private fun requestPin() {
         if (awaitingPinResult || !addButton.isEnabled) return
         val currentEvent = event?.takeIf(family::accepts) ?: return
         val style = currentSelection()
-        val snapshot = WidgetPinRequestSnapshot.create(currentEvent.id, style, family = family, onlyHours = onlyHours)
+        val snapshot = WidgetPinRequestSnapshot.create(currentEvent.id, style, family = family,
+            timeFormat = if (family == WidgetFamily.TIME) timeFormat else TimeWidgetFormat.LEGACY)
         baselineWidgetIds = providerWidgetIds(snapshot.family)
         pendingSnapshot = snapshot
         awaitingPinResult = true
@@ -411,8 +424,10 @@ class WidgetPinSetupActivity : BaseActivity() {
         val labels = choices.map { (widgetFamily, id) ->
             val config = preferences.get(id)
             val title = EventTransport.resolve(availableEvents, config?.eventId)?.title
-            val familyLabel = getString(if (widgetFamily == WidgetFamily.TIME) R.string.widget_home_time
-                else R.string.widget_home_days)
+            val familyLabel = getString(
+                if (widgetFamily == WidgetFamily.TIME) (config?.timeFormat ?: TimeWidgetFormat.LEGACY).label
+                else R.string.widget_home_days,
+            )
             listOfNotNull(familyLabel, title?.let(EventTransport::preview),
                 config?.background?.let { getString(backgroundLabel(it)) }, "#$id").joinToString(" · ")
         }.toTypedArray()
@@ -440,7 +455,7 @@ class WidgetPinSetupActivity : BaseActivity() {
             eventId = eventId,
             style = WidgetStyleSelection(appearance, background),
             requestToken = token,
-            onlyHours = state.getBoolean("requestHours"),
+            timeFormat = TimeWidgetFormat.fromKey(state.getString(STATE_REQUEST_FORMAT)) ?: TimeWidgetFormat.LEGACY,
             family = WidgetFamily.fromKey(state.getString(STATE_REQUEST_FAMILY)) ?: return null,
         )
     }
@@ -602,7 +617,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         if (family == WidgetFamily.TIME && eligible) {
             val size = if (expanded.isChecked) WidgetPreviewDimensions(280, 210) else WidgetPreviewDimensions(150, 50)
             val views = TimeWidgetRenderer.render(this, this, AppWidgetManager.INVALID_APPWIDGET_ID,
-                WidgetConfiguration(currentEvent.id, selection.appearance, selection.background, onlyHours = onlyHours, dayClock = !onlyHours),
+                WidgetConfiguration(currentEvent.id, selection.appearance, selection.background, timeFormat = timeFormat),
                 currentEvent, null, snapshot, size.widthDp, size.heightDp, mutableMapOf(), interactive = false)
             timeFrame.addView(views.apply(this, timeFrame))
             WidgetPreviewGeometry.fit(previewContainer, timeFrame, size)
@@ -652,6 +667,9 @@ class WidgetPinSetupActivity : BaseActivity() {
     companion object {
         const val EXTRA_EVENT_ID = "event_id"
 
+        private const val STATE_CHOOSE_DEFAULT = "pin_setup_choose_default"
+        private const val STATE_TIME_FORMAT = "pin_setup_time_format"
+        private const val STATE_REQUEST_FORMAT = "pin_setup_request_format"
         private const val STATE_FAMILY = "pin_setup_family"
         private const val STATE_REQUEST_FAMILY = "pin_setup_request_family"
         private const val STATE_APPEARANCE = "pin_setup_appearance"

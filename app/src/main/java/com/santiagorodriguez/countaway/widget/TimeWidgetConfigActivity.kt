@@ -32,7 +32,8 @@ import com.santiagorodriguez.countaway.ui.TemporalInvalidationController
 class TimeWidgetConfigActivity : BaseActivity() {
     private var widgetId = AppWidgetManager.INVALID_APPWIDGET_ID
     private lateinit var repository: CountdownRepository
-    private lateinit var hoursChoice: android.widget.CheckBox
+    private lateinit var formatSpinner: Spinner
+    private var formats = TimeWidgetFormat.selectable
     private lateinit var eventList: ListView
     private lateinit var header: View
     private lateinit var footer: View
@@ -88,9 +89,17 @@ class TimeWidgetConfigActivity : BaseActivity() {
                 setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
         val saved = WidgetPreferences(applicationContext).get(widgetId)
-        hoursChoice = header.findViewById(R.id.timeConfigOnlyHours)
-        hoursChoice.isChecked = savedInstanceState?.getBoolean("onlyHours") ?: saved?.onlyHours ?: false
-        hoursChoice.setOnCheckedChangeListener { _, _ -> refreshPreview() }
+        formatSpinner = header.findViewById(R.id.timeConfigFormat)
+        val initialFormat = TimeWidgetFormat.fromKey(savedInstanceState?.getString(STATE_FORMAT))
+            ?: saved?.timeFormat ?: TimeWidgetFormat.DAYS_HOURS
+        // Existing installations may keep the time layout they already configured.
+        if (saved?.timeFormat == TimeWidgetFormat.LEGACY) formats = formats + TimeWidgetFormat.LEGACY
+        formatSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item,
+            formats.map { getString(it.label) }).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        formatSpinner.setSelection(formats.indexOf(initialFormat))
+        formatSpinner.onItemSelectedListener = SimpleItemSelectedListener { refreshPreview() }
         val defaults = WidgetDefaultsPreferences(applicationContext).get()
         // The distinct time widget starts in its editorial Horizon treatment;
         // existing instances always restore their exact saved appearance/background.
@@ -142,7 +151,7 @@ class TimeWidgetConfigActivity : BaseActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         if (::appearanceSpinner.isInitialized) {
             outState.putString(STATE_EVENT_ID, selectedId?.let(EventTransport::wireId))
-            outState.putBoolean("onlyHours", hoursChoice.isChecked)
+            outState.putString(STATE_FORMAT, selectedFormat().key)
             outState.putInt(STATE_APPEARANCE, appearanceSpinner.selectedItemPosition)
             outState.putInt(STATE_BACKGROUND, backgroundSpinner.selectedItemPosition)
         }
@@ -214,7 +223,7 @@ class TimeWidgetConfigActivity : BaseActivity() {
         val background = WidgetBackground.entries.getOrElse(backgroundSpinner.selectedItemPosition) {
             WidgetBackground.HORIZON
         }
-        val configuration = WidgetConfiguration(selectedId, appearance, background, onlyHours = hoursChoice.isChecked, dayClock = !hoursChoice.isChecked)
+        val configuration = WidgetConfiguration(selectedId, appearance, background, timeFormat = selectedFormat())
         val event = events.firstOrNull { it.id == selectedId }
         val dimensions = WidgetPreviewGeometry.dimensions(
             AppWidgetManager.getInstance(applicationContext).getAppWidgetOptions(widgetId),
@@ -251,7 +260,7 @@ class TimeWidgetConfigActivity : BaseActivity() {
         val background = WidgetBackground.entries.getOrNull(backgroundSpinner.selectedItemPosition)
             ?: return
         WidgetPreferences(applicationContext).save(widgetId, id, appearance, background,
-            WidgetEventSelection.FIXED, onlyHours = hoursChoice.isChecked, dayClock = !hoursChoice.isChecked)
+            WidgetEventSelection.FIXED, timeFormat = selectedFormat())
         val appContext = applicationContext
         CountdownIo.execute {
             runCatching { TimeWidgetProvider.updateWidget(appContext, manager, widgetId) }
@@ -261,7 +270,10 @@ class TimeWidgetConfigActivity : BaseActivity() {
         finish()
     }
 
+    private fun selectedFormat() = formats.getOrElse(formatSpinner.selectedItemPosition) { formats.first() }
+
     private companion object {
+        const val STATE_FORMAT = "time_widget_format"
         const val STATE_EVENT_ID = "time_widget_event"
         const val STATE_APPEARANCE = "time_widget_appearance"
         const val STATE_BACKGROUND = "time_widget_background"

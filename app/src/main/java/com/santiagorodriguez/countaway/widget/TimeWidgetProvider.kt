@@ -168,14 +168,12 @@ class TimeWidgetProvider : AppWidgetProvider() {
                     val target = TimedEventResolver.resolve(event, snapshot.now)?.target?.toInstant() ?: continue
                     if (event.repeatRule != RepeatRule.NONE) add(target)
                     val hours = java.time.Duration.between(now, target).toHours()
-                    val unit = when {
-                        config.onlyHours && kotlin.math.abs(hours) >= 999 -> 3600L
-                        config.dayClock -> 86400L
-                        else -> continue
+                    val needsHourlyRefresh = config.timeFormat == TimeWidgetFormat.DAYS_HOURS ||
+                        (config.timeFormat != TimeWidgetFormat.LEGACY && kotlin.math.abs(hours) >= 999)
+                    if (needsHourlyRefresh) {
+                        // Share a single non-wakeup refresh across installed Time widgets.
+                        add(now.truncatedTo(java.time.temporal.ChronoUnit.HOURS).plusSeconds(3600))
                     }
-                    val offset = Math.floorMod(target.epochSecond - now.epochSecond, unit)
-                    // Refresh just after the boundary so a countdown has entered its next bucket.
-                    add(now.plusSeconds(if (offset == 0L) 1L else offset + 1L))
                 }
             }
             TimeWidgetBoundaryScheduler.schedule(context, boundaries, now)

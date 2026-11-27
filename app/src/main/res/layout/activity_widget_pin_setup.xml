@@ -104,6 +104,13 @@
                 android:minHeight="48dp"
                 android:text="@string/widget_only_hours"
                 android:textColor="@color/foreground" />
+            <RadioButton
+                android:id="@+id/widgetPinSetupCounter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/widget_live_counter"
+                android:textColor="@color/foreground" />
         </RadioGroup>
 
         <ImageButton
