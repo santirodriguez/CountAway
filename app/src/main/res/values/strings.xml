@@ -205,10 +205,10 @@
     <string name="widget_hours_value">%1$s h</string>
     <string name="widget_format_info">About this format</string>
     <string name="widget_days_info">Count down to a date or count up from it in calendar days. This is CountAway’s original widget.</string>
-    <string name="widget_dayclock_info">Approximate days and hours, with the time the value was calculated.\n≈ 3 d 6 h</string>
+    <string name="widget_dayclock_info">Approximate days and hours. The date below is the event date. Values refresh periodically.\n≈ 3 d 6 h</string>
     <string name="widget_full_counter">Full counter (2×1)</string>
-    <string name="widget_full_counter_info">Years, months, days, hours and minutes, with the time of the last calculation.\n3 d · 7 h 42 min</string>
-    <string name="widget_snapshot_stamp">As of %1$s</string>
+    <string name="widget_full_counter_info">Years, months, days, hours and minutes, with the event date below. Values refresh periodically.\n3 d · 7 h 42 min</string>
+    <string name="widget_snapshot_stamp">Last calculated %1$s</string>
     <string name="widget_snapshot_under_hour">Under 1 h</string>
     <string name="widget_snapshot_days_hours">≈ %1$s d %2$s h</string>
     <string name="widget_snapshot_hours">≈ %1$s h</string>
@@ -222,4 +222,6 @@
     <string name="widget_counter_subday">%1$s h %2$s min</string>
     <string name="widget_counter_minutes">%1$s min</string>
     <string name="widget_counter_under_minute">Under 1 min</string>
+    <string name="widget_event_from">From %1$s</string>
+    <string name="widget_event_target">Event · %1$s</string>
 </resources>

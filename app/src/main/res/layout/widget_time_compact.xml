@@ -130,7 +130,10 @@
             android:id="@+id/timeWidgetDate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="10sp"
+            android:fontFamily="sans-serif"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textSize="8sp"
             android:visibility="gone" />
     </LinearLayout>
 </FrameLayout>

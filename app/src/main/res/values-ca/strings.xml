@@ -197,10 +197,10 @@
     <string name="widget_hours_value">%1$s h</string>
     <string name="widget_format_info">Sobre aquest format</string>
     <string name="widget_days_info">Compta els dies de calendari que falten o que han passat des d’una data. És el giny original de CountAway.</string>
-    <string name="widget_dayclock_info">Dies i hores aproximats, amb la data i l’hora del càlcul.\n≈ 3 d 6 h</string>
+    <string name="widget_dayclock_info">Dies i hores aproximats. La data de sota és la de l’esdeveniment. El valor s’actualitza periòdicament.\n≈ 3 d 6 h</string>
     <string name="widget_full_counter">Comptador complet (2×1)</string>
-    <string name="widget_full_counter_info">Anys, mesos, dies, hores i minuts, amb l’hora de l’últim càlcul.\n3 d · 7 h 42 min</string>
-    <string name="widget_snapshot_stamp">A %1$s</string>
+    <string name="widget_full_counter_info">Anys, mesos, dies, hores i minuts, amb la data de l’esdeveniment a sota. El valor s’actualitza periòdicament.\n3 d · 7 h 42 min</string>
+    <string name="widget_snapshot_stamp">Últim càlcul %1$s</string>
     <string name="widget_snapshot_under_hour">Menys d’1 h</string>
     <string name="widget_snapshot_days_hours">≈ %1$s d %2$s h</string>
     <string name="widget_snapshot_hours">≈ %1$s h</string>
@@ -214,4 +214,6 @@
     <string name="widget_counter_subday">%1$s h %2$s min</string>
     <string name="widget_counter_minutes">%1$s min</string>
     <string name="widget_counter_under_minute">Menys d’1 min</string>
+    <string name="widget_event_from">Des de %1$s</string>
+    <string name="widget_event_target">Esdeveniment · %1$s</string>
 </resources>

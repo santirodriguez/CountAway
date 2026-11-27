@@ -197,10 +197,10 @@
     <string name="widget_hours_value">%1$s h</string>
     <string name="widget_format_info">Sobre este formato</string>
     <string name="widget_days_info">Contá los días de calendario que faltan o que transcurrieron desde una fecha. Es el widget original de CountAway.</string>
-    <string name="widget_dayclock_info">Días y horas aproximados, con la fecha y hora del cálculo.\n≈ 3 d 6 h</string>
+    <string name="widget_dayclock_info">Días y horas aproximados. La fecha de abajo es la del evento. El valor se actualiza periódicamente.\n≈ 3 d 6 h</string>
     <string name="widget_full_counter">Contador completo (2×1)</string>
-    <string name="widget_full_counter_info">Años, meses, días, horas y minutos, con la hora del último cálculo.\n3 d · 7 h 42 min</string>
-    <string name="widget_snapshot_stamp">Al %1$s</string>
+    <string name="widget_full_counter_info">Años, meses, días, horas y minutos, con la fecha del evento debajo. El valor se actualiza periódicamente.\n3 d · 7 h 42 min</string>
+    <string name="widget_snapshot_stamp">Último cálculo %1$s</string>
     <string name="widget_snapshot_under_hour">Menos de 1 h</string>
     <string name="widget_snapshot_days_hours">≈ %1$s d %2$s h</string>
     <string name="widget_snapshot_hours">≈ %1$s h</string>
@@ -214,4 +214,6 @@
     <string name="widget_counter_subday">%1$s h %2$s min</string>
     <string name="widget_counter_minutes">%1$s min</string>
     <string name="widget_counter_under_minute">Menos de 1 min</string>
+    <string name="widget_event_from">Desde el %1$s</string>
+    <string name="widget_event_target">Evento · %1$s</string>
 </resources>

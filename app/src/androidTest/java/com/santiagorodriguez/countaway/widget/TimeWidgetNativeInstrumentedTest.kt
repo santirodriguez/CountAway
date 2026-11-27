@@ -438,7 +438,7 @@ class TimeWidgetNativeInstrumentedTest {
                         val valueId = if (static) R.id.timeWidgetLongDays else R.id.timeWidgetClock
                         val title = root.findViewById<TextView>(R.id.timeWidgetTitle)
                         val value = root.findViewById<TextView>(valueId)
-                        val meta = root.findViewById<TextView>(R.id.timeWidgetDetailHint)
+                        val date = root.findViewById<TextView>(R.id.timeWidgetDate)
                         val name = "format-${format.key}-${width}x${height}-f${(scale * 100).toInt()}"
                         capture(root, "$name.png")
                         try {
@@ -448,20 +448,22 @@ class TimeWidgetNativeInstrumentedTest {
                                 root.findViewById<View>(R.id.timeWidgetMark).visibility)
                             assertEquals(if (static) View.GONE else View.VISIBLE,
                                 root.findViewById<View>(R.id.timeWidgetClock).visibility)
-                            val essentialFields = mutableListOf(title, value)
-                            if (static) essentialFields += meta
+                            val essentialFields = mutableListOf(title, value, date)
+                            val expectedDate = if (TimeWidgetLayoutPlanner.plan(width, height, scale).showDate) {
+                                EventTimeText.dateTime(context, target)
+                            } else target.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(Locale.US))
+                            assertEquals("Event · $expectedDate", date.text.toString())
+                            assertEquals(static, date.contentDescription.contains("Last calculated"))
+                            assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetDetailHint).visibility)
                             when (format) {
                                 TimeWidgetFormat.DAYS_HOURS -> {
                                     assertTrue(value.text.startsWith("≈"))
-                                    assertTrue(meta.text.startsWith("As of "))
                                 }
                                 TimeWidgetFormat.HOURS -> {
                                     assertTrue(value.text.contains(":"))
-                                    assertEquals(View.GONE, meta.visibility)
                                 }
                                 TimeWidgetFormat.FULL_COUNTER -> {
-                                    assertTrue(value.text.startsWith("↓ 3d"))
-                                    assertTrue(meta.text.startsWith("As of "))
+                                    assertTrue(value.text.startsWith("↓ ≈ 3d"))
                                     val subday = root.findViewById<TextView>(R.id.timeWidgetSubday)
                                     if (height >= 210) {
                                         assertEquals(View.VISIBLE, subday.visibility)
@@ -503,10 +505,10 @@ class TimeWidgetNativeInstrumentedTest {
             val configuration = WidgetConfiguration(event.id, WidgetAppearance.DARK,
                 WidgetBackground.HORIZON, timeFormat = TimeWidgetFormat.FULL_COUNTER)
             for ((tag, target, expected) in listOf(
-                Triple("near", now.plusMinutes(42).plusSeconds(8), "↓ 42 min"),
+                Triple("near", now.plusMinutes(42).plusSeconds(8), "↓ ≈ 42 min"),
                 Triple("under-minute", now.plusSeconds(8), "↓ Under 1 min"),
                 Triple("historical", now.minusYears(123).minusMonths(2).minusDays(5).minusHours(7),
-                    "↑ 123y 2mo 5d · 7 h 0 min"),
+                    "↑ ≈ 123y 2mo 5d · 7 h 0 min"),
             )) {
                 val item = event.copy(title = "Trip", date = target.toLocalDate(),
                     eventTime = target.toLocalTime(), eventZone = target.zone)
@@ -515,12 +517,14 @@ class TimeWidgetNativeInstrumentedTest {
                 val root = remote.apply(context, FrameLayout(context)) as FrameLayout
                 layout(root, context, 140, 48)
                 val value = root.findViewById<TextView>(R.id.timeWidgetLongDays)
-                val stamp = root.findViewById<TextView>(R.id.timeWidgetDetailHint)
+                val date = root.findViewById<TextView>(R.id.timeWidgetDate)
                 capture(root, "format-full-counter-$tag-140x48-f200.png")
                 assertEquals(expected, value.text.toString())
-                assertTrue(stamp.text.toString().contains(":21"))
-                assertFalse(stamp.text.toString().contains(":21:44"))
-                for (field in listOf(value, stamp)) {
+                val expectedDate = target.format(
+                    DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(Locale.US))
+                assertEquals("Event · $expectedDate", date.text.toString())
+                assertTrue(date.contentDescription.contains(EventTimeText.dateTime(context, now)))
+                for (field in listOf(value, date)) {
                     val rect = Rect(0, 0, field.width, field.height)
                     root.offsetDescendantRectToMyCoords(field, rect)
                     val line = requireNotNull(field.layout)
@@ -550,6 +554,11 @@ class TimeWidgetNativeInstrumentedTest {
             assertTrue(clock.text.toString().matches(Regex("[0-9]{2}:[0-9]{2}")))
             assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetDetailHint).visibility)
             assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetLongDays).visibility)
+            val date = root.findViewById<TextView>(R.id.timeWidgetDate)
+            val expectedDate = start.format(
+                DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(Locale.US))
+            assertEquals("From $expectedDate", date.text.toString())
+            assertFalse(date.contentDescription.contains("Last calculated"))
             capture(root, "format-hours-short-count-up-140x48-f200.png")
         }
 
@@ -569,11 +578,13 @@ class TimeWidgetNativeInstrumentedTest {
             val subday = root.findViewById<TextView>(R.id.timeWidgetSubday)
             assertEquals(1, date.maxLines)
             assertNotNull(value.contentDescription)
+            assertTrue(date.contentDescription.contains("Last calculated"))
             assertEquals(View.VISIBLE, subday.visibility)
             render(TimeWidgetFormat.LEGACY).reapply(context, root)
             layout(root, context, 280, 210)
             assertEquals(2, date.maxLines)
             assertNull(value.contentDescription)
+            assertNull(date.contentDescription)
             assertEquals(View.GONE, subday.visibility)
             assertEquals(View.VISIBLE, value.visibility)
         }

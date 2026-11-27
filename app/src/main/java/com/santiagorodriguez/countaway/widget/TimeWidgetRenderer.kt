@@ -95,6 +95,7 @@ internal object TimeWidgetRenderer {
         views.setViewVisibility(R.id.timeWidgetLongDays, View.GONE)
         views.setContentDescription(R.id.timeWidgetLongDays, null)
         views.setViewVisibility(R.id.timeWidgetDetailHint, View.GONE)
+        views.setContentDescription(R.id.timeWidgetDate, null)
         val appearance = configuration?.appearance ?: WidgetAppearance.SYSTEM
         val background = configuration?.background ?: WidgetBackground.HORIZON
         val theme = WidgetThemeResolver.resolve(context, appearance, background)
@@ -171,7 +172,8 @@ internal object TimeWidgetRenderer {
         val plan = TimeWidgetClockPolicy.plan(
             clockNow, count.target.toInstant(), SystemClock.elapsedRealtime(), timed.countMode,
         )
-        val showDetailedZone = !compact && layout.showZone && layout.showDate && plan != null
+        val showDetailedZone = !compact && layout.showZone && layout.showDate &&
+            (format != TimeWidgetFormat.LEGACY || plan != null)
         views.setTextViewText(R.id.timeWidgetDate,
             targetText + if (showDetailedZone) "" else zoneSuffix)
         if (showDetailedZone) {
@@ -187,7 +189,7 @@ internal object TimeWidgetRenderer {
         }
         if (format != TimeWidgetFormat.LEGACY) {
             renderFormat(views, displayContext, format, timed, count.target, snapshot.now,
-                plan, layout, widthDp, heightDp)
+                plan, layout, widthDp, heightDp, targetText + zoneSuffix, showDetailedZone)
         } else if (plan != null) {
             views.setViewVisibility(R.id.timeWidgetClock, View.VISIBLE)
             views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
@@ -270,6 +272,7 @@ internal object TimeWidgetRenderer {
         views: RemoteViews, context: Context, format: TimeWidgetFormat, event: CountdownEvent,
         target: ZonedDateTime, now: ZonedDateTime, clock: TimeWidgetClockPlan?,
         layout: TimeWidgetLayoutPlan, widthDp: Int, heightDp: Int,
+        accessibleTarget: String, showZone: Boolean,
     ) {
         val scale = context.resources.configuration.fontScale
         val compact = heightDp < 70
@@ -292,11 +295,16 @@ internal object TimeWidgetRenderer {
             scale >= 1.3f -> 15f
             else -> 20f
         }
-        val meta = if (staticValue) {
-            val date = now.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
-            val stamp = "$date · ${EventTimeText.time(context, now)}"
-            context.getString(R.string.widget_snapshot_stamp, stamp)
-        } else null
+        val dateLabel = if (event.countMode == CountMode.COUNT_UP) R.string.widget_event_from
+            else R.string.widget_event_target
+        val shortDate = target.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
+        val date = if (layout.showDate) EventTimeText.dateTime(context, target) else shortDate
+        val visibleDate = context.getString(dateLabel, date)
+        val accessibleDate = context.getString(dateLabel, accessibleTarget)
+        val dateDescription = if (staticValue) {
+            val stamp = context.getString(R.string.widget_snapshot_stamp, EventTimeText.dateTime(context, now))
+            "$accessibleDate. $stamp"
+        } else accessibleDate
         val metrics = context.resources.displayMetrics
         fun pixels(dp: Int) = (dp * metrics.density).roundToInt()
         val widthPx = pixels((widthDp - 2 * padding - 3).coerceAtLeast(1))
@@ -304,23 +312,16 @@ internal object TimeWidgetRenderer {
         val titleLines = if (compact || heightDp < 160 || large) 1 else layout.titleLines.coerceAtMost(2)
         val verticalPaddingDp = if (compact) 1 else layout.verticalPaddingDp
         val showAccent = layout.showAccent && heightDp >= 180 && !large
-        val showDate = layout.showDate
-        val showZone = layout.showZone && showDate && clock != null
         val secondaryFace = Typeface.create("sans-serif", Typeface.NORMAL)
         val mainFace = Typeface.create("sans-serif-condensed", Typeface.BOLD)
-        val metaSp = meta?.let {
-            fitTextSp(it, secondaryFace, metrics, widthPx, Int.MAX_VALUE,
-                if (compact) (if (large) 7f else 9f) else 11f)
-        }
-        // Reserve the title and required footer before growing the number. A LinearLayout
-        // otherwise lets the number consume the footer's height at the smallest launcher size.
+        val dateSp = fitTextSp(visibleDate, secondaryFace, metrics, widthPx, Int.MAX_VALUE,
+            if (compact) (if (large) 6.5f else 8f) else layout.dateSizeSp)
+        // Give the event date its own space before scaling the primary reading.
         val titleHeight = textLineHeight(Typeface.create("sans-serif-medium", Typeface.NORMAL), titleSp, metrics)
-        val dateHeight = textLineHeight(secondaryFace, layout.dateSizeSp, metrics)
-        val footerHeight = metaSp?.let { textLineHeight(secondaryFace, it, metrics) } ?: 0
+        val dateHeight = textLineHeight(secondaryFace, dateSp, metrics)
         val reservedHeight = maxOf(pixels(if (compact) 16 else 20), titleHeight * titleLines) +
-            footerHeight + pixels(2 * verticalPaddingDp + if (compact) 4 else 12) +
+            dateHeight + pixels(2 * verticalPaddingDp + if (compact) 4 else 16) +
             (if (showAccent) pixels(12) else 0) +
-            (if (showDate) dateHeight + pixels(7) else 0) +
             (if (showZone) textLineHeight(secondaryFace, 10f, metrics) + pixels(2) else 0)
         // The host can round line metrics up independently, including fallback glyphs.
         val valueHeight = (pixels(heightDp) - reservedHeight - pixels(2)).coerceAtLeast(1)
@@ -339,21 +340,21 @@ internal object TimeWidgetRenderer {
         views.setViewPadding(R.id.timeWidgetContent, horizontal, vertical, horizontal, vertical)
         views.setTextViewTextSize(R.id.timeWidgetTitle, TypedValue.COMPLEX_UNIT_SP, titleSp)
         views.setInt(R.id.timeWidgetTitle, "setMaxLines", titleLines)
-        views.setViewVisibility(R.id.timeWidgetDetailHint, if (meta == null) View.GONE else View.VISIBLE)
-        if (meta != null && metaSp != null) {
-            views.setTextViewText(R.id.timeWidgetDetailHint, meta)
-            views.setTextViewTextSize(R.id.timeWidgetDetailHint, TypedValue.COMPLEX_UNIT_SP, metaSp)
-        }
+        views.setTextViewText(R.id.timeWidgetDate, visibleDate)
+        views.setTextViewTextSize(R.id.timeWidgetDate, TypedValue.COMPLEX_UNIT_SP, dateSp)
+        views.setContentDescription(R.id.timeWidgetDate, dateDescription)
+        views.setViewVisibility(R.id.timeWidgetDate, View.VISIBLE)
         views.setViewVisibility(R.id.timeWidgetClock, if (staticValue) View.GONE else View.VISIBLE)
         views.setViewVisibility(R.id.timeWidgetLongDays, if (staticValue) View.VISIBLE else View.GONE)
         if (counter != null) {
+            val hasCalendarUnits = counter.years > 0 || counter.months > 0 || counter.days > 0
             val clockLabel = when {
                 counter.hours > 0 -> context.getString(R.string.widget_counter_subday,
                     numbers.format(counter.hours), numbers.format(counter.minutes))
                 counter.minutes > 0 -> context.getString(R.string.widget_counter_minutes,
                     numbers.format(counter.minutes))
                 instant == targetInstant -> context.getString(R.string.widget_counter_minutes, numbers.format(0))
-                counter.years == 0L && counter.months == 0L && counter.days == 0L ->
+                !hasCalendarUnits ->
                     context.getString(R.string.widget_counter_under_minute)
                 else -> ""
             }
@@ -367,7 +368,9 @@ internal object TimeWidgetRenderer {
                 counter.remaining -> "↓ "
                 else -> "↑ "
             }
-            val value = direction + when {
+            val underMinute = !hasCalendarUnits && counter.hours == 0L && counter.minutes == 0L
+            val approximate = if (underMinute) "" else "≈ "
+            val value = direction + approximate + when {
                 separateClock -> calendarLabel
                 calendarLabel.isNotEmpty() -> listOf(calendarLabel, clockLabel)
                     .filter(String::isNotEmpty).joinToString(" · ")
