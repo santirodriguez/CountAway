@@ -166,10 +166,13 @@ class TimeWidgetProvider : AppWidgetProvider() {
                     val config = preferences.get(id) ?: continue
                     val event = eventsById[config.eventId] ?: continue
                     val target = TimedEventResolver.resolve(event, snapshot.now)?.target?.toInstant() ?: continue
-                    if (event.repeatRule != RepeatRule.NONE) add(target)
+                    if (event.repeatRule != RepeatRule.NONE || config.timeFormat == TimeWidgetFormat.FULL_COUNTER) add(target)
                     val hours = java.time.Duration.between(now, target).toHours()
-                    val needsHourlyRefresh = config.timeFormat == TimeWidgetFormat.DAYS_HOURS ||
-                        (config.timeFormat != TimeWidgetFormat.LEGACY && kotlin.math.abs(hours) >= 999)
+                    val needsHourlyRefresh = when (config.timeFormat) {
+                        TimeWidgetFormat.DAYS_HOURS, TimeWidgetFormat.FULL_COUNTER -> true
+                        TimeWidgetFormat.HOURS -> kotlin.math.abs(hours) >= 999
+                        TimeWidgetFormat.LEGACY -> false
+                    }
                     if (needsHourlyRefresh) {
                         // Share a single non-wakeup refresh across installed Time widgets.
                         add(now.truncatedTo(java.time.temporal.ChronoUnit.HOURS).plusSeconds(3600))

@@ -122,6 +122,18 @@
             android:textColor="@color/widget_dark_accent" />
 
         <TextView
+            android:id="@+id/timeWidgetSubday"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-condensed"
+            android:fontFeatureSettings="tnum"
+            android:includeFontPadding="false"
+            android:importantForAccessibility="no"
+            android:singleLine="true"
+            android:textColor="@color/widget_dark_accent"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/timeWidgetDetailHint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

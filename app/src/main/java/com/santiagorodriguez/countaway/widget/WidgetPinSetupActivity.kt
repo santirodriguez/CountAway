@@ -103,7 +103,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         familyGroup.check(when {
             family == WidgetFamily.DAYS -> R.id.widgetPinSetupDays
             timeFormat == TimeWidgetFormat.HOURS -> R.id.widgetPinSetupHours
-            timeFormat == TimeWidgetFormat.LIVE_COUNTER -> R.id.widgetPinSetupCounter
+            timeFormat == TimeWidgetFormat.FULL_COUNTER -> R.id.widgetPinSetupCounter
             else -> R.id.widgetPinSetupTime
         })
         familyGroup.setOnCheckedChangeListener { _, checked ->
@@ -111,7 +111,7 @@ class WidgetPinSetupActivity : BaseActivity() {
             family = if (checked == R.id.widgetPinSetupDays) WidgetFamily.DAYS else WidgetFamily.TIME
             timeFormat = when (checked) {
                 R.id.widgetPinSetupHours -> TimeWidgetFormat.HOURS
-                R.id.widgetPinSetupCounter -> TimeWidgetFormat.LIVE_COUNTER
+                R.id.widgetPinSetupCounter -> TimeWidgetFormat.FULL_COUNTER
                 else -> TimeWidgetFormat.DAYS_HOURS
             }
             updatePreview()

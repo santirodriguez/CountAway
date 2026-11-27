@@ -109,7 +109,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:minHeight="48dp"
-                android:text="@string/widget_live_counter"
+                android:text="@string/widget_full_counter"
                 android:textColor="@color/foreground" />
         </RadioGroup>
 

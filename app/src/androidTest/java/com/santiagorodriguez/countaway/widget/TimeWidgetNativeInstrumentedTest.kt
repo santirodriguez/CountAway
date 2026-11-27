@@ -434,7 +434,7 @@ class TimeWidgetNativeInstrumentedTest {
                             hashMapOf(), interactive = false)
                         val root = rendered.apply(context, FrameLayout(context)) as FrameLayout
                         layout(root, context, width, height)
-                        val static = format == TimeWidgetFormat.DAYS_HOURS
+                        val static = format != TimeWidgetFormat.HOURS
                         val valueId = if (static) R.id.timeWidgetLongDays else R.id.timeWidgetClock
                         val title = root.findViewById<TextView>(R.id.timeWidgetTitle)
                         val value = root.findViewById<TextView>(valueId)
@@ -448,15 +448,31 @@ class TimeWidgetNativeInstrumentedTest {
                                 root.findViewById<View>(R.id.timeWidgetMark).visibility)
                             assertEquals(if (static) View.GONE else View.VISIBLE,
                                 root.findViewById<View>(R.id.timeWidgetClock).visibility)
-                            if (static) {
-                                assertTrue(value.text.startsWith("≈"))
-                                assertTrue(meta.text.startsWith("As of "))
-                            } else {
-                                assertTrue(value.text.contains(":"))
-                                assertEquals(value.text.startsWith("↓"), format == TimeWidgetFormat.LIVE_COUNTER)
-                                assertEquals(context.getString(R.string.widget_clock_legend), meta.text.toString())
+                            val essentialFields = mutableListOf(title, value, meta)
+                            when (format) {
+                                TimeWidgetFormat.DAYS_HOURS -> {
+                                    assertTrue(value.text.startsWith("≈"))
+                                    assertTrue(meta.text.startsWith("As of "))
+                                }
+                                TimeWidgetFormat.HOURS -> {
+                                    assertTrue(value.text.contains(":"))
+                                    assertEquals(context.getString(R.string.widget_clock_legend), meta.text.toString())
+                                }
+                                TimeWidgetFormat.FULL_COUNTER -> {
+                                    assertTrue(value.text.startsWith("↓ 3d"))
+                                    assertTrue(meta.text.startsWith("As of "))
+                                    val subday = root.findViewById<TextView>(R.id.timeWidgetSubday)
+                                    if (height >= 210) {
+                                        assertEquals(View.VISIBLE, subday.visibility)
+                                        assertTrue(subday.text.toString().contains("05h"))
+                                        essentialFields += subday
+                                    } else {
+                                        assertTrue(value.text.toString().contains("05:42:"))
+                                    }
+                                }
+                                TimeWidgetFormat.LEGACY -> error("Classic is not a new format")
                             }
-                            for (field in listOf(title, value, meta)) {
+                            for (field in essentialFields) {
                                 val textLayout = requireNotNull(field.layout)
                                 val box = Rect(0, 0, field.width, field.height)
                                 root.offsetDescendantRectToMyCoords(field, box)
@@ -477,6 +493,39 @@ class TimeWidgetNativeInstrumentedTest {
                 }
             }
             assertTrue(failures.joinToString("\n"), failures.isEmpty())
+        }
+
+    @Test fun fullCounterKeepsCalendarForDistantEventsAndSecondsForNearEvents() =
+        instrumentation.runOnMainSync {
+            val now = ZonedDateTime.of(2026, 2, 14, 15, 21, 44, 0, snapshot.zone)
+            val context = fontContext(2f)
+            val configuration = WidgetConfiguration(event.id, WidgetAppearance.DARK,
+                WidgetBackground.HORIZON, timeFormat = TimeWidgetFormat.FULL_COUNTER)
+            for ((tag, target, expected) in listOf(
+                Triple("near", now.plusMinutes(42).plusSeconds(8), "↓ 00h 42m 08s"),
+                Triple("historical", now.minusYears(123).minusMonths(2).minusDays(5).minusHours(7),
+                    "↑ 123y 2mo 5d · 07:00:00"),
+            )) {
+                val item = event.copy(title = "Trip", date = target.toLocalDate(),
+                    eventTime = target.toLocalTime(), eventZone = target.zone)
+                val remote = TimeWidgetRenderer.render(context, context, 42, configuration,
+                    item, null, CountdownTimeSnapshot(now), 140, 48, hashMapOf(), interactive = false)
+                val root = remote.apply(context, FrameLayout(context)) as FrameLayout
+                layout(root, context, 140, 48)
+                val value = root.findViewById<TextView>(R.id.timeWidgetLongDays)
+                val stamp = root.findViewById<TextView>(R.id.timeWidgetDetailHint)
+                capture(root, "format-full-counter-$tag-140x48-f200.png")
+                assertEquals(expected, value.text.toString())
+                assertTrue(stamp.text.toString().contains(":21:44"))
+                for (field in listOf(value, stamp)) {
+                    val rect = Rect(0, 0, field.width, field.height)
+                    root.offsetDescendantRectToMyCoords(field, rect)
+                    val line = requireNotNull(field.layout)
+                    assertTrue("$tag clipped ${field.text}",
+                        line.getEllipsisCount(0) == 0 && line.getLineWidth(0) <= field.width &&
+                            line.height <= field.height && rect.bottom <= root.height)
+                }
+            }
         }
 
     private fun fontContext(scale: Float): Context = app.createConfigurationContext(

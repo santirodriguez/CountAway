@@ -192,14 +192,14 @@
     <string name="widget_home_edit_existing">Edita els ginys existents</string>
     <string name="picker_trip_title">Viatge</string>
     <string name="picker_time_example">3 d · 04:15</string>
-    <string name="widget_only_hours">Només hores</string>
+    <string name="widget_only_hours">Només hores (2×1)</string>
     <string name="widget_hours_info">Suma les hores fins i tot després d’un dia.\n77:42:00</string>
     <string name="widget_hours_value">%1$s h</string>
     <string name="widget_format_info">Sobre aquest format</string>
-    <string name="widget_days_info">Dies de calendari fins a l’esdeveniment o des de l’inici.</string>
+    <string name="widget_days_info">Compta els dies de calendari que falten o que han passat des d’una data. És el giny original de CountAway.</string>
     <string name="widget_dayclock_info">Dies i hores aproximats, amb la data i l’hora del càlcul.\n≈ 3 d 6 h</string>
-    <string name="widget_live_counter">Comptador en viu (2×1)</string>
-    <string name="widget_live_counter_info">Un rellotge gran. La fletxa indica si el compte és ascendent o descendent.\n↓ 2:14:37</string>
+    <string name="widget_full_counter">Comptador complet (2×1)</string>
+    <string name="widget_full_counter_info">Anys, mesos, dies, hores, minuts i segons en el moment de l’actualització.\n3 d · 07:42:08</string>
     <string name="widget_clock_legend">h (si n’hi ha) · min · s</string>
     <string name="widget_snapshot_stamp">A %1$s</string>
     <string name="widget_snapshot_under_hour">Menys d’1 h</string>
@@ -209,4 +209,8 @@
     <string name="widget_snapshot_elapsed">Han transcorregut %1$s</string>
     <string name="widget_time_format_label">Format</string>
     <string name="widget_time_legacy">Rellotge clàssic</string>
+    <string name="widget_counter_years">%1$sa</string>
+    <string name="widget_counter_months">%1$smes</string>
+    <string name="widget_counter_days">%1$sd</string>
+    <string name="widget_counter_subday">%1$sh %2$sm %3$ss</string>
 </resources>

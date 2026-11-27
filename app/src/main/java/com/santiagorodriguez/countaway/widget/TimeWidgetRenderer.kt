@@ -9,6 +9,7 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.SystemClock
+import android.text.format.DateFormat
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
@@ -79,6 +80,7 @@ internal object TimeWidgetRenderer {
             if (layout.showDate) View.VISIBLE else View.GONE)
         if (!compact) {
             views.setViewVisibility(R.id.timeWidgetZone, View.GONE)
+            views.setViewVisibility(R.id.timeWidgetSubday, View.GONE)
         }
         views.setViewVisibility(R.id.timeWidgetAccentLine,
             if (layout.showAccent) View.VISIBLE else View.GONE)
@@ -119,7 +121,10 @@ internal object TimeWidgetRenderer {
         views.setTextColor(R.id.timeWidgetDetailHint, theme.secondaryTextColor)
         views.setTextColor(R.id.timeWidgetFallback, theme.accentTextColor)
         views.setTextColor(R.id.timeWidgetDate, theme.secondaryTextColor)
-        if (!compact) views.setTextColor(R.id.timeWidgetZone, theme.secondaryTextColor)
+        if (!compact) {
+            views.setTextColor(R.id.timeWidgetZone, theme.secondaryTextColor)
+            views.setTextColor(R.id.timeWidgetSubday, theme.accentTextColor)
+        }
 
         val timed = event?.takeIf { it.eventTime != null && it.eventZone != null }
         val count = timed?.let { runCatching { TimedEventResolver.resolve(it, snapshot.now) }.getOrNull() }
@@ -268,27 +273,30 @@ internal object TimeWidgetRenderer {
         val compact = heightDp < 70
         val large = scale >= 1.6f
         val padding = layout.horizontalPaddingDp
-        val isCounter = format == TimeWidgetFormat.LIVE_COUNTER
-        val direction = if (event.countMode == CountMode.COUNT_DOWN) "↓" else "↑"
-        val arrow = if (isCounter) "$direction " else ""
+        val counter = if (format == TimeWidgetFormat.FULL_COUNTER) {
+            TimeWidgetCalendarReading.between(now, target)
+        } else null
         val targetInstant = target.toInstant()
         val instant = now.toInstant()
         val totalHours = Duration.between(instant, targetInstant).toHours()
         val hoursFallback = clock == null || (widthDp < 220 && abs(totalHours) >= 1000)
         val snapshot = format == TimeWidgetFormat.DAYS_HOURS
-        val staticValue = snapshot || hoursFallback
+        val staticValue = snapshot || counter != null || hoursFallback
         val locale = context.resources.configuration.locales[0]
         val numbers = NumberFormat.getIntegerInstance(locale)
         val maxClock = when {
             !compact -> layout.clockMaxSizeSp
             large -> if (heightDp < 53) 8.5f else 10f
             scale >= 1.3f -> 15f
-            isCounter -> 23f
             else -> 20f
         }
         val meta = if (staticValue) {
             val date = now.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale))
-            val stamp = "$date · ${EventTimeText.time(context, now)}"
+            val time = if (counter != null) {
+                val skeleton = if (DateFormat.is24HourFormat(context)) "Hms" else "hms"
+                now.format(DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, skeleton), locale))
+            } else EventTimeText.time(context, now)
+            val stamp = "$date · $time"
             context.getString(R.string.widget_snapshot_stamp, stamp)
         } else context.getString(R.string.widget_clock_legend)
         val metrics = context.resources.displayMetrics
@@ -314,9 +322,10 @@ internal object TimeWidgetRenderer {
             (if (showAccent) pixels(12) else 0) +
             (if (showDate) dateHeight + pixels(7) else 0) +
             (if (showZone) textLineHeight(secondaryFace, 10f, metrics) + pixels(2) else 0)
-        // The host can round line metrics up independently, especially for the
-        // counter arrow, which can come from a fallback font.
+        // The host can round line metrics up independently, including fallback glyphs.
         val valueHeight = (pixels(heightDp) - reservedHeight - pixels(2)).coerceAtLeast(1)
+        val separateClock = counter != null && heightDp >= (if (large) 175 else 120) &&
+            valueHeight >= pixels(35) && (counter.years > 0 || counter.months > 0 || counter.days > 0)
 
         views.setViewVisibility(R.id.timeWidgetBrandLogo, View.GONE)
         views.setViewVisibility(R.id.timeWidgetIcon, View.VISIBLE)
@@ -336,7 +345,47 @@ internal object TimeWidgetRenderer {
         views.setViewVisibility(R.id.timeWidgetDetailHint, View.VISIBLE)
         views.setViewVisibility(R.id.timeWidgetClock, if (staticValue) View.GONE else View.VISIBLE)
         views.setViewVisibility(R.id.timeWidgetLongDays, if (staticValue) View.VISIBLE else View.GONE)
-        if (staticValue) {
+        if (counter != null) {
+            val clockDigits = NumberFormat.getIntegerInstance(locale).apply {
+                isGroupingUsed = false
+                minimumIntegerDigits = 2
+            }
+            val hour = clockDigits.format(counter.hours)
+            val minute = clockDigits.format(counter.minutes)
+            val second = clockDigits.format(counter.seconds)
+            val clockLabel = "$hour:$minute:$second"
+            val spokenClock = context.getString(R.string.widget_counter_subday, hour, minute, second)
+            val calendarLabel = buildList {
+                if (counter.years > 0) add(context.getString(R.string.widget_counter_years, numbers.format(counter.years)))
+                if (counter.months > 0) add(context.getString(R.string.widget_counter_months, numbers.format(counter.months)))
+                if (counter.days > 0) add(context.getString(R.string.widget_counter_days, numbers.format(counter.days)))
+            }.joinToString(" ")
+            val direction = when {
+                instant == targetInstant -> ""
+                counter.remaining -> "↓ "
+                else -> "↑ "
+            }
+            val value = direction + when {
+                separateClock -> calendarLabel
+                calendarLabel.isNotEmpty() -> "$calendarLabel · $clockLabel"
+                else -> spokenClock
+            }
+            val spokenValue = if (instant == targetInstant) spokenClock else context.getString(
+                if (counter.remaining) R.string.widget_snapshot_remaining else R.string.widget_snapshot_elapsed,
+                listOf(calendarLabel, spokenClock).filter(String::isNotEmpty).joinToString(", "),
+            )
+            val subdayHeight = if (separateClock) valueHeight / 3 else 0
+            views.setTextViewText(R.id.timeWidgetLongDays, value)
+            views.setContentDescription(R.id.timeWidgetLongDays, spokenValue)
+            views.setTextViewTextSize(R.id.timeWidgetLongDays, TypedValue.COMPLEX_UNIT_SP,
+                fitTextSp(value, mainFace, metrics, widthPx, valueHeight - subdayHeight, maxClock))
+            if (separateClock) {
+                views.setViewVisibility(R.id.timeWidgetSubday, View.VISIBLE)
+                views.setTextViewText(R.id.timeWidgetSubday, spokenClock)
+                views.setTextViewTextSize(R.id.timeWidgetSubday, TypedValue.COMPLEX_UNIT_SP,
+                    fitTextSp(spokenClock, mainFace, metrics, widthPx, subdayHeight, maxClock * 0.64f))
+            }
+        } else if (staticValue) {
             val value = if (snapshot) {
                 val reading = TimeWidgetSnapshotPolicy.calculate(instant, targetInstant)
                 when {
@@ -350,7 +399,7 @@ internal object TimeWidgetRenderer {
                 val signedHours = if (event.countMode == CountMode.COUNT_DOWN) totalHours else -totalHours
                 context.getString(R.string.widget_snapshot_hours, numbers.format(signedHours))
             }
-            val label = arrow + value
+            val label = value
             views.setTextViewText(R.id.timeWidgetLongDays, label)
             val spokenValue = if (snapshot && totalHours == 0L && instant == targetInstant) label
                 else if (snapshot) context.getString(
@@ -362,10 +411,9 @@ internal object TimeWidgetRenderer {
                 fitTextSp(label, mainFace, metrics, widthPx, valueHeight, maxClock))
         } else if (clock != null) {
             views.setTextViewTextSize(R.id.timeWidgetClock, TypedValue.COMPLEX_UNIT_SP,
-                fitTextSp(widestClockLabel(instant, targetInstant, arrow), mainFace,
+                fitTextSp(widestClockLabel(instant, targetInstant), mainFace,
                     metrics, widthPx, valueHeight, maxClock))
-            views.setChronometer(R.id.timeWidgetClock, clock.elapsedRealtimeBase,
-                if (isCounter) "$arrow%s" else null, true)
+            views.setChronometer(R.id.timeWidgetClock, clock.elapsedRealtimeBase, null, true)
             views.setChronometerCountDown(R.id.timeWidgetClock, clock.countDown)
         }
     }
@@ -402,9 +450,9 @@ internal object TimeWidgetRenderer {
         return font.descent - font.ascent
     }
 
-    private fun widestClockLabel(now: Instant, target: Instant, prefix: String): String {
+    private fun widestClockLabel(now: Instant, target: Instant): String {
         val hoursUntilRefresh = abs(Duration.between(now, target).seconds) / 3_600L + 48L
-        return prefix + "-" + "8".repeat(hoursUntilRefresh.toString().length.coerceAtLeast(2)) + ":88:88"
+        return "-" + "8".repeat(hoursUntilRefresh.toString().length.coerceAtLeast(2)) + ":88:88"
     }
 
     /**
@@ -414,10 +462,10 @@ internal object TimeWidgetRenderer {
      */
     private fun liveClockTextSizeSp(
         context: Context, widthDp: Int, horizontalPaddingDp: Int, maximumSizeSp: Float,
-        now: Instant, target: Instant, prefix: String = "",
+        now: Instant, target: Instant,
     ): Float {
         val metrics = context.resources.displayMetrics
-        val widestLabel = widestClockLabel(now, target, prefix)
+        val widestLabel = widestClockLabel(now, target)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
             fontFeatureSettings = "tnum"

@@ -1,6 +1,7 @@
 package com.santiagorodriguez.countaway.widget
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -16,9 +17,10 @@ class WidgetPinRequestSnapshotTest {
             ),
             requestToken = "request / token?one",
             family = WidgetFamily.TIME,
-            timeFormat = TimeWidgetFormat.LIVE_COUNTER,
+            timeFormat = TimeWidgetFormat.FULL_COUNTER,
         )
 
+        assertTrue(snapshot.callbackData().contains("&format=live-counter"))
         assertEquals(
             snapshot,
             WidgetPinRequestSnapshot.fromCallbackData(snapshot.callbackData()),

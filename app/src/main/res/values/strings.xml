@@ -200,14 +200,14 @@
     <string name="widget_home_edit_existing">Edit existing widgets</string>
     <string name="picker_trip_title">Trip</string>
     <string name="picker_time_example">3 d · 04:15</string>
-    <string name="widget_only_hours">Only hours</string>
+    <string name="widget_only_hours">Only hours (2×1)</string>
     <string name="widget_hours_info">Total hours, even after a full day.\n77:42:00</string>
     <string name="widget_hours_value">%1$s h</string>
     <string name="widget_format_info">About this format</string>
-    <string name="widget_days_info">Calendar days until or since the event.</string>
+    <string name="widget_days_info">Count down to a date or count up from it in calendar days. This is CountAway’s original widget.</string>
     <string name="widget_dayclock_info">Approximate days and hours, with the time the value was calculated.\n≈ 3 d 6 h</string>
-    <string name="widget_live_counter">Live counter (2×1)</string>
-    <string name="widget_live_counter_info">A large clock. The arrow shows whether it counts up or down.\n↓ 2:14:37</string>
+    <string name="widget_full_counter">Full counter (2×1)</string>
+    <string name="widget_full_counter_info">Years, months, days, hours, minutes and seconds at the recorded update time.\n3 d · 07:42:08</string>
     <string name="widget_clock_legend">h (if shown) · min · sec</string>
     <string name="widget_snapshot_stamp">As of %1$s</string>
     <string name="widget_snapshot_under_hour">Under 1 h</string>
@@ -217,4 +217,8 @@
     <string name="widget_snapshot_elapsed">%1$s elapsed</string>
     <string name="widget_time_format_label">Display</string>
     <string name="widget_time_legacy">Classic timer</string>
+    <string name="widget_counter_years">%1$sy</string>
+    <string name="widget_counter_months">%1$smo</string>
+    <string name="widget_counter_days">%1$sd</string>
+    <string name="widget_counter_subday">%1$sh %2$sm %3$ss</string>
 </resources>
