@@ -2,7 +2,7 @@
 
 ## 1.2.7
 
-- Add Days Card and Time Detail widgets directly from an event on Home, with style previews and launcher resize guidance.
+- Add and preview widgets directly from an event on Home. Choose the original Days Card or a timed format: Days + hours, Only hours, or Full counter.
 - Improve widget and configuration previews, including large-text layouts and separate date and time zone details where space allows.
 - Open CountAway’s widget setup from Home to edit an existing widget in place.
 

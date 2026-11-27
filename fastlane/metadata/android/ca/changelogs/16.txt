@@ -1,1 +1,1 @@
-Afegeix els ginys de dies i de temps des de la pantalla inicial, previsualitza’n els estils i edita els ginys existents al seu lloc. Hem millorat la presentació en diferents mides de giny i amb text gran.
+Afegeix i previsualitza ginys des de la pantalla inicial. Tria dies de calendari, dies i hores, hores acumulades o un desglossament d’anys a minuts. Edita els ginys existents sense tornar-los a afegir i llegeix-los millor amb text gran.

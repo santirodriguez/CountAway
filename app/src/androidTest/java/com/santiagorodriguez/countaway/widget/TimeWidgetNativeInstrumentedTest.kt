@@ -553,6 +553,31 @@ class TimeWidgetNativeInstrumentedTest {
             capture(root, "format-hours-short-count-up-140x48-f200.png")
         }
 
+    @Test fun reapplyingClassicTimeClearsThePreviousFullCounterPresentation() =
+        instrumentation.runOnMainSync {
+            val now = ZonedDateTime.now(snapshot.zone)
+            val start = now.minusYears(5).minusHours(3)
+            val item = event.copy(date = start.toLocalDate(), eventTime = start.toLocalTime(),
+                eventZone = start.zone, countMode = CountMode.COUNT_UP)
+            val context = fontContext(1f)
+            fun render(format: TimeWidgetFormat) = TimeWidgetRenderer.render(context, context, 42,
+                WidgetConfiguration(item.id, WidgetAppearance.DARK, timeFormat = format), item,
+                null, CountdownTimeSnapshot(now), 280, 210, hashMapOf(), interactive = false)
+            val root = render(TimeWidgetFormat.FULL_COUNTER).apply(context, FrameLayout(context))
+            val value = root.findViewById<TextView>(R.id.timeWidgetLongDays)
+            val date = root.findViewById<TextView>(R.id.timeWidgetDate)
+            val subday = root.findViewById<TextView>(R.id.timeWidgetSubday)
+            assertEquals(1, date.maxLines)
+            assertNotNull(value.contentDescription)
+            assertEquals(View.VISIBLE, subday.visibility)
+            render(TimeWidgetFormat.LEGACY).reapply(context, root)
+            layout(root, context, 280, 210)
+            assertEquals(2, date.maxLines)
+            assertNull(value.contentDescription)
+            assertEquals(View.GONE, subday.visibility)
+            assertEquals(View.VISIBLE, value.visibility)
+        }
+
     private fun fontContext(scale: Float): Context = app.createConfigurationContext(
         Configuration(app.resources.configuration).apply { fontScale = scale; setLocale(Locale.US) })
 

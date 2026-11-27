@@ -1,1 +1,1 @@
-Add Days Card and Time Detail widgets from Home, preview their styles, and edit existing widgets in place. Both widgets adapt more clearly to different sizes and larger text.
+Add and preview widgets from Home. Choose calendar days, days and hours, total hours, or a full breakdown from years to minutes. Edit existing widgets in place and see clearer layouts at different sizes and with larger text.

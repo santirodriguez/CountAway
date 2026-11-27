@@ -1,1 +1,1 @@
-Agregá los widgets de días y de tiempo desde Inicio, previsualizá sus estilos y editá los widgets existentes en su lugar. Mejoramos la presentación en distintos tamaños de widget y con texto grande.
+Agregá y previsualizá widgets desde Inicio. Elegí días de calendario, días y horas, horas acumuladas o un desglose de años a minutos. Editá los widgets existentes sin volver a agregarlos y leelos mejor con texto grande.

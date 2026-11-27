@@ -75,6 +75,8 @@ internal object TimeWidgetRenderer {
         views.setInt(R.id.timeWidgetTitle, "setMaxLines", layout.titleLines)
         views.setTextViewTextSize(R.id.timeWidgetTitle, TypedValue.COMPLEX_UNIT_SP, layout.titleSizeSp)
         views.setTextViewTextSize(R.id.timeWidgetDate, TypedValue.COMPLEX_UNIT_SP, layout.dateSizeSp)
+        if (!compact) views.setInt(R.id.timeWidgetDate, "setMaxLines",
+            if (format == TimeWidgetFormat.LEGACY) 2 else 1)
         views.setViewVisibility(R.id.timeWidgetDate,
             if (layout.showDate) View.VISIBLE else View.GONE)
         if (!compact) {
@@ -91,6 +93,7 @@ internal object TimeWidgetRenderer {
         views.setViewVisibility(R.id.timeWidgetMark, View.GONE)
         views.setViewVisibility(R.id.timeWidgetIcon, View.VISIBLE)
         views.setViewVisibility(R.id.timeWidgetLongDays, View.GONE)
+        views.setContentDescription(R.id.timeWidgetLongDays, null)
         views.setViewVisibility(R.id.timeWidgetDetailHint, View.GONE)
         val appearance = configuration?.appearance ?: WidgetAppearance.SYSTEM
         val background = configuration?.background ?: WidgetBackground.HORIZON
@@ -331,7 +334,6 @@ internal object TimeWidgetRenderer {
         views.setViewVisibility(R.id.timeWidgetLiveDot, View.GONE)
         views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
         views.setViewVisibility(R.id.timeWidgetAccentLine, if (showAccent) View.VISIBLE else View.GONE)
-        if (showDate) views.setInt(R.id.timeWidgetDate, "setMaxLines", 1)
         val horizontal = pixels(padding)
         val vertical = pixels(verticalPaddingDp)
         views.setViewPadding(R.id.timeWidgetContent, horizontal, vertical, horizontal, vertical)
