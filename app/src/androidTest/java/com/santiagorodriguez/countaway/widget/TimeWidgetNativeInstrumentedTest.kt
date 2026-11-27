@@ -448,7 +448,8 @@ class TimeWidgetNativeInstrumentedTest {
                                 root.findViewById<View>(R.id.timeWidgetMark).visibility)
                             assertEquals(if (static) View.GONE else View.VISIBLE,
                                 root.findViewById<View>(R.id.timeWidgetClock).visibility)
-                            val essentialFields = mutableListOf(title, value, meta)
+                            val essentialFields = mutableListOf(title, value)
+                            if (static) essentialFields += meta
                             when (format) {
                                 TimeWidgetFormat.DAYS_HOURS -> {
                                     assertTrue(value.text.startsWith("≈"))
@@ -456,7 +457,7 @@ class TimeWidgetNativeInstrumentedTest {
                                 }
                                 TimeWidgetFormat.HOURS -> {
                                     assertTrue(value.text.contains(":"))
-                                    assertEquals(context.getString(R.string.widget_clock_legend), meta.text.toString())
+                                    assertEquals(View.GONE, meta.visibility)
                                 }
                                 TimeWidgetFormat.FULL_COUNTER -> {
                                     assertTrue(value.text.startsWith("↓ 3d"))
@@ -464,10 +465,10 @@ class TimeWidgetNativeInstrumentedTest {
                                     val subday = root.findViewById<TextView>(R.id.timeWidgetSubday)
                                     if (height >= 210) {
                                         assertEquals(View.VISIBLE, subday.visibility)
-                                        assertTrue(subday.text.toString().contains("05h"))
+                                        assertTrue(subday.text.toString().contains("5 h 42 min"))
                                         essentialFields += subday
                                     } else {
-                                        assertTrue(value.text.toString().contains("05:42:"))
+                                        assertTrue(value.text.toString().contains("5 h 42 min"))
                                     }
                                 }
                                 TimeWidgetFormat.LEGACY -> error("Classic is not a new format")
@@ -495,16 +496,17 @@ class TimeWidgetNativeInstrumentedTest {
             assertTrue(failures.joinToString("\n"), failures.isEmpty())
         }
 
-    @Test fun fullCounterKeepsCalendarForDistantEventsAndSecondsForNearEvents() =
+    @Test fun fullCounterUsesStampedMinutesForNearAndDistantEvents() =
         instrumentation.runOnMainSync {
             val now = ZonedDateTime.of(2026, 2, 14, 15, 21, 44, 0, snapshot.zone)
             val context = fontContext(2f)
             val configuration = WidgetConfiguration(event.id, WidgetAppearance.DARK,
                 WidgetBackground.HORIZON, timeFormat = TimeWidgetFormat.FULL_COUNTER)
             for ((tag, target, expected) in listOf(
-                Triple("near", now.plusMinutes(42).plusSeconds(8), "↓ 00h 42m 08s"),
+                Triple("near", now.plusMinutes(42).plusSeconds(8), "↓ 42 min"),
+                Triple("under-minute", now.plusSeconds(8), "↓ Under 1 min"),
                 Triple("historical", now.minusYears(123).minusMonths(2).minusDays(5).minusHours(7),
-                    "↑ 123y 2mo 5d · 07:00:00"),
+                    "↑ 123y 2mo 5d · 7 h 0 min"),
             )) {
                 val item = event.copy(title = "Trip", date = target.toLocalDate(),
                     eventTime = target.toLocalTime(), eventZone = target.zone)
@@ -516,7 +518,8 @@ class TimeWidgetNativeInstrumentedTest {
                 val stamp = root.findViewById<TextView>(R.id.timeWidgetDetailHint)
                 capture(root, "format-full-counter-$tag-140x48-f200.png")
                 assertEquals(expected, value.text.toString())
-                assertTrue(stamp.text.toString().contains(":21:44"))
+                assertTrue(stamp.text.toString().contains(":21"))
+                assertFalse(stamp.text.toString().contains(":21:44"))
                 for (field in listOf(value, stamp)) {
                     val rect = Rect(0, 0, field.width, field.height)
                     root.offsetDescendantRectToMyCoords(field, rect)
@@ -526,6 +529,28 @@ class TimeWidgetNativeInstrumentedTest {
                             line.height <= field.height && rect.bottom <= root.height)
                 }
             }
+        }
+
+    @Test fun onlyHoursShowsAShortCountUpWithoutAnExplanatoryFooter() =
+        instrumentation.runOnMainSync {
+            val now = ZonedDateTime.now(snapshot.zone)
+            val start = now.minusMinutes(5)
+            val item = event.copy(date = start.toLocalDate(), eventTime = start.toLocalTime(),
+                eventZone = start.zone, countMode = CountMode.COUNT_UP)
+            val context = fontContext(2f)
+            val configuration = WidgetConfiguration(item.id, WidgetAppearance.DARK,
+                WidgetBackground.HORIZON, timeFormat = TimeWidgetFormat.HOURS)
+            val remote = TimeWidgetRenderer.render(context, context, 42, configuration,
+                item, null, CountdownTimeSnapshot(now), 140, 48, hashMapOf(), interactive = false)
+            val root = remote.apply(context, FrameLayout(context)) as FrameLayout
+            layout(root, context, 140, 48)
+            val clock = root.findViewById<Chronometer>(R.id.timeWidgetClock)
+            assertEquals(View.VISIBLE, clock.visibility)
+            assertFalse(clock.isCountDown)
+            assertTrue(clock.text.toString().matches(Regex("[0-9]{2}:[0-9]{2}")))
+            assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetDetailHint).visibility)
+            assertEquals(View.GONE, root.findViewById<View>(R.id.timeWidgetLongDays).visibility)
+            capture(root, "format-hours-short-count-up-140x48-f200.png")
         }
 
     private fun fontContext(scale: Float): Context = app.createConfigurationContext(

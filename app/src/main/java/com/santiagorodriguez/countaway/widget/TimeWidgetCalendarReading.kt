@@ -9,7 +9,6 @@ internal data class TimeWidgetCalendarReading(
     val days: Long,
     val hours: Long,
     val minutes: Long,
-    val seconds: Long,
     val remaining: Boolean,
 ) {
     companion object {
@@ -29,7 +28,7 @@ internal data class TimeWidgetCalendarReading(
             return TimeWidgetCalendarReading(
                 years = months / 12, months = months % 12, days = seconds / 86_400,
                 hours = seconds / 3_600 % 24, minutes = seconds / 60 % 60,
-                seconds = seconds % 60, remaining = remaining,
+                remaining = remaining,
             )
         }
     }

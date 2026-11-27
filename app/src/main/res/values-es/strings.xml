@@ -193,14 +193,13 @@
     <string name="picker_trip_title">Viaje</string>
     <string name="picker_time_example">3 d · 04:15</string>
     <string name="widget_only_hours">Solo horas (2×1)</string>
-    <string name="widget_hours_info">Suma las horas incluso después de un día.\n77:42:00</string>
+    <string name="widget_hours_info">Suma las horas incluso después de un día. Por debajo de una hora, el reloj muestra minutos y segundos.\n77:42:00</string>
     <string name="widget_hours_value">%1$s h</string>
     <string name="widget_format_info">Sobre este formato</string>
     <string name="widget_days_info">Contá los días de calendario que faltan o que transcurrieron desde una fecha. Es el widget original de CountAway.</string>
     <string name="widget_dayclock_info">Días y horas aproximados, con la fecha y hora del cálculo.\n≈ 3 d 6 h</string>
     <string name="widget_full_counter">Contador completo (2×1)</string>
-    <string name="widget_full_counter_info">Años, meses, días, horas, minutos y segundos al momento de la actualización.\n3 d · 07:42:08</string>
-    <string name="widget_clock_legend">h (si hay) · min · seg</string>
+    <string name="widget_full_counter_info">Años, meses, días, horas y minutos, con la hora del último cálculo.\n3 d · 7 h 42 min</string>
     <string name="widget_snapshot_stamp">Al %1$s</string>
     <string name="widget_snapshot_under_hour">Menos de 1 h</string>
     <string name="widget_snapshot_days_hours">≈ %1$s d %2$s h</string>
@@ -212,5 +211,7 @@
     <string name="widget_counter_years">%1$sa</string>
     <string name="widget_counter_months">%1$smes</string>
     <string name="widget_counter_days">%1$sd</string>
-    <string name="widget_counter_subday">%1$sh %2$sm %3$ss</string>
+    <string name="widget_counter_subday">%1$s h %2$s min</string>
+    <string name="widget_counter_minutes">%1$s min</string>
+    <string name="widget_counter_under_minute">Menos de 1 min</string>
 </resources>
