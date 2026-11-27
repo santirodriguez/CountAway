@@ -314,7 +314,9 @@ internal object TimeWidgetRenderer {
             (if (showAccent) pixels(12) else 0) +
             (if (showDate) dateHeight + pixels(7) else 0) +
             (if (showZone) textLineHeight(secondaryFace, 10f, metrics) + pixels(2) else 0)
-        val valueHeight = (pixels(heightDp) - reservedHeight).coerceAtLeast(1)
+        // The host can round line metrics up independently, especially for the
+        // counter arrow, which can come from a fallback font.
+        val valueHeight = (pixels(heightDp) - reservedHeight - pixels(2)).coerceAtLeast(1)
 
         views.setViewVisibility(R.id.timeWidgetBrandLogo, View.GONE)
         views.setViewVisibility(R.id.timeWidgetIcon, View.VISIBLE)

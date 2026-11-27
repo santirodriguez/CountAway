@@ -422,6 +422,7 @@ class TimeWidgetNativeInstrumentedTest {
             val target = now.plusHours(77).plusMinutes(42)
             val trip = event.copy(title = "Trip", date = target.toLocalDate(),
                 eventTime = target.toLocalTime(), icon = EventIcon.AIRPLANE, countMode = CountMode.COUNT_DOWN)
+            val failures = mutableListOf<String>()
             for (format in TimeWidgetFormat.selectable) {
                 for (scale in listOf(1f, 2f)) {
                     val context = fontContext(scale)
@@ -440,37 +441,42 @@ class TimeWidgetNativeInstrumentedTest {
                         val meta = root.findViewById<TextView>(R.id.timeWidgetDetailHint)
                         val name = "format-${format.key}-${width}x${height}-f${(scale * 100).toInt()}"
                         capture(root, "$name.png")
-                        assertEquals("Trip", title.text.toString())
-                        assertEquals(View.VISIBLE, root.findViewById<View>(R.id.timeWidgetIcon).visibility)
-                        assertEquals(if (scale == 1f && width >= 144) View.VISIBLE else View.GONE,
-                            root.findViewById<View>(R.id.timeWidgetMark).visibility)
-                        assertEquals(if (static) View.GONE else View.VISIBLE,
-                            root.findViewById<View>(R.id.timeWidgetClock).visibility)
-                        if (static) {
-                            assertTrue(value.text.startsWith("≈"))
-                            assertTrue(meta.text.startsWith("As of "))
-                        } else {
-                            assertTrue(value.text.contains(":"))
-                            assertEquals(value.text.startsWith("↓"), format == TimeWidgetFormat.LIVE_COUNTER)
-                            assertEquals(context.getString(R.string.widget_clock_legend), meta.text.toString())
-                        }
-                        for (field in listOf(title, value, meta)) {
-                            val textLayout = requireNotNull(field.layout)
-                            val box = Rect(0, 0, field.width, field.height)
-                            root.offsetDescendantRectToMyCoords(field, box)
-                            assertEquals(name, View.VISIBLE, field.visibility)
-                            assertTrue("$name clipped ${field.text}: $box",
-                                box.top >= 0 && box.bottom <= root.height && box.height() > 0)
-                            assertTrue("$name clips ${field.text}: " +
-                                "line=${textLayout.getLineWidth(0)}×${textLayout.height}, " +
-                                "view=${field.width}×${field.height}, ellipsis=${textLayout.getEllipsisCount(0)}",
-                                textLayout.getEllipsisCount(0) == 0 &&
-                                    textLayout.getLineWidth(0) <= field.width &&
-                                    textLayout.height <= field.height)
+                        try {
+                            assertEquals("Trip", title.text.toString())
+                            assertEquals(View.VISIBLE, root.findViewById<View>(R.id.timeWidgetIcon).visibility)
+                            assertEquals(if (scale == 1f && width >= 144) View.VISIBLE else View.GONE,
+                                root.findViewById<View>(R.id.timeWidgetMark).visibility)
+                            assertEquals(if (static) View.GONE else View.VISIBLE,
+                                root.findViewById<View>(R.id.timeWidgetClock).visibility)
+                            if (static) {
+                                assertTrue(value.text.startsWith("≈"))
+                                assertTrue(meta.text.startsWith("As of "))
+                            } else {
+                                assertTrue(value.text.contains(":"))
+                                assertEquals(value.text.startsWith("↓"), format == TimeWidgetFormat.LIVE_COUNTER)
+                                assertEquals(context.getString(R.string.widget_clock_legend), meta.text.toString())
+                            }
+                            for (field in listOf(title, value, meta)) {
+                                val textLayout = requireNotNull(field.layout)
+                                val box = Rect(0, 0, field.width, field.height)
+                                root.offsetDescendantRectToMyCoords(field, box)
+                                assertEquals(name, View.VISIBLE, field.visibility)
+                                assertTrue("$name clipped ${field.text}: $box",
+                                    box.top >= 0 && box.bottom <= root.height && box.height() > 0)
+                                assertTrue("$name clips ${field.text}: " +
+                                    "line=${textLayout.getLineWidth(0)}×${textLayout.height}, " +
+                                    "view=${field.width}×${field.height}, ellipsis=${textLayout.getEllipsisCount(0)}",
+                                    textLayout.getEllipsisCount(0) == 0 &&
+                                        textLayout.getLineWidth(0) <= field.width &&
+                                        textLayout.height <= field.height)
+                            }
+                        } catch (failure: AssertionError) {
+                            failures += "$name: ${failure.message}"
                         }
                     }
                 }
             }
+            assertTrue(failures.joinToString("\n"), failures.isEmpty())
         }
 
     private fun fontContext(scale: Float): Context = app.createConfigurationContext(
