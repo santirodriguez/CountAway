@@ -73,16 +73,23 @@ class WidgetPreviewGeometryInstrumentedTest {
                     file.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
                     bitmap.recycle()
                     assertTrue(file.length() > 0)
-                    if (name == "time") {
-                        val count = root.findViewById<android.widget.TextView>(
-                            com.santiagorodriguez.countaway.R.id.timeWidgetPickerPreviewCount)
-                        val layout = requireNotNull(count.layout)
-                        val availableWidth = count.width - count.totalPaddingLeft - count.totalPaddingRight
-                        val availableHeight = count.height - count.compoundPaddingTop - count.compoundPaddingBottom
-                        assertTrue("Timer exceeds available height at font scale $scale",
-                            layout.height <= availableHeight)
-                        assertTrue("Timer exceeds available width at font scale $scale",
-                            layout.getLineWidth(0) <= availableWidth)
+                    val countId = if (name == "time") {
+                        com.santiagorodriguez.countaway.R.id.timeWidgetPickerPreviewCount
+                    } else {
+                        com.santiagorodriguez.countaway.R.id.widgetPinPreviewCount
+                    }
+                    val count = root.findViewById<android.widget.TextView>(countId)
+                    val countLayout = requireNotNull(count.layout)
+                    val availableWidth = count.width - count.totalPaddingLeft - count.totalPaddingRight
+                    val availableHeight = count.height - count.compoundPaddingTop - count.compoundPaddingBottom
+                    assertTrue("$name count exceeds available height at font scale $scale",
+                        countLayout.height <= availableHeight)
+                    assertTrue("$name count exceeds available width at font scale $scale",
+                        countLayout.getLineWidth(0) <= availableWidth)
+                    assertEquals("$name count wraps at font scale $scale", 1, countLayout.lineCount)
+                    if (name == "days") {
+                        assertTrue("Days count is too close to the bottom at font scale $scale",
+                            root.height - count.bottom >= (8 * density).toInt())
                     }
                 }
             }
