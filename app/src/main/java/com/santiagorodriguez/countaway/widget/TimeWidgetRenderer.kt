@@ -291,8 +291,30 @@ internal object TimeWidgetRenderer {
             val stamp = "$date · ${EventTimeText.time(context, now)}"
             context.getString(R.string.widget_snapshot_stamp, stamp)
         } else context.getString(R.string.widget_clock_legend)
-        val metaSp = fittedLongDaySizeSp(context, widthDp, padding, meta,
+        val metrics = context.resources.displayMetrics
+        fun pixels(dp: Int) = (dp * metrics.density).roundToInt()
+        val widthPx = pixels((widthDp - 2 * padding - 3).coerceAtLeast(1))
+        val titleSp = if (compact && large) 7f else layout.titleSizeSp
+        val titleLines = if (compact || heightDp < 160 || large) 1 else layout.titleLines.coerceAtMost(2)
+        val verticalPaddingDp = if (compact) 1 else layout.verticalPaddingDp
+        val showAccent = layout.showAccent && heightDp >= 180 && !large
+        val showDate = layout.showDate
+        val showZone = layout.showZone && showDate && clock != null
+        val secondaryFace = Typeface.create("sans-serif", Typeface.NORMAL)
+        val mainFace = Typeface.create("sans-serif-condensed", Typeface.BOLD)
+        val metaSp = fitTextSp(meta, secondaryFace, metrics, widthPx, Int.MAX_VALUE,
             if (compact) (if (large) 7f else 9f) else 11f)
+        // Reserve the title and required footer before growing the number. A LinearLayout
+        // otherwise lets the number consume the footer's height at the smallest launcher size.
+        val titleHeight = textLineHeight(Typeface.create("sans-serif-medium", Typeface.NORMAL), titleSp, metrics)
+        val dateHeight = textLineHeight(secondaryFace, layout.dateSizeSp, metrics)
+        val footerHeight = textLineHeight(secondaryFace, metaSp, metrics)
+        val reservedHeight = maxOf(pixels(if (compact) 16 else 20), titleHeight * titleLines) +
+            footerHeight + pixels(2 * verticalPaddingDp + if (compact) 4 else 12) +
+            (if (showAccent) pixels(12) else 0) +
+            (if (showDate) dateHeight + pixels(7) else 0) +
+            (if (showZone) textLineHeight(secondaryFace, 10f, metrics) + pixels(2) else 0)
+        val valueHeight = (pixels(heightDp) - reservedHeight).coerceAtLeast(1)
 
         views.setViewVisibility(R.id.timeWidgetBrandLogo, View.GONE)
         views.setViewVisibility(R.id.timeWidgetIcon, View.VISIBLE)
@@ -301,14 +323,13 @@ internal object TimeWidgetRenderer {
         views.setViewVisibility(R.id.timeWidgetMark, if (showMark) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.timeWidgetLiveDot, View.GONE)
         views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
-        if (compact) {
-            val density = context.resources.displayMetrics.density
-            val horizontal = (padding * density).roundToInt()
-            val vertical = density.roundToInt()
-            views.setViewPadding(R.id.timeWidgetContent, horizontal, vertical, horizontal, vertical)
-            views.setTextViewTextSize(R.id.timeWidgetTitle, TypedValue.COMPLEX_UNIT_SP,
-                if (large) 7f else layout.titleSizeSp)
-        }
+        views.setViewVisibility(R.id.timeWidgetAccentLine, if (showAccent) View.VISIBLE else View.GONE)
+        if (showDate) views.setInt(R.id.timeWidgetDate, "setMaxLines", 1)
+        val horizontal = pixels(padding)
+        val vertical = pixels(verticalPaddingDp)
+        views.setViewPadding(R.id.timeWidgetContent, horizontal, vertical, horizontal, vertical)
+        views.setTextViewTextSize(R.id.timeWidgetTitle, TypedValue.COMPLEX_UNIT_SP, titleSp)
+        views.setInt(R.id.timeWidgetTitle, "setMaxLines", titleLines)
         views.setTextViewText(R.id.timeWidgetDetailHint, meta)
         views.setTextViewTextSize(R.id.timeWidgetDetailHint, TypedValue.COMPLEX_UNIT_SP, metaSp)
         views.setViewVisibility(R.id.timeWidgetDetailHint, View.VISIBLE)
@@ -337,14 +358,52 @@ internal object TimeWidgetRenderer {
                 else label
             views.setContentDescription(R.id.timeWidgetLongDays, spokenValue)
             views.setTextViewTextSize(R.id.timeWidgetLongDays, TypedValue.COMPLEX_UNIT_SP,
-                fittedLongDaySizeSp(context, widthDp, padding, label, maxClock))
+                fitTextSp(label, mainFace, metrics, widthPx, valueHeight, maxClock))
         } else if (clock != null) {
             views.setTextViewTextSize(R.id.timeWidgetClock, TypedValue.COMPLEX_UNIT_SP,
-                liveClockTextSizeSp(context, widthDp, padding, maxClock, instant, targetInstant, arrow))
+                fitTextSp(widestClockLabel(instant, targetInstant, arrow), mainFace,
+                    metrics, widthPx, valueHeight, maxClock))
             views.setChronometer(R.id.timeWidgetClock, clock.elapsedRealtimeBase,
                 if (isCounter) "$arrow%s" else null, true)
             views.setChronometerCountDown(R.id.timeWidgetClock, clock.countDown)
         }
+    }
+
+    private fun fitTextSp(
+        text: String, face: Typeface, metrics: android.util.DisplayMetrics,
+        widthPx: Int, heightPx: Int, maxSp: Float,
+    ): Float {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = face
+            fontFeatureSettings = "tnum"
+        }
+        // Measure at each SP size so Android's non-linear font scaling remains in effect.
+        var low = 0f
+        var high = maxSp
+        repeat(10) {
+            val candidate = (low + high) / 2f
+            paint.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, candidate, metrics)
+            val font = paint.fontMetricsInt
+            if (paint.measureText(text) <= widthPx && font.descent - font.ascent <= heightPx) {
+                low = candidate
+            } else {
+                high = candidate
+            }
+        }
+        return low
+    }
+
+    private fun textLineHeight(face: Typeface, sp: Float, metrics: android.util.DisplayMetrics): Int {
+        val font = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = face
+            textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, metrics)
+        }.fontMetricsInt
+        return font.descent - font.ascent
+    }
+
+    private fun widestClockLabel(now: Instant, target: Instant, prefix: String): String {
+        val hoursUntilRefresh = abs(Duration.between(now, target).seconds) / 3_600L + 48L
+        return prefix + "-" + "8".repeat(hoursUntilRefresh.toString().length.coerceAtLeast(2)) + ":88:88"
     }
 
     /**
@@ -357,9 +416,7 @@ internal object TimeWidgetRenderer {
         now: Instant, target: Instant, prefix: String = "",
     ): Float {
         val metrics = context.resources.displayMetrics
-        val hoursUntilRefresh = kotlin.math.abs(Duration.between(now, target).seconds) / 3_600L + 48L
-        val hourDigits = hoursUntilRefresh.toString().length.coerceAtLeast(2)
-        val widestLabel = prefix + "-" + "8".repeat(hourDigits) + ":88:88"
+        val widestLabel = widestClockLabel(now, target, prefix)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create("sans-serif-condensed", Typeface.BOLD)
             fontFeatureSettings = "tnum"

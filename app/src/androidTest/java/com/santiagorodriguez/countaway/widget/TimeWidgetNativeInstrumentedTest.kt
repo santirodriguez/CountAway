@@ -425,7 +425,7 @@ class TimeWidgetNativeInstrumentedTest {
             for (format in TimeWidgetFormat.selectable) {
                 for (scale in listOf(1f, 2f)) {
                     val context = fontContext(scale)
-                    for ((width, height) in listOf(140 to 48, 150 to 50, 280 to 210)) {
+                    for ((width, height) in listOf(140 to 48, 150 to 50, 160 to 75, 280 to 210)) {
                         val configuration = WidgetConfiguration(trip.id, WidgetAppearance.DARK,
                             WidgetBackground.HORIZON, timeFormat = format)
                         val rendered = TimeWidgetRenderer.render(context, context, 1234,
@@ -461,7 +461,9 @@ class TimeWidgetNativeInstrumentedTest {
                             assertEquals(name, View.VISIBLE, field.visibility)
                             assertTrue("$name clipped ${field.text}: $box",
                                 box.top >= 0 && box.bottom <= root.height && box.height() > 0)
-                            assertTrue("$name clips ${field.text}",
+                            assertTrue("$name clips ${field.text}: " +
+                                "line=${textLayout.getLineWidth(0)}×${textLayout.height}, " +
+                                "view=${field.width}×${field.height}, ellipsis=${textLayout.getEllipsisCount(0)}",
                                 textLayout.getEllipsisCount(0) == 0 &&
                                     textLayout.getLineWidth(0) <= field.width &&
                                     textLayout.height <= field.height)
