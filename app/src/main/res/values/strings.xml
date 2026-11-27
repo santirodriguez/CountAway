@@ -193,9 +193,17 @@
     <string name="auto_backup_recover_title">Reset backup settings?</string>
     <string name="auto_backup_recover_message">This turns off automatic backups and requires a new folder choice. Existing backup files will not be deleted.</string>
     <string name="widget_home_days">Days (1×1)</string>
-    <string name="widget_home_time">Time (2×1)</string>
+    <string name="widget_home_time">Days + clock (2×1)</string>
     <string name="widget_home_add_time">Add a time to this event</string>
     <string name="widget_home_preview_expanded">Preview a larger widget</string>
-    <string name="widget_home_resize_hint">Widget size depends on your home screen. To resize after adding, touch and hold the widget.</string>
+    <string name="widget_home_resize_hint">Touch and hold the widget, then drag its edges to see more detail.</string>
     <string name="widget_home_edit_existing">Edit existing widgets</string>
+    <string name="picker_trip_title">Trip</string>
+    <string name="picker_time_example">3 d · 04:15</string>
+    <string name="widget_only_hours">Only hours</string>
+    <string name="widget_hours_info">Total hours, even after a full day.</string>
+    <string name="widget_hours_value">%1$s h</string>
+    <string name="widget_format_info">About this format</string>
+    <string name="widget_days_info">Calendar days until or since the event.</string>
+    <string name="widget_dayclock_info">After 24 hours, see days and the remaining time.</string>
 </resources>

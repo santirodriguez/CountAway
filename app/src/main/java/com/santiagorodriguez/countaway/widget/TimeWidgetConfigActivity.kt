@@ -32,6 +32,7 @@ import com.santiagorodriguez.countaway.ui.TemporalInvalidationController
 class TimeWidgetConfigActivity : BaseActivity() {
     private var widgetId = AppWidgetManager.INVALID_APPWIDGET_ID
     private lateinit var repository: CountdownRepository
+    private lateinit var hoursChoice: android.widget.CheckBox
     private lateinit var eventList: ListView
     private lateinit var header: View
     private lateinit var footer: View
@@ -87,6 +88,9 @@ class TimeWidgetConfigActivity : BaseActivity() {
                 setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
         val saved = WidgetPreferences(applicationContext).get(widgetId)
+        hoursChoice = header.findViewById(R.id.timeConfigOnlyHours)
+        hoursChoice.isChecked = savedInstanceState?.getBoolean("onlyHours") ?: saved?.onlyHours ?: false
+        hoursChoice.setOnCheckedChangeListener { _, _ -> refreshPreview() }
         val defaults = WidgetDefaultsPreferences(applicationContext).get()
         // The distinct time widget starts in its editorial Horizon treatment;
         // existing instances always restore their exact saved appearance/background.
@@ -138,6 +142,7 @@ class TimeWidgetConfigActivity : BaseActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         if (::appearanceSpinner.isInitialized) {
             outState.putString(STATE_EVENT_ID, selectedId?.let(EventTransport::wireId))
+            outState.putBoolean("onlyHours", hoursChoice.isChecked)
             outState.putInt(STATE_APPEARANCE, appearanceSpinner.selectedItemPosition)
             outState.putInt(STATE_BACKGROUND, backgroundSpinner.selectedItemPosition)
         }
@@ -209,7 +214,7 @@ class TimeWidgetConfigActivity : BaseActivity() {
         val background = WidgetBackground.entries.getOrElse(backgroundSpinner.selectedItemPosition) {
             WidgetBackground.HORIZON
         }
-        val configuration = WidgetConfiguration(selectedId, appearance, background)
+        val configuration = WidgetConfiguration(selectedId, appearance, background, onlyHours = hoursChoice.isChecked, dayClock = !hoursChoice.isChecked)
         val event = events.firstOrNull { it.id == selectedId }
         val dimensions = WidgetPreviewGeometry.dimensions(
             AppWidgetManager.getInstance(applicationContext).getAppWidgetOptions(widgetId),
@@ -246,7 +251,7 @@ class TimeWidgetConfigActivity : BaseActivity() {
         val background = WidgetBackground.entries.getOrNull(backgroundSpinner.selectedItemPosition)
             ?: return
         WidgetPreferences(applicationContext).save(widgetId, id, appearance, background,
-            WidgetEventSelection.FIXED)
+            WidgetEventSelection.FIXED, onlyHours = hoursChoice.isChecked, dayClock = !hoursChoice.isChecked)
         val appContext = applicationContext
         CountdownIo.execute {
             runCatching { TimeWidgetProvider.updateWidget(appContext, manager, widgetId) }

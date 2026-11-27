@@ -14,5 +14,6 @@ internal object WidgetPinResultPolicy {
         existing.eventSelection == WidgetEventSelection.FIXED &&
             existing.eventId == snapshot.eventId &&
             existing.appearance == snapshot.style.appearance &&
-            existing.background == snapshot.style.background
+            existing.background == snapshot.style.background &&
+            existing.onlyHours == snapshot.onlyHours
 }

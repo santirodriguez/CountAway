@@ -16,6 +16,7 @@ class WidgetPinRequestSnapshotTest {
             ),
             requestToken = "request / token?one",
             family = WidgetFamily.TIME,
+            onlyHours = true,
         )
 
         assertEquals(

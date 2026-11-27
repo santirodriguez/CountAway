@@ -57,6 +57,8 @@ internal object WidgetPinFinalizer {
             appearance = snapshot.style.appearance,
             background = snapshot.style.background,
             eventSelection = WidgetEventSelection.FIXED,
+            onlyHours = snapshot.onlyHours,
+            dayClock = snapshot.family == WidgetFamily.TIME && !snapshot.onlyHours,
         )
         WidgetDefaultsPreferences(appContext).save(snapshot.style)
 

@@ -41,6 +41,8 @@ class WidgetPinSetupActivity : BaseActivity() {
     private lateinit var eventId: String
     private var event: CountdownEvent? = null
     private var availableEvents = emptyList<CountdownEvent>()
+    private var chooseInitialFamily = true
+    private var onlyHours = false
     private var family = WidgetFamily.DAYS
     private lateinit var familyGroup: RadioGroup
     private var selectedBackground = WidgetBackground.CLASSIC
@@ -94,10 +96,21 @@ class WidgetPinSetupActivity : BaseActivity() {
         addButton = findViewById(R.id.widgetPinSetupAddButton)
         familyGroup = findViewById(R.id.widgetPinSetupFamily)
         family = WidgetFamily.fromKey(savedInstanceState?.getString(STATE_FAMILY)) ?: WidgetFamily.DAYS
-        familyGroup.check(if (family == WidgetFamily.TIME) R.id.widgetPinSetupTime else R.id.widgetPinSetupDays)
+        chooseInitialFamily = savedInstanceState?.containsKey(STATE_FAMILY) != true
+        onlyHours = savedInstanceState?.getBoolean("onlyHours") == true
+        familyGroup.check(if (onlyHours) R.id.widgetPinSetupHours else if (family == WidgetFamily.TIME) R.id.widgetPinSetupTime else R.id.widgetPinSetupDays)
         familyGroup.setOnCheckedChangeListener { _, checked ->
-            family = if (checked == R.id.widgetPinSetupTime) WidgetFamily.TIME else WidgetFamily.DAYS
+            onlyHours = checked == R.id.widgetPinSetupHours
+            family = if (onlyHours || checked == R.id.widgetPinSetupTime) WidgetFamily.TIME else WidgetFamily.DAYS
             updatePreview()
+        }
+        findViewById<View>(R.id.widgetFormatInfo).setOnClickListener { anchor ->
+            val message = when {
+                onlyHours -> R.string.widget_hours_info
+                family == WidgetFamily.TIME -> R.string.widget_dayclock_info
+                else -> R.string.widget_days_info
+            }
+            android.widget.Toast.makeText(anchor.context, message, android.widget.Toast.LENGTH_LONG).show()
         }
         findViewById<CheckBox>(R.id.widgetPinSetupExpanded).setOnCheckedChangeListener { _, _ ->
             updatePreview()
@@ -170,6 +183,7 @@ class WidgetPinSetupActivity : BaseActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         val selection = currentSelection()
+        outState.putBoolean("onlyHours", onlyHours)
         outState.putString(STATE_FAMILY, family.key)
         outState.putString(STATE_APPEARANCE, selection.appearance.name)
         outState.putString(STATE_BACKGROUND, selection.background.name)
@@ -178,6 +192,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         outState.putIntArray(STATE_BASELINE_IDS, baselineWidgetIds.toIntArray())
         pendingSnapshot?.let { snapshot ->
             outState.putString(STATE_REQUEST_TOKEN, snapshot.requestToken)
+            outState.putBoolean("requestHours", snapshot.onlyHours)
             outState.putString(STATE_REQUEST_FAMILY, snapshot.family.key)
             outState.putString(STATE_REQUEST_EVENT_ID, snapshot.eventId)
             outState.putString(STATE_REQUEST_APPEARANCE, snapshot.style.appearance.name)
@@ -216,6 +231,24 @@ class WidgetPinSetupActivity : BaseActivity() {
 
                 eventLoading = false
                 event = loaded
+                val timed = WidgetFamily.TIME.accepts(loaded)
+                val first = familyGroup.findViewById<View>(
+                    if (timed) R.id.widgetPinSetupTime else R.id.widgetPinSetupDays)
+                if (familyGroup.indexOfChild(first) != 0) {
+                    val selected = familyGroup.checkedRadioButtonId
+                    familyGroup.removeView(first)
+                    familyGroup.addView(first, 0)
+                    if (timed) {
+                        val hours = familyGroup.findViewById<View>(R.id.widgetPinSetupHours)
+                        familyGroup.removeView(hours)
+                        familyGroup.addView(hours, 1)
+                    }
+                    familyGroup.check(selected)
+                }
+                if (chooseInitialFamily) {
+                    chooseInitialFamily = false
+                    familyGroup.check(first.id)
+                }
                 findViewById<ImageView>(R.id.widgetPinSetupEventIcon).apply {
                     setImageResource(EventIconPresentation.drawableRes(loaded.icon))
                     contentDescription = getString(EventIconPresentation.labelRes(loaded.icon))
@@ -231,7 +264,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         if (awaitingPinResult || !addButton.isEnabled) return
         val currentEvent = event?.takeIf(family::accepts) ?: return
         val style = currentSelection()
-        val snapshot = WidgetPinRequestSnapshot.create(currentEvent.id, style, family = family)
+        val snapshot = WidgetPinRequestSnapshot.create(currentEvent.id, style, family = family, onlyHours = onlyHours)
         baselineWidgetIds = providerWidgetIds(snapshot.family)
         pendingSnapshot = snapshot
         awaitingPinResult = true
@@ -407,6 +440,7 @@ class WidgetPinSetupActivity : BaseActivity() {
             eventId = eventId,
             style = WidgetStyleSelection(appearance, background),
             requestToken = token,
+            onlyHours = state.getBoolean("requestHours"),
             family = WidgetFamily.fromKey(state.getString(STATE_REQUEST_FAMILY)) ?: return null,
         )
     }
@@ -568,7 +602,7 @@ class WidgetPinSetupActivity : BaseActivity() {
         if (family == WidgetFamily.TIME && eligible) {
             val size = if (expanded.isChecked) WidgetPreviewDimensions(280, 210) else WidgetPreviewDimensions(150, 50)
             val views = TimeWidgetRenderer.render(this, this, AppWidgetManager.INVALID_APPWIDGET_ID,
-                WidgetConfiguration(currentEvent.id, selection.appearance, selection.background),
+                WidgetConfiguration(currentEvent.id, selection.appearance, selection.background, onlyHours = onlyHours, dayClock = !onlyHours),
                 currentEvent, null, snapshot, size.widthDp, size.heightDp, mutableMapOf(), interactive = false)
             timeFrame.addView(views.apply(this, timeFrame))
             WidgetPreviewGeometry.fit(previewContainer, timeFrame, size)

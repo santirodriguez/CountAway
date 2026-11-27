@@ -96,7 +96,25 @@
                 android:minHeight="48dp"
                 android:text="@string/widget_home_time"
                 android:textColor="@color/foreground" />
+
+            <RadioButton
+                android:id="@+id/widgetPinSetupHours"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/widget_only_hours"
+                android:textColor="@color/foreground" />
         </RadioGroup>
+
+        <ImageButton
+            android:id="@+id/widgetFormatInfo"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/widget_format_info"
+            android:src="@drawable/ic_backup_info"
+            android:tint="@color/foreground" />
 
         <Button
             android:id="@+id/widgetPinSetupEditEvent"

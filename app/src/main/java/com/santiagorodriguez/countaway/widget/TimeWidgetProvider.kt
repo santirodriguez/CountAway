@@ -160,13 +160,25 @@ class TimeWidgetProvider : AppWidgetProvider() {
                     android.util.Log.e("CountAwayTimeWidget", "Failed to update widget " + id, error)
                 },
             )
-            val repeatingTargets = allIds.asList().mapNotNull { id ->
-                val config = preferences.get(id)?.takeIf { it.eventSelection == WidgetEventSelection.FIXED }
-                val event = config?.eventId?.let(eventsById::get)
-                    ?.takeIf { it.eventTime != null && it.eventZone != null && it.repeatRule != RepeatRule.NONE }
-                event?.let { TimedEventResolver.resolve(it, snapshot.now)?.target?.toInstant() }
+            val now = snapshot.now.toInstant()
+            val boundaries = buildList {
+                for (id in allIds) {
+                    val config = preferences.get(id) ?: continue
+                    val event = eventsById[config.eventId] ?: continue
+                    val target = TimedEventResolver.resolve(event, snapshot.now)?.target?.toInstant() ?: continue
+                    if (event.repeatRule != RepeatRule.NONE) add(target)
+                    val hours = java.time.Duration.between(now, target).toHours()
+                    val unit = when {
+                        config.onlyHours && kotlin.math.abs(hours) >= 999 -> 3600L
+                        config.dayClock -> 86400L
+                        else -> continue
+                    }
+                    val offset = Math.floorMod(target.epochSecond - now.epochSecond, unit)
+                    // Refresh just after the boundary so a countdown has entered its next bucket.
+                    add(now.plusSeconds(if (offset == 0L) 1L else offset + 1L))
+                }
             }
-            TimeWidgetBoundaryScheduler.schedule(context, repeatingTargets, snapshot.now.toInstant())
+            TimeWidgetBoundaryScheduler.schedule(context, boundaries, now)
         }
 
         @TargetApi(Build.VERSION_CODES.S)

@@ -155,7 +155,9 @@ internal object TimeWidgetRenderer {
             " · " + count.target.zone.id + (if (ambiguous) " (${count.target.offset})" else "")
         } else ""
         val clockNow = Instant.now()
-        val plan = TimeWidgetClockPolicy.plan(
+        val duration = Duration.between(clockNow, count.target.toInstant())
+        val splitDays = configuration?.dayClock == true && duration.abs() >= Duration.ofDays(1)
+        val plan = if (splitDays) null else TimeWidgetClockPolicy.plan(
             clockNow, count.target.toInstant(), SystemClock.elapsedRealtime(), timed.countMode,
         )
         val showDetailedZone = !compact && layout.showZone && plan != null
@@ -172,7 +174,22 @@ internal object TimeWidgetRenderer {
             views.setTextViewText(R.id.timeWidgetZone, zoneLabel)
             views.setViewVisibility(R.id.timeWidgetZone, View.VISIBLE)
         }
-        if (plan != null) {
+        val totalHours = duration.toHours()
+        val compactHours = configuration?.onlyHours == true &&
+            (plan == null || (widthDp < 220 && abs(totalHours) >= 1000))
+        if (compactHours) {
+            val hours = if (timed.countMode == com.santiagorodriguez.countaway.model.CountMode.COUNT_DOWN)
+                totalHours else -totalHours
+            val number = NumberFormat.getIntegerInstance(displayContext.resources.configuration.locales[0]).format(hours)
+            val label = displayContext.getString(R.string.widget_hours_value, number)
+            views.setTextViewText(R.id.timeWidgetLongDays, label)
+            views.setTextViewTextSize(R.id.timeWidgetLongDays, TypedValue.COMPLEX_UNIT_SP,
+                fittedLongDaySizeSp(displayContext, widthDp, layout.horizontalPaddingDp, label, layout.clockMaxSizeSp))
+            views.setViewVisibility(R.id.timeWidgetLongDays, View.VISIBLE)
+            views.setViewVisibility(R.id.timeWidgetClock, View.GONE)
+            views.setViewVisibility(R.id.timeWidgetLiveDot, View.GONE)
+            views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
+        } else if (plan != null) {
             views.setViewVisibility(R.id.timeWidgetClock, View.VISIBLE)
             views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
             views.setTextViewTextSize(R.id.timeWidgetClock, TypedValue.COMPLEX_UNIT_SP,
