@@ -52,9 +52,8 @@ internal object TimeWidgetRenderer {
     ): RemoteViews {
         val format = configuration?.timeFormat ?: TimeWidgetFormat.LEGACY
         val fontScale = displayContext.resources.configuration.fontScale
-        // Short hosts need the smaller row gaps at large font sizes.
-        val compact = heightDp < 70 ||
-            (format != TimeWidgetFormat.LEGACY && heightDp < 110 && fontScale >= 1.6f)
+        // Smaller row gaps leave room for the reading and date in short hosts.
+        val compact = heightDp < if (format == TimeWidgetFormat.LEGACY) 70 else 110
         // One-row/short Time widgets prioritize the actual event over app branding.
         // Roomier Time layouts preserve the established brand presentation.
         val compactIdentity = heightDp < 110
@@ -309,7 +308,7 @@ internal object TimeWidgetRenderer {
         fun pixels(dp: Int) = (dp * metrics.density).roundToInt()
         val widthPx = pixels((widthDp - 2 * padding - 3).coerceAtLeast(1))
         val titleSp = when {
-            compact && heightDp >= 70 -> 9f
+            compact && heightDp >= 70 -> if (large) 9f else 11f
             compact && large -> 7f
             else -> layout.titleSizeSp
         }
@@ -323,7 +322,8 @@ internal object TimeWidgetRenderer {
         val secondaryFace = Typeface.create("sans-serif", Typeface.NORMAL)
         val mainFace = Typeface.create("sans-serif-condensed", Typeface.BOLD)
         val maxDateSp = when {
-            large && heightDp < 110 -> 6.5f
+            large && heightDp < 53 -> 5.5f
+            large && compact -> 6.5f
             compact -> 8f
             else -> layout.dateSizeSp
         }
@@ -332,7 +332,7 @@ internal object TimeWidgetRenderer {
         val titleHeight = textLineHeight(Typeface.create("sans-serif-medium", Typeface.NORMAL), titleSp, metrics)
         val dateHeight = textLineHeight(secondaryFace, dateSp, metrics)
         val reservedHeight = maxOf(pixels(if (compact) 16 else 20), titleHeight * titleLines) +
-            dateHeight + pixels(2 * verticalPaddingDp + if (compact) 4 else 18) +
+            dateHeight + pixels(2 * verticalPaddingDp + if (compact) 2 else 18) +
             (if (showAccent) pixels(12) else 0) +
             (if (showZone) textLineHeight(secondaryFace, 10f, metrics) + pixels(2) else 0)
         // The host can round line metrics up independently, including fallback glyphs.

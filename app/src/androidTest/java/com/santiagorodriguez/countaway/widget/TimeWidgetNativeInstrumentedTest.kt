@@ -448,7 +448,7 @@ class TimeWidgetNativeInstrumentedTest {
                                 root.findViewById<View>(R.id.timeWidgetMark).visibility)
                             assertEquals(if (static) View.GONE else View.VISIBLE,
                                 root.findViewById<View>(R.id.timeWidgetClock).visibility)
-                            if (scale == 2f && height == 75) {
+                            if (height == 75) {
                                 assertTrue("$name reading is smaller than the date: ${value.textSize} px",
                                     value.textSize >= date.textSize)
                             }
