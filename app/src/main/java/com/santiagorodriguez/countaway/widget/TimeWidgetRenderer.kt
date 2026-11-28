@@ -314,13 +314,17 @@ internal object TimeWidgetRenderer {
         val showAccent = layout.showAccent && heightDp >= 180 && !large
         val secondaryFace = Typeface.create("sans-serif", Typeface.NORMAL)
         val mainFace = Typeface.create("sans-serif-condensed", Typeface.BOLD)
-        val dateSp = fitTextSp(visibleDate, secondaryFace, metrics, widthPx, Int.MAX_VALUE,
-            if (compact) (if (large) 6.5f else 8f) else layout.dateSizeSp)
+        val maxDateSp = when {
+            large && heightDp < 110 -> 6.5f
+            compact -> 8f
+            else -> layout.dateSizeSp
+        }
+        val dateSp = fitTextSp(visibleDate, secondaryFace, metrics, widthPx, Int.MAX_VALUE, maxDateSp)
         // Give the event date its own space before scaling the primary reading.
         val titleHeight = textLineHeight(Typeface.create("sans-serif-medium", Typeface.NORMAL), titleSp, metrics)
         val dateHeight = textLineHeight(secondaryFace, dateSp, metrics)
         val reservedHeight = maxOf(pixels(if (compact) 16 else 20), titleHeight * titleLines) +
-            dateHeight + pixels(2 * verticalPaddingDp + if (compact) 4 else 16) +
+            dateHeight + pixels(2 * verticalPaddingDp + if (compact) 4 else 18) +
             (if (showAccent) pixels(12) else 0) +
             (if (showZone) textLineHeight(secondaryFace, 10f, metrics) + pixels(2) else 0)
         // The host can round line metrics up independently, including fallback glyphs.
