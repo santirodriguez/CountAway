@@ -50,17 +50,18 @@ internal object TimeWidgetRenderer {
         cache: MutableMap<TimeWidgetBackgroundKey, Bitmap>,
         interactive: Boolean = true,
     ): RemoteViews {
-        // A true one-cell-high layout keeps the title and native clock visible.
-        // Larger host bounds retain the established full-height presentation.
         val format = configuration?.timeFormat ?: TimeWidgetFormat.LEGACY
-        val compact = heightDp < 70
+        val fontScale = displayContext.resources.configuration.fontScale
+        // Short hosts need the smaller row gaps at large font sizes.
+        val compact = heightDp < 70 ||
+            (format != TimeWidgetFormat.LEGACY && heightDp < 110 && fontScale >= 1.6f)
         // One-row/short Time widgets prioritize the actual event over app branding.
         // Roomier Time layouts preserve the established brand presentation.
         val compactIdentity = heightDp < 110
         val views = RemoteViews(context.packageName,
             if (compact) R.layout.widget_time_compact else R.layout.widget_time_live)
         val layout = TimeWidgetLayoutPlanner.plan(widthDp, heightDp,
-            displayContext.resources.configuration.fontScale)
+            fontScale)
         // The pre-API-37 RemoteViews padding overload expects physical pixels.
         val density = displayContext.resources.displayMetrics.density
         val horizontalPaddingPx = (layout.horizontalPaddingDp * density).roundToInt()
@@ -189,7 +190,7 @@ internal object TimeWidgetRenderer {
         }
         if (format != TimeWidgetFormat.LEGACY) {
             renderFormat(views, displayContext, format, timed, count.target, snapshot.now,
-                plan, layout, widthDp, heightDp, targetText + zoneSuffix, showDetailedZone)
+                plan, layout, widthDp, heightDp, compact, targetText + zoneSuffix, showDetailedZone)
         } else if (plan != null) {
             views.setViewVisibility(R.id.timeWidgetClock, View.VISIBLE)
             views.setViewVisibility(R.id.timeWidgetFallback, View.GONE)
@@ -272,10 +273,9 @@ internal object TimeWidgetRenderer {
         views: RemoteViews, context: Context, format: TimeWidgetFormat, event: CountdownEvent,
         target: ZonedDateTime, now: ZonedDateTime, clock: TimeWidgetClockPlan?,
         layout: TimeWidgetLayoutPlan, widthDp: Int, heightDp: Int,
-        accessibleTarget: String, showZone: Boolean,
+        compact: Boolean, accessibleTarget: String, showZone: Boolean,
     ) {
         val scale = context.resources.configuration.fontScale
-        val compact = heightDp < 70
         val large = scale >= 1.6f
         val padding = layout.horizontalPaddingDp
         val counter = if (format == TimeWidgetFormat.FULL_COUNTER) {
@@ -290,7 +290,7 @@ internal object TimeWidgetRenderer {
         val locale = context.resources.configuration.locales[0]
         val numbers = NumberFormat.getIntegerInstance(locale)
         val maxClock = when {
-            !compact -> layout.clockMaxSizeSp
+            heightDp >= 70 -> layout.clockMaxSizeSp
             large -> if (heightDp < 53) 8.5f else 10f
             scale >= 1.3f -> 15f
             else -> 20f
@@ -308,9 +308,17 @@ internal object TimeWidgetRenderer {
         val metrics = context.resources.displayMetrics
         fun pixels(dp: Int) = (dp * metrics.density).roundToInt()
         val widthPx = pixels((widthDp - 2 * padding - 3).coerceAtLeast(1))
-        val titleSp = if (compact && large) 7f else layout.titleSizeSp
+        val titleSp = when {
+            compact && heightDp >= 70 -> 9f
+            compact && large -> 7f
+            else -> layout.titleSizeSp
+        }
         val titleLines = if (compact || heightDp < 160 || large) 1 else layout.titleLines.coerceAtMost(2)
-        val verticalPaddingDp = if (compact) 1 else layout.verticalPaddingDp
+        val verticalPaddingDp = when {
+            compact && heightDp >= 70 -> 4
+            compact -> 1
+            else -> layout.verticalPaddingDp
+        }
         val showAccent = layout.showAccent && heightDp >= 180 && !large
         val secondaryFace = Typeface.create("sans-serif", Typeface.NORMAL)
         val mainFace = Typeface.create("sans-serif-condensed", Typeface.BOLD)
